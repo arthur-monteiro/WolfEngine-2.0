@@ -79,11 +79,7 @@ void UniquePass::initializeResources(const InitializationContext& context)
 		0, 1, 2
 	};
 
-	m_vertexBuffer.reset(new Buffer(sizeof(Vertex2DTextured) * vertices.size(), VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, UpdateRate::NEVER));
-	m_vertexBuffer->transferCPUMemoryWithStagingBuffer(vertices.data(), sizeof(Vertex2DTextured) * vertices.size());
-
-	m_indexBuffer.reset(new Buffer(sizeof(uint32_t) * indices.size(), VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, UpdateRate::NEVER));
-	m_indexBuffer->transferCPUMemoryWithStagingBuffer(indices.data(), sizeof(uint32_t) * indices.size());
+	m_triangle.reset(new Mesh(vertices, indices));
 }
 
 void UniquePass::resize(const Wolf::InitializationContext& context)
@@ -125,14 +121,9 @@ void UniquePass::record(const Wolf::RecordContext& context)
 
 	vkCmdBindPipeline(m_commandBuffer->getCommandBuffer(context.commandBufferIdx), VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipeline->getPipeline());
 
-	const VkDeviceSize offsets[1] = { 0 };
-	VkBuffer vertexBuffer = m_vertexBuffer->getBuffer();
-	vkCmdBindVertexBuffers(m_commandBuffer->getCommandBuffer(context.commandBufferIdx), 0, 1, &vertexBuffer, offsets);
-	vkCmdBindIndexBuffer(m_commandBuffer->getCommandBuffer(context.commandBufferIdx), m_indexBuffer->getBuffer(), 0, VK_INDEX_TYPE_UINT32);
-
 	vkCmdBindDescriptorSets(m_commandBuffer->getCommandBuffer(context.commandBufferIdx), VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipeline->getPipelineLayout(), 0, 1, m_descriptorSet->getDescriptorSet(context.commandBufferIdx), 0, nullptr);
 
-	vkCmdDrawIndexed(m_commandBuffer->getCommandBuffer(context.commandBufferIdx), 3, 1, 0, 0, 0);
+	m_triangle->draw(m_commandBuffer->getCommandBuffer(context.commandBufferIdx));
 
 	m_renderPass->endRenderPass(m_commandBuffer->getCommandBuffer(context.commandBufferIdx));
 

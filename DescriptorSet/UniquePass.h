@@ -10,6 +10,7 @@
 #include <DescriptorSetLayout.h>
 #include <FrameBuffer.h>
 #include <Image.h>
+#include <Mesh.h>
 #include <PassBase.h>
 #include <Pipeline.h>
 #include <RenderPass.h>
@@ -47,8 +48,7 @@ private:
 	uint32_t m_swapChainWidth;
 	uint32_t m_swapChainHeight;
 
-	std::unique_ptr<Wolf::Buffer> m_vertexBuffer;
-	std::unique_ptr<Wolf::Buffer> m_indexBuffer;
+	std::unique_ptr<Wolf::Mesh> m_triangle;
 
 	/* Resources*/
 	std::chrono::steady_clock::time_point m_startTimePoint = std::chrono::high_resolution_clock::now();
