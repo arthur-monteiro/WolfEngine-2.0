@@ -45,7 +45,7 @@ private:
 	std::unique_ptr<Wolf::ShaderParser> m_vertexShaderParser;
 	std::unique_ptr<Wolf::ShaderParser> m_fragmentShaderParser;
 	std::unique_ptr<Wolf::Pipeline> m_pipeline;
-	uint32_t m_swapChainWidth; 1
+	uint32_t m_swapChainWidth;
 	uint32_t m_swapChainHeight;
 
 	std::unique_ptr<Wolf::Mesh> m_triangle;
