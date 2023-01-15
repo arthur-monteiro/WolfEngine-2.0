@@ -157,6 +157,7 @@
     <ClCompile Include="FrameBuffer.cpp" />
     <ClCompile Include="Image.cpp" />
     <ClCompile Include="ImageFileLoader.cpp" />
+    <ClCompile Include="Mesh.cpp" />
     <ClCompile Include="PassBase.cpp" />
     <ClCompile Include="Pipeline.cpp" />
     <ClCompile Include="RenderPass.cpp" />
@@ -187,6 +188,7 @@
     <ClInclude Include="HardwareCapabilities.h" />
     <ClInclude Include="Image.h" />
     <ClInclude Include="ImageFileLoader.h" />
+    <ClInclude Include="Mesh.h" />
     <ClInclude Include="PassBase.h" />
     <ClInclude Include="Pipeline.h" />
     <ClInclude Include="QueueFamilyIndices.h" />
