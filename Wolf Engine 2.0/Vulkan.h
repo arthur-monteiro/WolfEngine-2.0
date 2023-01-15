@@ -1,0 +1,95 @@
+#pragma once
+
+#define GLFW_INCLUDE_VULKAN
+#include <GLFW/glfw3.h>
+#include <OVR_CAPI_Vk.h>
+#include <mutex>
+#include <vector>
+
+#include "CommandPool.h"
+#include "Debug.h"
+#include "DescriptorPool.h"
+#include "HardwareCapabilities.h"
+#include "QueueFamilyIndices.h"
+
+namespace Wolf
+{
+	class Vulkan
+	{
+	public:
+		Vulkan(GLFWwindow* glfwWindowPtr, bool useOVR);
+		~Vulkan();
+
+		// Getters
+		VkDevice getDevice() const { return m_device; }
+		VkPhysicalDevice getPhysicalDevice() const { return m_physicalDevice; }
+		VkSurfaceKHR getSurface() const { return m_surface; }
+		const QueueFamilyIndices& getQueueFamilyIndices() const { return m_queueFamilyIndices; }
+		VkQueue getPresentQueue() const { return m_presentQueue; }
+		const CommandPool* getGraphicsCommandPool() const { return m_graphicsCommandPool.get(); }
+		const CommandPool* getGraphicsTransientCommandPool() const { return m_graphicsTransientCommandPool.get(); }
+		const CommandPool* getComputeCommandPool() const { return m_computeCommandPool.get(); }
+		const CommandPool* getComputeTransientCommandPool() const { return m_computeTransientCommandPool.get(); }
+		VkQueue getGraphicsQueue() const { return m_graphicsQueue; }
+		VkQueue getComputeQueue() const { return m_computeQueue; }
+		VkDescriptorPool getDescriptorPool() const { return m_descriptorPool->getDescriptorPool(); }
+
+	private:
+		/* Main Loading Functions */
+		void createInstance();
+		void setupDebugMessenger();
+		void pickPhysicalDevice();
+		void createDevice();
+		void createCommandPools();
+
+		void populateDebugMessengerCreateInfo(VkDebugUtilsMessengerCreateInfoEXT& createInfo);
+
+		bool isDeviceSuitable(VkPhysicalDevice physicalDevice, const std::vector<const char*>& deviceExtensions, HardwareCapabilities& outHardwareCapabilities);
+
+	private:
+		VkInstance m_instance;
+		VkSurfaceKHR m_surface;
+		VkPhysicalDevice m_physicalDevice;
+		VkDevice m_device;
+
+		/* Queues */
+		QueueFamilyIndices m_queueFamilyIndices;
+		VkQueue m_graphicsQueue;
+		VkQueue m_presentQueue;
+		VkQueue m_computeQueue;
+		std::mutex* m_mutexQueues = nullptr;
+
+		/* Extensions / Layers */
+		std::vector<const char*> m_validationLayers = std::vector<const char*>();
+		std::vector<const char*> m_deviceExtensions = std::vector<const char*>();
+		VkDebugUtilsMessengerEXT m_debugMessenger;
+
+		/* Ray Tracing */
+		std::vector<const char*> m_raytracingDeviceExtensions = std::vector<const char*>();
+		VkPhysicalDeviceRayTracingPropertiesNV m_raytracingProperties = {};
+
+		/* Mesh Shader */
+		std::vector<const char*> m_meshShaderDeviceExtensions = std::vector<const char*>();
+		VkPhysicalDeviceMeshShaderPropertiesNV m_meshShaderProperties = {};
+
+		/* Properties */
+		VkSampleCountFlagBits m_maxMsaaSamples = VK_SAMPLE_COUNT_1_BIT;
+		HardwareCapabilities m_hardwareCapabilities;
+		VkPhysicalDeviceConservativeRasterizationPropertiesEXT m_conservativeRasterProps{};
+
+		/* VR */
+		ovrSession                  m_session = nullptr;
+		ovrGraphicsLuid             m_luid;
+
+		/* Command Pools */
+		std::unique_ptr<CommandPool> m_graphicsCommandPool;
+		std::unique_ptr<CommandPool> m_graphicsTransientCommandPool;
+		std::unique_ptr<CommandPool> m_computeCommandPool;
+		std::unique_ptr<CommandPool> m_computeTransientCommandPool;
+
+		/* Descritor Pools */
+		std::unique_ptr<DescriptorPool> m_descriptorPool;
+	};
+
+	extern Vulkan* g_vulkanInstance;
+}

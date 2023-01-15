@@ -1,0 +1,44 @@
+{
+    "Version": "1.2",
+    "Data": {
+        "Source": "f:\\code\\wolf engine 2.0\\wolf engine 2.0\\wolf engine 2.0\\wolfengine.ixx",
+        "ProvidedModule": "WolfEngine",
+        "Includes": [],
+        "ImportedModules": [
+            {
+                "Name": "Debug",
+                "BMI": "F:\\Code\\Wolf Engine 2.0\\Wolf Engine 2.0\\Wolf Engine 2.0\\x64\\Debug\\Debug.ixx.ifc.dt"
+            },
+            {
+                "Name": "Vulkan",
+                "BMI": "F:\\Code\\Wolf Engine 2.0\\Wolf Engine 2.0\\Wolf Engine 2.0\\x64\\Debug\\Vulkan.ixx.ifc.dt"
+            },
+            {
+                "Name": "OVR",
+                "BMI": "F:\\Code\\Wolf Engine 2.0\\Wolf Engine 2.0\\Wolf Engine 2.0\\x64\\Debug\\OVR.ixx.ifc.dt"
+            },
+            {
+                "Name": "SwapChain",
+                "BMI": "F:\\Code\\Wolf Engine 2.0\\Wolf Engine 2.0\\Wolf Engine 2.0\\x64\\Debug\\SwapChain.ixx.ifc.dt"
+            },
+            {
+                "Name": "Window",
+                "BMI": "F:\\Code\\Wolf Engine 2.0\\Wolf Engine 2.0\\Wolf Engine 2.0\\x64\\Debug\\Window.ixx.ifc.dt"
+            }
+        ],
+        "ImportedHeaderUnits": [
+            {
+                "Header": "f:\\visual studio\\vc\\tools\\msvc\\14.34.31933\\include\\iostream",
+                "BMI": "F:\\Code\\Wolf Engine 2.0\\Wolf Engine 2.0\\Wolf Engine 2.0\\x64\\Debug\\iostream_254457073576656B.ifc.dt"
+            },
+            {
+                "Header": "f:\\visual studio\\vc\\tools\\msvc\\14.34.31933\\include\\functional",
+                "BMI": "F:\\Code\\Wolf Engine 2.0\\Wolf Engine 2.0\\Wolf Engine 2.0\\x64\\Debug\\functional_ABB316DD3ADF639E.ifc.dt"
+            },
+            {
+                "Header": "f:\\visual studio\\vc\\tools\\msvc\\14.34.31933\\include\\memory",
+                "BMI": "F:\\Code\\Wolf Engine 2.0\\Wolf Engine 2.0\\Wolf Engine 2.0\\x64\\Debug\\memory_AFE56345E9DE195C.ifc.dt"
+            }
+        ]
+    }
+}

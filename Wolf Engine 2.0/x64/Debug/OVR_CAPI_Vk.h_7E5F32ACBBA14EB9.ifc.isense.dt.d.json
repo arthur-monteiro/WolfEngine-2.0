@@ -1,0 +1,22 @@
+{
+    "Version": "1.2",
+    "Data": {
+        "Source": "f:\\code\\wolf engine 2.0\\wolf engine 2.0\\third party\\ovr\\include\\ovr_capi_vk.h",
+        "ProvidedModule": "",
+        "Includes": [
+            "f:\\code\\wolf engine 2.0\\wolf engine 2.0\\third party\\ovr\\include\\ovr_capi.h",
+            "f:\\code\\wolf engine 2.0\\wolf engine 2.0\\third party\\ovr\\include\\ovr_capi_keys.h",
+            "f:\\code\\wolf engine 2.0\\wolf engine 2.0\\third party\\ovr\\include\\ovr_version.h",
+            "f:\\code\\wolf engine 2.0\\wolf engine 2.0\\third party\\ovr\\include\\ovr_errorcode.h",
+            "f:\\visual studio\\vc\\tools\\msvc\\14.34.31933\\include\\stdint.h",
+            "f:\\visual studio\\vc\\tools\\msvc\\14.34.31933\\include\\vcruntime.h",
+            "f:\\visual studio\\vc\\tools\\msvc\\14.34.31933\\include\\sal.h",
+            "f:\\visual studio\\vc\\tools\\msvc\\14.34.31933\\include\\concurrencysal.h",
+            "f:\\visual studio\\vc\\tools\\msvc\\14.34.31933\\include\\vadefs.h",
+            "f:\\code\\wolf engine 2.0\\wolf engine 2.0\\third party\\ovr\\include\\extras\\ovr_capi_util.h",
+            "f:\\code\\wolf engine 2.0\\wolf engine 2.0\\third party\\ovr\\include\\ovr_capi.h"
+        ],
+        "ImportedModules": [],
+        "ImportedHeaderUnits": []
+    }
+}

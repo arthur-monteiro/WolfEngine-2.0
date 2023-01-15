@@ -1,0 +1,19 @@
+{
+    "Version": "1.2",
+    "Data": {
+        "Source": "f:\\code\\wolf engine 2.0\\wolf engine 2.0\\wolf engine 2.0\\debug.ixx",
+        "ProvidedModule": "Debug",
+        "Includes": [],
+        "ImportedModules": [],
+        "ImportedHeaderUnits": [
+            {
+                "Header": "f:\\visual studio\\vc\\tools\\msvc\\14.34.31933\\include\\iostream",
+                "BMI": "F:\\Code\\Wolf Engine 2.0\\Wolf Engine 2.0\\Hello Triangle\\x64\\Debug\\iostream_254457073576656B.ifc.dt"
+            },
+            {
+                "Header": "f:\\visual studio\\vc\\tools\\msvc\\14.34.31933\\include\\functional",
+                "BMI": "F:\\Code\\Wolf Engine 2.0\\Wolf Engine 2.0\\Wolf Engine 2.0\\x64\\Debug\\functional_ABB316DD3ADF639E.ifc.dt"
+            }
+        ]
+    }
+}

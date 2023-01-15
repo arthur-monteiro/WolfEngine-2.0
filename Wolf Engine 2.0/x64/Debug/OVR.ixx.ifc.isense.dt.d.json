@@ -1,0 +1,10 @@
+{
+    "Version": "1.2",
+    "Data": {
+        "Source": "f:\\code\\wolf engine 2.0\\wolf engine 2.0\\wolf engine 2.0\\ovr.ixx",
+        "ProvidedModule": "OVR",
+        "Includes": [],
+        "ImportedModules": [],
+        "ImportedHeaderUnits": []
+    }
+}

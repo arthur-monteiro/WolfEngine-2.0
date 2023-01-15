@@ -1,0 +1,22 @@
+{
+    "Version": "1.1",
+    "Data": {
+        "Source": "f:\\code\\wolf engine 2.0\\wolf engine 2.0\\third party\\ovr\\include\\ovr_capi_vk.h",
+        "ProvidedModule": "",
+        "Includes": [
+            "f:\\code\\wolf engine 2.0\\wolf engine 2.0\\third party\\ovr\\include\\ovr_capi.h",
+            "f:\\code\\wolf engine 2.0\\wolf engine 2.0\\third party\\ovr\\include\\ovr_capi_keys.h",
+            "f:\\code\\wolf engine 2.0\\wolf engine 2.0\\third party\\ovr\\include\\ovr_version.h",
+            "f:\\code\\wolf engine 2.0\\wolf engine 2.0\\third party\\ovr\\include\\ovr_errorcode.h",
+            "c:\\program files (x86)\\microsoft visual studio\\2019\\enterprise\\vc\\tools\\msvc\\14.29.30133\\include\\stdint.h",
+            "c:\\program files (x86)\\microsoft visual studio\\2019\\enterprise\\vc\\tools\\msvc\\14.29.30133\\include\\vcruntime.h",
+            "c:\\program files (x86)\\microsoft visual studio\\2019\\enterprise\\vc\\tools\\msvc\\14.29.30133\\include\\sal.h",
+            "c:\\program files (x86)\\microsoft visual studio\\2019\\enterprise\\vc\\tools\\msvc\\14.29.30133\\include\\concurrencysal.h",
+            "c:\\program files (x86)\\microsoft visual studio\\2019\\enterprise\\vc\\tools\\msvc\\14.29.30133\\include\\vadefs.h",
+            "f:\\code\\wolf engine 2.0\\wolf engine 2.0\\third party\\ovr\\include\\extras\\ovr_capi_util.h",
+            "f:\\code\\wolf engine 2.0\\wolf engine 2.0\\third party\\ovr\\include\\ovr_capi.h"
+        ],
+        "ImportedModules": [],
+        "ImportedHeaderUnits": []
+    }
+}

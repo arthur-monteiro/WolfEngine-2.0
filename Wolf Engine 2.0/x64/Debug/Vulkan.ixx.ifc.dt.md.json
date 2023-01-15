@@ -1,0 +1,17 @@
+{
+    "Version": "1.1",
+    "Data": {
+        "Source": "f:\\code\\wolf engine 2.0\\wolf engine 2.0\\wolf engine 2.0\\vulkan.ixx",
+        "ProvidedModule": "Vulkan",
+        "ImportedModules": [
+            "Debug"
+        ],
+        "ImportedHeaderUnits": [
+            "F:\\Code\\Wolf Engine 2.0\\Wolf Engine 2.0\\Third Party\\vulkan\\Include\\vulkan\\vulkan.h",
+            "F:\\Code\\Wolf Engine 2.0\\Wolf Engine 2.0\\Third Party\\GLFW\\include\\GLFW\\glfw3.h",
+            "F:\\Code\\Wolf Engine 2.0\\Wolf Engine 2.0\\Third Party\\OVR\\Include\\OVR_CAPI_Vk.h",
+            "C:\\Program Files (x86)\\Microsoft Visual Studio\\2019\\Enterprise\\VC\\Tools\\MSVC\\14.29.30133\\include\\mutex",
+            "C:\\Program Files (x86)\\Microsoft Visual Studio\\2019\\Enterprise\\VC\\Tools\\MSVC\\14.29.30133\\include\\vector"
+        ]
+    }
+}

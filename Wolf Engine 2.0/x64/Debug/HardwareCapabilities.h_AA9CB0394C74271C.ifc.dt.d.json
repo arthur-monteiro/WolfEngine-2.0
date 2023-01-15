@@ -1,0 +1,19 @@
+{
+    "Version": "1.2",
+    "Data": {
+        "Source": "f:\\code\\wolf engine 2.0\\wolf engine 2.0\\wolf engine 2.0\\hardwarecapabilities.h",
+        "ProvidedModule": "",
+        "Includes": [
+            "f:\\visual studio\\vc\\tools\\msvc\\14.34.31933\\include\\cstdint",
+            "f:\\visual studio\\vc\\tools\\msvc\\14.34.31933\\include\\yvals_core.h",
+            "f:\\visual studio\\vc\\tools\\msvc\\14.34.31933\\include\\vcruntime.h",
+            "f:\\visual studio\\vc\\tools\\msvc\\14.34.31933\\include\\sal.h",
+            "f:\\visual studio\\vc\\tools\\msvc\\14.34.31933\\include\\concurrencysal.h",
+            "f:\\visual studio\\vc\\tools\\msvc\\14.34.31933\\include\\vadefs.h",
+            "f:\\visual studio\\vc\\tools\\msvc\\14.34.31933\\include\\xkeycheck.h",
+            "f:\\visual studio\\vc\\tools\\msvc\\14.34.31933\\include\\stdint.h"
+        ],
+        "ImportedModules": [],
+        "ImportedHeaderUnits": []
+    }
+}
