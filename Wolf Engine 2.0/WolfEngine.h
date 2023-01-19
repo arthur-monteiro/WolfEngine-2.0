@@ -9,6 +9,7 @@
 #include "Debug.h"
 #include "PassBase.h"
 #include "SwapChain.h"
+#include "UltraLight.h"
 #include "Vulkan.h"
 #include "Window.h"
 
@@ -21,6 +22,8 @@ namespace Wolf
 		std::string applicationName;
 
 		std::string configFilename;
+
+		const char* htmlStringUI = nullptr;
 
 		bool useOVR = false;
 
@@ -54,6 +57,7 @@ namespace Wolf
 		std::unique_ptr<Vulkan> m_vulkan;
 		std::unique_ptr<Window> m_window;
 		std::unique_ptr<SwapChain> m_swapChain;
+		std::unique_ptr<UltraLight> m_ultraLight;
 		//std::unique_ptr<OVR> m_ovr;
 		bool m_useOVR = false;
 

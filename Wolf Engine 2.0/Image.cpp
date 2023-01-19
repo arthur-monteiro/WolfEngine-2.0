@@ -5,48 +5,6 @@
 #include "Fence.h"
 #include "VulkanHelper.h"
 
-void createImage(uint32_t width, uint32_t height, uint32_t depth, uint32_t mipLevelCount, VkSampleCountFlagBits numSamples,
-	VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage, VkMemoryPropertyFlags properties, uint32_t arrayLayerCount, VkImageCreateFlags flags, VkImageLayout initialLayout,
-	VkImage& image, VkDeviceMemory& imageMemory)
-{
-	VkImageCreateInfo imageInfo = {};
-	imageInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
-	if (depth == 1) imageInfo.imageType = VK_IMAGE_TYPE_2D;
-	else imageInfo.imageType = VK_IMAGE_TYPE_3D;
-	imageInfo.extent.width = width;
-	imageInfo.extent.height = height;
-	imageInfo.extent.depth = depth;
-	imageInfo.mipLevels = mipLevelCount;
-	imageInfo.arrayLayers = arrayLayerCount;
-	imageInfo.format = format;
-	imageInfo.tiling = tiling;
-	imageInfo.initialLayout = initialLayout;
-	imageInfo.usage = usage;
-	imageInfo.samples = numSamples;
-	imageInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
-	imageInfo.flags = flags;
-
-	if (vkCreateImage(Wolf::g_vulkanInstance->getDevice(), &imageInfo, nullptr, &image) != VK_SUCCESS)
-		Wolf::Debug::sendError("Error : create image");
-
-	VkMemoryRequirements memRequirements;
-	vkGetImageMemoryRequirements(Wolf::g_vulkanInstance->getDevice(), image, &memRequirements);
-
-	VkMemoryAllocateInfo allocInfo = {};
-	allocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
-	allocInfo.allocationSize = memRequirements.size;
-	allocInfo.memoryTypeIndex = Wolf::findMemoryType(Wolf::g_vulkanInstance->getPhysicalDevice(), memRequirements.memoryTypeBits, properties);
-
-	if (allocInfo.memoryTypeIndex < 0)
-		Wolf::Debug::sendError("Error : no memory type found");
-
-	if (vkAllocateMemory(Wolf::g_vulkanInstance->getDevice(), &allocInfo, nullptr, &imageMemory) != VK_SUCCESS)
-		Wolf::Debug::sendError("Failed to allocate image memory");
-
-	vkBindImageMemory(Wolf::g_vulkanInstance->getDevice(), image, imageMemory, 0);
-}
-
-
 Wolf::Image::Image(const CreateImageInfo& createImageInfo)
 {
 	m_imageFormat = createImageInfo.format;
@@ -59,9 +17,42 @@ Wolf::Image::Image(const CreateImageInfo& createImageInfo)
 	m_arrayLayerCount = createImageInfo.arrayLayerCount;
 	m_aspectFlags = createImageInfo.aspect;
 
-	createImage(m_extent.width, m_extent.height, m_extent.depth, m_mipLevelCount, m_sampleCount, m_imageFormat, VK_IMAGE_TILING_OPTIMAL,
-		createImageInfo.usage, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, m_arrayLayerCount, m_arrayLayerCount == 6 ? VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT : 0, VK_IMAGE_LAYOUT_UNDEFINED,
-		m_image, m_imageMemory);
+	VkImageCreateInfo imageInfo = {};
+	imageInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
+	if (m_extent.depth == 1) imageInfo.imageType = VK_IMAGE_TYPE_2D;
+	else imageInfo.imageType = VK_IMAGE_TYPE_3D;
+	imageInfo.extent.width = m_extent.width;
+	imageInfo.extent.height = m_extent.height;
+	imageInfo.extent.depth = m_extent.depth;
+	imageInfo.mipLevels = m_mipLevelCount;
+	imageInfo.arrayLayers = m_arrayLayerCount;
+	imageInfo.format = m_imageFormat;
+	imageInfo.tiling = createImageInfo.imageTiling;
+	imageInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+	imageInfo.usage = createImageInfo.usage;
+	imageInfo.samples = m_sampleCount;
+	imageInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+	imageInfo.flags = m_arrayLayerCount == 6 ? VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT : 0;
+
+	if (vkCreateImage(g_vulkanInstance->getDevice(), &imageInfo, nullptr, &m_image) != VK_SUCCESS)
+		Wolf::Debug::sendError("Error : create image");
+
+	VkMemoryRequirements memRequirements;
+	vkGetImageMemoryRequirements(g_vulkanInstance->getDevice(), m_image, &memRequirements);
+
+	VkMemoryAllocateInfo allocInfo = {};
+	allocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
+	allocInfo.allocationSize = memRequirements.size;
+	allocInfo.memoryTypeIndex = findMemoryType(g_vulkanInstance->getPhysicalDevice(), memRequirements.memoryTypeBits, createImageInfo.memoryProperties);
+
+	if (allocInfo.memoryTypeIndex < 0)
+		Wolf::Debug::sendError("Error : no memory type found");
+
+	if (vkAllocateMemory(Wolf::g_vulkanInstance->getDevice(), &allocInfo, nullptr, &m_imageMemory) != VK_SUCCESS)
+		Wolf::Debug::sendError("Failed to allocate image memory");
+
+	vkBindImageMemory(Wolf::g_vulkanInstance->getDevice(), m_image, m_imageMemory, 0);
+
 	m_imageLayout = VK_IMAGE_LAYOUT_UNDEFINED;
 
 	setBBP();
@@ -137,9 +128,31 @@ void Wolf::Image::copyGPUBuffer(const Buffer& bufferSrc, const VkBufferImageCopy
 	fence.waitForFence();
 }
 
+void* Wolf::Image::map()
+{
+	VkDeviceSize imageSize = m_extent.width * m_extent.height * m_extent.depth * m_bbp;
+	void* mappedData;
+	vkMapMemory(g_vulkanInstance->getDevice(), m_imageMemory, 0, imageSize, 0, &mappedData);
+	return mappedData;
+}
+
+void Wolf::Image::unmap()
+{
+	vkUnmapMemory(g_vulkanInstance->getDevice(), m_imageMemory);
+}
+
+void Wolf::Image::getResourceLayout(VkSubresourceLayout& output)
+{
+	VkImageSubresource subresource{};
+	subresource.aspectMask = m_aspectFlags;
+	subresource.mipLevel = 0;
+	subresource.arrayLayer = 0;
+	vkGetImageSubresourceLayout(g_vulkanInstance->getDevice(), m_image, &subresource, &output);
+}
+
 void Wolf::Image::setImageLayout(VkImageLayout dstLayout, VkAccessFlags dstAccessMask, VkPipelineStageFlags dstPipelineStageFlags)
 {
-	CommandBuffer commandBuffer(QueueType::TRANSFER, true);
+	CommandBuffer commandBuffer(QueueType::GRAPHIC, true);
 	commandBuffer.beginCommandBuffer(0);
 
 	transitionImageLayout(commandBuffer.getCommandBuffer(0), dstLayout, dstAccessMask, dstPipelineStageFlags);
