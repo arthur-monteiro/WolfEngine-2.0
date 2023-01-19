@@ -15,6 +15,9 @@ Wolf::WolfEngine::WolfEngine(const WolfInstanceCreateInfo& createInfo)
 	g_vulkanInstance = m_vulkan.get();
 
 	m_swapChain.reset(new SwapChain(m_window->getWindow()));
+
+	if(createInfo.htmlStringUI)
+		m_ultraLight.reset(new UltraLight(m_configuration->getWindowWidth(), m_configuration->getWindowHeight(), createInfo.htmlStringUI));
 }
 
 void Wolf::WolfEngine::initializePass(PassBase* pass)
@@ -99,6 +102,8 @@ void Wolf::WolfEngine::fillInitializeContext(InitializationContext& context)
 	context.swapChainImageCount = m_swapChain->getImageCount();
 	for (uint32_t i = 0; i < context.swapChainImageCount; ++i)
 		context.swapChainImages.push_back(m_swapChain->getImage(i));
+	if(m_ultraLight)
+		context.userInterfaceImage = m_ultraLight->getImage();
 }
 
 void Wolf::WolfEngine::resize(int width, int height)
@@ -107,4 +112,5 @@ void Wolf::WolfEngine::resize(int width, int height)
 
 	m_resizeIsNeeded = true;
 	m_swapChain->recreate(m_window->getWindow());
+	m_ultraLight->resize(width, height);
 }

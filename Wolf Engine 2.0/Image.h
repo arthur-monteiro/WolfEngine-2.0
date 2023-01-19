@@ -24,6 +24,8 @@ namespace Wolf
 #define MAX_MIP_COUNT UINT32_MAX
 		uint32_t mipLevelCount = MAX_MIP_COUNT;
 		uint32_t arrayLayerCount = 1;
+		VkMemoryPropertyFlags memoryProperties = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
+		VkImageTiling imageTiling = VK_IMAGE_TILING_OPTIMAL;
 	};
 
 	class Image
@@ -31,12 +33,17 @@ namespace Wolf
 	public:
 		Image(const CreateImageInfo& createImageInfo);
 		Image(VkImage image, VkFormat format, VkImageAspectFlags aspect, VkExtent2D extent);
+		Image(const Image&) = delete;
 
 		~Image();
 
 		void copyCPUBuffer(const unsigned char* pixels);
 		void copyGPUBuffer(const Buffer& bufferSrc, const VkBufferImageCopy& copyRegion);
 		void copyImagesToCubemap(std::array<Image*, 6> images, std::vector<std::pair<uint8_t, uint8_t>> mipsToCopy, bool generateMipsLevels);
+
+		[[nodiscard]] void* map();
+		void unmap();
+		void getResourceLayout(VkSubresourceLayout& output);
 
 		void setImageLayout(VkImageLayout dstLayout, VkAccessFlags dstAccessMask, VkPipelineStageFlags dstPipelineStageFlags);
 		void transitionImageLayout(VkCommandBuffer commandBuffer, VkImageLayout dstLayout, VkAccessFlags dstAccessMask, VkPipelineStageFlags dstPipelineStageFlags);

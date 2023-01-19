@@ -205,19 +205,3 @@ void UniquePass::createPipeline(uint32_t width, uint32_t height)
 	m_swapChainWidth = width;
 	m_swapChainHeight = height;
 }
-
-void UniquePass::readFile(std::vector<char>& output, const std::string& filename)
-{
-	std::ifstream file(filename, std::ios::ate | std::ios::binary);
-
-	if (!file.is_open())
-		Debug::sendError("Error opening file : " + filename);
-
-	size_t fileSize = std::filesystem::file_size(filename);
-	output.resize(fileSize);
-
-	file.seekg(0);
-	file.read(output.data(), fileSize);
-
-	file.close();
-}

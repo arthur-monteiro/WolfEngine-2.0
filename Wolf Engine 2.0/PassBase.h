@@ -18,6 +18,7 @@ namespace Wolf
 		VkFormat depthFormat;
 		uint32_t swapChainImageCount;
 		std::vector<Image*> swapChainImages;
+		Image* userInterfaceImage;
 	};
 
 	struct RecordContext

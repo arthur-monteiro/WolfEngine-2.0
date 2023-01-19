@@ -102,6 +102,15 @@
     <ClCompile Include="Semaphore.cpp">
       <Filter>Vulkan Component</Filter>
     </ClCompile>
+    <ClCompile Include="UltraLight.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="UltraLightSurface.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="TextFileReader.cpp">
+      <Filter>Helpers</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="WolfEngine.h">
@@ -199,6 +208,15 @@
     </ClInclude>
     <ClInclude Include="SwapChain.h">
       <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="UltraLight.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="UltraLightSurface.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="TextFileReader.h">
+      <Filter>Helpers</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>
