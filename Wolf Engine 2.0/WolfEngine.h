@@ -42,6 +42,8 @@ namespace Wolf
 
 		void waitIdle();
 
+		void getUserInterfaceJSObject(ultralight::JSObject& outObject);
+
 	private:
 		void fillInitializeContext(InitializationContext& context);
 

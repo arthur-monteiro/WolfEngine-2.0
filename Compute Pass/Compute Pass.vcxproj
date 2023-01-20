@@ -136,7 +136,6 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="UniquePass.h" />
-    <ClInclude Include="Vertex2DTextured.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

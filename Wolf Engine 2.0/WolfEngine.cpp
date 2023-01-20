@@ -57,6 +57,12 @@ void Wolf::WolfEngine::frame(const std::span<PassBase*>& passes, const Semaphore
 		m_resizeIsNeeded = false;
 	}
 
+	if (m_ultraLight)
+	{
+		m_ultraLight->update(m_window->getWindow());
+		m_ultraLight->render();
+	}
+
 	m_swapChain->synchroniseCPUFromGPU(m_currentFrame);
 	uint32_t currentSwapChainImageIndex = m_swapChain->getCurrentImage(m_currentFrame);
 
@@ -91,6 +97,11 @@ void Wolf::WolfEngine::frame(const std::span<PassBase*>& passes, const Semaphore
 void Wolf::WolfEngine::waitIdle()
 {
 	vkDeviceWaitIdle(m_vulkan->getDevice());
+}
+
+void Wolf::WolfEngine::getUserInterfaceJSObject(ultralight::JSObject& outObject)
+{
+	m_ultraLight->getJSObject(outObject);
 }
 
 void Wolf::WolfEngine::fillInitializeContext(InitializationContext& context)

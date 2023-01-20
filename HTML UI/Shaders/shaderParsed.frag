@@ -1,8 +1,13 @@
 #version 450
 
+layout(binding = 0) uniform UniformBuffer
+{
+    vec3 color;
+} uniformBuffer;
+
 layout(location = 0) out vec4 outColor;
 
-void main() 
+void main()
 {
-	outColor = vec4(1.0, 0.0, 0.0, 1.0);
+	outColor = vec4(uniformBuffer.color, 1.0);
 }
