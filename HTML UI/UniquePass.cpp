@@ -39,16 +39,35 @@ void UniquePass::initializeResources(const InitializationContext& context)
 	m_userInterfaceVertexShaderParser.reset(new ShaderParser("Shaders/UI.vert"));
 	m_userInterfaceFragmentShaderParser.reset(new ShaderParser("Shaders/UI.frag"));
 
-	m_sampler.reset(new Sampler(VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_BORDER, 1.0f, VK_FILTER_LINEAR));
+	// Triangle resources
+	{
+		m_triangleUniformBuffer.reset(new Buffer(sizeof(glm::vec3), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, UpdateRate::NEVER));
+		glm::vec3 defaultColor(0.0f, 1.0f, 0.0f);
+		m_triangleUniformBuffer->transferCPUMemory(&defaultColor, sizeof(glm::vec3));
 
-	descriptorSetLayoutGenerator.addCombinedImageSampler(VK_SHADER_STAGE_FRAGMENT_BIT, 0);
-	m_userInterfaceDescriptorSetLayout.reset(new DescriptorSetLayout(descriptorSetLayoutGenerator.getDescriptorLayouts()));
+		Wolf::DescriptorSetLayoutGenerator triangleDescriptorSetLayoutGenerator;
+		triangleDescriptorSetLayoutGenerator.addUniformBuffer(VK_SHADER_STAGE_FRAGMENT_BIT, 0);
+		m_triangleDescriptorSetLayout.reset(new DescriptorSetLayout(triangleDescriptorSetLayoutGenerator.getDescriptorLayouts()));
 
-	DescriptorSetGenerator descriptorSetGenerator(descriptorSetLayoutGenerator.getDescriptorLayouts());
-	descriptorSetGenerator.setCombinedImageSampler(0, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, context.userInterfaceImage->getDefaultImageView(), *m_sampler.get());
+		DescriptorSetGenerator descriptorSetGenerator(triangleDescriptorSetLayoutGenerator.getDescriptorLayouts());
+		descriptorSetGenerator.setBuffer(0, *m_triangleUniformBuffer.get());
 
-	m_userInterfaceDescriptorSet.reset(new DescriptorSet(m_userInterfaceDescriptorSetLayout->getDescriptorSetLayout(), UpdateRate::NEVER));
-	m_userInterfaceDescriptorSet->update(descriptorSetGenerator.getDescriptorSetCreateInfo());
+		m_triangleDescriptorSet.reset(new DescriptorSet(m_triangleDescriptorSetLayout->getDescriptorSetLayout(), UpdateRate::NEVER));
+		m_triangleDescriptorSet->update(descriptorSetGenerator.getDescriptorSetCreateInfo());
+	}
+
+	// UI resources
+	{
+		m_sampler.reset(new Sampler(VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_BORDER, 1.0f, VK_FILTER_LINEAR));
+		m_userInterfaceDescriptorSetLayoutGenerator.addCombinedImageSampler(VK_SHADER_STAGE_FRAGMENT_BIT, 0);
+		m_userInterfaceDescriptorSetLayout.reset(new DescriptorSetLayout(m_userInterfaceDescriptorSetLayoutGenerator.getDescriptorLayouts()));
+
+		DescriptorSetGenerator descriptorSetGenerator(m_userInterfaceDescriptorSetLayoutGenerator.getDescriptorLayouts());
+		descriptorSetGenerator.setCombinedImageSampler(0, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, context.userInterfaceImage->getDefaultImageView(), *m_sampler.get());
+
+		m_userInterfaceDescriptorSet.reset(new DescriptorSet(m_userInterfaceDescriptorSetLayout->getDescriptorSetLayout(), UpdateRate::NEVER));
+		m_userInterfaceDescriptorSet->update(descriptorSetGenerator.getDescriptorSetCreateInfo());
+	}
 
 	createPipelines(context.swapChainWidth, context.swapChainHeight);
 
@@ -108,7 +127,7 @@ void UniquePass::resize(const Wolf::InitializationContext& context)
 
 	createPipelines(context.swapChainWidth, context.swapChainHeight);
 
-	DescriptorSetGenerator descriptorSetGenerator(descriptorSetLayoutGenerator.getDescriptorLayouts());
+	DescriptorSetGenerator descriptorSetGenerator(m_userInterfaceDescriptorSetLayoutGenerator.getDescriptorLayouts());
 	descriptorSetGenerator.setCombinedImageSampler(0, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, context.userInterfaceImage->getDefaultImageView(), *m_sampler.get());
 	m_userInterfaceDescriptorSet->update(descriptorSetGenerator.getDescriptorSetCreateInfo());
 }
@@ -126,6 +145,8 @@ void UniquePass::record(const Wolf::RecordContext& context)
 
 	/* Triangle */
 	vkCmdBindPipeline(m_commandBuffer->getCommandBuffer(context.commandBufferIdx), VK_PIPELINE_BIND_POINT_GRAPHICS, m_trianglePipeline->getPipeline());
+	vkCmdBindDescriptorSets(m_commandBuffer->getCommandBuffer(context.commandBufferIdx), VK_PIPELINE_BIND_POINT_GRAPHICS, m_trianglePipeline->getPipelineLayout(), 0, 1,
+		m_triangleDescriptorSet->getDescriptorSet(), 0, nullptr);
 	m_triangle->draw(m_commandBuffer->getCommandBuffer(context.commandBufferIdx));
 
 	/* UI */
@@ -154,6 +175,11 @@ void UniquePass::submit(const Wolf::SubmitContext& context)
 		vkDeviceWaitIdle(context.device);
 		createPipelines(m_swapChainWidth, m_swapChainHeight);
 	}
+}
+
+void UniquePass::setTriangleColor(glm::vec3 color)
+{
+	m_triangleUniformBuffer->transferCPUMemory(&color, sizeof(glm::vec3));
 }
 
 void UniquePass::createDepthImage(const Wolf::InitializationContext& context)
@@ -202,6 +228,10 @@ void UniquePass::createPipelines(uint32_t width, uint32_t height)
 
 		// Viewport
 		pipelineCreateInfo.extent = { width, height };
+
+		// Resources
+		std::vector<VkDescriptorSetLayout> descriptorSetLayouts = { m_triangleDescriptorSetLayout->getDescriptorSetLayout() };
+		pipelineCreateInfo.descriptorSetLayouts = descriptorSetLayouts;
 
 		// Color Blend
 		std::vector<RenderingPipelineCreateInfo::BLEND_MODE> blendModes = { RenderingPipelineCreateInfo::BLEND_MODE::OPAQUE };

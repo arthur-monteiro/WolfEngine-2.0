@@ -10,8 +10,6 @@
 #include <ImageFileLoader.h>
 #include <FrameBuffer.h>
 
-#include "Vertex2DTextured.h"
-
 using namespace Wolf;
 
 void UniquePass::initializeResources(const InitializationContext& context)

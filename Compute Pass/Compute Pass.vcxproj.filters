@@ -26,8 +26,5 @@
     <ClInclude Include="UniquePass.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Vertex2DTextured.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
   </ItemGroup>
 </Project>

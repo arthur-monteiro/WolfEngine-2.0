@@ -1,5 +1,6 @@
 #pragma once
 
+#include <glm/glm.hpp>
 #include <iostream>
 #include <vector>
 
@@ -25,6 +26,8 @@ public:
 	void submit(const Wolf::SubmitContext& context) override;
 
 	const Wolf::Semaphore* getSemaphore() const { return m_semaphore.get(); }
+
+	void setTriangleColor(glm::vec3 color);
 
 private:
 	void createDepthImage(const Wolf::InitializationContext& context);
@@ -53,10 +56,16 @@ private:
 	std::unique_ptr<Wolf::ShaderParser> m_userInterfaceVertexShaderParser;
 	std::unique_ptr<Wolf::ShaderParser> m_userInterfaceFragmentShaderParser;
 
+	// Triangle resources
+	std::unique_ptr<Wolf::Buffer> m_triangleUniformBuffer;
+	std::unique_ptr<Wolf::DescriptorSetLayout> m_triangleDescriptorSetLayout;
+	std::unique_ptr<Wolf::DescriptorSet> m_triangleDescriptorSet;
+
+	// UI resources
 	std::unique_ptr<Wolf::Sampler> m_sampler;
 	std::unique_ptr<Wolf::DescriptorSetLayout> m_userInterfaceDescriptorSetLayout;
 	std::unique_ptr<Wolf::DescriptorSet> m_userInterfaceDescriptorSet;
-	Wolf::DescriptorSetLayoutGenerator descriptorSetLayoutGenerator;
+	Wolf::DescriptorSetLayoutGenerator m_userInterfaceDescriptorSetLayoutGenerator;
 
 	std::vector<unsigned char> m_userInterfaceBufferCPU;
 };
