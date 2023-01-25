@@ -44,5 +44,3 @@ namespace Wolf
 		inline static std::function<void(Debug::Severity, Debug::Type, const std::string&)> m_callback;
 	};
 }
-
-

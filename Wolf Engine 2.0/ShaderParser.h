@@ -23,5 +23,4 @@ namespace Wolf
 		std::filesystem::file_time_type m_lastModifiedTime;
 		std::string m_compileFilename;
 	};
-
 }

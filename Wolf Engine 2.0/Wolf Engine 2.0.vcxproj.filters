@@ -48,9 +48,6 @@
     <ClCompile Include="PassBase.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="ShaderParser.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="Mesh.cpp">
       <Filter>Helpers</Filter>
     </ClCompile>
@@ -111,6 +108,9 @@
     <ClCompile Include="TextFileReader.cpp">
       <Filter>Helpers</Filter>
     </ClCompile>
+    <ClCompile Include="ShaderParser.cpp">
+      <Filter>Helpers</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="WolfEngine.h">
@@ -132,9 +132,6 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="PassBase.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="ShaderParser.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="UpdateRate.h">
@@ -216,6 +213,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="TextFileReader.h">
+      <Filter>Helpers</Filter>
+    </ClInclude>
+    <ClInclude Include="ShaderParser.h">
       <Filter>Helpers</Filter>
     </ClInclude>
   </ItemGroup>
