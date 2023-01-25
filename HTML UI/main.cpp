@@ -24,14 +24,6 @@ void debugCallback(Wolf::Debug::Severity severity, Wolf::Debug::Type type, std::
 	std::cout << message << std::endl;
 }
 
-std::unique_ptr<UniquePass> pass;
-
-void ChangeColor(const ultralight::JSObject& thisObject, const ultralight::JSArgs& args)
-{
-	glm::vec3 color(args[0].ToInteger() / 255.0f, args[1].ToInteger() / 255.0f, args[2].ToInteger() / 255.0f);
-	pass->setTriangleColor(color);
-}
-
 int main()
 {
 	Wolf::WolfInstanceCreateInfo wolfInstanceCreateInfo;
@@ -43,24 +35,22 @@ int main()
 
 	Wolf::WolfEngine wolfInstance(wolfInstanceCreateInfo);
 
+	UniquePass pass;
+	wolfInstance.initializePass(&pass);
+
 	ultralight::JSObject jsObject;
 	wolfInstance.getUserInterfaceJSObject(jsObject);
-	jsObject["ChangeColor"] = std::function<void(const ultralight::JSObject&, const ultralight::JSArgs&)>(&ChangeColor);
-
-	pass.reset(new UniquePass());
-	wolfInstance.initializePass(pass.get());
+	jsObject["ChangeColor"] = std::bind(&UniquePass::setTriangleColor, &pass, std::placeholders::_1, std::placeholders::_2);
 
 	while (!wolfInstance.windowShouldClose())
 	{
 		std::vector<Wolf::PassBase*> passes(1);
-		passes[0] = pass.get();
+		passes[0] = &pass;
 
-		wolfInstance.frame(passes, pass->getSemaphore());
+		wolfInstance.frame(passes, pass.getSemaphore());
 	}
 
 	wolfInstance.waitIdle();
-
-	pass.release();
 
 	return 0;
 }

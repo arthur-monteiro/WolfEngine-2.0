@@ -26,6 +26,6 @@ void Wolf::UltraLightSurface::Resize(uint32_t width, uint32_t height)
 
 	m_width = width;
 	m_height = height;
-	m_rowBytes = m_imageResourceLayout.rowPitch;
-	m_size = m_imageResourceLayout.size;
+	m_rowBytes = static_cast<uint32_t>(m_imageResourceLayout.rowPitch);
+	m_size = static_cast<uint32_t>(m_imageResourceLayout.size);
 }
