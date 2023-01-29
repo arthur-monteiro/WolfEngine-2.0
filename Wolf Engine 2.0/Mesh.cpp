@@ -1,6 +1,6 @@
 #include "Mesh.h"
 
-void Wolf::Mesh::draw(VkCommandBuffer commandBuffer)
+void Wolf::Mesh::draw(VkCommandBuffer commandBuffer) const
 {
 	const VkDeviceSize offsets[1] = { 0 };
 	VkBuffer vertexBuffer = m_vertexBuffer->getBuffer();

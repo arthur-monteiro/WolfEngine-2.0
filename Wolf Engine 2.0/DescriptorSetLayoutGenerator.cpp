@@ -39,3 +39,24 @@ void Wolf::DescriptorSetLayoutGenerator::addStorageImage(VkShaderStageFlags acce
 
 	m_descriptorLayouts.push_back(descriptorLayout);
 }
+
+void Wolf::DescriptorSetLayoutGenerator::addSampler(VkShaderStageFlags accessibility, uint32_t binding)
+{
+	DescriptorLayout descriptorLayout;
+	descriptorLayout.accessibility = accessibility;
+	descriptorLayout.binding = binding;
+	descriptorLayout.descriptorType = VK_DESCRIPTOR_TYPE_SAMPLER;
+
+	m_descriptorLayouts.push_back(descriptorLayout);
+}
+
+void Wolf::DescriptorSetLayoutGenerator::addImages(VkDescriptorType descriptorType, VkShaderStageFlags accessibility, uint32_t binding, uint32_t count)
+{
+	DescriptorLayout descriptorLayout;
+	descriptorLayout.accessibility = accessibility;
+	descriptorLayout.binding = binding;
+	descriptorLayout.descriptorType = descriptorType;
+	descriptorLayout.count = count;
+
+	m_descriptorLayouts.push_back(descriptorLayout);
+}

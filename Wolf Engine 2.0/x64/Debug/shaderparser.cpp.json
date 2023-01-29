@@ -155,7 +155,9 @@
             "f:\\visual studio\\vc\\tools\\msvc\\14.34.31933\\include\\functional",
             "f:\\visual studio\\vc\\tools\\msvc\\14.34.31933\\include\\unordered_map",
             "f:\\visual studio\\vc\\tools\\msvc\\14.34.31933\\include\\xhash",
-            "f:\\visual studio\\vc\\tools\\msvc\\14.34.31933\\include\\xnode_handle.h"
+            "f:\\visual studio\\vc\\tools\\msvc\\14.34.31933\\include\\xnode_handle.h",
+            "f:\\code\\wolf engine 2.0\\wolf engine 2.0\\wolf engine 2.0\\shadercommon.h",
+            "f:\\code\\wolf engine 2.0\\wolf engine 2.0\\wolf engine 2.0\\shadercommon.glsl"
         ],
         "ImportedModules": [],
         "ImportedHeaderUnits": []
