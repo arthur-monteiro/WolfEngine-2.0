@@ -27,6 +27,7 @@ namespace Wolf
 		uint32_t commandBufferIdx; 
 		uint32_t swapChainImageIdx;
 		Image* swapchainImage;
+		GLFWwindow* glfwWindow;
 	};
 
 	struct SubmitContext

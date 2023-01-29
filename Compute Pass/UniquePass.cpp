@@ -94,7 +94,8 @@ void UniquePass::createDescriptorSets(const Wolf::InitializationContext& context
 	for (uint32_t i = 0; i < context.swapChainImageCount; ++i)
 	{
 		DescriptorSetGenerator descriptorSetGenerator(m_descriptorSetLayoutGenerator.getDescriptorLayouts());
-		descriptorSetGenerator.setImage(0, VK_IMAGE_LAYOUT_GENERAL, context.swapChainImages[i]->getDefaultImageView());
+		DescriptorSetGenerator::ImageDescription image(VK_IMAGE_LAYOUT_GENERAL, context.swapChainImages[i]->getDefaultImageView());
+		descriptorSetGenerator.setImage(0, image);
 
 		if(!m_descriptorSets[i])
 			m_descriptorSets[i].reset(new DescriptorSet(m_descriptorSetLayout->getDescriptorSetLayout(), UpdateRate::NEVER));

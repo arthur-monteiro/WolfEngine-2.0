@@ -111,6 +111,15 @@
     <ClCompile Include="ShaderParser.cpp">
       <Filter>Helpers</Filter>
     </ClCompile>
+    <ClCompile Include="ObjLoader.cpp">
+      <Filter>Helpers</Filter>
+    </ClCompile>
+    <ClCompile Include="Timer.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="MipMapGenerator.cpp">
+      <Filter>Helpers</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="WolfEngine.h">
@@ -218,5 +227,20 @@
     <ClInclude Include="ShaderParser.h">
       <Filter>Helpers</Filter>
     </ClInclude>
+    <ClInclude Include="ObjLoader.h">
+      <Filter>Helpers</Filter>
+    </ClInclude>
+    <ClInclude Include="Timer.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="MipMapGenerator.h">
+      <Filter>Helpers</Filter>
+    </ClInclude>
+    <ClInclude Include="ShaderCommon.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="ShaderCommon.glsl" />
   </ItemGroup>
 </Project>

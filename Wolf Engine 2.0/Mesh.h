@@ -14,7 +14,7 @@ namespace Wolf
 		Mesh(const std::vector<T>& vertices, const std::vector<uint32_t>& indices);
 		Mesh(const Mesh&) = delete;
 
-		void draw(VkCommandBuffer commandBuffer);
+		void draw(VkCommandBuffer commandBuffer) const;
 
 	private:
 		std::unique_ptr<Wolf::Buffer> m_vertexBuffer;

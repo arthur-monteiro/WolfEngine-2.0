@@ -5,6 +5,7 @@
 #include <sstream>
 
 #include "Debug.h"
+#include "ShaderCommon.h"
 
 Wolf::ShaderParser::ShaderParser(const std::string& filename)
 {
@@ -63,7 +64,14 @@ void Wolf::ShaderParser::parseAndCompile()
     std::string inShaderLine;
     while (std::getline(inFile, inShaderLine))
     {
-        outFileGLSL << inShaderLine << std::endl;
+        if (inShaderLine == "#include \"ShaderCommon.glsl\"")
+        {
+            outFileGLSL << shaderCommonStr;
+        }
+        else
+        {
+            outFileGLSL << inShaderLine << std::endl;
+        }
     }
 
     outFileGLSL.close();

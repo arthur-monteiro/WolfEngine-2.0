@@ -37,7 +37,7 @@ namespace Wolf
 
 		~Image();
 
-		void copyCPUBuffer(const unsigned char* pixels);
+		void copyCPUBuffer(const unsigned char* pixels, uint32_t mipLevel = 0);
 		void copyGPUBuffer(const Buffer& bufferSrc, const VkBufferImageCopy& copyRegion);
 		void copyImagesToCubemap(std::array<Image*, 6> images, std::vector<std::pair<uint8_t, uint8_t>> mipsToCopy, bool generateMipsLevels);
 
@@ -46,18 +46,19 @@ namespace Wolf
 		void getResourceLayout(VkSubresourceLayout& output);
 
 		void setImageLayout(VkImageLayout dstLayout, VkAccessFlags dstAccessMask, VkPipelineStageFlags dstPipelineStageFlags);
-		void transitionImageLayout(VkCommandBuffer commandBuffer, VkImageLayout dstLayout, VkAccessFlags dstAccessMask, VkPipelineStageFlags dstPipelineStageFlags);
-		void setImageLayoutWithoutOperation(VkImageLayout newImageLayout) { m_imageLayout = newImageLayout; }
+		void transitionImageLayout(VkCommandBuffer commandBuffer, VkImageLayout dstLayout, VkAccessFlags dstAccessMask, VkPipelineStageFlags dstPipelineStageFlags, uint32_t baseMipLevel = 0, uint32_t levelCount = MAX_MIP_COUNT);
+		//void setImageLayoutWithoutOperation(VkImageLayout newImageLayout) { m_imageLayout = newImageLayout; }
 
 		VkImage getImage() const { return m_image; }
 		VkDeviceMemory getImageMemory() const { return m_imageMemory; }
 		VkFormat getFormat() const { return m_imageFormat; }
 		VkSampleCountFlagBits getSampleCount() const { return m_sampleCount; }
 		VkExtent3D getExtent() const { return m_extent; }
-		VkImageLayout getImageLayout() const { return m_imageLayout; }
+		VkImageLayout getImageLayout(uint32_t mipLevel = 0) const { return m_imageLayouts[mipLevel]; }
 		uint32_t getMipLevelCount() const { return m_mipLevelCount; }
 		VkImageView getImageView(VkFormat format);
 		VkImageView getDefaultImageView();
+		uint32_t getBBP() { return m_bbp; }
 
 	private:
 		void createImageView(VkFormat format);
@@ -68,7 +69,7 @@ namespace Wolf
 		VkDeviceMemory  m_imageMemory = VK_NULL_HANDLE;
 		std::unordered_map<uint32_t, VkImageView> m_imageViews;
 
-		VkImageLayout m_imageLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+		std::vector<VkImageLayout> m_imageLayouts;
 		VkAccessFlags m_accessFlags = 0;
 		VkPipelineStageFlags m_pipelineStageFlags = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
 		VkFormat m_imageFormat;
