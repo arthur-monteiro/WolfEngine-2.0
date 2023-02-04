@@ -104,14 +104,15 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>F:\Code\Wolf Engine 2.0\Wolf Engine 2.0\Wolf Engine 2.0;..\Third Party\vulkan\Include;..\Third Party\freetype-2.8.1\include\freetype2;..\Third Party\stb_image;..\Third Party\glm;..\Third Party\tiny_obj;..\Third Party\GLFW\include;..\Third Party\OVR\Include;..\Third Party\UltraLight\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\Wolf Engine 2.0;..\Third Party\vulkan\Include;..\Third Party\freetype-2.8.1\include\freetype2;..\Third Party\stb_image;..\Third Party\glm;..\Third Party\tiny_obj;..\Third Party\GLFW\include;..\Third Party\OVR\Include;..\Third Party\UltraLight\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp20</LanguageStandard>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalLibraryDirectories>F:\Code\Wolf Engine 2.0\Wolf Engine 2.0\x64\Debug;..\Third Party\OVR\Lib\Windows\x64\Debug\VS2017;..\Third Party\freetype-2.8.1\lib\x64;..\Third Party\GLFW\lib-vc2019;..\Third Party\vulkan\Lib;..\Third Party\Wolf Engine\lib;..\Third Party\UltraLight\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>..\x64\Debug;..\Third Party\OVR\Lib\Windows\x64\Debug\VS2017;..\Third Party\freetype-2.8.1\lib\x64;..\Third Party\GLFW\lib-vc2019;..\Third Party\vulkan\Lib;..\Third Party\Wolf Engine\lib;..\Third Party\UltraLight\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <AdditionalDependencies>freetype.lib;vulkan-1.lib;glfw3.lib;LibOVR.lib;UltralightCore.lib;Ultralight.lib;WebCore.lib;AppCore.lib;Engine Core.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalOptions>/NODEFAULTLIB:msvcrt.lib %(AdditionalOptions)</AdditionalOptions>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -138,6 +139,11 @@
     <ClInclude Include="UniquePass.h" />
     <ClInclude Include="Vertex2D.h" />
     <ClInclude Include="Vertex2DTextured.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="UI\UI.html">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+    </None>
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

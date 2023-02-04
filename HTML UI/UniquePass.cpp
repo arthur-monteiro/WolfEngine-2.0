@@ -177,8 +177,9 @@ void UniquePass::submit(const Wolf::SubmitContext& context)
 	}
 }
 
-void UniquePass::setTriangleColor(glm::vec3 color)
+void UniquePass::setTriangleColor(const ultralight::JSObject& thisObject, const ultralight::JSArgs& args)
 {
+	glm::vec3 color(args[0].ToInteger() / 255.0f, args[1].ToInteger() / 255.0f, args[2].ToInteger() / 255.0f);
 	m_triangleUniformBuffer->transferCPUMemory(&color, sizeof(glm::vec3));
 }
 

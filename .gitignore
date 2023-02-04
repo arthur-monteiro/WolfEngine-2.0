@@ -364,3 +364,13 @@ MigrationBackup/
 
 # Fody - auto-generated XML schema
 FodyWeavers.xsd
+
+# WolfEngine Generated
+*.bin
+*.spv
+*Parsed.vert
+*Parsed.frag
+*Parsed.rgen
+*Parsed.rmiss
+*Parsed.rchit
+x64/

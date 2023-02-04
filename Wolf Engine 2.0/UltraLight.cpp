@@ -82,11 +82,11 @@ void Wolf::UltraLight::update(GLFWwindow* window)
 
     double currentMousePosX, currentMousePosY;
     glfwGetCursorPos(window, &currentMousePosX, &currentMousePosY);
-    mouseEvent.x = currentMousePosX;
-    mouseEvent.y = currentMousePosY;
+    mouseEvent.x = static_cast<int>(currentMousePosX);
+    mouseEvent.y = static_cast<int>(currentMousePosY);
 
     mouseEvent.type = MouseEvent::kType_MouseMoved;
-    mouseEvent.button == MouseEvent::kButton_Left;
+    mouseEvent.button = MouseEvent::kButton_Left;
 
     m_view->FireMouseEvent(mouseEvent);
 
@@ -94,14 +94,14 @@ void Wolf::UltraLight::update(GLFWwindow* window)
     if (state == GLFW_PRESS)
     {
         mouseEvent.type = MouseEvent::kType_MouseDown;
-        mouseEvent.button == MouseEvent::kButton_Left;
+        mouseEvent.button = MouseEvent::kButton_Left;
 
         m_view->FireMouseEvent(mouseEvent);
     }
     else if (state == GLFW_RELEASE)
     {
         mouseEvent.type = MouseEvent::kType_MouseUp;
-        mouseEvent.button == MouseEvent::kButton_Left;
+        mouseEvent.button = MouseEvent::kButton_Left;
 
         m_view->FireMouseEvent(mouseEvent);
     }

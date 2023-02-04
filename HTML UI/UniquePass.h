@@ -16,6 +16,7 @@
 #include <Pipeline.h>
 #include <RenderPass.h>
 #include <ShaderParser.h>
+#include <UltraLight.h>
 
 class UniquePass : public Wolf::PassBase
 {
@@ -27,7 +28,7 @@ public:
 
 	const Wolf::Semaphore* getSemaphore() const { return m_semaphore.get(); }
 
-	void setTriangleColor(glm::vec3 color);
+	void setTriangleColor(const ultralight::JSObject& thisObject, const ultralight::JSArgs& args);
 
 private:
 	void createDepthImage(const Wolf::InitializationContext& context);
