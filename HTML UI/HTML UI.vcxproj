@@ -140,6 +140,11 @@
     <ClInclude Include="Vertex2D.h" />
     <ClInclude Include="Vertex2DTextured.h" />
   </ItemGroup>
+  <ItemGroup>
+    <None Include="UI\UI.html">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+    </None>
+  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>

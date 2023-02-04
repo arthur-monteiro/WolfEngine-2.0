@@ -4,43 +4,43 @@
 	</style>
   </head>
   <body>
-	<table class="w3-table w3-border" style="width:100%">
-		<tbody><tr>
-		<th>Red</th>
-		<th>Green</th>
-		<th>Blue</th>
-		</tr>
-		<tr>
-		<td id="valRed">232</td>
-		<td id="valGreen">133</td>
-		<td id="valBlue">71</td>
-		</tr>
-		<tr>
-		<td id="blue" style="background-color:blue"></td>
-		<td id="green" style="background-color:green"></td>
-		<td id="red" style="height:50px;background-color:red"></td>
-		</tr>
-		<tr>
-		<td>
-		<input oninput="document.getElementById('valRed').innerHTML = this.value" onchange="document.getElementById('valRed').innerHTML = this.value" type="range" id="slideRed" name="slideRed" min="0" max="255">
-		</td>
-		<td>
-		<input oninput="document.getElementById('valGreen').innerHTML = this.value" onchange="document.getElementById('valGreen').innerHTML = this.value" type="range" id="slideGreen" name="slideGreen" min="0" max="255">
-		</td>
-		<td>
-		<input oninput="document.getElementById('valBlue').innerHTML = this.value" onchange="document.getElementById('valBlue').innerHTML = this.value" type="range" id="slideBlue" name="slideBlue" min="0" max="255">
-		</td>
-		</tr>
-		</tbody>
-	</table>
-	<button type="button" onclick="HandleButton(event)">Click Me!</button>
-	<input type="color" id="html5colorpicker" onchange="clickColor(0, -1, -1, 5)" value="#ff0000" style="width:85%;">
-	<script type="text/javascript">
-	window.addEventListener('DOMContentLoaded', (event) => {
-	});
-	function HandleButton(evt) {
-      ChangeColor(document.getElementById('valRed').innerHTML, document.getElementById('valGreen').innerHTML, document.getElementById('valBlue').innerHTML);
-    }
-    </script>
+		<table class="w3-table w3-border" style="width:100%">
+			<tbody>
+				<tr>
+					<th>Red</th>
+					<th>Green</th>
+					<th>Blue</th>
+				</tr>
+				<tr>
+					<td id="valRed">232</td>
+					<td id="valGreen">133</td>
+					<td id="valBlue">71</td>
+				</tr>
+				<tr>
+					<td id="blue" style="background-color:blue"></td>
+					<td id="green" style="background-color:green"></td>
+					<td id="red" style="height:50px;background-color:red"></td>
+				</tr>
+				<tr>
+					<td>
+						<input oninput="document.getElementById('valRed').innerHTML = this.value" onchange="document.getElementById('valRed').innerHTML = this.value" type="range" id="slideRed" name="slideRed" min="0" max="255">
+					</td>
+					<td>
+						<input oninput="document.getElementById('valGreen').innerHTML = this.value" onchange="document.getElementById('valGreen').innerHTML = this.value" type="range" id="slideGreen" name="slideGreen" min="0" max="255">
+					</td>
+					<td>
+						<input oninput="document.getElementById('valBlue').innerHTML = this.value" onchange="document.getElementById('valBlue').innerHTML = this.value" type="range" id="slideBlue" name="slideBlue" min="0" max="255">
+					</td>
+				</tr>
+			</tbody>
+		</table>
+		<button type="button" onclick="HandleButton(event)">Click Me!</button>
+		<script type="text/javascript">
+		window.addEventListener('DOMContentLoaded', (event) => {
+		});
+		function HandleButton(evt) {
+				ChangeColor(document.getElementById('valRed').innerHTML, document.getElementById('valGreen').innerHTML, document.getElementById('valBlue').innerHTML);
+			}
+		</script>
   </body>
 </html>
