@@ -9,6 +9,7 @@
 namespace Wolf
 {
 	class Image;
+	class CameraInterface;
 
 	struct InitializationContext
 	{
@@ -27,6 +28,8 @@ namespace Wolf
 		uint32_t commandBufferIdx; 
 		uint32_t swapChainImageIdx;
 		Image* swapchainImage;
+		GLFWwindow* glfwWindow;
+		CameraInterface* camera;
 	};
 
 	struct SubmitContext

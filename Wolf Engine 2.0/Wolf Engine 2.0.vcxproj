@@ -144,6 +144,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="Buffer.cpp" />
+    <ClCompile Include="CameraInterface.cpp" />
     <ClCompile Include="CommandBuffer.cpp" />
     <ClCompile Include="CommandPool.cpp" />
     <ClCompile Include="Configuration.cpp" />
@@ -158,6 +159,8 @@
     <ClCompile Include="Image.cpp" />
     <ClCompile Include="ImageFileLoader.cpp" />
     <ClCompile Include="Mesh.cpp" />
+    <ClCompile Include="MipMapGenerator.cpp" />
+    <ClCompile Include="ObjLoader.cpp" />
     <ClCompile Include="PassBase.cpp" />
     <ClCompile Include="Pipeline.cpp" />
     <ClCompile Include="RenderPass.cpp" />
@@ -166,6 +169,7 @@
     <ClCompile Include="ShaderParser.cpp" />
     <ClCompile Include="SwapChain.cpp" />
     <ClCompile Include="TextFileReader.cpp" />
+    <ClCompile Include="Timer.cpp" />
     <ClCompile Include="UltraLight.cpp" />
     <ClCompile Include="UltraLightSurface.cpp" />
     <ClCompile Include="Vulkan.cpp" />
@@ -176,6 +180,7 @@
   <ItemGroup>
     <ClInclude Include="Attachment.h" />
     <ClInclude Include="Buffer.h" />
+    <ClInclude Include="CameraInterface.h" />
     <ClInclude Include="CommandBuffer.h" />
     <ClInclude Include="CommandPool.h" />
     <ClInclude Include="Configuration.h" />
@@ -192,16 +197,20 @@
     <ClInclude Include="Image.h" />
     <ClInclude Include="ImageFileLoader.h" />
     <ClInclude Include="Mesh.h" />
+    <ClInclude Include="MipMapGenerator.h" />
+    <ClInclude Include="ObjLoader.h" />
     <ClInclude Include="PassBase.h" />
     <ClInclude Include="Pipeline.h" />
     <ClInclude Include="QueueFamilyIndices.h" />
     <ClInclude Include="RenderPass.h" />
     <ClInclude Include="Sampler.h" />
     <ClInclude Include="Semaphore.h" />
+    <ClInclude Include="ShaderCommon.h" />
     <ClInclude Include="ShaderParser.h" />
     <ClInclude Include="SwapChain.h" />
     <ClInclude Include="SwapChainSupportDetails.h" />
     <ClInclude Include="TextFileReader.h" />
+    <ClInclude Include="Timer.h" />
     <ClInclude Include="UltraLight.h" />
     <ClInclude Include="UltraLightSurface.h" />
     <ClInclude Include="UpdateRate.h" />
@@ -209,6 +218,9 @@
     <ClInclude Include="VulkanHelper.h" />
     <ClInclude Include="Window.h" />
     <ClInclude Include="WolfEngine.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="ShaderCommon.glsl" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

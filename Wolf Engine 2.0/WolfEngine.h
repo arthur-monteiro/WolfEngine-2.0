@@ -5,6 +5,7 @@
 #include <memory>
 #include <span>
 
+#include "CameraInterface.h"
 #include "Configuration.h"
 #include "Debug.h"
 #include "PassBase.h"
@@ -44,6 +45,8 @@ namespace Wolf
 
 		void getUserInterfaceJSObject(ultralight::JSObject& outObject);
 
+		void setCameraInterface(CameraInterface* cameraInterface) { m_cameraInterface = cameraInterface; }
+
 	private:
 		void fillInitializeContext(InitializationContext& context);
 
@@ -61,10 +64,12 @@ namespace Wolf
 		std::unique_ptr<SwapChain> m_swapChain;
 		std::unique_ptr<UltraLight> m_ultraLight;
 		//std::unique_ptr<OVR> m_ovr;
-		bool m_useOVR = false;
 
 		// Frame counter
 		uint32_t m_currentFrame = 0;
+
+		// Gameplay
+		CameraInterface* m_cameraInterface = nullptr;
 
 		bool m_resizeIsNeeded = false;
 	};

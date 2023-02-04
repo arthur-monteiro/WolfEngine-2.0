@@ -17,7 +17,17 @@ namespace Wolf
 
 		void setBuffer(uint32_t binding, const Buffer& buffer);
 		void setCombinedImageSampler(uint32_t binding, VkImageLayout imageLayout, VkImageView imageView, const Sampler& sampler);
-		void setImage(uint32_t binding, VkImageLayout imageLayout, VkImageView imageView);
+		struct ImageDescription
+		{
+			VkImageLayout imageLayout;
+			VkImageView imageView;
+
+			ImageDescription(VkImageLayout imageLayout, VkImageView imageView) : imageLayout(imageLayout), imageView(imageView) {}
+			ImageDescription() {}
+		};
+		void setImage(uint32_t binding, ImageDescription& imageDescription);
+		void setImages(uint32_t binding, std::vector<ImageDescription>& imageDescriptions);
+		void setSampler(uint32_t binding, const Sampler& sampler);
 
 		const DescriptorSetCreateInfo& getDescriptorSetCreateInfo() const { return m_descriptorSetCreateInfo; }
 
