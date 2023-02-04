@@ -144,6 +144,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="Buffer.cpp" />
+    <ClCompile Include="CameraInterface.cpp" />
     <ClCompile Include="CommandBuffer.cpp" />
     <ClCompile Include="CommandPool.cpp" />
     <ClCompile Include="Configuration.cpp" />
@@ -179,6 +180,7 @@
   <ItemGroup>
     <ClInclude Include="Attachment.h" />
     <ClInclude Include="Buffer.h" />
+    <ClInclude Include="CameraInterface.h" />
     <ClInclude Include="CommandBuffer.h" />
     <ClInclude Include="CommandPool.h" />
     <ClInclude Include="Configuration.h" />

@@ -42,6 +42,11 @@ void Wolf::WolfEngine::frame(const std::span<PassBase*>& passes, const Semaphore
 	if (!m_window->windowVisible())
 		return;
 
+	if (m_cameraInterface)
+	{
+		m_cameraInterface->update(m_window->getWindow());
+	}
+
 	if (m_resizeIsNeeded)
 	{
 		vkDeviceWaitIdle(m_vulkan->getDevice());
@@ -72,6 +77,7 @@ void Wolf::WolfEngine::frame(const std::span<PassBase*>& passes, const Semaphore
 	recordContext.swapChainImageIdx = currentSwapChainImageIndex;
 	recordContext.swapchainImage = m_swapChain->getImage(currentSwapChainImageIndex);
 	recordContext.glfwWindow = m_window->getWindow();
+	recordContext.camera = m_cameraInterface;
 
 	for (PassBase* pass : passes)
 	{

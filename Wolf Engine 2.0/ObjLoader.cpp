@@ -33,6 +33,10 @@ Wolf::ObjLoader::ObjLoader(ModelLoadingInfo& modelLoadingInfo)
 			input.read(reinterpret_cast<char*>(&textureCount), sizeof(textureCount));
 			m_images.resize(textureCount);
 			int indexTexture = 0;
+
+			if (modelLoadingInfo.vulkanQueueLock)
+				modelLoadingInfo.vulkanQueueLock->lock();
+
 			for (int i(0); i < textureCount; ++i)
 			{
 				VkExtent3D extent;
@@ -52,9 +56,13 @@ Wolf::ObjLoader::ObjLoader(ModelLoadingInfo& modelLoadingInfo)
 
 					std::vector<unsigned char> pixels(imageSize);
 					input.read(reinterpret_cast<char*>(pixels.data()), pixels.size());
+
 					m_images[i]->copyCPUBuffer(pixels.data(), mipLevel);
 				}
 			}
+
+			if (modelLoadingInfo.vulkanQueueLock)
+				modelLoadingInfo.vulkanQueueLock->unlock();
 
 			return;
 		}

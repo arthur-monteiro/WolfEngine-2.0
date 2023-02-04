@@ -19,7 +19,7 @@ namespace Wolf
 
 	private:
 		unsigned int m_uniformBufferCount = 2;
-		unsigned int m_combinedImageSamplerCount = 2;
+		unsigned int m_combinedImageSamplerCount = 3;
 		unsigned int m_storageImageCount = 3;
 		unsigned int m_samplerCount = 2;
 		unsigned int m_sampledImageCount = 120;
