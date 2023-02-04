@@ -373,4 +373,9 @@ FodyWeavers.xsd
 *Parsed.rgen
 *Parsed.rmiss
 *Parsed.rchit
-x64/
+x64/*
+Compute Pass/x64/*
+Hello triangle/x64/*
+DescriptorSet/x64/*
+HTML UI/x64/*
+Wolf Engine 2.0/x64/*
