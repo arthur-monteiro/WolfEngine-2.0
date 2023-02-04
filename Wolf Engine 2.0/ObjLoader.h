@@ -95,6 +95,9 @@ namespace Wolf
 
 		// Cache options
 		bool useCache = true;
+
+		// Multi-threading options
+		std::mutex* vulkanQueueLock = nullptr;
 	};
 
 	class ObjLoader

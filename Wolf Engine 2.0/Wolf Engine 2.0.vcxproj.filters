@@ -120,6 +120,9 @@
     <ClCompile Include="MipMapGenerator.cpp">
       <Filter>Helpers</Filter>
     </ClCompile>
+    <ClCompile Include="CameraInterface.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="WolfEngine.h">
@@ -237,6 +240,9 @@
       <Filter>Helpers</Filter>
     </ClInclude>
     <ClInclude Include="ShaderCommon.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="CameraInterface.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
