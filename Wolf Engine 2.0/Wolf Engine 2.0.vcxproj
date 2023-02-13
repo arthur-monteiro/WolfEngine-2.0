@@ -149,6 +149,7 @@
     <ClCompile Include="CommandPool.cpp" />
     <ClCompile Include="Configuration.cpp" />
     <ClCompile Include="Debug.cpp" />
+    <ClCompile Include="DepthPassBase.cpp" />
     <ClCompile Include="DescriptorPool.cpp" />
     <ClCompile Include="DescriptorSet.cpp" />
     <ClCompile Include="DescriptorSetGenerator.cpp" />
@@ -161,7 +162,7 @@
     <ClCompile Include="Mesh.cpp" />
     <ClCompile Include="MipMapGenerator.cpp" />
     <ClCompile Include="ObjLoader.cpp" />
-    <ClCompile Include="PassBase.cpp" />
+    <ClCompile Include="CommandRecordBase.cpp" />
     <ClCompile Include="Pipeline.cpp" />
     <ClCompile Include="RenderPass.cpp" />
     <ClCompile Include="Sampler.cpp" />
@@ -185,6 +186,7 @@
     <ClInclude Include="CommandPool.h" />
     <ClInclude Include="Configuration.h" />
     <ClInclude Include="Debug.h" />
+    <ClInclude Include="DepthPassBase.h" />
     <ClInclude Include="DescriptorLayout.h" />
     <ClInclude Include="DescriptorPool.h" />
     <ClInclude Include="DescriptorSet.h" />
@@ -199,7 +201,7 @@
     <ClInclude Include="Mesh.h" />
     <ClInclude Include="MipMapGenerator.h" />
     <ClInclude Include="ObjLoader.h" />
-    <ClInclude Include="PassBase.h" />
+    <ClInclude Include="CommandRecordBase.h" />
     <ClInclude Include="Pipeline.h" />
     <ClInclude Include="QueueFamilyIndices.h" />
     <ClInclude Include="RenderPass.h" />

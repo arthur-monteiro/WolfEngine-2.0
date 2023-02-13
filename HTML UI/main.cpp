@@ -44,7 +44,7 @@ int main()
 
 	while (!wolfInstance.windowShouldClose())
 	{
-		std::vector<Wolf::PassBase*> passes(1);
+		std::vector<Wolf::CommandRecordBase*> passes(1);
 		passes[0] = &pass;
 
 		wolfInstance.frame(passes, pass.getSemaphore());

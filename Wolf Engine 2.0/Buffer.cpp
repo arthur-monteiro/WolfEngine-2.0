@@ -78,6 +78,14 @@ void Wolf::Buffer::transferGPUMemory(const Buffer& bufferSrc, const VkBufferCopy
 	fence.waitForFence();
 }
 
+void Wolf::Buffer::getContent(void* outputData, uint32_t idx)
+{
+	void* pData;
+	vkMapMemory(g_vulkanInstance->getDevice(), m_buffers[idx].bufferMemory, 0, m_bufferSize, 0, &pData);
+	memcpy(outputData, pData, m_bufferSize);
+	vkUnmapMemory(g_vulkanInstance->getDevice(), m_buffers[idx].bufferMemory);
+}
+
 void Wolf::Buffer::createBuffer(uint32_t idx, VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties)
 {
 	VkBufferCreateInfo bufferInfo = {};

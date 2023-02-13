@@ -27,6 +27,8 @@ Wolf::Configuration::Configuration(const std::string& filename)
 				m_windowHeight = std::stoi(line);
 			if (token == "maxCachedFrames")
 				m_maxCachedFrames = std::stoi(line);
+			if (token == "useVIL")
+				m_useVIL = std::stoi(line);
 		}
 	}
 

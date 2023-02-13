@@ -5,23 +5,21 @@
 
 #include <Buffer.h>
 #include <CommandBuffer.h>
+#include <CommandRecordBase.h>
 #include <DescriptorSetGenerator.h>
 #include <FrameBuffer.h>
 #include <Image.h>
-#include <PassBase.h>
 #include <Pipeline.h>
 #include <RenderPass.h>
 #include <ShaderParser.h>
 
-class UniquePass : public Wolf::PassBase
+class UniquePass : public Wolf::CommandRecordBase
 {
 public:
 	void initializeResources(const Wolf::InitializationContext& context) override;
 	void resize(const Wolf::InitializationContext& context) override;
 	void record(const Wolf::RecordContext& context) override;
 	void submit(const Wolf::SubmitContext& context) override;
-
-	const Wolf::Semaphore* getSemaphore() const { return m_semaphore.get(); }
 
 private:
 	void createDepthImage(const Wolf::InitializationContext& context);
@@ -31,11 +29,7 @@ private:
 private:
 	std::unique_ptr<Wolf::RenderPass> m_renderPass;
 	std::unique_ptr<Wolf::Image> m_depthImage;
-
-	std::unique_ptr<Wolf::CommandBuffer> m_commandBuffer;
 	std::vector<std::unique_ptr<Wolf::Framebuffer>> m_frameBuffers;
-
-	std::unique_ptr<Wolf::Semaphore> m_semaphore;
 
 	std::unique_ptr<Wolf::Pipeline> m_pipeline;
 	uint32_t m_swapChainWidth;

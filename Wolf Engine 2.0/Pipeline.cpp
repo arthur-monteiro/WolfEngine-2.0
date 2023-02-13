@@ -146,8 +146,8 @@ Wolf::Pipeline::Pipeline(const RenderingPipelineCreateInfo& renderingPipelineCre
 	VkPipelineDepthStencilStateCreateInfo depthStencil = {};
 	depthStencil.sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
 	depthStencil.depthTestEnable = renderingPipelineCreateInfo.enableDepthTesting;
-	depthStencil.depthWriteEnable = VK_TRUE;
-	depthStencil.depthCompareOp = VK_COMPARE_OP_LESS_OR_EQUAL;
+	depthStencil.depthWriteEnable = renderingPipelineCreateInfo.enableDepthWrite;
+	depthStencil.depthCompareOp = renderingPipelineCreateInfo.depthCompareOp;
 	depthStencil.depthBoundsTestEnable = VK_FALSE;
 	depthStencil.stencilTestEnable = VK_FALSE;
 

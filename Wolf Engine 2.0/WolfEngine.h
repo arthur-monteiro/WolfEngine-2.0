@@ -6,9 +6,9 @@
 #include <span>
 
 #include "CameraInterface.h"
+#include "CommandRecordBase.h"
 #include "Configuration.h"
 #include "Debug.h"
-#include "PassBase.h"
 #include "SwapChain.h"
 #include "UltraLight.h"
 #include "Vulkan.h"
@@ -36,10 +36,10 @@ namespace Wolf
 	public:
 		WolfEngine(const WolfInstanceCreateInfo& createInfo);
 
-		void initializePass(PassBase* pass);
+		void initializePass(CommandRecordBase* pass);
 
 		bool windowShouldClose();
-		void frame(const std::span<PassBase*>& passes, const Semaphore* frameEndedSemaphore);
+		void frame(const std::span<CommandRecordBase*>& passes, const Semaphore* frameEndedSemaphore);
 
 		void waitIdle();
 

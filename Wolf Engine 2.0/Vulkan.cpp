@@ -2,6 +2,7 @@
 
 #include <set>
 
+#include "Configuration.h"
 #include "SwapChainSupportDetails.h"
 #include "VulkanHelper.h"
 
@@ -32,8 +33,12 @@ Wolf::Vulkan::Vulkan(GLFWwindow* glfwWindowPtr, bool useOVR)
 		}
 	}
 
+	bool useVIL = g_configuration->getUseVIL();
+
 //#ifndef NDEBUG
-	m_validationLayers = { "VK_LAYER_KHRONOS_validation" };
+	if(useVIL)
+		m_validationLayers = { "VK_LAYER_live_introspection" };
+	m_validationLayers.push_back("VK_LAYER_KHRONOS_validation");
 //#endif
 	createInstance();
 //#ifndef NDEBUG
@@ -46,7 +51,8 @@ Wolf::Vulkan::Vulkan(GLFWwindow* glfwWindowPtr, bool useOVR)
 
 	m_deviceExtensions = { VK_KHR_SWAPCHAIN_EXTENSION_NAME, VK_KHR_EXTERNAL_MEMORY_EXTENSION_NAME, "VK_KHR_external_memory_win32", VK_KHR_EXTERNAL_SEMAPHORE_EXTENSION_NAME,
 		"VK_KHR_external_semaphore_win32", VK_KHR_GET_MEMORY_REQUIREMENTS_2_EXTENSION_NAME, "VK_KHR_external_fence", "VK_KHR_external_fence_win32" };
-	m_raytracingDeviceExtensions = { VK_NV_RAY_TRACING_EXTENSION_NAME };
+	if(!useVIL)
+		m_raytracingDeviceExtensions = { VK_NV_RAY_TRACING_EXTENSION_NAME };
 	m_meshShaderDeviceExtensions = { VK_NV_MESH_SHADER_EXTENSION_NAME };
 
 	pickPhysicalDevice();

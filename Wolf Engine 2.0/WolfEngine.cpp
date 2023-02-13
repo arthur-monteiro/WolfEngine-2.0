@@ -20,7 +20,7 @@ Wolf::WolfEngine::WolfEngine(const WolfInstanceCreateInfo& createInfo)
 		m_ultraLight.reset(new UltraLight(m_configuration->getWindowWidth(), m_configuration->getWindowHeight(), createInfo.htmlStringUI));
 }
 
-void Wolf::WolfEngine::initializePass(PassBase* pass)
+void Wolf::WolfEngine::initializePass(CommandRecordBase* pass)
 {
 	InitializationContext context;
 	fillInitializeContext(context);
@@ -33,7 +33,7 @@ bool Wolf::WolfEngine::windowShouldClose()
 	return m_window->windowShouldClose();
 }
 
-void Wolf::WolfEngine::frame(const std::span<PassBase*>& passes, const Semaphore* frameEndedSemaphore)
+void Wolf::WolfEngine::frame(const std::span<CommandRecordBase*>& passes, const Semaphore* frameEndedSemaphore)
 {
 	if (passes.empty())
 		Debug::sendError("No pass sent to frame");
@@ -54,7 +54,7 @@ void Wolf::WolfEngine::frame(const std::span<PassBase*>& passes, const Semaphore
 		InitializationContext initializeContext;
 		fillInitializeContext(initializeContext);
 
-		for (PassBase* pass : passes)
+		for (CommandRecordBase* pass : passes)
 		{
 			pass->resize(initializeContext);
 		}
@@ -79,7 +79,7 @@ void Wolf::WolfEngine::frame(const std::span<PassBase*>& passes, const Semaphore
 	recordContext.glfwWindow = m_window->getWindow();
 	recordContext.camera = m_cameraInterface;
 
-	for (PassBase* pass : passes)
+	for (CommandRecordBase* pass : passes)
 	{
 		pass->record(recordContext);
 	}
@@ -91,7 +91,7 @@ void Wolf::WolfEngine::frame(const std::span<PassBase*>& passes, const Semaphore
 	submitContext.frameFence = m_swapChain->getFrameFence(m_currentFrame % g_configuration->getMaxCachedFrames());
 	submitContext.device = m_vulkan->getDevice();
 
-	for (PassBase* pass : passes)
+	for (CommandRecordBase* pass : passes)
 	{
 		pass->submit(submitContext);
 	}

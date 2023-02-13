@@ -6,18 +6,18 @@
 
 #include <Buffer.h>
 #include <CommandBuffer.h>
+#include <CommandRecordBase.h>
 #include <DescriptorSet.h>
 #include <DescriptorSetLayout.h>
 #include <DescriptorSetLayoutGenerator.h>
 #include <FrameBuffer.h>
 #include <Image.h>
-#include <PassBase.h>
 #include <Pipeline.h>
 #include <RenderPass.h>
 #include <Sampler.h>
 #include <ShaderParser.h>
 
-class UniquePass : public Wolf::PassBase
+class UniquePass : public Wolf::CommandRecordBase
 {
 public:
 	void initializeResources(const Wolf::InitializationContext& context) override;
@@ -25,15 +25,12 @@ public:
 	void record(const Wolf::RecordContext& context) override;
 	void submit(const Wolf::SubmitContext& context) override;
 
-	const Wolf::Semaphore* getSemaphore() const { return m_semaphore.get(); }
-
 private:
 	void createPipeline(uint32_t width, uint32_t height);
 	void createDescriptorSets(const Wolf::InitializationContext& context);
 
 private:
 	std::unique_ptr<Wolf::CommandBuffer> m_commandBuffer;
-	std::unique_ptr<Wolf::Semaphore> m_semaphore;
 
 	/* Pipeline */
 	std::unique_ptr<Wolf::ShaderParser> m_computeShaderParser;
