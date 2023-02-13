@@ -52,6 +52,7 @@ void Wolf::UltraLight::LogMessage(ultralight::LogLevel log_level, const ultralig
         Debug::sendInfo(ultralight::String(message).utf8().data());
         break;
     default:
+        __debugbreak();
         break;
     }
 }

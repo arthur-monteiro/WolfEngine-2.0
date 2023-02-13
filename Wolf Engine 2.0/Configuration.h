@@ -12,11 +12,13 @@ namespace Wolf
 		const uint32_t getWindowWidth() const { return m_windowWidth; }
 		const uint32_t getWindowHeight() const { return m_windowHeight; }
 		const uint32_t getMaxCachedFrames() const { return m_maxCachedFrames; }
+		const bool getUseVIL() const { return m_useVIL; }
 
 	private:
 		uint32_t m_windowWidth = 0;
 		uint32_t m_windowHeight = 0;
 		uint32_t m_maxCachedFrames = 0;
+		bool m_useVIL = false;
 	};
 
 	extern Configuration* g_configuration;

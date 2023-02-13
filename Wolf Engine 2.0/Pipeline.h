@@ -50,6 +50,8 @@ namespace Wolf
 
 		// Depth testing
 		VkBool32 enableDepthTesting = VK_TRUE;
+		VkBool32 enableDepthWrite = VK_TRUE;
+		VkCompareOp depthCompareOp = VK_COMPARE_OP_LESS_OR_EQUAL;
 
 		// Tessellation
 		uint32_t patchControlPoint = 0;

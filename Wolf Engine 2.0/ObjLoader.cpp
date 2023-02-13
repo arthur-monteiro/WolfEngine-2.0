@@ -37,8 +37,22 @@ Wolf::ObjLoader::ObjLoader(ModelLoadingInfo& modelLoadingInfo)
 			if (modelLoadingInfo.vulkanQueueLock)
 				modelLoadingInfo.vulkanQueueLock->lock();
 
+			std::chrono::steady_clock::time_point startTimer = std::chrono::steady_clock::now();
+
 			for (int i(0); i < textureCount; ++i)
 			{
+				std::chrono::steady_clock::time_point currentTimer = std::chrono::steady_clock::now();
+				long long timeDiff = std::chrono::duration_cast<std::chrono::milliseconds>(currentTimer - startTimer).count();
+
+				if (timeDiff > 33 && modelLoadingInfo.vulkanQueueLock)
+				{
+					modelLoadingInfo.vulkanQueueLock->unlock();
+					std::this_thread::sleep_for(std::chrono::milliseconds(1));
+					modelLoadingInfo.vulkanQueueLock->lock();
+
+					startTimer = std::chrono::steady_clock::now();
+				}
+
 				VkExtent3D extent;
 				input.read(reinterpret_cast<char*>(&extent), sizeof(extent));
 

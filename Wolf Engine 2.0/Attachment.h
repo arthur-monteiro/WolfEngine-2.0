@@ -9,6 +9,7 @@ namespace Wolf
 		VkExtent2D extent = { 0, 0 };
 		VkFormat format;
 		VkSampleCountFlagBits sampleCount;
+		VkImageLayout initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
 		VkImageLayout finalLayout;
 		VkAttachmentLoadOp loadOperation = VK_ATTACHMENT_LOAD_OP_CLEAR;
 		VkAttachmentStoreOp storeOperation;
