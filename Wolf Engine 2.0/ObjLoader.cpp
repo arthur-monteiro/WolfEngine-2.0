@@ -39,7 +39,7 @@ Wolf::ObjLoader::ObjLoader(ModelLoadingInfo& modelLoadingInfo)
 
 			std::chrono::steady_clock::time_point startTimer = std::chrono::steady_clock::now();
 
-			for (int i(0); i < textureCount; ++i)
+			for (uint32_t i(0); i < textureCount; ++i)
 			{
 				std::chrono::steady_clock::time_point currentTimer = std::chrono::steady_clock::now();
 				long long timeDiff = std::chrono::duration_cast<std::chrono::milliseconds>(currentTimer - startTimer).count();
@@ -215,15 +215,15 @@ Wolf::ObjLoader::ObjLoader(ModelLoadingInfo& modelLoadingInfo)
 		std::fstream outCacheFile(modelLoadingInfo.filename + ".bin", std::ios::out | std::ios::binary);
 
 		/* Geometry */
-		uint32_t verticesCount = vertices.size();
+		uint32_t verticesCount = static_cast<uint32_t>(vertices.size());
 		outCacheFile.write((char*)&verticesCount, sizeof(uint32_t));
 		outCacheFile.write((char*)vertices.data(), verticesCount * sizeof(vertices[0]));
-		uint32_t indicesCount = indices.size();
+		uint32_t indicesCount = static_cast<uint32_t>(indices.size());
 		outCacheFile.write((char*)&indicesCount, sizeof(uint32_t));
 		outCacheFile.write((char*)indices.data(), indicesCount * sizeof(indices[0]));
 
 		/* Textures*/
-		uint32_t imageCount = m_images.size();
+		uint32_t imageCount = static_cast<uint32_t>(m_images.size());
 		outCacheFile.write((char*)&imageCount, sizeof(uint32_t));
 		for (uint32_t i = 0; i < m_imagesData.size(); ++i)
 		{

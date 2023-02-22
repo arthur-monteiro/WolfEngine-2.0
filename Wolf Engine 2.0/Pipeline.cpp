@@ -72,7 +72,7 @@ Wolf::Pipeline::Pipeline(const RenderingPipelineCreateInfo& renderingPipelineCre
 	rasterizer.rasterizerDiscardEnable = VK_FALSE;
 	rasterizer.polygonMode = renderingPipelineCreateInfo.polygonMode;
 	rasterizer.lineWidth = 1.0f;
-	rasterizer.cullMode = VK_CULL_MODE_NONE;
+	rasterizer.cullMode = renderingPipelineCreateInfo.cullMode;
 	rasterizer.frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE;
 	rasterizer.depthBiasEnable = VK_FALSE;
 

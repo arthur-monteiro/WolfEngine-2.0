@@ -182,7 +182,7 @@ void Wolf::Image::createImageView(VkFormat format)
 	VkImageViewCreateInfo viewInfo = {};
 	viewInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
 	viewInfo.image = m_image;
-	viewInfo.viewType = m_arrayLayerCount == 6 ? VK_IMAGE_VIEW_TYPE_CUBE : VK_IMAGE_VIEW_TYPE_2D;
+	viewInfo.viewType = m_arrayLayerCount == 6 ? VK_IMAGE_VIEW_TYPE_CUBE : (m_extent.depth != 1 ? VK_IMAGE_VIEW_TYPE_3D : VK_IMAGE_VIEW_TYPE_2D);
 	viewInfo.format = format;
 	viewInfo.subresourceRange.aspectMask = m_aspectFlags;
 	viewInfo.subresourceRange.baseMipLevel = 0;
@@ -202,6 +202,9 @@ void Wolf::Image::setBBP()
 {
 	switch (m_imageFormat)
 	{
+	case VK_FORMAT_R32G32_SFLOAT:
+		m_bbp = 8;
+		break;
 	case VK_FORMAT_R8G8B8A8_UNORM:
 	case VK_FORMAT_B8G8R8A8_UNORM:
 	case VK_FORMAT_D32_SFLOAT:

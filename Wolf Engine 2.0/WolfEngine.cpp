@@ -122,6 +122,7 @@ void Wolf::WolfEngine::fillInitializeContext(InitializationContext& context)
 		context.swapChainImages.push_back(m_swapChain->getImage(i));
 	if(m_ultraLight)
 		context.userInterfaceImage = m_ultraLight->getImage();
+	context.camera = m_cameraInterface;
 }
 
 void Wolf::WolfEngine::resize(int width, int height)
@@ -130,5 +131,6 @@ void Wolf::WolfEngine::resize(int width, int height)
 
 	m_resizeIsNeeded = true;
 	m_swapChain->recreate(m_window->getWindow());
-	m_ultraLight->resize(width, height);
+	if(m_ultraLight)
+		m_ultraLight->resize(width, height);
 }

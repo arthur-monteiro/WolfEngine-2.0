@@ -7,9 +7,10 @@
 #include "Debug.h"
 #include "ShaderCommon.h"
 
-Wolf::ShaderParser::ShaderParser(const std::string& filename)
+Wolf::ShaderParser::ShaderParser(const std::string& filename, const std::vector<std::string>& conditionBlocksToInclude)
 {
     m_filename = filename;
+    m_conditionBlocksToInclude = conditionBlocksToInclude;
 
     parseAndCompile();
 }
@@ -24,7 +25,7 @@ bool Wolf::ShaderParser::compileIfFileHasBeenModified()
     return false;
 }
 
-void Wolf::ShaderParser::readCompiledShader(std::vector<char>& shaderCode)
+void Wolf::ShaderParser::readCompiledShader(std::vector<char>& shaderCode) const
 {
     readFile(shaderCode, m_compileFilename);
 }
@@ -51,8 +52,12 @@ void Wolf::ShaderParser::parseAndCompile()
     if (extensionFound.empty())
         Debug::sendError("Extension not handle in shader " + m_filename);
 
-    std::string compiledFilename = parsedFilename;
+    for (const std::string& condition : m_conditionBlocksToInclude)
+    {
+        parsedFilename += "_" + condition;
+    }
 
+    std::string compiledFilename = parsedFilename;
     parsedFilename += "Parsed" + extensionFound;
 
     extensionFound.erase(0, 1);
@@ -61,12 +66,28 @@ void Wolf::ShaderParser::parseAndCompile()
 
     std::ofstream outFileGLSL(parsedFilename);
 
+    std::vector<std::string> currentConditions;
     std::string inShaderLine;
     while (std::getline(inFile, inShaderLine))
     {
+        if (inShaderLine.find("#endif") != std::string::npos)
+        {
+            currentConditions.pop_back();
+            continue;
+        }
+
+        if (!isRespectingConditions(currentConditions))
+            continue;
+
         if (inShaderLine == "#include \"ShaderCommon.glsl\"")
         {
             outFileGLSL << shaderCommonStr;
+        }
+        else if (size_t tokenPos = inShaderLine.find("#if "); tokenPos != std::string::npos)
+        {
+            std::string conditionStr = inShaderLine.substr(tokenPos + 4);
+            conditionStr.erase(std::remove(conditionStr.begin(), conditionStr.end(), ' '), conditionStr.end());
+            currentConditions.push_back(conditionStr);
         }
         else
         {
@@ -87,7 +108,7 @@ void Wolf::ShaderParser::parseAndCompile()
     m_lastModifiedTime = std::filesystem::last_write_time(m_filename);
 }
 
-void Wolf::ShaderParser::readFile(std::vector<char>& output, const std::string& filename)
+void Wolf::ShaderParser::readFile(std::vector<char>& output, const std::string& filename) const
 {
     std::ifstream file(filename, std::ios::ate | std::ios::binary);
 
@@ -101,4 +122,14 @@ void Wolf::ShaderParser::readFile(std::vector<char>& output, const std::string& 
     file.read(output.data(), fileSize);
 
     file.close();
+}
+
+bool Wolf::ShaderParser::isRespectingConditions(const std::vector<std::string>& conditions)
+{
+    for (const std::string& condition : conditions)
+    {
+        if (std::find(m_conditionBlocksToInclude.begin(), m_conditionBlocksToInclude.end(), condition) == m_conditionBlocksToInclude.end())
+            return false;
+    }
+    return true;
 }
