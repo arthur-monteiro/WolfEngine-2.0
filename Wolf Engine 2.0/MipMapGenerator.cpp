@@ -8,7 +8,7 @@ Wolf::MipMapGenerator::MipMapGenerator(const unsigned char* firstMipPixels, VkEx
 
 	uint32_t pixelCount = extent.width * extent.height;
 
-	for (uint32_t mipLevel = 1; mipLevel < mipCount; ++mipLevel)
+	for (uint32_t mipLevel = 1; mipLevel < static_cast<uint32_t>(mipCount); ++mipLevel)
 	{
 		if (format == VK_FORMAT_R8G8B8A8_UNORM)
 		{
@@ -40,7 +40,7 @@ uint8_t Wolf::MipMapGenerator::mergeColor(uint8_t c00, uint8_t c01, uint8_t c10,
 
 	float merged = (merged0 + merged1) / 2.0f;
 
-	return merged * 255;
+	return static_cast<uint8_t>(merged * 255);
 }
 
 void Wolf::MipMapGenerator::createMipLevel(RGBA8* previousMip, RGBA8* currentMip, uint32_t width, uint32_t height)

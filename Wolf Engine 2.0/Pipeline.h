@@ -37,7 +37,7 @@ namespace Wolf
 
 		// Rasterization
 		VkPolygonMode polygonMode = VK_POLYGON_MODE_FILL;
-		VkCullModeFlags cullMode = VK_CULL_MODE_NONE;
+		VkCullModeFlags cullMode = VK_CULL_MODE_BACK_BIT;
 		bool enableConservativeRasterization = false;
 		float maxExtraPrimitiveOverestimationSize = 0.75f;
 

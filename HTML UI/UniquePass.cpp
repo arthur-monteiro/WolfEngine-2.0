@@ -100,8 +100,8 @@ void UniquePass::initializeResources(const InitializationContext& context)
 
 		std::vector<uint32_t> indices =
 		{
-			0, 2, 1,
-			2, 3, 1
+			0, 1, 2,
+			2, 1, 3
 		};
 
 		m_fullScreenRectangle.reset(new Mesh(vertices, indices));

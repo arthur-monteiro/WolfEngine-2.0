@@ -12,7 +12,13 @@ namespace Wolf
 	public:
 		virtual void update(GLFWwindow* window) = 0;
 		
-		virtual glm::mat4 getViewMatrix() = 0;
-		virtual glm::mat4 getProjection() = 0;
+		virtual glm::mat4 getViewMatrix() const = 0;
+		virtual glm::mat4 getProjection() const = 0;
+
+		virtual float getNear() const = 0;
+		virtual float getFar() const = 0;
+		virtual float getFOV() const = 0;
+		virtual glm::vec3 getPosition() const = 0;
+		virtual glm::vec3 getOrientation() const = 0;
 	};
 }

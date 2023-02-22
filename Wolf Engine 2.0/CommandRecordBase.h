@@ -21,6 +21,7 @@ namespace Wolf
 		uint32_t swapChainImageCount;
 		std::vector<Image*> swapChainImages;
 		Image* userInterfaceImage;
+		CameraInterface* camera;
 	};
 
 	struct RecordContext
