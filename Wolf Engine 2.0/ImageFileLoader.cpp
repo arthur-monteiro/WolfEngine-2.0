@@ -16,8 +16,6 @@ Wolf::ImageFileLoader::ImageFileLoader(const std::string& filename)
 
 		if (!pixels)
 			Debug::sendError("Error loading file " + filename + " !");
-
-		m_format = VK_FORMAT_R32G32B32A32_SFLOAT;
 	}
 	else
 	{
@@ -27,8 +25,6 @@ Wolf::ImageFileLoader::ImageFileLoader(const std::string& filename)
 
 		if (!pixels)
 			Debug::sendError("Error : loading image " + filename);
-
-		m_format = VK_FORMAT_R8G8B8A8_UNORM;
 	}
 }
 

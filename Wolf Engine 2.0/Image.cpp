@@ -207,7 +207,9 @@ void Wolf::Image::setBBP()
 		break;
 	case VK_FORMAT_R8G8B8A8_UNORM:
 	case VK_FORMAT_B8G8R8A8_UNORM:
+	case VK_FORMAT_R8G8B8A8_SRGB:
 	case VK_FORMAT_D32_SFLOAT:
+	case VK_FORMAT_R32_SFLOAT:
 		m_bbp = 4;
 		break;
 	case VK_FORMAT_BC3_UNORM_BLOCK:
@@ -286,4 +288,13 @@ void Wolf::Image::transitionImageLayout(VkCommandBuffer commandBuffer, VkImageLa
 	for(uint32_t mipLevel = baseMipLevel; mipLevel < levelCount; mipLevel++)
 		m_imageLayouts[mipLevel] = dstLayout;
 	m_pipelineStageFlags = dstPipelineStageFlags;
+}
+
+void Wolf::Image::setImageLayoutWithoutOperation(VkImageLayout newImageLayout, uint32_t baseMipLevel, uint32_t levelCount)
+{
+	if (levelCount == MAX_MIP_COUNT)
+		levelCount = m_mipLevelCount;
+
+	for (uint32_t mipLevel = baseMipLevel; mipLevel < levelCount; mipLevel++)
+		m_imageLayouts[mipLevel] = newImageLayout;
 }

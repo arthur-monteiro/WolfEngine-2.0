@@ -46,6 +46,7 @@ namespace Wolf
 		void getUserInterfaceJSObject(ultralight::JSObject& outObject);
 
 		void setCameraInterface(CameraInterface* cameraInterface) { m_cameraInterface = cameraInterface; }
+		void setGameContexts(const std::vector<void*>& gameContexts) { m_gameContexts = gameContexts; }
 
 	private:
 		void fillInitializeContext(InitializationContext& context);
@@ -70,6 +71,7 @@ namespace Wolf
 
 		// Gameplay
 		CameraInterface* m_cameraInterface = nullptr;
+		std::vector<void*> m_gameContexts;
 
 		bool m_resizeIsNeeded = false;
 	};

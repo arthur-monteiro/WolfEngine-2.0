@@ -59,7 +59,7 @@ Wolf::ObjLoader::ObjLoader(ModelLoadingInfo& modelLoadingInfo)
 				CreateImageInfo createImageInfo;
 				createImageInfo.extent = { (uint32_t)extent.width, (uint32_t)extent.height, 1 };
 				createImageInfo.aspect = VK_IMAGE_ASPECT_COLOR_BIT;
-				createImageInfo.format = VK_FORMAT_R8G8B8A8_UNORM;
+				createImageInfo.format = i % 5 == 0 ? VK_FORMAT_R8G8B8A8_SRGB : VK_FORMAT_R8G8B8A8_UNORM;
 				createImageInfo.mipLevelCount = MAX_MIP_COUNT;
 				createImageInfo.usage = VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
 				m_images[i].reset(new Image(createImageInfo));
@@ -198,11 +198,11 @@ Wolf::ObjLoader::ObjLoader(ModelLoadingInfo& modelLoadingInfo)
 		int indexTexture = 0;
 		for (int i(0); i < materials.size(); ++i)
 		{
-			setImage(getTexName(materials[i].diffuse_texname, modelLoadingInfo.mtlFolder), indexTexture++);
-			setImage(getTexName(materials[i].bump_texname, modelLoadingInfo.mtlFolder), indexTexture++);
-			setImage(getTexName(materials[i].specular_highlight_texname, modelLoadingInfo.mtlFolder), indexTexture++);
-			setImage(getTexName(materials[i].ambient_texname, modelLoadingInfo.mtlFolder), indexTexture++);
-			setImage(getTexName(materials[i].ambient_texname, modelLoadingInfo.mtlFolder), indexTexture++);
+			setImage(getTexName(materials[i].diffuse_texname, modelLoadingInfo.mtlFolder), indexTexture++, true);
+			setImage(getTexName(materials[i].bump_texname, modelLoadingInfo.mtlFolder), indexTexture++, false);
+			setImage(getTexName(materials[i].specular_highlight_texname, modelLoadingInfo.mtlFolder), indexTexture++, false);
+			setImage(getTexName(materials[i].ambient_texname, modelLoadingInfo.mtlFolder), indexTexture++, false);
+			setImage(getTexName(materials[i].ambient_texname, modelLoadingInfo.mtlFolder), indexTexture++, false);
 		}
 	}
 
@@ -250,15 +250,17 @@ inline std::string Wolf::ObjLoader::getTexName(const std::string& texName, const
 	return texName != "" ? folder + "/" + texName : "Textures/white_pixel.jpg";
 }
 
-void Wolf::ObjLoader::setImage(const std::string& filename, uint32_t idx)
+void Wolf::ObjLoader::setImage(const std::string& filename, uint32_t idx, bool sRGB)
 {
+	VkFormat format = sRGB ? VK_FORMAT_R8G8B8A8_SRGB : VK_FORMAT_R8G8B8A8_UNORM;
+
 	ImageFileLoader imageFileLoader(filename);
-	MipMapGenerator mipmapGenerator(imageFileLoader.getPixels(), { (uint32_t)imageFileLoader.getWidth(), (uint32_t)imageFileLoader.getHeight() }, imageFileLoader.getFormat());
+	MipMapGenerator mipmapGenerator(imageFileLoader.getPixels(), { (uint32_t)imageFileLoader.getWidth(), (uint32_t)imageFileLoader.getHeight() }, format);
 
 	CreateImageInfo createImageInfo;
 	createImageInfo.extent = { (uint32_t)imageFileLoader.getWidth(), (uint32_t)imageFileLoader.getHeight(), 1 };
 	createImageInfo.aspect = VK_IMAGE_ASPECT_COLOR_BIT;
-	createImageInfo.format = imageFileLoader.getFormat();
+	createImageInfo.format = format;
 	createImageInfo.mipLevelCount = mipmapGenerator.getMipLevelCount();
 	createImageInfo.usage = VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
 	m_images[idx].reset(new Image(createImageInfo));
