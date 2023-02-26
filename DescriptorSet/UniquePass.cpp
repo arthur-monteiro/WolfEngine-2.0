@@ -44,7 +44,7 @@ void UniquePass::initializeResources(const InitializationContext& context)
 	CreateImageInfo createImageInfo;
 	createImageInfo.extent = { (uint32_t)imageFileLoader.getWidth(), (uint32_t)imageFileLoader.getHeight(), 1 };
 	createImageInfo.aspect = VK_IMAGE_ASPECT_COLOR_BIT;
-	createImageInfo.format = imageFileLoader.getFormat();
+	createImageInfo.format = VK_FORMAT_R8G8B8A8_UNORM;
 	createImageInfo.mipLevelCount = 1;
 	createImageInfo.usage = VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
 	m_texture.reset(new Image(createImageInfo));
