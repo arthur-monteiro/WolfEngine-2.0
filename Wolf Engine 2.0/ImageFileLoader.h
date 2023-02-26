@@ -17,11 +17,9 @@ namespace Wolf
 		int getWidth() const { return m_width; }
 		int getHeight() const { return m_height; }
 		int getChannelCount() const { return m_channels; }
-		VkFormat getFormat() const { return m_format; }
 
 	private:
 		unsigned char* m_pixels;
 		int m_width, m_height, m_channels;
-		VkFormat m_format;
 	};
 }

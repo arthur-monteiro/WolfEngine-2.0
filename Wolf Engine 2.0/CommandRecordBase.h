@@ -32,6 +32,7 @@ namespace Wolf
 		Image* swapchainImage;
 		GLFWwindow* glfwWindow;
 		CameraInterface* camera;
+		const void* gameContext;
 	};
 
 	struct SubmitContext

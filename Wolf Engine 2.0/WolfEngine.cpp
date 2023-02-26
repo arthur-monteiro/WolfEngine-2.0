@@ -18,6 +18,8 @@ Wolf::WolfEngine::WolfEngine(const WolfInstanceCreateInfo& createInfo)
 
 	if(createInfo.htmlStringUI)
 		m_ultraLight.reset(new UltraLight(m_configuration->getWindowWidth(), m_configuration->getWindowHeight(), createInfo.htmlStringUI));
+
+	m_gameContexts.resize(m_configuration->getMaxCachedFrames());
 }
 
 void Wolf::WolfEngine::initializePass(CommandRecordBase* pass)
@@ -78,6 +80,7 @@ void Wolf::WolfEngine::frame(const std::span<CommandRecordBase*>& passes, const 
 	recordContext.swapchainImage = m_swapChain->getImage(currentSwapChainImageIndex);
 	recordContext.glfwWindow = m_window->getWindow();
 	recordContext.camera = m_cameraInterface;
+	recordContext.gameContext = m_gameContexts[recordContext.commandBufferIdx];
 
 	for (CommandRecordBase* pass : passes)
 	{

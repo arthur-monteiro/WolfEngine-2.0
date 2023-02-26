@@ -30,8 +30,6 @@ private:
 	void createDescriptorSets(const Wolf::InitializationContext& context);
 
 private:
-	std::unique_ptr<Wolf::CommandBuffer> m_commandBuffer;
-
 	/* Pipeline */
 	std::unique_ptr<Wolf::ShaderParser> m_computeShaderParser;
 	std::unique_ptr<Wolf::Pipeline> m_pipeline;

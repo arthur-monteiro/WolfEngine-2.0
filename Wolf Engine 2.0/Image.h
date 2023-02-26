@@ -47,7 +47,7 @@ namespace Wolf
 
 		void setImageLayout(VkImageLayout dstLayout, VkAccessFlags dstAccessMask, VkPipelineStageFlags dstPipelineStageFlags);
 		void transitionImageLayout(VkCommandBuffer commandBuffer, VkImageLayout dstLayout, VkAccessFlags dstAccessMask, VkPipelineStageFlags dstPipelineStageFlags, uint32_t baseMipLevel = 0, uint32_t levelCount = MAX_MIP_COUNT);
-		//void setImageLayoutWithoutOperation(VkImageLayout newImageLayout) { m_imageLayout = newImageLayout; }
+		void setImageLayoutWithoutOperation(VkImageLayout newImageLayout, uint32_t baseMipLevel = 0, uint32_t levelCount = MAX_MIP_COUNT);
 
 		VkImage getImage() const { return m_image; }
 		VkDeviceMemory getImageMemory() const { return m_imageMemory; }
