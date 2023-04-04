@@ -7,10 +7,12 @@
 
 namespace Wolf
 {
+	static const std::string defaultEntryPointName = "main";
+
 	struct ShaderCreateInfo
 	{
 		std::span<char> shaderCode;
-		const std::string& entryPointName = "main";
+		const std::string& entryPointName = defaultEntryPointName;
 		VkShaderStageFlagBits stage;
 	};
 

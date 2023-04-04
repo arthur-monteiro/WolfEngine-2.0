@@ -12,7 +12,9 @@ Wolf::DescriptorPool::DescriptorPool(VkDevice device)
 	addDescriptorPoolSize(VK_DESCRIPTOR_TYPE_SAMPLER, m_samplerCount, poolSizes);
 	addDescriptorPoolSize(VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, m_sampledImageCount, poolSizes);
 	addDescriptorPoolSize(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, m_storageBufferCount, poolSizes);
+#ifndef __ANDROID__
 	addDescriptorPoolSize(VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR, m_accelerationStructureCount, poolSizes);
+#endif
 
 	VkDescriptorPoolCreateInfo poolInfo = {};
 	poolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;

@@ -1,8 +1,10 @@
 #pragma once
 
 #define GLFW_INCLUDE_VULKAN
+#ifndef __ANDROID__
 #include <GLFW/glfw3.h>
 #include <OVR_CAPI_Vk.h>
+#endif
 #include <mutex>
 #include <vector>
 
@@ -17,7 +19,11 @@ namespace Wolf
 	class Vulkan
 	{
 	public:
+#ifndef __ANDROID__
 		Vulkan(GLFWwindow* glfwWindowPtr, bool useOVR);
+#else
+		Vulkan(struct ANativeWindow* window);
+#endif
 
 		// Getters
 		VkDevice getDevice() const { return m_device; }
@@ -50,7 +56,7 @@ namespace Wolf
 	private:
 		VkInstance m_instance;
 		VkSurfaceKHR m_surface;
-		VkPhysicalDevice m_physicalDevice;
+		VkPhysicalDevice m_physicalDevice = VK_NULL_HANDLE;
 		VkDevice m_device;
 
 		/* Queues */
@@ -79,8 +85,10 @@ namespace Wolf
 		VkPhysicalDeviceConservativeRasterizationPropertiesEXT m_conservativeRasterProps{};
 
 		/* VR */
+#ifndef __ANDROID__
 		ovrSession                  m_session = nullptr;
 		ovrGraphicsLuid             m_luid;
+#endif
 
 		/* Command Pools */
 		std::unique_ptr<CommandPool> m_graphicsCommandPool;

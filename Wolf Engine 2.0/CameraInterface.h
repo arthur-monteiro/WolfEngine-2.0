@@ -2,15 +2,21 @@
 
 #include <glm/glm.hpp>
 
+#ifndef __ANDROID__
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
+#endif
 
 namespace Wolf
 {
 	class CameraInterface
 	{
 	public:
+#ifndef __ANDROID__
 		virtual void update(GLFWwindow* window) = 0;
+#else
+        virtual void update() = 0;
+#endif
 		
 		virtual glm::mat4 getViewMatrix() const = 0;
 		virtual glm::mat4 getPreviousViewMatrix() const = 0;

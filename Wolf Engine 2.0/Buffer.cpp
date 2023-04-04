@@ -98,12 +98,14 @@ void Wolf::Buffer::getContent(void* outputData, uint32_t idx)
 	vkUnmapMemory(g_vulkanInstance->getDevice(), m_buffers[idx].bufferMemory);
 }
 
+#if !defined(__ANDROID__) or __ANDROID_MIN_SDK_VERSION__ > 30
 VkDeviceAddress Wolf::Buffer::getBufferDeviceAddress(uint32_t idx) const
 {
 	VkBufferDeviceAddressInfo info = { VK_STRUCTURE_TYPE_BUFFER_DEVICE_ADDRESS_INFO };
 	info.buffer = m_buffers[idx].buffer;
 	return vkGetBufferDeviceAddress(g_vulkanInstance->getDevice(), &info);
 }
+#endif
 
 void Wolf::Buffer::createBuffer(uint32_t idx, VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties)
 {

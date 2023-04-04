@@ -119,7 +119,7 @@
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp20</LanguageStandard>
       <ScanSourceForModuleDependencies>true</ScanSourceForModuleDependencies>
-      <AdditionalIncludeDirectories>..\Third Party\vulkan\Include;..\Third Party\freetype-2.8.1\include\freetype2;..\Third Party\stb_image;..\Third Party\glm;..\Third Party\tiny_obj;..\Third Party\GLFW\include;..\Third Party\OVR\Include;..\Third Party\UltraLight\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\ThirdParty\vulkan\Include;..\ThirdParty\freetype-2.8.1\include\freetype2;..\ThirdParty\stb_image;..\ThirdParty\glm;..\ThirdParty\tiny_obj;..\ThirdParty\GLFW\include;..\ThirdParty\OVR\Include;..\ThirdParty\UltraLight\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>

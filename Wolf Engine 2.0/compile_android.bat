@@ -1,0 +1,1 @@
+ndk-build APP_PLATFORM=26 APP_BUILD_SCRIPT=Android.mk TARGET_OUT=./../ndk-builds

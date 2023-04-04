@@ -26,7 +26,9 @@ namespace Wolf
 		VkBuffer getBuffer(uint32_t idx = 0) const { return m_buffers[idx].buffer; }
 		VkDeviceMemory getBufferMemory(uint32_t idx = 0) const { return m_buffers[idx].bufferMemory; }
 		VkDeviceSize getBufferSize() const { return m_bufferSize; }
+#if !defined(__ANDROID__) or __ANDROID_MIN_SDK_VERSION__ > 30
 		VkDeviceAddress getBufferDeviceAddress(uint32_t idx = 0) const;
+#endif
 
 	private:
 		void createBuffer(uint32_t idx, VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties);
