@@ -25,7 +25,11 @@ namespace Wolf
 		}
 		static void sendCriticalError(const std::string& errorMessage)
 		{
+#ifdef __ANDROID__
+			raise(SIGTRAP);
+#else
 			__debugbreak();
+#endif
 		}
 		static void sendVulkanMessage(const std::string& message, Severity severity)
 		{

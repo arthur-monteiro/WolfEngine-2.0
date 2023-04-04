@@ -6,18 +6,34 @@ Wolf::WolfEngine::WolfEngine(const WolfInstanceCreateInfo& createInfo)
 {
 	Debug::setCallback(createInfo.debugCallback);
 
+#ifndef __ANDROID__
 	m_configuration.reset(new Configuration(createInfo.configFilename));
+#else
+    m_configuration.reset(new Configuration(createInfo.configFilename, createInfo.assetManager));
+#endif
 	g_configuration = m_configuration.get();
 
+#ifndef __ANDROID__
 	m_window.reset(new Window(createInfo.applicationName, m_configuration->getWindowWidth(), m_configuration->getWindowHeight(), this, windowResizeCallback));
+#endif
 
+#ifndef __ANDROID__
 	m_vulkan.reset(new Vulkan(m_window->getWindow(), createInfo.useOVR));
+#else
+	m_vulkan.reset(new Vulkan(createInfo.androidWindow));
+#endif
 	g_vulkanInstance = m_vulkan.get();
 
+#ifndef __ANDROID__
 	m_swapChain.reset(new SwapChain(m_window->getWindow()));
+#else
+	m_swapChain.reset(new SwapChain(createInfo.androidWindow));
+#endif
 
+#ifndef __ANDROID__
 	if(createInfo.htmlStringUI)
 		m_ultraLight.reset(new UltraLight(m_configuration->getWindowWidth(), m_configuration->getWindowHeight(), createInfo.htmlStringUI));
+#endif
 
 	m_gameContexts.resize(m_configuration->getMaxCachedFrames());
 }
@@ -32,7 +48,11 @@ void Wolf::WolfEngine::initializePass(CommandRecordBase* pass)
 
 bool Wolf::WolfEngine::windowShouldClose()
 {
+#ifndef __ANDROID__
 	return m_window->windowShouldClose();
+#else
+	return false;
+#endif
 }
 
 void Wolf::WolfEngine::frame(const std::span<CommandRecordBase*>& passes, const Semaphore* frameEndedSemaphore)
@@ -40,13 +60,19 @@ void Wolf::WolfEngine::frame(const std::span<CommandRecordBase*>& passes, const 
 	if (passes.empty())
 		Debug::sendError("No pass sent to frame");
 
+#ifndef __ANDROID__
 	m_window->pollEvents();
 	if (!m_window->windowVisible())
 		return;
+#endif
 
 	if (m_cameraInterface)
 	{
+#ifndef __ANDROID__
 		m_cameraInterface->update(m_window->getWindow());
+#else
+		m_cameraInterface->update();
+#endif
 	}
 
 	if (m_resizeIsNeeded)
@@ -64,11 +90,13 @@ void Wolf::WolfEngine::frame(const std::span<CommandRecordBase*>& passes, const 
 		m_resizeIsNeeded = false;
 	}
 
+#ifndef __ANDROID__
 	if (m_ultraLight)
 	{
 		m_ultraLight->update(m_window->getWindow());
 		m_ultraLight->render();
 	}
+#endif
 
 	m_swapChain->synchroniseCPUFromGPU(m_currentFrame);
 	uint32_t currentSwapChainImageIndex = m_swapChain->getCurrentImage(m_currentFrame);
@@ -78,7 +106,9 @@ void Wolf::WolfEngine::frame(const std::span<CommandRecordBase*>& passes, const 
 	recordContext.commandBufferIdx = m_currentFrame % g_configuration->getMaxCachedFrames();
 	recordContext.swapChainImageIdx = currentSwapChainImageIndex;
 	recordContext.swapchainImage = m_swapChain->getImage(currentSwapChainImageIndex);
+#ifndef __ANDROID__
 	recordContext.glfwWindow = m_window->getWindow();
+#endif
 	recordContext.camera = m_cameraInterface;
 	recordContext.gameContext = m_gameContexts[recordContext.commandBufferIdx];
 
@@ -109,10 +139,12 @@ void Wolf::WolfEngine::waitIdle()
 	vkDeviceWaitIdle(m_vulkan->getDevice());
 }
 
+#ifndef __ANDROID__
 void Wolf::WolfEngine::getUserInterfaceJSObject(ultralight::JSObject& outObject)
 {
 	m_ultraLight->getJSObject(outObject);
 }
+#endif
 
 void Wolf::WolfEngine::fillInitializeContext(InitializationContext& context)
 {
@@ -123,8 +155,10 @@ void Wolf::WolfEngine::fillInitializeContext(InitializationContext& context)
 	context.swapChainImageCount = m_swapChain->getImageCount();
 	for (uint32_t i = 0; i < context.swapChainImageCount; ++i)
 		context.swapChainImages.push_back(m_swapChain->getImage(i));
+#ifndef __ANDROID__
 	if(m_ultraLight)
 		context.userInterfaceImage = m_ultraLight->getImage();
+#endif
 	context.camera = m_cameraInterface;
 }
 
@@ -133,7 +167,11 @@ void Wolf::WolfEngine::resize(int width, int height)
 	vkDeviceWaitIdle(m_vulkan->getDevice());
 
 	m_resizeIsNeeded = true;
+#ifndef __ANDROID__
 	m_swapChain->recreate(m_window->getWindow());
 	if(m_ultraLight)
 		m_ultraLight->resize(width, height);
+#else
+	m_swapChain->recreate();
+#endif
 }

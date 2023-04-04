@@ -8,13 +8,18 @@
 
 Wolf::Vulkan* Wolf::g_vulkanInstance = nullptr;
 
+#ifdef __ANDROID__
+Wolf::Vulkan::Vulkan(struct ANativeWindow* window)
+#else
 Wolf::Vulkan::Vulkan(GLFWwindow* glfwWindowPtr, bool useOVR)
+#endif
 {
 	if (g_vulkanInstance)
 	{
 		Debug::sendCriticalError("Can't instanciate Vulkan twice");
 	}
 
+#ifndef __ANDROID__
 	if(useOVR)
 	{
 		ovrInitParams initParams = { ovrInit_RequestVersion | ovrInit_FocusAware, OVR_MINOR_VERSION, NULL, 0, 0 };
@@ -32,6 +37,7 @@ Wolf::Vulkan::Vulkan(GLFWwindow* glfwWindowPtr, bool useOVR)
 			return;
 		}
 	}
+#endif
 
 	bool useVIL = g_configuration->getUseVIL();
 
@@ -41,14 +47,27 @@ Wolf::Vulkan::Vulkan(GLFWwindow* glfwWindowPtr, bool useOVR)
 	m_validationLayers.push_back("VK_LAYER_KHRONOS_validation");
 //#endif
 	createInstance();
-//#ifndef NDEBUG
+
+#ifndef __ANDROID__
 	setupDebugMessenger();
-//#endif
+
 	if (glfwCreateWindowSurface(m_instance, glfwWindowPtr, nullptr, &m_surface) != VK_SUCCESS)
 	{
 		Debug::sendCriticalError("Error : window surface creation");
 	}
+#else
+	const VkAndroidSurfaceCreateInfoKHR create_info
+	{
+			.sType = VK_STRUCTURE_TYPE_ANDROID_SURFACE_CREATE_INFO_KHR,
+			.pNext = nullptr,
+			.flags = 0,
+			.window = window
+	};
 
+	vkCreateAndroidSurfaceKHR(m_instance, &create_info, nullptr /* pAllocator */, &m_surface);
+#endif
+
+#ifndef __ANDROID__
 	m_deviceExtensions = { VK_KHR_SWAPCHAIN_EXTENSION_NAME, VK_KHR_EXTERNAL_MEMORY_EXTENSION_NAME, "VK_KHR_external_memory_win32", VK_KHR_EXTERNAL_SEMAPHORE_EXTENSION_NAME,
 		"VK_KHR_external_semaphore_win32", VK_KHR_GET_MEMORY_REQUIREMENTS_2_EXTENSION_NAME, "VK_KHR_external_fence", "VK_KHR_external_fence_win32", "VK_KHR_buffer_device_address" };
 	if (!useVIL)
@@ -57,6 +76,9 @@ Wolf::Vulkan::Vulkan(GLFWwindow* glfwWindowPtr, bool useOVR)
 			VK_EXT_DESCRIPTOR_INDEXING_EXTENSION_NAME, VK_KHR_BUFFER_DEVICE_ADDRESS_EXTENSION_NAME, VK_KHR_SPIRV_1_4_EXTENSION_NAME,  };
 	}
 	//m_meshShaderDeviceExtensions = { VK_NV_MESH_SHADER_EXTENSION_NAME };
+#else
+    m_deviceExtensions = { VK_KHR_SWAPCHAIN_EXTENSION_NAME, VK_KHR_EXTERNAL_MEMORY_EXTENSION_NAME };
+#endif
 
 	pickPhysicalDevice();
 	createDevice();
@@ -70,19 +92,24 @@ std::vector<const char*> getRequiredExtensions()
 {
 	std::vector<const char*> extensions;
 
+#ifndef __ANDROID__
 	unsigned int glfwExtensionCount = 0;
 	const char** glfwExtensions;
 	glfwExtensions = glfwGetRequiredInstanceExtensions(&glfwExtensionCount);
 
 	for (unsigned int i = 0; i < glfwExtensionCount; i++)
 		extensions.push_back(glfwExtensions[i]);
+#else
+	extensions.push_back("VK_KHR_surface");
+	extensions.push_back("VK_KHR_android_surface");
+	extensions.push_back(VK_EXT_DEBUG_REPORT_EXTENSION_NAME);
+	extensions.push_back(VK_KHR_EXTERNAL_MEMORY_CAPABILITIES_EXTENSION_NAME);
+	extensions.push_back(VK_KHR_EXTERNAL_SEMAPHORE_CAPABILITIES_EXTENSION_NAME);
+#endif
 
 //#ifndef NDEBUG
 	extensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
 //#endif
-
-	extensions.push_back(VK_KHR_EXTERNAL_MEMORY_CAPABILITIES_EXTENSION_NAME);
-	extensions.push_back(VK_KHR_EXTERNAL_SEMAPHORE_CAPABILITIES_EXTENSION_NAME);
 
 	return extensions;
 }
@@ -95,29 +122,31 @@ void Wolf::Vulkan::createInstance()
 	appInfo.applicationVersion = VK_MAKE_VERSION(1, 0, 0);
 	appInfo.pEngineName = "Wolf Engine";
 	appInfo.engineVersion = VK_MAKE_VERSION(1, 0, 0);
+#ifdef __ANDROID__
+	appInfo.apiVersion = VK_API_VERSION_1_0;
+#else
 	appInfo.apiVersion = VK_API_VERSION_1_3;
+#endif
 
 	VkInstanceCreateInfo createInfo = {};
 	createInfo.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
 	createInfo.pApplicationInfo = &appInfo;
 
 	std::vector<const char*> extensions = getRequiredExtensions();
-	extensions.push_back(VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_EXTENSION_NAME);
-	extensions.push_back(VK_KHR_EXTERNAL_FENCE_CAPABILITIES_EXTENSION_NAME);
+//	extensions.push_back(VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_EXTENSION_NAME);
+//	extensions.push_back(VK_KHR_EXTERNAL_FENCE_CAPABILITIES_EXTENSION_NAME);
 	createInfo.enabledExtensionCount = static_cast<uint32_t>(extensions.size());
 	createInfo.ppEnabledExtensionNames = extensions.data();
 
-	VkDebugUtilsMessengerCreateInfoEXT debugCreateInfo;
-#ifndef NDEBUG
+	VkDebugUtilsMessengerCreateInfoEXT debugCreateInfo{};
 	createInfo.enabledLayerCount = static_cast<uint32_t>(m_validationLayers.size());
 	createInfo.ppEnabledLayerNames = m_validationLayers.data();
 
 	populateDebugMessengerCreateInfo(debugCreateInfo);
 	createInfo.pNext = (VkDebugUtilsMessengerCreateInfoEXT*)&debugCreateInfo;
-#else
-	createInfo.enabledLayerCount = 0;
-	createInfo.pNext = nullptr;
-#endif
+
+	//createInfo.enabledLayerCount = 0;
+	//createInfo.pNext = nullptr;
 
 	if (vkCreateInstance(&createInfo, nullptr, &m_instance) != VK_SUCCESS)
 		Debug::sendCriticalError("Error: instance creation");
@@ -225,8 +254,10 @@ VkSampleCountFlagBits getMaxUsableSampleCount(VkPhysicalDevice physicalDevice)
 	return VK_SAMPLE_COUNT_1_BIT;
 }
 
+#ifndef __ANDROID__
 VkPhysicalDeviceMeshShaderPropertiesNV getPhysicalDeviceMeshShaderProperties(VkPhysicalDevice physicalDevice)
 {
+
 	VkPhysicalDeviceMeshShaderPropertiesNV meshShaderProperties{};
 
 	meshShaderProperties.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MESH_SHADER_PROPERTIES_NV;
@@ -239,9 +270,11 @@ VkPhysicalDeviceMeshShaderPropertiesNV getPhysicalDeviceMeshShaderProperties(VkP
 
 	return meshShaderProperties;
 }
+#endif
 
 void Wolf::Vulkan::pickPhysicalDevice()
 {
+#ifndef __ANDROID__
 	if (m_session)
 	{
 		ovrResult result = ovr_GetSessionPhysicalDeviceVk(m_session, m_luid, m_instance, &m_physicalDevice);
@@ -252,6 +285,7 @@ void Wolf::Vulkan::pickPhysicalDevice()
 		}
 		return;
 	}
+#endif
 
 	uint32_t deviceCount = 0;
 	vkEnumeratePhysicalDevices(m_instance, &deviceCount, nullptr);
@@ -286,8 +320,8 @@ void Wolf::Vulkan::pickPhysicalDevice()
 
 			if (m_hardwareCapabilities.rayTracingAvailable)
 				getPhysicalDeviceRayTracingProperties(m_raytracingProperties);
-			if (m_hardwareCapabilities.meshShaderAvailable)
-				m_meshShaderProperties = getPhysicalDeviceMeshShaderProperties(m_physicalDevice);
+			//if (m_hardwareCapabilities.meshShaderAvailable)
+			//	m_meshShaderProperties = getPhysicalDeviceMeshShaderProperties(m_physicalDevice);
 			break;
 		}
 	}
@@ -314,6 +348,7 @@ void Wolf::Vulkan::createDevice()
 		queueCreateInfos.push_back(queueCreateInfo);
 	}
 
+#ifndef __ANDROID__
 	VkPhysicalDeviceVulkan12Features features12{};
 	features12.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_2_FEATURES;
 	features12.bufferDeviceAddress = VK_TRUE;
@@ -338,6 +373,7 @@ void Wolf::Vulkan::createDevice()
 	{
 		Debug::sendWarning("bufferDeviceAddress not supported");
 	}
+#endif
 
 	VkDeviceCreateInfo createInfo = {};
 	createInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
@@ -346,7 +382,11 @@ void Wolf::Vulkan::createDevice()
 	createInfo.pQueueCreateInfos = queueCreateInfos.data();
 
 	createInfo.pEnabledFeatures = nullptr; // &(supportedFeatures.features);
+#ifndef __ANDROID__
 	createInfo.pNext = &supportedFeatures;
+#else
+	createInfo.pNext = VK_NULL_HANDLE;
+#endif
 
 	createInfo.enabledExtensionCount = static_cast<uint32_t>(m_deviceExtensions.size());
 	createInfo.ppEnabledExtensionNames = m_deviceExtensions.data();
@@ -434,11 +474,12 @@ bool Wolf::Vulkan::isDeviceSuitable(VkPhysicalDevice physicalDevice, const std::
 	//	}
 	//}
 
-	return queueFamilyIndices.isComplete() && extensionsSupported && swapChainAdequate && supportedFeatures.samplerAnisotropy;
+	return queueFamilyIndices.isComplete() && extensionsSupported && swapChainAdequate /*&& supportedFeatures.samplerAnisotropy*/;
 }
 
 void Wolf::Vulkan::getPhysicalDeviceRayTracingProperties(VkPhysicalDeviceRayTracingPipelinePropertiesKHR& raytracingProperties)
 {
+#ifndef __ANDROID__
 	// Query the values of shaderHeaderSize and maxRecursionDepth in current implementation
 	raytracingProperties.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_PIPELINE_PROPERTIES_KHR;
 	raytracingProperties.pNext = nullptr;
@@ -449,4 +490,5 @@ void Wolf::Vulkan::getPhysicalDeviceRayTracingProperties(VkPhysicalDeviceRayTrac
 	props.pNext = &raytracingProperties;
 	props.properties = {};
 	vkGetPhysicalDeviceProperties2(m_physicalDevice, &props);
+#endif
 }

@@ -30,7 +30,9 @@ namespace Wolf
 		uint32_t commandBufferIdx; 
 		uint32_t swapChainImageIdx;
 		Image* swapchainImage;
+#ifndef __ANDROID__
 		GLFWwindow* glfwWindow;
+#endif
 		CameraInterface* camera;
 		const void* gameContext;
 	};

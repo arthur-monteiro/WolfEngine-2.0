@@ -3,7 +3,13 @@
 #include <cctype>
 #include <fstream>
 #include <sstream>
+#ifdef __ANDROID__
+#include <android/asset_manager.h>
+#include <android/native_activity.h>
+#include <shaderc/shaderc.hpp>
+#endif
 
+#include "Configuration.h"
 #include "Debug.h"
 #include "ShaderCommon.h"
 
@@ -32,6 +38,30 @@ void Wolf::ShaderParser::readCompiledShader(std::vector<char>& shaderCode) const
 
 void Wolf::ShaderParser::parseAndCompile()
 {
+#ifdef __ANDROID__
+    std::ifstream appFile("/proc/self/cmdline");
+    std::string processName;
+    std::getline(appFile, processName);
+    std::string appFolderName = "/data/data/" + processName.substr(0, processName.find('\0'));
+    appFolderName += "/shader_cache";
+    std::filesystem::create_directory(appFolderName);
+
+    AAsset *file = AAssetManager_open(g_configuration->getAndroidAssetManager(), m_filename.c_str(), AASSET_MODE_BUFFER);
+    size_t file_length = AAsset_getLength(file);
+
+    std::vector<uint8_t> data;
+    data.resize(file_length);
+
+    AAsset_read(file, data.data(), file_length);
+    AAsset_close(file);
+
+    std::string shaderFilename = m_filename.substr(m_filename.find_last_of("/") + 1);
+    m_filename = appFolderName + "/" + shaderFilename;
+    std::fstream outCacheFile(m_filename, std::ios::out | std::ios::binary);
+    outCacheFile.write((char*)data.data(), data.size());
+    outCacheFile.close();
+#endif
+
     std::ifstream inFile(m_filename);
 
     std::vector<std::string> extensions = { ".vert", ".frag", ".comp", ".rgen", ".rmiss", ".rchit" };
@@ -99,13 +129,46 @@ void Wolf::ShaderParser::parseAndCompile()
 
     outFileGLSL.close();
 
+#ifndef __ANDROID__
     std::string commandToCompile = "glslc.exe ";
     commandToCompile += parsedFilename;
     commandToCompile += " -o ";
     commandToCompile += compiledFilename;
     commandToCompile += " --target-spv=spv1.4";
+    std::system(commandToCompile.c_str());
+#else
+    shaderc::Compiler compiler;
+    shaderc::CompileOptions options;
 
-    system(commandToCompile.c_str());
+    shaderc_shader_kind shaderKind;
+    if(extensionFound == "Vert")
+    {
+        shaderKind = shaderc_vertex_shader;
+    }
+    else if(extensionFound == "Frag")
+    {
+        shaderKind = shaderc_fragment_shader;
+    }
+    else
+    {
+        raise(SIGTRAP);
+    }
+
+    std::vector<char> parsedShaderCode;
+    readFile(parsedShaderCode, parsedFilename);
+    shaderc::SpvCompilationResult module = compiler.CompileGlslToSpv(parsedShaderCode.data(), data.size(), shaderKind,
+                                                                     compiledFilename.c_str(), options);
+
+    if (module.GetCompilationStatus() != shaderc_compilation_status_success)
+    {
+        Debug::sendError(module.GetErrorMessage());
+    }
+
+    std::vector<uint32_t> compiledContent(module.cbegin(), module.cend());
+    std::fstream outCompiledFile(compiledFilename, std::ios::out | std::ios::binary);
+    outCompiledFile.write((char*)compiledContent.data(), compiledContent.size() * sizeof(uint32_t));
+    outCompiledFile.close();
+#endif
 
     m_compileFilename = compiledFilename;
     m_lastModifiedTime = std::filesystem::last_write_time(m_filename);

@@ -1,5 +1,8 @@
 #include "UltraLight.h"
 
+#include <chrono>
+#include <thread>
+
 #include "Debug.h"
 
 using namespace ultralight;

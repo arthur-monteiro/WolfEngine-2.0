@@ -4,6 +4,9 @@
 #include <iostream>
 #include <memory>
 #include <span>
+#ifdef __ANDROID__
+#include <android/asset_manager.h>
+#endif
 
 #include "CameraInterface.h"
 #include "CommandRecordBase.h"
@@ -29,6 +32,11 @@ namespace Wolf
 		bool useOVR = false;
 
 		std::function<void(Debug::Severity, Debug::Type, const std::string&)> debugCallback;
+
+#ifdef __ANDROID__
+        ANativeWindow* androidWindow;
+		AAssetManager* assetManager;
+#endif
 	};
 
 	class WolfEngine
@@ -43,7 +51,9 @@ namespace Wolf
 
 		void waitIdle();
 
+#ifndef __ANDROID__
 		void getUserInterfaceJSObject(ultralight::JSObject& outObject);
+#endif
 
 		void setCameraInterface(CameraInterface* cameraInterface) { m_cameraInterface = cameraInterface; }
 		void setGameContexts(const std::vector<void*>& gameContexts) { m_gameContexts = gameContexts; }
@@ -61,10 +71,14 @@ namespace Wolf
 		// Global instances
 		std::unique_ptr<Configuration> m_configuration;
 		std::unique_ptr<Vulkan> m_vulkan;
+#ifndef __ANDROID__
 		std::unique_ptr<Window> m_window;
+#endif
 		std::unique_ptr<SwapChain> m_swapChain;
+#ifndef __ANDROID__
 		std::unique_ptr<UltraLight> m_ultraLight;
 		//std::unique_ptr<OVR> m_ovr;
+#endif
 
 		// Frame counter
 		uint32_t m_currentFrame = 0;

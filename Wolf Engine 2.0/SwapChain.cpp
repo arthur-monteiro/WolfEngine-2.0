@@ -33,6 +33,7 @@ VkPresentModeKHR choosePresentMode(const std::vector<VkPresentModeKHR>& availabl
 	return bestMode;
 }
 
+#ifndef __ANDROID__
 VkExtent2D chooseExtent(const VkSurfaceCapabilitiesKHR& capabilities, GLFWwindow* window)
 {
 	if (capabilities.currentExtent.width != std::numeric_limits<uint32_t>::max())
@@ -54,20 +55,41 @@ VkExtent2D chooseExtent(const VkSurfaceCapabilitiesKHR& capabilities, GLFWwindow
 		return actualExtent;
 	}
 }
+#endif
 
+#ifdef __ANDROID__
+Wolf::SwapChain::SwapChain(ANativeWindow* window)
+{
+	initialize(window);
+}
+#else
 Wolf::SwapChain::SwapChain(GLFWwindow* window)
 {
 	initialize(window);
 }
+#endif
 
+#ifdef __ANDROID__
+void Wolf::SwapChain::initialize(ANativeWindow* window)
+#else
 void Wolf::SwapChain::initialize(GLFWwindow* window)
+#endif
 {
 	SwapChainSupportDetails swapChainSupport;
 	querySwapChainSupport(swapChainSupport, g_vulkanInstance->getPhysicalDevice(), g_vulkanInstance->getSurface());
 
 	VkSurfaceFormatKHR surfaceFormat = chooseSurfaceFormat(swapChainSupport.formats);
 	VkPresentModeKHR presentMode = choosePresentMode(swapChainSupport.presentModes);
+#ifdef __ANDROID__
+	int32_t width = ANativeWindow_getWidth(window);
+    int32_t height = ANativeWindow_getHeight(window);
+    VkExtent2D extent = {static_cast<uint32_t>(width),
+                               static_cast<uint32_t>(height)};
+    //extent.width = std::clamp(extent.width, capabilities.minImageExtent.width, capabilities.maxImageExtent.width);
+    //extent.height = std::clamp(extent.height, capabilities.minImageExtent.height, capabilities.maxImageExtent.height);
+#else
 	VkExtent2D extent = chooseExtent(swapChainSupport.capabilities, window);
+#endif
 
 	uint32_t imageCount = swapChainSupport.capabilities.minImageCount + 1;
 	if (swapChainSupport.capabilities.maxImageCount > 0 && imageCount > swapChainSupport.capabilities.maxImageCount)
@@ -203,11 +225,19 @@ void Wolf::SwapChain::present(VkSemaphore waitSemaphore, uint32_t imageIndex)
 		Debug::sendCriticalError("Can't present image");
 }
 
+#ifdef __ANDROID__
+void Wolf::SwapChain::recreate()
+#else
 void Wolf::SwapChain::recreate(GLFWwindow* window)
+#endif
 {
 	vkDestroySwapchainKHR(g_vulkanInstance->getDevice(), m_swapChain, nullptr);
 	m_images.clear();
 	m_frameFences.clear();
 
+#ifdef __ANDROID__
+	//initialize();
+#else
 	initialize(window);
+#endif
 }

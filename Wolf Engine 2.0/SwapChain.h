@@ -1,6 +1,10 @@
 #pragma once
 
 #include <iostream>
+#ifdef __ANDROID__
+#include <android/native_window.h>
+#include <android/native_window_jni.h>
+#endif
 
 #include "Fence.h"
 #include "Image.h"
@@ -11,14 +15,22 @@ namespace Wolf
 	class SwapChain
 	{
 	public:
+#ifndef __ANDROID__
 		SwapChain(GLFWwindow* window);
+#else
+		SwapChain(ANativeWindow* window);
+#endif
 		~SwapChain();
 
 		void synchroniseCPUFromGPU(uint32_t currentFrameGPU);
 		uint32_t getCurrentImage(uint32_t currentFrameGPU);
 		void present(VkSemaphore waitSemaphore, uint32_t imageIndex);
 
+#ifndef __ANDROID__
 		void recreate(GLFWwindow* window);
+#else
+		void recreate();
+#endif
 
 		// Getters
 		Image* getImage(uint32_t index) const { return m_images[index].get(); }
@@ -27,7 +39,11 @@ namespace Wolf
 		VkFence getFrameFence(uint32_t index) const { return m_frameFences[index]->getFence(); }
 
 	private:
+#ifndef __ANDROID__
 		void initialize(GLFWwindow* window);
+#else
+		void initialize(ANativeWindow* window);
+#endif
 
 	private:
 		VkSwapchainKHR m_swapChain;

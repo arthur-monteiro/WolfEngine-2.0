@@ -1,5 +1,7 @@
 #pragma once
 
+#ifndef __ANDROID__
+
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
 #include <iostream>
@@ -35,3 +37,5 @@ namespace Wolf
 		std::function<void(void*, int, int)> m_resizeCallback;
 	};
 }
+
+#endif

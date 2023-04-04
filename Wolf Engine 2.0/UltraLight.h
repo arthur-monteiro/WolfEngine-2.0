@@ -1,5 +1,7 @@
 #pragma once
 
+#ifndef __ANDROID__
+
 #include <AppCore/App.h>
 #include <AppCore/JSHelpers.h>
 #include <AppCore/Platform.h>
@@ -36,3 +38,5 @@ namespace Wolf
         ultralight::RefPtr<ultralight::View> m_view;
     };
 }
+
+#endif
