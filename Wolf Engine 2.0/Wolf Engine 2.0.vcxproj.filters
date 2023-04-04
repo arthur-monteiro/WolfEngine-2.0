@@ -22,6 +22,9 @@
     <Filter Include="Vulkan Component">
       <UniqueIdentifier>{27d6f014-c8e7-402c-aede-d5991106441f}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Ray Tracing">
+      <UniqueIdentifier>{575762f8-77b8-4e7a-b8e4-6550b9cd4bf9}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Vulkan.cpp">
@@ -124,6 +127,24 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="DepthPassBase.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="RayTracingShaderGroupGenerator.cpp">
+      <Filter>Ray Tracing</Filter>
+    </ClCompile>
+    <ClCompile Include="RayTracingSymbols.cpp">
+      <Filter>Ray Tracing</Filter>
+    </ClCompile>
+    <ClCompile Include="ShaderBindingTable.cpp">
+      <Filter>Ray Tracing</Filter>
+    </ClCompile>
+    <ClCompile Include="BottomLevelAccelerationStructure.cpp">
+      <Filter>Ray Tracing</Filter>
+    </ClCompile>
+    <ClCompile Include="TopLevelAccelerationStructure.cpp">
+      <Filter>Ray Tracing</Filter>
+    </ClCompile>
+    <ClCompile Include="AccelerationStructure.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -249,6 +270,21 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="DepthPassBase.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="RayTracingShaderGroupGenerator.h">
+      <Filter>Ray Tracing</Filter>
+    </ClInclude>
+    <ClInclude Include="ShaderBindingTable.h">
+      <Filter>Ray Tracing</Filter>
+    </ClInclude>
+    <ClInclude Include="BottomLevelAccelerationStructure.h">
+      <Filter>Ray Tracing</Filter>
+    </ClInclude>
+    <ClInclude Include="TopLevelAccelerationStructure.h">
+      <Filter>Ray Tracing</Filter>
+    </ClInclude>
+    <ClInclude Include="AccelerationStructure.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

@@ -89,17 +89,17 @@ void Wolf::DescriptorSet::update(const DescriptorSetCreateInfo& descriptorSetCre
 		descriptorWrites.push_back(descriptorWrite);
 	}
 
-	for (int i(0); i < descriptorSetCreateInfo.descriptorDefault.size(); ++i)
+	for (int i(0); i < descriptorSetCreateInfo.descriptorAccelerationStructures.size(); ++i)
 	{
 		VkWriteDescriptorSet descriptorWrite{};
 		descriptorWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
 		descriptorWrite.dstSet = m_descriptorSets[idx];
-		descriptorWrite.dstBinding = descriptorSetCreateInfo.descriptorDefault[i].second.binding;
+		descriptorWrite.dstBinding = descriptorSetCreateInfo.descriptorAccelerationStructures[i].descriptorLayout.binding;
 		descriptorWrite.dstArrayElement = 0;
-		descriptorWrite.descriptorType = descriptorSetCreateInfo.descriptorDefault[i].second.descriptorType;
-		descriptorWrite.descriptorCount = static_cast<uint32_t>(descriptorSetCreateInfo.descriptorDefault[i].first.size());
+		descriptorWrite.descriptorType = descriptorSetCreateInfo.descriptorAccelerationStructures[i].descriptorLayout.descriptorType;
+		descriptorWrite.descriptorCount = static_cast<uint32_t>(descriptorSetCreateInfo.descriptorAccelerationStructures.size());
 		descriptorWrite.pImageInfo = NULL;
-		descriptorWrite.pNext = &descriptorSetCreateInfo.descriptorDefault[i].first[0];
+		descriptorWrite.pNext = &descriptorSetCreateInfo.descriptorAccelerationStructures[i].accelerationStructure;
 
 		descriptorWrites.push_back(descriptorWrite);
 	}

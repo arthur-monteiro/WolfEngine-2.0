@@ -60,3 +60,13 @@ void Wolf::DescriptorSetLayoutGenerator::addImages(VkDescriptorType descriptorTy
 
 	m_descriptorLayouts.push_back(descriptorLayout);
 }
+
+void Wolf::DescriptorSetLayoutGenerator::addAccelerationStructure(VkShaderStageFlags accessibility, uint32_t binding)
+{
+	DescriptorLayout descriptorLayout;
+	descriptorLayout.accessibility = accessibility;
+	descriptorLayout.binding = binding;
+	descriptorLayout.descriptorType = VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR;
+
+	m_descriptorLayouts.push_back(descriptorLayout);
+}

@@ -2,6 +2,7 @@
 
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
+#include <glm/glm.hpp>
 
 #include "SwapChainSupportDetails.h"
 
@@ -13,4 +14,5 @@ namespace Wolf
 	VkFormat findSupportedFormat(const std::vector<VkFormat>& candidates, VkImageTiling tiling, VkFormatFeatureFlags features, VkPhysicalDevice physicalDevice);
 	bool hasDepthComponent(VkFormat format);
 	bool hasStencilComponent(VkFormat format);
+	VkTransformMatrixKHR toTransformMatrixKHR(glm::mat4 matrix);
 }

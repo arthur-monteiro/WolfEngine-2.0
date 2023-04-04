@@ -143,6 +143,8 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="AccelerationStructure.cpp" />
+    <ClCompile Include="BottomLevelAccelerationStructure.cpp" />
     <ClCompile Include="Buffer.cpp" />
     <ClCompile Include="CameraInterface.cpp" />
     <ClCompile Include="CommandBuffer.cpp" />
@@ -164,13 +166,17 @@
     <ClCompile Include="ObjLoader.cpp" />
     <ClCompile Include="CommandRecordBase.cpp" />
     <ClCompile Include="Pipeline.cpp" />
+    <ClCompile Include="RayTracingShaderGroupGenerator.cpp" />
+    <ClCompile Include="RayTracingSymbols.cpp" />
     <ClCompile Include="RenderPass.cpp" />
     <ClCompile Include="Sampler.cpp" />
     <ClCompile Include="Semaphore.cpp" />
+    <ClCompile Include="ShaderBindingTable.cpp" />
     <ClCompile Include="ShaderParser.cpp" />
     <ClCompile Include="SwapChain.cpp" />
     <ClCompile Include="TextFileReader.cpp" />
     <ClCompile Include="Timer.cpp" />
+    <ClCompile Include="TopLevelAccelerationStructure.cpp" />
     <ClCompile Include="UltraLight.cpp" />
     <ClCompile Include="UltraLightSurface.cpp" />
     <ClCompile Include="Vulkan.cpp" />
@@ -179,7 +185,9 @@
     <ClCompile Include="WolfEngine.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="AccelerationStructure.h" />
     <ClInclude Include="Attachment.h" />
+    <ClInclude Include="BottomLevelAccelerationStructure.h" />
     <ClInclude Include="Buffer.h" />
     <ClInclude Include="CameraInterface.h" />
     <ClInclude Include="CommandBuffer.h" />
@@ -204,15 +212,18 @@
     <ClInclude Include="CommandRecordBase.h" />
     <ClInclude Include="Pipeline.h" />
     <ClInclude Include="QueueFamilyIndices.h" />
+    <ClInclude Include="RayTracingShaderGroupGenerator.h" />
     <ClInclude Include="RenderPass.h" />
     <ClInclude Include="Sampler.h" />
     <ClInclude Include="Semaphore.h" />
+    <ClInclude Include="ShaderBindingTable.h" />
     <ClInclude Include="ShaderCommon.h" />
     <ClInclude Include="ShaderParser.h" />
     <ClInclude Include="SwapChain.h" />
     <ClInclude Include="SwapChainSupportDetails.h" />
     <ClInclude Include="TextFileReader.h" />
     <ClInclude Include="Timer.h" />
+    <ClInclude Include="TopLevelAccelerationStructure.h" />
     <ClInclude Include="UltraLight.h" />
     <ClInclude Include="UltraLightSurface.h" />
     <ClInclude Include="UpdateRate.h" />

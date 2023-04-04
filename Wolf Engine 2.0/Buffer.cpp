@@ -41,9 +41,9 @@ Wolf::Buffer::~Buffer()
 void Wolf::Buffer::transferCPUMemory(void* data, VkDeviceSize srcSize, VkDeviceSize srcOffset, uint32_t idx)
 {
 	void* pData;
-	vkMapMemory(g_vulkanInstance->getDevice(), m_buffers[idx].bufferMemory, 0, srcSize, 0, &pData);
+	map(&pData, srcSize, idx);
 	memcpy(pData, data, srcSize);
-	vkUnmapMemory(g_vulkanInstance->getDevice(), m_buffers[idx].bufferMemory);
+	unmap(idx);
 }
 
 void Wolf::Buffer::transferCPUMemoryWithStagingBuffer(void* data, VkDeviceSize srcSize, VkDeviceSize srcOffset, uint32_t idx)
@@ -78,12 +78,31 @@ void Wolf::Buffer::transferGPUMemory(const Buffer& bufferSrc, const VkBufferCopy
 	fence.waitForFence();
 }
 
+void Wolf::Buffer::map(void** pData, VkDeviceSize size, uint32_t idx)
+{
+	if (size == 0)
+		size = m_bufferSize;
+	vkMapMemory(g_vulkanInstance->getDevice(), m_buffers[idx].bufferMemory, 0, size, 0, pData);
+}
+
+void Wolf::Buffer::unmap(uint32_t idx)
+{
+	vkUnmapMemory(g_vulkanInstance->getDevice(), m_buffers[idx].bufferMemory);
+}
+
 void Wolf::Buffer::getContent(void* outputData, uint32_t idx)
 {
 	void* pData;
 	vkMapMemory(g_vulkanInstance->getDevice(), m_buffers[idx].bufferMemory, 0, m_bufferSize, 0, &pData);
 	memcpy(outputData, pData, m_bufferSize);
 	vkUnmapMemory(g_vulkanInstance->getDevice(), m_buffers[idx].bufferMemory);
+}
+
+VkDeviceAddress Wolf::Buffer::getBufferDeviceAddress(uint32_t idx) const
+{
+	VkBufferDeviceAddressInfo info = { VK_STRUCTURE_TYPE_BUFFER_DEVICE_ADDRESS_INFO };
+	info.buffer = m_buffers[idx].buffer;
+	return vkGetBufferDeviceAddress(g_vulkanInstance->getDevice(), &info);
 }
 
 void Wolf::Buffer::createBuffer(uint32_t idx, VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties)
@@ -104,6 +123,11 @@ void Wolf::Buffer::createBuffer(uint32_t idx, VkDeviceSize size, VkBufferUsageFl
 	allocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
 	allocInfo.allocationSize = memRequirements.size;
 	allocInfo.memoryTypeIndex = findMemoryType(g_vulkanInstance->getPhysicalDevice(), memRequirements.memoryTypeBits, properties);
+
+	VkMemoryAllocateFlagsInfoKHR allocFlagsInfo = { VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_FLAGS_INFO_KHR };
+	allocFlagsInfo.flags = VK_MEMORY_ALLOCATE_DEVICE_ADDRESS_BIT_KHR;
+
+	allocInfo.pNext = &allocFlagsInfo;
 
 	if (vkAllocateMemory(g_vulkanInstance->getDevice(), &allocInfo, nullptr, &m_buffers[idx].bufferMemory) != VK_SUCCESS)
 		Debug::sendError("Error : memory allocation");

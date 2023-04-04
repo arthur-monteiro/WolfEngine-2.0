@@ -45,16 +45,16 @@ void UniquePass::initializeResources(const InitializationContext& context)
 		{ glm::vec2(0.75f, 0.75f) } // bot right
 	};
 
-	std::vector<uint32_t> indices =
+	std::vector<uint16_t> indices =
 	{
 		0, 1, 2
 	};
 
-	m_vertexBuffer.reset(new Buffer(sizeof(Vertex2D) * vertices.size(), VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, UpdateRate::NEVER));
+	m_vertexBuffer.reset(new Buffer(sizeof(Vertex2D) * vertices.size(), VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, UpdateRate::NEVER));
 	m_vertexBuffer->transferCPUMemoryWithStagingBuffer(vertices.data(), sizeof(Vertex2D) * vertices.size());
 
-	m_indexBuffer.reset(new Buffer(sizeof(uint32_t) * indices.size(), VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, UpdateRate::NEVER));
-	m_indexBuffer->transferCPUMemoryWithStagingBuffer(indices.data(), sizeof(uint32_t) * indices.size());
+	m_indexBuffer.reset(new Buffer(sizeof(uint16_t) * indices.size(), VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, UpdateRate::NEVER));
+	m_indexBuffer->transferCPUMemoryWithStagingBuffer(indices.data(), sizeof(uint16_t) * indices.size());
 }
 
 void UniquePass::resize(const Wolf::InitializationContext& context)
@@ -93,7 +93,7 @@ void UniquePass::record(const Wolf::RecordContext& context)
 	const VkDeviceSize offsets[1] = { 0 };
 	VkBuffer vertexBuffer = m_vertexBuffer->getBuffer();
 	vkCmdBindVertexBuffers(m_commandBuffer->getCommandBuffer(context.commandBufferIdx), 0, 1, &vertexBuffer, offsets);
-	vkCmdBindIndexBuffer(m_commandBuffer->getCommandBuffer(context.commandBufferIdx), m_indexBuffer->getBuffer(), 0, VK_INDEX_TYPE_UINT32);
+	vkCmdBindIndexBuffer(m_commandBuffer->getCommandBuffer(context.commandBufferIdx), m_indexBuffer->getBuffer(), 0, VK_INDEX_TYPE_UINT16);
 
 	vkCmdDrawIndexed(m_commandBuffer->getCommandBuffer(context.commandBufferIdx), 3, 1, 0, 0, 0);
 
@@ -172,20 +172,4 @@ void UniquePass::createPipeline(uint32_t width, uint32_t height)
 
 	m_swapChainWidth = width;
 	m_swapChainHeight = height;
-}
-
-void UniquePass::readFile(std::vector<char>& output, const std::string& filename)
-{
-	std::ifstream file(filename, std::ios::ate | std::ios::binary);
-
-	if (!file.is_open())
-		Debug::sendError("Error opening file : " + filename);
-
-	size_t fileSize = std::filesystem::file_size(filename);
-	output.resize(fileSize);
-
-	file.seekg(0);
-	file.read(output.data(), fileSize);
-
-	file.close();
 }

@@ -23,6 +23,18 @@ Wolf::DescriptorSetGenerator::DescriptorSetGenerator(const std::span<const Descr
 			m_descriptorSetCreateInfo.descriptorImages.push_back(descriptorImage);
 			m_mapBindingCreateInfo[descriptorLayout.binding] = { DescriptorType::IMAGE, m_descriptorSetCreateInfo.descriptorImages.size() - 1 };
 		}
+		else if (descriptorLayout.descriptorType == VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR)
+		{
+			DescriptorSetCreateInfo::DescriptorAccelerationStructure descriptorAccelerationStructure;
+			descriptorAccelerationStructure.descriptorLayout = descriptorLayout;
+
+			m_descriptorSetCreateInfo.descriptorAccelerationStructures.push_back(descriptorAccelerationStructure);
+			m_mapBindingCreateInfo[descriptorLayout.binding] = { DescriptorType::ACCELERATION_STRUCTURE, m_descriptorSetCreateInfo.descriptorAccelerationStructures.size() - 1 };
+		}
+		else
+		{
+			Debug::sendCriticalError("Unhandled case for descriptor layouts");
+		}
 	}
 }
 
@@ -100,4 +112,19 @@ void Wolf::DescriptorSetGenerator::setSampler(uint32_t binding, const Sampler& s
 
 	m_descriptorSetCreateInfo.descriptorImages[descriptor.second].images.resize(1);
 	m_descriptorSetCreateInfo.descriptorImages[descriptor.second].images[0] = std::move(imageData);
+}
+
+void Wolf::DescriptorSetGenerator::setAccelerationStructure(uint32_t binding, const TopLevelAccelerationStructure& accelerationStructure)
+{
+	std::pair<DescriptorType, uint32_t /* descriptor index */>& descriptor = m_mapBindingCreateInfo[binding];
+
+	if (descriptor.first != DescriptorType::ACCELERATION_STRUCTURE)
+		Debug::sendError("Binding provided is not an acceleration structure");
+
+	VkWriteDescriptorSetAccelerationStructureKHR descriptorSetInfo{ };
+	descriptorSetInfo.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET_ACCELERATION_STRUCTURE_KHR;
+	descriptorSetInfo.accelerationStructureCount = 1;
+	descriptorSetInfo.pAccelerationStructures = accelerationStructure.getStructure();
+
+	m_descriptorSetCreateInfo.descriptorAccelerationStructures[descriptor.second].accelerationStructure = descriptorSetInfo;
 }

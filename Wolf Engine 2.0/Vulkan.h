@@ -18,7 +18,6 @@ namespace Wolf
 	{
 	public:
 		Vulkan(GLFWwindow* glfwWindowPtr, bool useOVR);
-		~Vulkan();
 
 		// Getters
 		VkDevice getDevice() const { return m_device; }
@@ -33,6 +32,7 @@ namespace Wolf
 		VkQueue getGraphicsQueue() const { return m_graphicsQueue; }
 		VkQueue getComputeQueue() const { return m_computeQueue; }
 		VkDescriptorPool getDescriptorPool() const { return m_descriptorPool->getDescriptorPool(); }
+		const VkPhysicalDeviceRayTracingPipelinePropertiesKHR& getRayTracingProperties() const { return m_raytracingProperties; }
 
 	private:
 		/* Main Loading Functions */
@@ -45,6 +45,7 @@ namespace Wolf
 		void populateDebugMessengerCreateInfo(VkDebugUtilsMessengerCreateInfoEXT& createInfo);
 
 		bool isDeviceSuitable(VkPhysicalDevice physicalDevice, const std::vector<const char*>& deviceExtensions, HardwareCapabilities& outHardwareCapabilities);
+		void getPhysicalDeviceRayTracingProperties(VkPhysicalDeviceRayTracingPipelinePropertiesKHR& raytracingProperties);
 
 	private:
 		VkInstance m_instance;
@@ -60,16 +61,16 @@ namespace Wolf
 		std::mutex* m_mutexQueues = nullptr;
 
 		/* Extensions / Layers */
-		std::vector<const char*> m_validationLayers = std::vector<const char*>();
-		std::vector<const char*> m_deviceExtensions = std::vector<const char*>();
+		std::vector<const char*> m_validationLayers;
+		std::vector<const char*> m_deviceExtensions;
 		VkDebugUtilsMessengerEXT m_debugMessenger;
 
 		/* Ray Tracing */
-		std::vector<const char*> m_raytracingDeviceExtensions = std::vector<const char*>();
-		VkPhysicalDeviceRayTracingPropertiesNV m_raytracingProperties = {};
+		std::vector<const char*> m_raytracingDeviceExtensions;
+		VkPhysicalDeviceRayTracingPipelinePropertiesKHR m_raytracingProperties = {};
 
 		/* Mesh Shader */
-		std::vector<const char*> m_meshShaderDeviceExtensions = std::vector<const char*>();
+		std::vector<const char*> m_meshShaderDeviceExtensions;
 		VkPhysicalDeviceMeshShaderPropertiesNV m_meshShaderProperties = {};
 
 		/* Properties */

@@ -24,7 +24,7 @@ namespace Wolf
 		unsigned int m_samplerCount = 10;
 		unsigned int m_sampledImageCount = 300;
 		unsigned int m_storageBufferCount = 10;
-		unsigned int m_accelerationStructureCount = 0;
+		unsigned int m_accelerationStructureCount = 1;
 
 		VkDescriptorPool m_descriptorPool;
 	};

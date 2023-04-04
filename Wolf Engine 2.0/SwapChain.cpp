@@ -129,7 +129,7 @@ void Wolf::SwapChain::initialize(GLFWwindow* window)
 	m_imageAvailableSemaphores.resize(imageCount);
 	for (uint32_t i = 0; i < imageCount; ++i)
 	{
-		m_imageAvailableSemaphores[i].reset(new Semaphore(VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT));
+		m_imageAvailableSemaphores[i].reset(new Semaphore(VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT));
 	}
 
 	m_frameFences.resize(g_configuration->getMaxCachedFrames());

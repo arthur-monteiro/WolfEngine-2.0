@@ -29,7 +29,12 @@ namespace Wolf
 		};
 		std::vector<DescriptorImage> descriptorImages;
 
-		std::vector<std::pair<std::vector<VkWriteDescriptorSetAccelerationStructureNV>, DescriptorLayout>> descriptorDefault;
+		struct DescriptorAccelerationStructure
+		{
+			VkWriteDescriptorSetAccelerationStructureKHR accelerationStructure;
+			DescriptorLayout descriptorLayout;
+		};
+		std::vector<DescriptorAccelerationStructure> descriptorAccelerationStructures;
 	};
 
 	class DescriptorSet

@@ -34,7 +34,7 @@ void Wolf::ShaderParser::parseAndCompile()
 {
     std::ifstream inFile(m_filename);
 
-    std::vector<std::string> extensions = { ".vert", ".frag", ".comp"};
+    std::vector<std::string> extensions = { ".vert", ".frag", ".comp", ".rgen", ".rmiss", ".rchit" };
 
     std::string parsedFilename = m_filename;
 
@@ -50,7 +50,9 @@ void Wolf::ShaderParser::parseAndCompile()
     }
 
     if (extensionFound.empty())
+    {
         Debug::sendError("Extension not handle in shader " + m_filename);
+    }
 
     for (const std::string& condition : m_conditionBlocksToInclude)
     {
@@ -97,10 +99,11 @@ void Wolf::ShaderParser::parseAndCompile()
 
     outFileGLSL.close();
 
-    std::string commandToCompile = "glslangValidator.exe -V ";
+    std::string commandToCompile = "glslc.exe ";
     commandToCompile += parsedFilename;
     commandToCompile += " -o ";
     commandToCompile += compiledFilename;
+    commandToCompile += " --target-spv=spv1.4";
 
     system(commandToCompile.c_str());
 
