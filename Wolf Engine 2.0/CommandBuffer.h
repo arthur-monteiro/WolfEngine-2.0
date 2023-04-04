@@ -5,7 +5,7 @@
 
 namespace Wolf
 {
-	enum class QueueType { GRAPHIC, COMPUTE, TRANSFER };
+	enum class QueueType { GRAPHIC, COMPUTE, TRANSFER, RAY_TRACING };
 
 	class CommandBuffer
 	{

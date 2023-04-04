@@ -214,6 +214,55 @@ Wolf::Pipeline::Pipeline(const ShaderCreateInfo& computeShaderInfo, std::span<Vk
 		Debug::sendError("Error : create compute pipeline");
 }
 
+Wolf::Pipeline::Pipeline(const RayTracingPipelineCreateInfo& rayTracingPipelineCreateInfo, std::span<VkDescriptorSetLayout> descriptorSetLayouts)
+{
+	VkPipelineLayoutCreateInfo pipelineLayoutCreateInfo{};
+	pipelineLayoutCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
+	pipelineLayoutCreateInfo.pNext = nullptr;
+	pipelineLayoutCreateInfo.flags = 0;
+	pipelineLayoutCreateInfo.setLayoutCount = static_cast<uint32_t>(descriptorSetLayouts.size());
+	pipelineLayoutCreateInfo.pSetLayouts = descriptorSetLayouts.data();
+	pipelineLayoutCreateInfo.pushConstantRangeCount = 0;
+	pipelineLayoutCreateInfo.pPushConstantRanges = nullptr;
+
+	if (vkCreatePipelineLayout(g_vulkanInstance->getDevice(), &pipelineLayoutCreateInfo, nullptr, &m_pipelineLayout) != VK_SUCCESS)
+		Debug::sendError("Error : create pipeline layout");
+
+	std::vector<VkPipelineShaderStageCreateInfo> shaderStages;
+	std::vector<VkShaderModule> shaderModules;
+	for (auto& shaderCreateInfo : rayTracingPipelineCreateInfo.shaderCreateInfos)
+	{
+		// Create shader module
+		shaderModules.push_back(createShaderModule(shaderCreateInfo.shaderCode));
+
+		// Add stage
+		VkPipelineShaderStageCreateInfo shaderStageInfo = {};
+		shaderStageInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+		shaderStageInfo.stage = shaderCreateInfo.stage;
+		shaderStageInfo.module = shaderModules.back();
+		shaderStageInfo.pName = shaderCreateInfo.entryPointName.data();
+
+		shaderStages.push_back(shaderStageInfo);
+	}
+
+	// Assemble the shader stages and recursion depth info into the raytracing pipeline
+	VkRayTracingPipelineCreateInfoKHR rayPipelineInfo{};
+	rayPipelineInfo.sType = VK_STRUCTURE_TYPE_RAY_TRACING_PIPELINE_CREATE_INFO_KHR;
+	rayPipelineInfo.pNext = nullptr;
+	rayPipelineInfo.flags = 0;
+	rayPipelineInfo.stageCount = static_cast<uint32_t>(shaderStages.size());
+	rayPipelineInfo.pStages = shaderStages.data();
+	rayPipelineInfo.groupCount = static_cast<uint32_t>(rayTracingPipelineCreateInfo.shaderGroupsCreateInfos.size());
+	rayPipelineInfo.pGroups = rayTracingPipelineCreateInfo.shaderGroupsCreateInfos.data();
+	rayPipelineInfo.maxPipelineRayRecursionDepth = 2;
+	rayPipelineInfo.layout = m_pipelineLayout;
+	rayPipelineInfo.basePipelineHandle = VK_NULL_HANDLE;
+	rayPipelineInfo.basePipelineIndex = 0;
+
+	if (vkCreateRayTracingPipelinesKHR(g_vulkanInstance->getDevice(), VK_NULL_HANDLE, VK_NULL_HANDLE, 1, &rayPipelineInfo, nullptr, &m_pipeline) != VK_SUCCESS)
+		Debug::sendError("Error: create ray tracing pipeline");
+}
+
 Wolf::Pipeline::~Pipeline()
 {
 	vkDestroyPipeline(g_vulkanInstance->getDevice(), m_pipeline, nullptr);

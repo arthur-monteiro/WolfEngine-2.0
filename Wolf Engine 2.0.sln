@@ -13,6 +13,8 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Compute Pass", "Compute Pas
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "HTML UI", "HTML UI\HTML UI.vcxproj", "{0E970E83-FED7-4B1D-81B0-14BA53156190}"
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "HelloRayTracing", "HelloRayTracing\HelloRayTracing.vcxproj", "{F4CDC345-CDC2-4BCE-9366-7AB4EC27CDBD}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|x64 = Debug|x64
@@ -61,6 +63,14 @@ Global
 		{0E970E83-FED7-4B1D-81B0-14BA53156190}.Release|x64.Build.0 = Release|x64
 		{0E970E83-FED7-4B1D-81B0-14BA53156190}.Release|x86.ActiveCfg = Release|Win32
 		{0E970E83-FED7-4B1D-81B0-14BA53156190}.Release|x86.Build.0 = Release|Win32
+		{F4CDC345-CDC2-4BCE-9366-7AB4EC27CDBD}.Debug|x64.ActiveCfg = Debug|x64
+		{F4CDC345-CDC2-4BCE-9366-7AB4EC27CDBD}.Debug|x64.Build.0 = Debug|x64
+		{F4CDC345-CDC2-4BCE-9366-7AB4EC27CDBD}.Debug|x86.ActiveCfg = Debug|Win32
+		{F4CDC345-CDC2-4BCE-9366-7AB4EC27CDBD}.Debug|x86.Build.0 = Debug|Win32
+		{F4CDC345-CDC2-4BCE-9366-7AB4EC27CDBD}.Release|x64.ActiveCfg = Release|x64
+		{F4CDC345-CDC2-4BCE-9366-7AB4EC27CDBD}.Release|x64.Build.0 = Release|x64
+		{F4CDC345-CDC2-4BCE-9366-7AB4EC27CDBD}.Release|x86.ActiveCfg = Release|Win32
+		{F4CDC345-CDC2-4BCE-9366-7AB4EC27CDBD}.Release|x86.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

@@ -93,7 +93,7 @@ typedef enum {
   shaderc_profile_none,  // Used if and only if GLSL version did not specify
                          // profiles.
   shaderc_profile_core,
-  shaderc_profile_compatibility,
+  shaderc_profile_compatibility,  // Disabled. This generates an error
   shaderc_profile_es,
 } shaderc_profile;
 
@@ -407,6 +407,11 @@ SHADERC_EXPORT void shaderc_compile_options_set_limit(
 SHADERC_EXPORT void shaderc_compile_options_set_auto_bind_uniforms(
     shaderc_compile_options_t options, bool auto_bind);
 
+// Sets whether the compiler should automatically remove sampler variables
+// and convert image variables to combined image-sampler variables.
+SHADERC_EXPORT void shaderc_compile_options_set_auto_combined_image_sampler(
+    shaderc_compile_options_t options, bool upgrade);
+
 // Sets whether the compiler should use HLSL IO mapping rules for bindings.
 // Defaults to false.
 SHADERC_EXPORT void shaderc_compile_options_set_hlsl_io_mapping(
@@ -454,6 +459,10 @@ SHADERC_EXPORT void shaderc_compile_options_set_hlsl_register_set_and_binding(
 // Sets whether the compiler should enable extension
 // SPV_GOOGLE_hlsl_functionality1.
 SHADERC_EXPORT void shaderc_compile_options_set_hlsl_functionality1(
+    shaderc_compile_options_t options, bool enable);
+
+// Sets whether 16-bit types are supported in HLSL or not.
+SHADERC_EXPORT void shaderc_compile_options_set_hlsl_16bit_types(
     shaderc_compile_options_t options, bool enable);
 
 // Sets whether the compiler should invert position.Y output in vertex shader.

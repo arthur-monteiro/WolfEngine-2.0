@@ -50,10 +50,13 @@ Wolf::Vulkan::Vulkan(GLFWwindow* glfwWindowPtr, bool useOVR)
 	}
 
 	m_deviceExtensions = { VK_KHR_SWAPCHAIN_EXTENSION_NAME, VK_KHR_EXTERNAL_MEMORY_EXTENSION_NAME, "VK_KHR_external_memory_win32", VK_KHR_EXTERNAL_SEMAPHORE_EXTENSION_NAME,
-		"VK_KHR_external_semaphore_win32", VK_KHR_GET_MEMORY_REQUIREMENTS_2_EXTENSION_NAME, "VK_KHR_external_fence", "VK_KHR_external_fence_win32" };
-	if(!useVIL)
-		m_raytracingDeviceExtensions = { VK_NV_RAY_TRACING_EXTENSION_NAME };
-	m_meshShaderDeviceExtensions = { VK_NV_MESH_SHADER_EXTENSION_NAME };
+		"VK_KHR_external_semaphore_win32", VK_KHR_GET_MEMORY_REQUIREMENTS_2_EXTENSION_NAME, "VK_KHR_external_fence", "VK_KHR_external_fence_win32", "VK_KHR_buffer_device_address" };
+	if (!useVIL)
+	{
+		m_raytracingDeviceExtensions = { VK_KHR_ACCELERATION_STRUCTURE_EXTENSION_NAME, VK_KHR_RAY_TRACING_PIPELINE_EXTENSION_NAME, VK_KHR_DEFERRED_HOST_OPERATIONS_EXTENSION_NAME,
+			VK_EXT_DESCRIPTOR_INDEXING_EXTENSION_NAME, VK_KHR_BUFFER_DEVICE_ADDRESS_EXTENSION_NAME, VK_KHR_SPIRV_1_4_EXTENSION_NAME,  };
+	}
+	//m_meshShaderDeviceExtensions = { VK_NV_MESH_SHADER_EXTENSION_NAME };
 
 	pickPhysicalDevice();
 	createDevice();
@@ -61,10 +64,6 @@ Wolf::Vulkan::Vulkan(GLFWwindow* glfwWindowPtr, bool useOVR)
 	createCommandPools();
 
 	m_descriptorPool.reset(new DescriptorPool(m_device));
-}
-
-Wolf::Vulkan::~Vulkan()
-{
 }
 
 std::vector<const char*> getRequiredExtensions()
@@ -96,7 +95,7 @@ void Wolf::Vulkan::createInstance()
 	appInfo.applicationVersion = VK_MAKE_VERSION(1, 0, 0);
 	appInfo.pEngineName = "Wolf Engine";
 	appInfo.engineVersion = VK_MAKE_VERSION(1, 0, 0);
-	appInfo.apiVersion = VK_API_VERSION_1_0;
+	appInfo.apiVersion = VK_API_VERSION_1_3;
 
 	VkInstanceCreateInfo createInfo = {};
 	createInfo.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
@@ -226,24 +225,6 @@ VkSampleCountFlagBits getMaxUsableSampleCount(VkPhysicalDevice physicalDevice)
 	return VK_SAMPLE_COUNT_1_BIT;
 }
 
-VkPhysicalDeviceRayTracingPropertiesNV getPhysicalDeviceRayTracingProperties(VkPhysicalDevice physicalDevice)
-{
-	VkPhysicalDeviceRayTracingPropertiesNV raytracingProperties{};
-
-	// Query the values of shaderHeaderSize and maxRecursionDepth in current implementation
-	raytracingProperties.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_PROPERTIES_NV;
-	raytracingProperties.pNext = nullptr;
-	raytracingProperties.maxRecursionDepth = 0;
-	raytracingProperties.shaderGroupHandleSize = 0;
-	VkPhysicalDeviceProperties2 props;
-	props.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2;
-	props.pNext = &raytracingProperties;
-	props.properties = {};
-	vkGetPhysicalDeviceProperties2(physicalDevice, &props);
-
-	return raytracingProperties;
-}
-
 VkPhysicalDeviceMeshShaderPropertiesNV getPhysicalDeviceMeshShaderProperties(VkPhysicalDevice physicalDevice)
 {
 	VkPhysicalDeviceMeshShaderPropertiesNV meshShaderProperties{};
@@ -304,7 +285,7 @@ void Wolf::Vulkan::pickPhysicalDevice()
 			vkGetPhysicalDeviceProperties2KHR(m_physicalDevice, &deviceProps2);
 
 			if (m_hardwareCapabilities.rayTracingAvailable)
-				m_raytracingProperties = getPhysicalDeviceRayTracingProperties(m_physicalDevice);
+				getPhysicalDeviceRayTracingProperties(m_raytracingProperties);
 			if (m_hardwareCapabilities.meshShaderAvailable)
 				m_meshShaderProperties = getPhysicalDeviceMeshShaderProperties(m_physicalDevice);
 			break;
@@ -333,14 +314,30 @@ void Wolf::Vulkan::createDevice()
 		queueCreateInfos.push_back(queueCreateInfo);
 	}
 
-	VkPhysicalDeviceDescriptorIndexingFeaturesEXT descIndexFeatures = {};
-	descIndexFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DESCRIPTOR_INDEXING_FEATURES_EXT;
+	VkPhysicalDeviceVulkan12Features features12{};
+	features12.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_2_FEATURES;
+	features12.bufferDeviceAddress = VK_TRUE;
+
+	VkPhysicalDeviceRayTracingPipelineFeaturesKHR rayTracingPipelineFeatures{};
+	rayTracingPipelineFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_PIPELINE_FEATURES_KHR;
+	rayTracingPipelineFeatures.rayTracingPipeline = true;
+	features12.pNext = &rayTracingPipelineFeatures;
+
+	VkPhysicalDeviceAccelerationStructureFeaturesKHR accelerationStructureFeature{};
+	accelerationStructureFeature.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ACCELERATION_STRUCTURE_FEATURES_KHR;
+	accelerationStructureFeature.accelerationStructure = true;
+	rayTracingPipelineFeatures.pNext = &accelerationStructureFeature;
 
 	VkPhysicalDeviceFeatures2 supportedFeatures = {};
 	supportedFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
-	supportedFeatures.pNext = &descIndexFeatures;
+	supportedFeatures.pNext = &features12;
 	supportedFeatures.features.shaderStorageImageMultisample = VK_TRUE;
 	vkGetPhysicalDeviceFeatures2(m_physicalDevice, &supportedFeatures);
+
+	if (features12.bufferDeviceAddress == VK_FALSE)
+	{
+		Debug::sendWarning("bufferDeviceAddress not supported");
+	}
 
 	VkDeviceCreateInfo createInfo = {};
 	createInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
@@ -348,8 +345,8 @@ void Wolf::Vulkan::createDevice()
 	createInfo.queueCreateInfoCount = static_cast<uint32_t>(queueCreateInfos.size());
 	createInfo.pQueueCreateInfos = queueCreateInfos.data();
 
-	createInfo.pEnabledFeatures = &(supportedFeatures.features);
-	createInfo.pNext = &descIndexFeatures;
+	createInfo.pEnabledFeatures = nullptr; // &(supportedFeatures.features);
+	createInfo.pNext = &supportedFeatures;
 
 	createInfo.enabledExtensionCount = static_cast<uint32_t>(m_deviceExtensions.size());
 	createInfo.ppEnabledExtensionNames = m_deviceExtensions.data();
@@ -438,4 +435,18 @@ bool Wolf::Vulkan::isDeviceSuitable(VkPhysicalDevice physicalDevice, const std::
 	//}
 
 	return queueFamilyIndices.isComplete() && extensionsSupported && swapChainAdequate && supportedFeatures.samplerAnisotropy;
+}
+
+void Wolf::Vulkan::getPhysicalDeviceRayTracingProperties(VkPhysicalDeviceRayTracingPipelinePropertiesKHR& raytracingProperties)
+{
+	// Query the values of shaderHeaderSize and maxRecursionDepth in current implementation
+	raytracingProperties.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_PIPELINE_PROPERTIES_KHR;
+	raytracingProperties.pNext = nullptr;
+	raytracingProperties.maxRayRecursionDepth = 0;
+	raytracingProperties.shaderGroupHandleSize = 0;
+	VkPhysicalDeviceProperties2 props;
+	props.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2;
+	props.pNext = &raytracingProperties;
+	props.properties = {};
+	vkGetPhysicalDeviceProperties2(m_physicalDevice, &props);
 }

@@ -24,7 +24,6 @@ public:
 private:
 	void createDepthImage(const Wolf::InitializationContext& context);
 	void createPipeline(uint32_t width, uint32_t height);
-	void readFile(std::vector<char>& output, const std::string& filename);
 
 private:
 	std::unique_ptr<Wolf::RenderPass> m_renderPass;

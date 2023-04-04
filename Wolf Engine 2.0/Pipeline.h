@@ -57,11 +57,21 @@ namespace Wolf
 		uint32_t patchControlPoint = 0;
 	};
 
+	struct RayTracingPipelineCreateInfo
+	{
+		std::span<ShaderCreateInfo> shaderCreateInfos;
+		std::span<VkRayTracingShaderGroupCreateInfoKHR> shaderGroupsCreateInfos;
+	};
+
 	class Pipeline
 	{
 	public:
+		// Rasterization
 		Pipeline(const RenderingPipelineCreateInfo& renderingPipelineCreateInfo);
+		// Compute
 		Pipeline(const ShaderCreateInfo& computeShaderInfo, std::span<VkDescriptorSetLayout> descriptorSetLayouts);
+		// Ray tracing
+		Pipeline(const RayTracingPipelineCreateInfo& rayTracingPipelineCreateInfo, std::span<VkDescriptorSetLayout> descriptorSetLayouts);
 		~Pipeline();
 
 		VkPipeline getPipeline() const { return m_pipeline; }

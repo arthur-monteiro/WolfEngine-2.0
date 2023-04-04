@@ -16,7 +16,7 @@ Wolf::CommandBuffer::CommandBuffer(QueueType queueType, bool oneTimeSubmit)
 		else
 			commandPool = g_vulkanInstance->getGraphicsCommandPool()->getCommandPool();
 	}
-	else if (queueType == QueueType::COMPUTE)
+	else if (queueType == QueueType::COMPUTE || queueType == QueueType::RAY_TRACING)
 	{
 		if (oneTimeSubmit)
 			commandPool = g_vulkanInstance->getComputeTransientCommandPool()->getCommandPool();

@@ -225,14 +225,66 @@ enum ComputeDerivativeMode {
     LayoutDerivativeGroupLinear,  // derivative_group_linearNV
 };
 
-class TIdMaps {
-public:
-    TMap<TString, int>& operator[](int i) { return maps[i]; }
-    const TMap<TString, int>& operator[](int i) const { return maps[i]; }
-private:
-    TMap<TString, int> maps[EsiCount];
+//
+// Status type on AST level. Some uncalled status or functions would be reset in call graph.
+// Currently we will keep status set by explicitly declared layout or variable decl.
+//
+enum AstRefType {
+    AstRefTypeVar,         // Status set by variable decl
+    AstRefTypeFunc,        // Status set by function decl
+    AstRefTypeLayout,      // Status set by layout decl
 };
 
+class TIdMaps {
+public:
+    TMap<TString, long long>& operator[](long long i) { return maps[i]; }
+    const TMap<TString, long long>& operator[](long long i) const { return maps[i]; }
+private:
+    TMap<TString, long long> maps[EsiCount];
+};
+
+class TNumericFeatures {
+public:
+    TNumericFeatures() : features(0) { }
+    TNumericFeatures(const TNumericFeatures&) = delete;
+    TNumericFeatures& operator=(const TNumericFeatures&) = delete;
+    typedef enum : unsigned int {
+        shader_explicit_arithmetic_types          = 1 << 0,
+        shader_explicit_arithmetic_types_int8     = 1 << 1,
+        shader_explicit_arithmetic_types_int16    = 1 << 2,
+        shader_explicit_arithmetic_types_int32    = 1 << 3,
+        shader_explicit_arithmetic_types_int64    = 1 << 4,
+        shader_explicit_arithmetic_types_float16  = 1 << 5,
+        shader_explicit_arithmetic_types_float32  = 1 << 6,
+        shader_explicit_arithmetic_types_float64  = 1 << 7,
+        shader_implicit_conversions               = 1 << 8,
+        gpu_shader_fp64                           = 1 << 9,
+        gpu_shader_int16                          = 1 << 10,
+        gpu_shader_half_float                     = 1 << 11,
+    } feature;
+    void insert(feature f) { features |= f; }
+    void erase(feature f) { features &= ~f; }
+    bool contains(feature f) const { return (features & f) != 0; }
+private:
+    unsigned int features;
+};
+
+// MustBeAssigned wraps a T, asserting that it has been assigned with 
+// operator =() before attempting to read with operator T() or operator ->().
+// Used to catch cases where fields are read before they have been assigned.
+template<typename T>
+class MustBeAssigned
+{
+public:
+    MustBeAssigned() = default;
+    MustBeAssigned(const T& v) : value(v) {}
+    operator const T&() const { assert(isSet); return value; }
+    const T* operator ->() const { assert(isSet); return &value; }
+    MustBeAssigned& operator = (const T& v) { value = v; isSet = true; return *this; } 
+private:
+    T value;
+    bool isSet = false;
+};
 
 //
 // Set of helper functions to help parse and build the tree.
@@ -241,12 +293,25 @@ class TIntermediate {
 public:
     explicit TIntermediate(EShLanguage l, int v = 0, EProfile p = ENoProfile) :
         language(l),
-        profile(p), version(v), treeRoot(0),
+        profile(p), version(v),
+        treeRoot(nullptr),
+        resources(TBuiltInResource{}),
         numEntryPoints(0), numErrors(0), numPushConstants(0), recursive(false),
         invertY(false),
+        dxPositionW(false),
+        enhancedMsgs(false),
+        debugInfo(false),
         useStorageBuffer(false),
+        invariantAll(false),
         nanMinMaxClamp(false),
-        depthReplacing(false)
+        depthReplacing(false),
+        stencilReplacing(false),
+        uniqueId(0),
+        globalUniformBlockName(""),
+        atomicCounterBlockName(""),
+        globalUniformBlockSet(TQualifier::layoutSetEnd),
+        globalUniformBlockBinding(TQualifier::layoutBindingEnd),
+        atomicCounterBlockSet(TQualifier::layoutSetEnd)
 #ifndef GLSLANG_WEB
         ,
         implicitThisName("@this"), implicitCounterName("@count"),
@@ -254,9 +319,9 @@ public:
         useVulkanMemoryModel(false),
         invocations(TQualifier::layoutNotSet), vertices(TQualifier::layoutNotSet),
         inputPrimitive(ElgNone), outputPrimitive(ElgNone),
-        pixelCenterInteger(false), originUpperLeft(false),
+        pixelCenterInteger(false), originUpperLeft(false),texCoordBuiltinRedeclared(false),
         vertexSpacing(EvsNone), vertexOrder(EvoNone), interlockOrdering(EioNone), pointMode(false), earlyFragmentTests(false),
-        postDepthCoverage(false), depthLayout(EldNone),
+        postDepthCoverage(false), earlyAndLateFragmentTestsAMD(false), depthLayout(EldNone), stencilLayout(ElsNone),
         hlslFunctionality1(false),
         blendEquations(0), xfbMode(false), multiStream(false),
         layoutOverrideCoverage(false),
@@ -266,6 +331,7 @@ public:
         primitives(TQualifier::layoutNotSet),
         numTaskNVBlocks(0),
         layoutPrimitiveCulling(false),
+        numTaskEXTPayloads(0),
         autoMapBindings(false),
         autoMapLocations(false),
         flattenUniformArrays(false),
@@ -276,7 +342,10 @@ public:
         textureSamplerTransformMode(EShTexSampTransKeep),
         needToLegalize(false),
         binaryDoubleOutput(false),
+        subgroupUniformControlFlow(false),
         usePhysicalStorageBuffer(false),
+        spirvRequirement(nullptr),
+        spirvExecutionMode(nullptr),
         uniformLocationBase(0)
 #endif
     {
@@ -295,9 +364,16 @@ public:
 #endif
     }
 
-    void setVersion(int v) { version = v; }
+    void setVersion(int v)
+    {
+        version = v;
+    }
+    void setProfile(EProfile p)
+    {
+        profile = p;
+    }
+
     int getVersion() const { return version; }
-    void setProfile(EProfile p) { profile = p; }
     EProfile getProfile() const { return profile; }
     void setSpv(const SpvVersion& s)
     {
@@ -330,6 +406,9 @@ public:
         case EShTargetSpv_1_5:
             processes.addProcess("target-env spirv1.5");
             break;
+        case EShTargetSpv_1_6:
+            processes.addProcess("target-env spirv1.6");
+            break;
         default:
             processes.addProcess("target-env spirvUnknown");
             break;
@@ -348,6 +427,9 @@ public:
         case EShTargetVulkan_1_2:
             processes.addProcess("target-env vulkan1.2");
             break;
+        case EShTargetVulkan_1_3:
+            processes.addProcess("target-env vulkan1.3");
+            break;
         default:
             processes.addProcess("target-env vulkanUnknown");
             break;
@@ -357,15 +439,11 @@ public:
     }
     const SpvVersion& getSpv() const { return spvVersion; }
     EShLanguage getStage() const { return language; }
-    void updateRequestedExtension(const char* extension, TExtensionBehavior behavior) { 
-        if(requestedExtensions.find(extension) != requestedExtensions.end()) {
-            requestedExtensions[extension] = behavior; 
-        } else {
-            requestedExtensions.insert(std::make_pair(extension, behavior)); 
-        }
+    void addRequestedExtension(const char* extension) { requestedExtensions.insert(extension); }
+    const std::set<std::string>& getRequestedExtensions() const { return requestedExtensions; }
+    bool isRayTracingStage() const {
+        return language >= EShLangRayGen && language <= EShLangCallableNV;
     }
-
-    const std::map<std::string, TExtensionBehavior>& getRequestedExtensions() const { return requestedExtensions; }
 
     void setTreeRoot(TIntermNode* r) { treeRoot = r; }
     TIntermNode* getTreeRoot() const { return treeRoot; }
@@ -374,6 +452,7 @@ public:
     int getNumErrors() const { return numErrors; }
     void addPushConstantCount() { ++numPushConstants; }
     void setLimits(const TBuiltInResource& r) { resources = r; }
+    const TBuiltInResource& getLimits() const { return resources; }
 
     bool postProcess(TIntermNode*, EShLanguage);
     void removeTree();
@@ -388,6 +467,12 @@ public:
     const std::string& getEntryPointName() const { return entryPointName; }
     const std::string& getEntryPointMangledName() const { return entryPointMangledName; }
 
+    void setDebugInfo(bool debuginfo)
+    {
+        debugInfo = debuginfo;
+    }
+    bool getDebugInfo() const { return debugInfo; }
+
     void setInvertY(bool invert)
     {
         invertY = invert;
@@ -396,11 +481,25 @@ public:
     }
     bool getInvertY() const { return invertY; }
 
+    void setDxPositionW(bool dxPosW)
+    {
+        dxPositionW = dxPosW;
+        if (dxPositionW)
+            processes.addProcess("dx-position-w");
+    }
+    bool getDxPositionW() const { return dxPositionW; }
+
+    void setEnhancedMsgs()
+    {
+        enhancedMsgs = true;
+    }
+    bool getEnhancedMsgs() const { return enhancedMsgs && getSource() == EShSourceGlsl; }
+
 #ifdef ENABLE_HLSL
     void setSource(EShSource s) { source = s; }
     EShSource getSource() const { return source; }
 #else
-    void setSource(EShSource s) { assert(s == EShSourceGlsl); }
+    void setSource(EShSource s) { assert(s == EShSourceGlsl); (void)s; }
     EShSource getSource() const { return EShSourceGlsl; }
 #endif
 
@@ -411,15 +510,15 @@ public:
     TIntermSymbol* addSymbol(const TType&, const TSourceLoc&);
     TIntermSymbol* addSymbol(const TIntermSymbol&);
     TIntermTyped* addConversion(TOperator, const TType&, TIntermTyped*);
-    std::tuple<TIntermTyped*, TIntermTyped*> addConversion(TOperator op, TIntermTyped* node0, TIntermTyped* node1);
+    std::tuple<TIntermTyped*, TIntermTyped*> addPairConversion(TOperator op, TIntermTyped* node0, TIntermTyped* node1);
     TIntermTyped* addUniShapeConversion(TOperator, const TType&, TIntermTyped*);
     TIntermTyped* addConversion(TBasicType convertTo, TIntermTyped* node) const;
     void addBiShapeConversion(TOperator, TIntermTyped*& lhsNode, TIntermTyped*& rhsNode);
     TIntermTyped* addShapeConversion(const TType&, TIntermTyped*);
-    TIntermTyped* addBinaryMath(TOperator, TIntermTyped* left, TIntermTyped* right, TSourceLoc);
-    TIntermTyped* addAssign(TOperator op, TIntermTyped* left, TIntermTyped* right, TSourceLoc);
-    TIntermTyped* addIndex(TOperator op, TIntermTyped* base, TIntermTyped* index, TSourceLoc);
-    TIntermTyped* addUnaryMath(TOperator, TIntermTyped* child, TSourceLoc);
+    TIntermTyped* addBinaryMath(TOperator, TIntermTyped* left, TIntermTyped* right, const TSourceLoc&);
+    TIntermTyped* addAssign(TOperator op, TIntermTyped* left, TIntermTyped* right, const TSourceLoc&);
+    TIntermTyped* addIndex(TOperator op, TIntermTyped* base, TIntermTyped* index, const TSourceLoc&);
+    TIntermTyped* addUnaryMath(TOperator, TIntermTyped* child, const TSourceLoc&);
     TIntermTyped* addBuiltInFunctionCall(const TSourceLoc& line, TOperator, bool unary, TIntermNode*, const TType& returnType);
     bool canImplicitlyPromote(TBasicType from, TBasicType to, TOperator op = EOpNull) const;
     bool isIntegralPromotion(TBasicType from, TBasicType to) const;
@@ -433,7 +532,7 @@ public:
     TIntermAggregate* makeAggregate(TIntermNode* node);
     TIntermAggregate* makeAggregate(TIntermNode* node, const TSourceLoc&);
     TIntermAggregate* makeAggregate(const TSourceLoc&);
-    TIntermTyped* setAggregateOperator(TIntermNode*, TOperator, const TType& type, TSourceLoc);
+    TIntermTyped* setAggregateOperator(TIntermNode*, TOperator, const TType& type, const TSourceLoc&);
     bool areAllChildConst(TIntermAggregate* aggrNode);
     TIntermSelection* addSelection(TIntermTyped* cond, TIntermNodePair code, const TSourceLoc&);
     TIntermTyped* addSelection(TIntermTyped* cond, TIntermTyped* trueBlock, TIntermTyped* falseBlock, const TSourceLoc&);
@@ -462,10 +561,11 @@ public:
 
     // Low level functions to add nodes (no conversions or other higher level transformations)
     // If a type is provided, the node's type will be set to it.
-    TIntermBinary* addBinaryNode(TOperator op, TIntermTyped* left, TIntermTyped* right, TSourceLoc) const;
-    TIntermBinary* addBinaryNode(TOperator op, TIntermTyped* left, TIntermTyped* right, TSourceLoc, const TType&) const;
-    TIntermUnary* addUnaryNode(TOperator op, TIntermTyped* child, TSourceLoc) const;
-    TIntermUnary* addUnaryNode(TOperator op, TIntermTyped* child, TSourceLoc, const TType&) const;
+    TIntermBinary* addBinaryNode(TOperator op, TIntermTyped* left, TIntermTyped* right, const TSourceLoc&) const;
+    TIntermBinary* addBinaryNode(TOperator op, TIntermTyped* left, TIntermTyped* right, const TSourceLoc&,
+        const TType&) const;
+    TIntermUnary* addUnaryNode(TOperator op, TIntermTyped* child, const TSourceLoc&) const;
+    TIntermUnary* addUnaryNode(TOperator op, TIntermTyped* child, const TSourceLoc&, const TType&) const;
 
     // Constant folding (in Constant.cpp)
     TIntermTyped* fold(TIntermAggregate* aggrNode);
@@ -474,20 +574,34 @@ public:
     TIntermTyped* foldSwizzle(TIntermTyped* node, TSwizzleSelectors<TVectorSelector>& fields, const TSourceLoc&);
 
     // Tree ops
-    static const TIntermTyped* findLValueBase(const TIntermTyped*, bool swizzleOkay);
+    static const TIntermTyped* findLValueBase(const TIntermTyped*, bool swizzleOkay , bool BufferReferenceOk = false);
 
     // Linkage related
     void addSymbolLinkageNodes(TIntermAggregate*& linkage, EShLanguage, TSymbolTable&);
     void addSymbolLinkageNode(TIntermAggregate*& linkage, const TSymbol&);
+    TIntermAggregate* findLinkerObjects() const;
 
-    void setUseStorageBuffer()
-    {
-        useStorageBuffer = true;
-        processes.addProcess("use-storage-buffer");
-    }
+    void setGlobalUniformBlockName(const char* name) { globalUniformBlockName = std::string(name); }
+    const char* getGlobalUniformBlockName() const { return globalUniformBlockName.c_str(); }
+    void setGlobalUniformSet(unsigned int set) { globalUniformBlockSet = set; }
+    unsigned int getGlobalUniformSet() const { return globalUniformBlockSet; }
+    void setGlobalUniformBinding(unsigned int binding) { globalUniformBlockBinding = binding; }
+    unsigned int getGlobalUniformBinding() const { return globalUniformBlockBinding; }
+
+    void setAtomicCounterBlockName(const char* name) { atomicCounterBlockName = std::string(name); }
+    const char* getAtomicCounterBlockName() const { return atomicCounterBlockName.c_str(); }
+    void setAtomicCounterBlockSet(unsigned int set) { atomicCounterBlockSet = set; }
+    unsigned int getAtomicCounterBlockSet() const { return atomicCounterBlockSet; }
+
+
+    void setUseStorageBuffer() { useStorageBuffer = true; }
     bool usingStorageBuffer() const { return useStorageBuffer; }
+    void setInvariantAll() { invariantAll = true; }
+    bool isInvariantAll() const { return invariantAll; }
     void setDepthReplacing() { depthReplacing = true; }
     bool isDepthReplacing() const { return depthReplacing; }
+    void setStencilReplacing() { stencilReplacing = true; }
+    bool isStencilReplacing() const { return stencilReplacing; }
     bool setLocalSize(int dim, int size)
     {
         if (localSizeNotDefault[dim])
@@ -497,6 +611,11 @@ public:
         return true;
     }
     unsigned int getLocalSize(int dim) const { return localSize[dim]; }
+    bool isLocalSizeSet() const
+    {
+        // Return true if any component has been set (i.e. any component is not default).
+        return localSizeNotDefault[0] || localSizeNotDefault[1] || localSizeNotDefault[2];
+    }
     bool setLocalSizeSpecId(int dim, int id)
     {
         if (localSizeSpecId[dim] != TQualifier::layoutNotSet)
@@ -505,6 +624,13 @@ public:
         return true;
     }
     int getLocalSizeSpecId(int dim) const { return localSizeSpecId[dim]; }
+    bool isLocalSizeSpecialized() const
+    {
+        // Return true if any component has been specialized.
+        return localSizeSpecId[0] != TQualifier::layoutNotSet ||
+               localSizeSpecId[1] != TQualifier::layoutNotSet ||
+               localSizeSpecId[2] != TQualifier::layoutNotSet;
+    }
 #ifdef GLSLANG_WEB
     void output(TInfoSink&, bool tree) { }
 
@@ -525,6 +651,7 @@ public:
     int getNumPushConstants() const { return 0; }
     void addShaderRecordCount() { }
     void addTaskNVCount() { }
+    void addTaskPayloadEXTCount() { }
     void setUseVulkanMemoryModel() { }
     bool usingVulkanMemoryModel() const { return false; }
     bool usingPhysicalStorageBuffer() const { return false; }
@@ -627,6 +754,65 @@ public:
         useVariablePointers = true;
         processes.addProcess("use-variable-pointers");
     }
+    // Set the global flag for bindless texture
+    void setBindlessTextureMode(const TString& currentCaller, AstRefType type)
+    {
+        // When type is not func, currentCaller should be "" (empty string)
+        bindlessTextureModeCaller[currentCaller] = type;
+    }
+
+    // Get the global flag for bindless texture
+    bool getBindlessTextureMode() const
+    {
+        return (bindlessTextureModeCaller.size() > 0);
+    }
+
+    // Set the global flag for bindless image
+    void setBindlessImageMode(const TString& currentCaller, AstRefType type)
+    {
+        // When type is not func, currentCaller should be "" (empty string)
+        bindlessImageModeCaller[currentCaller] = type;
+    }
+
+    // Get the global flag for bindless image
+    bool getBindlessImageMode() const
+    {
+        return (bindlessImageModeCaller.size() > 0);
+    }
+
+    // Get the global flag for bindless texture
+    bool resetTopLevelUncalledStatus(const TString& deadCaller)
+    {
+        // For reflection collection purpose, currently uniform layout setting and some
+        // flags introduced by variables (IO, global, etc,.) won't be reset here.
+        // Remove each global status (AST top level) introduced by uncalled functions.
+        // If a status is set by several functions, keep those which in call graph.
+        bool result = false;
+
+        // For two types of bindless mode flag, we would only reset which is set by an uncalled function.
+        // If one status flag's key in caller vec is empty, it should be come from a non-function setting.
+        if (!bindlessTextureModeCaller.empty()) {
+            auto caller = bindlessTextureModeCaller.find(deadCaller);
+            if (caller != bindlessTextureModeCaller.end() && bindlessTextureModeCaller[deadCaller] == AstRefTypeFunc) {
+                bindlessTextureModeCaller.erase(caller);
+                result = true;
+            }
+        }
+        if (!bindlessImageModeCaller.empty()) {
+            auto caller = bindlessImageModeCaller.find(deadCaller);
+            if (caller != bindlessImageModeCaller.end() && bindlessImageModeCaller[deadCaller] == AstRefTypeFunc) {
+                bindlessImageModeCaller.erase(caller);
+                result = true;
+            }
+        }
+        return result;
+    }
+
+    bool getBindlessMode() const
+    {
+        return getBindlessTextureMode() || getBindlessImageMode();
+    }
+
     bool usingVariablePointers() const { return useVariablePointers; }
 
 #ifdef ENABLE_HLSL
@@ -642,6 +828,7 @@ public:
     int getNumPushConstants() const { return numPushConstants; }
     void addShaderRecordCount() { ++numShaderRecordBlocks; }
     void addTaskNVCount() { ++numTaskNVBlocks; }
+    void addTaskPayloadEXTCount() { ++numTaskEXTPayloads; }
 
     bool setInvocations(int i)
     {
@@ -710,7 +897,9 @@ public:
     void setPostDepthCoverage() { postDepthCoverage = true; }
     bool getPostDepthCoverage() const { return postDepthCoverage; }
     void setEarlyFragmentTests() { earlyFragmentTests = true; }
+    void setEarlyAndLateFragmentTestsAMD() { earlyAndLateFragmentTestsAMD = true; }
     bool getEarlyFragmentTests() const { return earlyFragmentTests; }
+    bool getEarlyAndLateFragmentTestsAMD() const { return earlyAndLateFragmentTestsAMD; }
     bool setDepth(TLayoutDepth d)
     {
         if (depthLayout != EldNone)
@@ -718,11 +907,21 @@ public:
         depthLayout = d;
         return true;
     }
+    bool setStencil(TLayoutStencil s)
+    {
+        if (stencilLayout != ElsNone)
+            return stencilLayout == s;
+        stencilLayout = s;
+        return true;
+    }
     TLayoutDepth getDepth() const { return depthLayout; }
+    TLayoutStencil getStencil() const { return stencilLayout; }
     void setOriginUpperLeft() { originUpperLeft = true; }
     bool getOriginUpperLeft() const { return originUpperLeft; }
     void setPixelCenterInteger() { pixelCenterInteger = true; }
     bool getPixelCenterInteger() const { return pixelCenterInteger; }
+    void setTexCoordRedeclared() { texCoordBuiltinRedeclared = true; }
+    bool getTexCoordRedeclared() const { return texCoordBuiltinRedeclared; }
     void addBlendEquation(TBlendEquationShift b) { blendEquations |= (1 << b); }
     unsigned int getBlendEquations() const { return blendEquations; }
     bool setXfbBufferStride(int buffer, unsigned stride)
@@ -781,8 +980,34 @@ public:
 
     void setBinaryDoubleOutput() { binaryDoubleOutput = true; }
     bool getBinaryDoubleOutput() { return binaryDoubleOutput; }
+
+    void setSubgroupUniformControlFlow() { subgroupUniformControlFlow = true; }
+    bool getSubgroupUniformControlFlow() const { return subgroupUniformControlFlow; }
+
+    // GL_EXT_spirv_intrinsics
+    void insertSpirvRequirement(const TSpirvRequirement* spirvReq);
+    bool hasSpirvRequirement() const { return spirvRequirement != nullptr; }
+    const TSpirvRequirement& getSpirvRequirement() const { return *spirvRequirement; }
+    void insertSpirvExecutionMode(int executionMode, const TIntermAggregate* args = nullptr);
+    void insertSpirvExecutionModeId(int executionMode, const TIntermAggregate* args);
+    bool hasSpirvExecutionMode() const { return spirvExecutionMode != nullptr; }
+    const TSpirvExecutionMode& getSpirvExecutionMode() const { return *spirvExecutionMode; }
 #endif // GLSLANG_WEB
 
+    void addBlockStorageOverride(const char* nameStr, TBlockStorageClass backing)
+    {
+        std::string name(nameStr);
+        blockBackingOverrides[name] = backing;
+    }
+    TBlockStorageClass getBlockStorageOverride(const char* nameStr) const
+    {
+        std::string name = nameStr;
+        auto pos = blockBackingOverrides.find(name);
+        if (pos == blockBackingOverrides.end())
+            return EbsNone;
+        else
+            return pos->second;
+    }
 #ifdef ENABLE_HLSL
     void setHlslFunctionality1() { hlslFunctionality1 = true; }
     bool getHlslFunctionality1() const { return hlslFunctionality1; }
@@ -806,9 +1031,26 @@ public:
     bool usingHlslIoMapping() { return false; }
 #endif
 
+    bool usingScalarBlockLayout() const {
+        for (auto extIt = requestedExtensions.begin(); extIt != requestedExtensions.end(); ++extIt) {
+            if (*extIt == E_GL_EXT_scalar_block_layout)
+                return true;
+        }
+        return false;
+    }
+
+    bool IsRequestedExtension(const char* extension) const
+    {
+        return (requestedExtensions.find(extension) != requestedExtensions.end());
+    }
+
     void addToCallGraph(TInfoSink&, const TString& caller, const TString& callee);
     void merge(TInfoSink&, TIntermediate&);
     void finalCheck(TInfoSink&, bool keepUncalled);
+
+    void mergeGlobalUniformBlocks(TInfoSink& infoSink, TIntermediate& unit, bool mergeExistingOnly);
+    void mergeUniformObjects(TInfoSink& infoSink, TIntermediate& unit);
+    void checkStageIO(TInfoSink&, TIntermediate&);
 
     bool buildConvertOp(TBasicType dst, TBasicType src, TOperator& convertOp) const;
     TIntermTyped* createConversion(TBasicType convertTo, TIntermTyped* node) const;
@@ -818,6 +1060,7 @@ public:
 
     int addUsedLocation(const TQualifier&, const TType&, bool& typeCollision);
     int checkLocationRange(int set, const TIoRange& range, const TType&, bool& typeCollision);
+    int checkLocationRT(int set, int location);
     int addUsedOffsets(int binding, int offset, int numOffsets);
     bool addUsedConstantId(int id);
     static int computeTypeLocationSize(const TType&, EShLanguage);
@@ -832,6 +1075,8 @@ public:
     static int getOffset(const TType& type, int index);
     static int getBlockSize(const TType& blockType);
     static int computeBufferReferenceTypeSize(const TType&);
+    static bool isIoResizeArray(const TType& type, EShLanguage language);
+
     bool promote(TIntermOperator*);
     void setNanMinMaxClamp(bool setting) { nanMinMaxClamp = setting; }
     bool getNanMinMaxClamp() const { return nanMinMaxClamp; }
@@ -850,47 +1095,53 @@ public:
     void addProcess(const std::string& process) { processes.addProcess(process); }
     void addProcessArgument(const std::string& arg) { processes.addArgument(arg); }
     const std::vector<std::string>& getProcesses() const { return processes.getProcesses(); }
+    unsigned long long getUniqueId() const { return uniqueId; }
+    void setUniqueId(unsigned long long id) { uniqueId = id; }
 
     // Certain explicit conversions are allowed conditionally
 #ifdef GLSLANG_WEB
     bool getArithemeticInt8Enabled() const { return false; }
     bool getArithemeticInt16Enabled() const { return false; }
     bool getArithemeticFloat16Enabled() const { return false; }
+    void updateNumericFeature(TNumericFeatures::feature f, bool on) { }
 #else
     bool getArithemeticInt8Enabled() const {
-        return extensionRequested(E_GL_EXT_shader_explicit_arithmetic_types) ||
-               extensionRequested(E_GL_EXT_shader_explicit_arithmetic_types_int8);
+        return numericFeatures.contains(TNumericFeatures::shader_explicit_arithmetic_types) ||
+               numericFeatures.contains(TNumericFeatures::shader_explicit_arithmetic_types_int8);
     }
     bool getArithemeticInt16Enabled() const {
-        return extensionRequested(E_GL_EXT_shader_explicit_arithmetic_types) ||
-               extensionRequested(E_GL_AMD_gpu_shader_int16) ||
-               extensionRequested(E_GL_EXT_shader_explicit_arithmetic_types_int16);
+        return numericFeatures.contains(TNumericFeatures::shader_explicit_arithmetic_types) ||
+               numericFeatures.contains(TNumericFeatures::gpu_shader_int16) ||
+               numericFeatures.contains(TNumericFeatures::shader_explicit_arithmetic_types_int16);
     }
 
     bool getArithemeticFloat16Enabled() const {
-        return extensionRequested(E_GL_EXT_shader_explicit_arithmetic_types) ||
-               extensionRequested(E_GL_AMD_gpu_shader_half_float) ||
-               extensionRequested(E_GL_EXT_shader_explicit_arithmetic_types_float16);
+        return numericFeatures.contains(TNumericFeatures::shader_explicit_arithmetic_types) ||
+               numericFeatures.contains(TNumericFeatures::gpu_shader_half_float) ||
+               numericFeatures.contains(TNumericFeatures::shader_explicit_arithmetic_types_float16);
     }
+    void updateNumericFeature(TNumericFeatures::feature f, bool on)
+        { on ? numericFeatures.insert(f) : numericFeatures.erase(f); }
 #endif
 
 protected:
-    TIntermSymbol* addSymbol(int Id, const TString&, const TType&, const TConstUnionArray&, TIntermTyped* subtree, const TSourceLoc&);
-    void error(TInfoSink& infoSink, const char*);
-    void warn(TInfoSink& infoSink, const char*);
+    TIntermSymbol* addSymbol(long long Id, const TString&, const TType&, const TConstUnionArray&, TIntermTyped* subtree, const TSourceLoc&);
+    void error(TInfoSink& infoSink, const char*, EShLanguage unitStage = EShLangCount);
+    void warn(TInfoSink& infoSink, const char*, EShLanguage unitStage = EShLangCount);
     void mergeCallGraphs(TInfoSink&, TIntermediate&);
     void mergeModes(TInfoSink&, TIntermediate&);
     void mergeTrees(TInfoSink&, TIntermediate&);
-    void seedIdMap(TIdMaps& idMaps, int& maxId);
-    void remapIds(const TIdMaps& idMaps, int idShift, TIntermediate&);
+    void seedIdMap(TIdMaps& idMaps, long long& IdShift);
+    void remapIds(const TIdMaps& idMaps, long long idShift, TIntermediate&);
     void mergeBodies(TInfoSink&, TIntermSequence& globals, const TIntermSequence& unitGlobals);
-    void mergeLinkerObjects(TInfoSink&, TIntermSequence& linkerObjects, const TIntermSequence& unitLinkerObjects);
+    void mergeLinkerObjects(TInfoSink&, TIntermSequence& linkerObjects, const TIntermSequence& unitLinkerObjects, EShLanguage);
+    void mergeBlockDefinitions(TInfoSink&, TIntermSymbol* block, TIntermSymbol* unitBlock, TIntermediate* unitRoot);
     void mergeImplicitArraySizes(TType&, const TType&);
-    void mergeErrorCheck(TInfoSink&, const TIntermSymbol&, const TIntermSymbol&, bool crossStage);
+    void mergeErrorCheck(TInfoSink&, const TIntermSymbol&, const TIntermSymbol&, EShLanguage);
     void checkCallGraphCycles(TInfoSink&);
     void checkCallGraphBodies(TInfoSink&, bool keepUncalled);
     void inOutLocationCheck(TInfoSink&);
-    TIntermAggregate* findLinkerObjects() const;
+    void sharedBlockCheck(TInfoSink&);
     bool userOutputUsed() const;
     bool isSpecializationOperation(const TIntermOperator&) const;
     bool isNonuniformPropagating(TOperator) const;
@@ -903,23 +1154,7 @@ protected:
     bool specConstantPropagates(const TIntermTyped&, const TIntermTyped&);
     void performTextureUpgradeAndSamplerRemovalTransformation(TIntermNode* root);
     bool isConversionAllowed(TOperator op, TIntermTyped* node) const;
-    std::tuple<TBasicType, TBasicType> getConversionDestinatonType(TBasicType type0, TBasicType type1, TOperator op) const;
-
-    // JohnK: I think this function should go away.
-    // This data structure is just a log to pass on to back ends.
-    // Versioning and extensions are handled in Version.cpp, with a rich
-    // set of functions for querying stages, versions, extension enable/disabled, etc.
-#ifdef GLSLANG_WEB
-    bool extensionRequested(const char *extension) const { return false; }
-#else
-    bool extensionRequested(const char *extension) const {
-        auto it = requestedExtensions.find(extension);
-        if (it != requestedExtensions.end()) {
-            return (it->second == EBhDisable) ? false : true;
-        }
-        return false;
-    }
-#endif
+    std::tuple<TBasicType, TBasicType> getConversionDestinationType(TBasicType type0, TBasicType type1, TOperator op) const;
 
     static const char* getResourceName(TResourceType);
 
@@ -933,19 +1168,32 @@ protected:
     int version;                                // source version
     SpvVersion spvVersion;
     TIntermNode* treeRoot;
-    std::map<std::string, TExtensionBehavior> requestedExtensions;  // cumulation of all enabled or required extensions; not connected to what subset of the shader used them
-    TBuiltInResource resources;
+    std::set<std::string> requestedExtensions;  // cumulation of all enabled or required extensions; not connected to what subset of the shader used them
+    MustBeAssigned<TBuiltInResource> resources;
     int numEntryPoints;
     int numErrors;
     int numPushConstants;
     bool recursive;
     bool invertY;
+    bool dxPositionW;
+    bool enhancedMsgs;
+    bool debugInfo;
     bool useStorageBuffer;
+    bool invariantAll;
     bool nanMinMaxClamp;            // true if desiring min/max/clamp to favor non-NaN over NaN
     bool depthReplacing;
+    bool stencilReplacing;
     int localSize[3];
     bool localSizeNotDefault[3];
     int localSizeSpecId[3];
+    unsigned long long uniqueId;
+
+    std::string globalUniformBlockName;
+    std::string atomicCounterBlockName;
+    unsigned int globalUniformBlockSet;
+    unsigned int globalUniformBlockBinding;
+    unsigned int atomicCounterBlockSet;
+
 #ifndef GLSLANG_WEB
 public:
     const char* const implicitThisName;
@@ -959,13 +1207,16 @@ protected:
     TLayoutGeometry outputPrimitive;
     bool pixelCenterInteger;
     bool originUpperLeft;
+    bool texCoordBuiltinRedeclared;
     TVertexSpacing vertexSpacing;
     TVertexOrder vertexOrder;
     TInterlockOrdering interlockOrdering;
     bool pointMode;
     bool earlyFragmentTests;
     bool postDepthCoverage;
+    bool earlyAndLateFragmentTestsAMD;
     TLayoutDepth depthLayout;
+    TLayoutStencil stencilLayout;
     bool hlslFunctionality1;
     int blendEquations;        // an 'or'ing of masks of shifts of TBlendEquationShift
     bool xfbMode;
@@ -978,6 +1229,7 @@ protected:
     int primitives;
     int numTaskNVBlocks;
     bool layoutPrimitiveCulling;
+    int numTaskEXTPayloads;
 
     // Base shift values
     std::array<unsigned int, EResCount> shiftBinding;
@@ -1000,17 +1252,28 @@ protected:
 
     bool needToLegalize;
     bool binaryDoubleOutput;
+    bool subgroupUniformControlFlow;
     bool usePhysicalStorageBuffer;
 
+    TSpirvRequirement* spirvRequirement;
+    TSpirvExecutionMode* spirvExecutionMode;
+    std::map<TString, AstRefType> bindlessTextureModeCaller;
+    std::map<TString, AstRefType> bindlessImageModeCaller;
     std::unordered_map<std::string, int> uniformLocationOverrides;
     int uniformLocationBase;
+    TNumericFeatures numericFeatures;
 #endif
+    std::unordered_map<std::string, TBlockStorageClass> blockBackingOverrides;
 
     std::unordered_set<int> usedConstantId; // specialization constant ids used
     std::vector<TOffsetRange> usedAtomics;  // sets of bindings used by atomic counters
     std::vector<TIoRange> usedIo[4];        // sets of used locations, one for each of in, out, uniform, and buffers
+    std::vector<TRange> usedIoRT[4];        // sets of used location, one for rayPayload/rayPayloadIN,
+                                            // one for callableData/callableDataIn, one for hitObjectAttributeNV and
+                                            // one for shaderrecordhitobjectNV
     // set of names of statically read/written I/O that might need extra checking
     std::set<TString> ioAccessed;
+
     // source code of shader, useful as part of debug information
     std::string sourceFile;
     std::string sourceText;

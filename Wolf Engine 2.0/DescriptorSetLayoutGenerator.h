@@ -14,6 +14,7 @@ namespace Wolf
 		void addStorageImage(VkShaderStageFlags accessibility, uint32_t binding);
 		void addSampler(VkShaderStageFlags accessibility, uint32_t binding);
 		void addImages(VkDescriptorType descriptorType, VkShaderStageFlags accessibility, uint32_t binding, uint32_t count);
+		void addAccelerationStructure(VkShaderStageFlags accessibility, uint32_t binding);
 
 		const std::vector<Wolf::DescriptorLayout>& getDescriptorLayouts() const { return m_descriptorLayouts; }
 
@@ -21,4 +22,3 @@ namespace Wolf
 		std::vector<Wolf::DescriptorLayout> m_descriptorLayouts;
 	};
 }
-
