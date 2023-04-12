@@ -4,9 +4,7 @@
 #include <fstream>
 #include <sstream>
 #ifdef __ANDROID__
-#include <android/asset_manager.h>
-#include <android/native_activity.h>
-#include <shaderc/shaderc.hpp>
+#include <AndroidCacheHelper.h>
 #endif
 
 #include "Configuration.h"
@@ -39,27 +37,8 @@ void Wolf::ShaderParser::readCompiledShader(std::vector<char>& shaderCode) const
 void Wolf::ShaderParser::parseAndCompile()
 {
 #ifdef __ANDROID__
-    std::ifstream appFile("/proc/self/cmdline");
-    std::string processName;
-    std::getline(appFile, processName);
-    std::string appFolderName = "/data/data/" + processName.substr(0, processName.find('\0'));
-    appFolderName += "/shader_cache";
-    std::filesystem::create_directory(appFolderName);
-
-    AAsset *file = AAssetManager_open(g_configuration->getAndroidAssetManager(), m_filename.c_str(), AASSET_MODE_BUFFER);
-    size_t file_length = AAsset_getLength(file);
-
-    std::vector<uint8_t> data;
-    data.resize(file_length);
-
-    AAsset_read(file, data.data(), file_length);
-    AAsset_close(file);
-
-    std::string shaderFilename = m_filename.substr(m_filename.find_last_of("/") + 1);
-    m_filename = appFolderName + "/" + shaderFilename;
-    std::fstream outCacheFile(m_filename, std::ios::out | std::ios::binary);
-    outCacheFile.write((char*)data.data(), data.size());
-    outCacheFile.close();
+    const std::string appFolderName = "shader_cache";
+    copyCompressedFileToStorage(m_filename, appFolderName, m_filename);
 #endif
 
     std::ifstream inFile(m_filename);
@@ -156,7 +135,7 @@ void Wolf::ShaderParser::parseAndCompile()
 
     std::vector<char> parsedShaderCode;
     readFile(parsedShaderCode, parsedFilename);
-    shaderc::SpvCompilationResult module = compiler.CompileGlslToSpv(parsedShaderCode.data(), data.size(), shaderKind,
+    shaderc::SpvCompilationResult module = compiler.CompileGlslToSpv(parsedShaderCode.data(), parsedShaderCode.size(), shaderKind,
                                                                      compiledFilename.c_str(), options);
 
     if (module.GetCompilationStatus() != shaderc_compilation_status_success)

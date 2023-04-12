@@ -86,6 +86,9 @@ namespace Wolf
 		// Files paths
 		std::string filename;
 		std::string mtlFolder;
+#ifdef __ANDROID__
+        bool isInAssets = false; // false = in storage
+#endif
 
 		// Default options
 		glm::vec3 defaultNormal = glm::vec3(0.0f, 1.0f, 0.0f);

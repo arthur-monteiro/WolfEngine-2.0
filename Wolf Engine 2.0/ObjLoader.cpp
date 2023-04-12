@@ -1,19 +1,29 @@
 #include "ObjLoader.h"
 
+#include <filesystem>
 #define TINYOBJLOADER_IMPLEMENTATION
 #include <tiny_obj_loader.h>
+#include <thread>
 
+#include "AndroidCacheHelper.h"
 #include "ImageFileLoader.h"
 #include "MipMapGenerator.h"
 
 Wolf::ObjLoader::ObjLoader(ModelLoadingInfo& modelLoadingInfo)
 {
+#ifdef __ANDROID__
+    if(modelLoadingInfo.isInAssets)
+    {
+        const std::string appFolderName = "model_cache";
+        copyCompressedFileToStorage(modelLoadingInfo.filename, appFolderName, modelLoadingInfo.filename);
+    }
+#endif
+
 	if (modelLoadingInfo.useCache)
 	{
 		std::string binFilename = modelLoadingInfo.filename + ".bin";
 
-		struct stat buffer;
-		if (stat(binFilename.c_str(), &buffer) == 0)
+		if (std::filesystem::exists(binFilename))
 		{
 			std::ifstream input(binFilename, std::ios::in | std::ios::binary);
 

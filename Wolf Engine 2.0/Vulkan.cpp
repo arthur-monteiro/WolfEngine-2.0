@@ -105,6 +105,7 @@ std::vector<const char*> getRequiredExtensions()
 	extensions.push_back(VK_EXT_DEBUG_REPORT_EXTENSION_NAME);
 	extensions.push_back(VK_KHR_EXTERNAL_MEMORY_CAPABILITIES_EXTENSION_NAME);
 	extensions.push_back(VK_KHR_EXTERNAL_SEMAPHORE_CAPABILITIES_EXTENSION_NAME);
+	extensions.push_back("VK_KHR_get_physical_device_properties2");
 #endif
 
 //#ifndef NDEBUG
@@ -310,13 +311,13 @@ void Wolf::Vulkan::pickPhysicalDevice()
 			m_physicalDevice = device;
 			m_maxMsaaSamples = getMaxUsableSampleCount(m_physicalDevice);
 
-			PFN_vkGetPhysicalDeviceProperties2KHR vkGetPhysicalDeviceProperties2KHR =
+			/*PFN_vkGetPhysicalDeviceProperties2KHR vkGetPhysicalDeviceProperties2KHR =
 				reinterpret_cast<PFN_vkGetPhysicalDeviceProperties2KHR>(vkGetInstanceProcAddr(m_instance, "vkGetPhysicalDeviceProperties2KHR"));
 			VkPhysicalDeviceProperties2KHR deviceProps2{};
 			m_conservativeRasterProps.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_CONSERVATIVE_RASTERIZATION_PROPERTIES_EXT;
 			deviceProps2.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2_KHR;
 			deviceProps2.pNext = &m_conservativeRasterProps;
-			vkGetPhysicalDeviceProperties2KHR(m_physicalDevice, &deviceProps2);
+			vkGetPhysicalDeviceProperties2KHR(m_physicalDevice, &deviceProps2);*/
 
 			if (m_hardwareCapabilities.rayTracingAvailable)
 				getPhysicalDeviceRayTracingProperties(m_raytracingProperties);
