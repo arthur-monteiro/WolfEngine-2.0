@@ -147,6 +147,9 @@
     <ClCompile Include="AccelerationStructure.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="AndroidCacheHelper.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="WolfEngine.h">
@@ -285,6 +288,9 @@
       <Filter>Ray Tracing</Filter>
     </ClInclude>
     <ClInclude Include="AccelerationStructure.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="AndroidCacheHelper.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

@@ -1,5 +1,7 @@
 #include "MipMapGenerator.h"
 
+#include <cmath>
+
 Wolf::MipMapGenerator::MipMapGenerator(const unsigned char* firstMipPixels, VkExtent2D extent, VkFormat format, int mipCount)
 {
 	if(mipCount < 0)
