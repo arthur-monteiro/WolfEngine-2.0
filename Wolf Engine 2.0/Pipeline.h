@@ -42,6 +42,8 @@ namespace Wolf
 		VkCullModeFlags cullMode = VK_CULL_MODE_BACK_BIT;
 		bool enableConservativeRasterization = false;
 		float maxExtraPrimitiveOverestimationSize = 0.75f;
+		float depthBiasConstantFactor = 0.0f;
+		float depthBiasSlopeFactor = 0.0f;
 
 		// Multi-sampling
 		VkSampleCountFlagBits msaaSamples = VK_SAMPLE_COUNT_1_BIT;
