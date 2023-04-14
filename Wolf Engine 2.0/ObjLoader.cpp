@@ -37,7 +37,7 @@ Wolf::ObjLoader::ObjLoader(ModelLoadingInfo& modelLoadingInfo)
 			std::vector<uint32_t> indices(indicesCount);
 			input.read(reinterpret_cast<char*>(indices.data()), indicesCount * sizeof(indices[0]));
 
-			m_mesh.reset(new Mesh(vertices, indices));
+			m_mesh.reset(new Mesh(vertices, indices, modelLoadingInfo.additionalVertexBufferUsages, modelLoadingInfo.additionalIndexBufferUsages, VK_FORMAT_R32G32B32_SFLOAT));
 
 			uint32_t textureCount;
 			input.read(reinterpret_cast<char*>(&textureCount), sizeof(textureCount));
@@ -216,7 +216,7 @@ Wolf::ObjLoader::ObjLoader(ModelLoadingInfo& modelLoadingInfo)
 		}
 	}
 
-	m_mesh.reset(new Mesh(vertices, indices));
+	m_mesh.reset(new Mesh(vertices, indices, modelLoadingInfo.additionalVertexBufferUsages, modelLoadingInfo.additionalIndexBufferUsages));
 
 	Debug::sendInfo("Model loaded with " + std::to_string(indices.size() / 3) + " triangles");
 

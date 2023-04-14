@@ -101,6 +101,10 @@ namespace Wolf
 
 		// Multi-threading options
 		std::mutex* vulkanQueueLock = nullptr;
+
+		// Addidional flags
+		VkBufferUsageFlags additionalVertexBufferUsages = 0;
+		VkBufferUsageFlags additionalIndexBufferUsages = 0;
 	};
 
 	class ObjLoader
@@ -109,7 +113,7 @@ namespace Wolf
 		ObjLoader(ModelLoadingInfo& modelLoadingInfo);
 		ObjLoader(const ObjLoader&) = delete;
 
-		const Mesh* getMesh() { return m_mesh.get(); }
+		const Mesh* getMesh() const { return m_mesh.get(); }
 		const void getImages(std::vector<Image*>& images);
 
 	private:

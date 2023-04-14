@@ -54,6 +54,7 @@ namespace Wolf
 #ifndef __ANDROID__
 		void getUserInterfaceJSObject(ultralight::JSObject& outObject);
 #endif
+		const HardwareCapabilities& getHardwareCapabilities() const { return m_vulkan->getHardwareCapabilities(); }
 
 		void setCameraInterface(CameraInterface* cameraInterface) { m_cameraInterface = cameraInterface; }
 		void setGameContexts(const std::vector<void*>& gameContexts) { m_gameContexts = gameContexts; }

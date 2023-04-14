@@ -9,6 +9,7 @@
 #include <CommandRecordBase.h>
 #include <DescriptorSet.h>
 #include <DescriptorSetLayout.h>
+#include <DescriptorSetLayoutGenerator.h>
 #include <FrameBuffer.h>
 #include <Image.h>
 #include <Mesh.h>
@@ -27,13 +28,11 @@ public:
 	void submit(const Wolf::SubmitContext& context) override;
 
 private:
-	void createPipeline(uint32_t width, uint32_t height);
+	void createPipeline();
+	void createDescriptorSets(const Wolf::InitializationContext& context);
 
 private:
-
 	std::unique_ptr<Wolf::Pipeline> m_pipeline;
-	uint32_t m_swapChainWidth;
-	uint32_t m_swapChainHeight;
 
 	std::unique_ptr<Wolf::Mesh> m_triangle;
 
@@ -46,5 +45,6 @@ private:
 	std::unique_ptr<Wolf::ShaderBindingTable> m_shaderBindingTable;
 
 	std::unique_ptr<Wolf::DescriptorSetLayout> m_descriptorSetLayout;
+	Wolf::DescriptorSetLayoutGenerator m_descriptorSetLayoutGenerator;
 	std::vector<std::unique_ptr<Wolf::DescriptorSet>> m_descriptorSets;
 };

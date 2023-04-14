@@ -39,6 +39,7 @@ namespace Wolf
 		VkQueue getComputeQueue() const { return m_computeQueue; }
 		VkDescriptorPool getDescriptorPool() const { return m_descriptorPool->getDescriptorPool(); }
 		const VkPhysicalDeviceRayTracingPipelinePropertiesKHR& getRayTracingProperties() const { return m_raytracingProperties; }
+		const HardwareCapabilities& getHardwareCapabilities() const { return m_hardwareCapabilities; }
 
 	private:
 		/* Main Loading Functions */

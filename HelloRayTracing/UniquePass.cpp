@@ -24,45 +24,13 @@ void UniquePass::initializeResources(const InitializationContext& context)
 	m_rayMissShaderParser.reset(new ShaderParser("Shaders/shader.rmiss"));
 	m_closestHitShaderParser.reset(new ShaderParser("Shaders/shader.rchit"));
 
-	RayTracingShaderGroupGenerator shaderGroupGenerator;
-	shaderGroupGenerator.addRayGenShaderStage(0);
-	shaderGroupGenerator.addMissShaderStage(  1);
-	HitGroup hitGroup;
-	hitGroup.closestHitShaderIdx =            2;
-	shaderGroupGenerator.addHitGroup(hitGroup);
+	m_descriptorSetLayoutGenerator.addAccelerationStructure(VK_SHADER_STAGE_RAYGEN_BIT_KHR | VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR, 0);
+	m_descriptorSetLayoutGenerator.addStorageImage(VK_SHADER_STAGE_RAYGEN_BIT_KHR,                                                1);
+	m_descriptorSetLayoutGenerator.addStorageBuffer(VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR,                                          2); // vertex buffer
+	m_descriptorSetLayoutGenerator.addStorageBuffer(VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR,                                          3); // index buffer
+	m_descriptorSetLayout.reset(new DescriptorSetLayout(m_descriptorSetLayoutGenerator.getDescriptorLayouts()));
 
-	RayTracingPipelineCreateInfo pipelineCreateInfo;
-
-	std::vector<char> rayGenShaderCode;
-	m_rayGenShaderParser->readCompiledShader(rayGenShaderCode);
-	std::vector<char> rayMissShaderCode;
-	m_rayMissShaderParser->readCompiledShader(rayMissShaderCode);
-	std::vector<char> closestHitShaderCode;
-	m_closestHitShaderParser->readCompiledShader(closestHitShaderCode);
-	
-	std::vector<ShaderCreateInfo> shaders(3);
-	shaders[0].shaderCode = rayGenShaderCode;
-	shaders[0].stage = VK_SHADER_STAGE_RAYGEN_BIT_KHR;
-	shaders[1].shaderCode = rayMissShaderCode;
-	shaders[1].stage = VK_SHADER_STAGE_MISS_BIT_KHR;
-	shaders[2].shaderCode = closestHitShaderCode;
-	shaders[2].stage = VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR;
-	pipelineCreateInfo.shaderCreateInfos = shaders;
-
-	pipelineCreateInfo.shaderGroupsCreateInfos = shaderGroupGenerator.getShaderGroups();
-
-	DescriptorSetLayoutGenerator descriptorSetLayoutGenerator;
-	descriptorSetLayoutGenerator.addAccelerationStructure(VK_SHADER_STAGE_RAYGEN_BIT_KHR | VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR, 0);
-	descriptorSetLayoutGenerator.addStorageImage(VK_SHADER_STAGE_RAYGEN_BIT_KHR,                                                1);
-	descriptorSetLayoutGenerator.addStorageBuffer(VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR,                                          2); // vertex buffer
-	descriptorSetLayoutGenerator.addStorageBuffer(VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR,                                          3); // index buffer
-	m_descriptorSetLayout.reset(new DescriptorSetLayout(descriptorSetLayoutGenerator.getDescriptorLayouts()));
-
-	std::vector<VkDescriptorSetLayout> descriptorSetLayouts = { m_descriptorSetLayout->getDescriptorSetLayout() };
-	m_pipeline.reset(new Pipeline(pipelineCreateInfo, descriptorSetLayouts));
-
-	std::vector<uint32_t> t(3);
-	m_shaderBindingTable.reset(new ShaderBindingTable(t, m_pipeline->getPipeline()));
+	createPipeline();
 
 	// Load triangle
 	std::vector<Vertex2D> vertices =
@@ -96,25 +64,12 @@ void UniquePass::initializeResources(const InitializationContext& context)
 	m_tlas.reset(new TopLevelAccelerationStructure(blasInstances));
 
 	m_descriptorSets.resize(context.swapChainImageCount);
-	for (uint32_t i = 0; i < context.swapChainImageCount; ++i)
-	{
-		DescriptorSetGenerator::ImageDescription image(VK_IMAGE_LAYOUT_GENERAL, context.swapChainImages[i]->getDefaultImageView());
-
-		DescriptorSetGenerator descriptorSetGenerator(descriptorSetLayoutGenerator.getDescriptorLayouts());
-		descriptorSetGenerator.setAccelerationStructure(0, *m_tlas.get());
-		descriptorSetGenerator.setImage(                1, image);
-		descriptorSetGenerator.setBuffer(               2, m_triangle->getVertexBuffer());
-		descriptorSetGenerator.setBuffer(               3, m_triangle->getIndexBuffer());
-
-		if (!m_descriptorSets[i])
-			m_descriptorSets[i].reset(new DescriptorSet(m_descriptorSetLayout->getDescriptorSetLayout(), UpdateRate::NEVER));
-		m_descriptorSets[i]->update(descriptorSetGenerator.getDescriptorSetCreateInfo());
-	}
+	createDescriptorSets(context);
 }
 
 void UniquePass::resize(const Wolf::InitializationContext& context)
 {
-	
+	createDescriptorSets(context);
 }
 
 void UniquePass::record(const Wolf::RecordContext& context)
@@ -148,7 +103,7 @@ void UniquePass::record(const Wolf::RecordContext& context)
 	vkCmdTraceRaysKHR(m_commandBuffer->getCommandBuffer(context.commandBufferIdx), &rgenRegion,
 		&rmissRegion,
 		&rhitRegion,
-		&callRegion, 1920, 1080, 1);
+		&callRegion, context.swapchainImage->getExtent().width, context.swapchainImage->getExtent().height, 1);
 
 	context.swapchainImage->transitionImageLayout(m_commandBuffer->getCommandBuffer(context.commandBufferIdx), VK_IMAGE_LAYOUT_PRESENT_SRC_KHR, 0, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT);
 
@@ -161,13 +116,68 @@ void UniquePass::submit(const Wolf::SubmitContext& context)
 	std::vector<VkSemaphore> signalSemaphores{ m_semaphore->getSemaphore() };
 	m_commandBuffer->submit(context.commandBufferIdx, waitSemaphores, signalSemaphores, context.frameFence);
 
-	/*bool anyShaderModified = m_vertexShaderParser->compileIfFileHasBeenModified();
-	if (m_fragmentShaderParser->compileIfFileHasBeenModified())
+	bool anyShaderModified = m_rayGenShaderParser->compileIfFileHasBeenModified();
+	if (m_rayMissShaderParser->compileIfFileHasBeenModified())
+		anyShaderModified = true;
+	if (m_closestHitShaderParser->compileIfFileHasBeenModified())
 		anyShaderModified = true;
 
 	if (anyShaderModified)
 	{
 		vkDeviceWaitIdle(context.device);
-		createPipeline(m_swapChainWidth, m_swapChainHeight);
-	}*/
+		createPipeline();
+	}
+}
+
+void UniquePass::createPipeline()
+{
+	RayTracingShaderGroupGenerator shaderGroupGenerator;
+	shaderGroupGenerator.addRayGenShaderStage(0);
+	shaderGroupGenerator.addMissShaderStage(1);
+	HitGroup hitGroup;
+	hitGroup.closestHitShaderIdx = 2;
+	shaderGroupGenerator.addHitGroup(hitGroup);
+
+	RayTracingPipelineCreateInfo pipelineCreateInfo;
+
+	std::vector<char> rayGenShaderCode;
+	m_rayGenShaderParser->readCompiledShader(rayGenShaderCode);
+	std::vector<char> rayMissShaderCode;
+	m_rayMissShaderParser->readCompiledShader(rayMissShaderCode);
+	std::vector<char> closestHitShaderCode;
+	m_closestHitShaderParser->readCompiledShader(closestHitShaderCode);
+
+	std::vector<ShaderCreateInfo> shaders(3);
+	shaders[0].shaderCode = rayGenShaderCode;
+	shaders[0].stage = VK_SHADER_STAGE_RAYGEN_BIT_KHR;
+	shaders[1].shaderCode = rayMissShaderCode;
+	shaders[1].stage = VK_SHADER_STAGE_MISS_BIT_KHR;
+	shaders[2].shaderCode = closestHitShaderCode;
+	shaders[2].stage = VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR;
+	pipelineCreateInfo.shaderCreateInfos = shaders;
+
+	pipelineCreateInfo.shaderGroupsCreateInfos = shaderGroupGenerator.getShaderGroups();
+
+	std::vector<VkDescriptorSetLayout> descriptorSetLayouts = { m_descriptorSetLayout->getDescriptorSetLayout() };
+	m_pipeline.reset(new Pipeline(pipelineCreateInfo, descriptorSetLayouts));
+
+	m_shaderBindingTable.reset(new ShaderBindingTable(static_cast<uint32_t>(shaders.size()), m_pipeline->getPipeline()));
+}
+
+void UniquePass::createDescriptorSets(const Wolf::InitializationContext& context)
+{
+	for (uint32_t i = 0; i < context.swapChainImageCount; ++i)
+	{
+		DescriptorSetGenerator::ImageDescription image(VK_IMAGE_LAYOUT_GENERAL, context.swapChainImages[i]->getDefaultImageView());
+
+		DescriptorSetGenerator descriptorSetGenerator(m_descriptorSetLayoutGenerator.getDescriptorLayouts());
+		descriptorSetGenerator.setAccelerationStructure(0, *m_tlas.get());
+		descriptorSetGenerator.setImage(1, image);
+		descriptorSetGenerator.setBuffer(2, m_triangle->getVertexBuffer());
+		descriptorSetGenerator.setBuffer(3, m_triangle->getIndexBuffer());
+
+		if (!m_descriptorSets[i])
+			m_descriptorSets[i].reset(new DescriptorSet(m_descriptorSetLayout->getDescriptorSetLayout(), UpdateRate::NEVER));
+		m_descriptorSets[i]->update(descriptorSetGenerator.getDescriptorSetCreateInfo());
+	}
 }
