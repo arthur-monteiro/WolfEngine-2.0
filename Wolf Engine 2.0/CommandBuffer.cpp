@@ -87,7 +87,7 @@ void Wolf::CommandBuffer::submit(uint32_t index, const std::vector<const Wolf::S
 	submitInfo.pWaitSemaphores = semaphores.data();
 	submitInfo.pWaitDstStageMask = stages.data();
 
-	if (vkQueueSubmit(queue, 1, &submitInfo, fence) != VK_SUCCESS)
+	if (VkResult result = vkQueueSubmit(queue, 1, &submitInfo, fence); result != VK_SUCCESS)
 	{
 		Debug::sendCriticalError("Error : submit to graphics queue");
 	}

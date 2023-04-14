@@ -10,5 +10,5 @@ layout(binding = 3, set = 0) buffer Indices { uint i[]; } indices;
 
 void main()
 {
-  hitValue = vec3(0.0, 1.0, 0.0);
+  hitValue = vec3(0.0, 0.0, 1.0);
 }
