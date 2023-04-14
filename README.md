@@ -1,4 +1,4 @@
-# Wolf-Engine
+# Wolf-Engine 2.0
 
 Yet another Vulkan engine.
 
