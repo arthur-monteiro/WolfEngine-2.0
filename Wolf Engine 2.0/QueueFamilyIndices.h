@@ -8,7 +8,7 @@ namespace Wolf
 		int presentFamily = -1;
 		int computeFamily = -1;
 
-		bool isComplete()
+		bool isComplete() const
 		{
 			return graphicsFamily >= 0 && presentFamily >= 0 && computeFamily >= 0;
 		}

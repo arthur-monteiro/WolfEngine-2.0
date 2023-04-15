@@ -29,9 +29,7 @@ int main()
 	Wolf::WolfInstanceCreateInfo wolfInstanceCreateInfo;
 	wolfInstanceCreateInfo.configFilename = "config/config.ini";
 	wolfInstanceCreateInfo.debugCallback = debugCallback;
-
-	Wolf::TextFileReader UIHtmlReader("UI/UI.html");
-	wolfInstanceCreateInfo.htmlStringUI = UIHtmlReader.getFileContent().c_str();
+	wolfInstanceCreateInfo.htmlURL = "UI/UI.html";
 
 	Wolf::WolfEngine wolfInstance(wolfInstanceCreateInfo);
 

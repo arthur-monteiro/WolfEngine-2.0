@@ -10,7 +10,7 @@ namespace Wolf
 		CommandPool(VkDevice device, uint32_t queueFamilyIndex, VkCommandPoolCreateFlagBits commandPoolType);
 		~CommandPool();
 
-		VkCommandPool getCommandPool() const { return m_commandPool; }
+		[[nodiscard]] VkCommandPool getCommandPool() const { return m_commandPool; }
 
 	private:
 		VkCommandPool m_commandPool;

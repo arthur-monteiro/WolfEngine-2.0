@@ -4,9 +4,6 @@
 
 void debugCallback(Wolf::Debug::Severity severity, Wolf::Debug::Type type, std::string message)
 {
-	if (severity == Wolf::Debug::Severity::VERBOSE)
-		return;
-
 	switch (severity)
 	{
 	case Wolf::Debug::Severity::ERROR:
@@ -18,6 +15,8 @@ void debugCallback(Wolf::Debug::Severity severity, Wolf::Debug::Type type, std::
 	case Wolf::Debug::Severity::INFO:
 		std::cout << "Info : ";
 		break;
+	case Wolf::Debug::Severity::VERBOSE:
+		return;
 	}
 
 	std::cout << message << std::endl;

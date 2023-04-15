@@ -4,13 +4,13 @@
 #include <vector>
 #include <vulkan/vulkan_core.h>
 
+#include "CommandBuffer.h"
 #include "Semaphore.h"
 
 namespace Wolf
 {
 	class Image;
 	class CameraInterface;
-	class CommandBuffer;
 
 	struct InitializationContext
 	{
@@ -54,10 +54,10 @@ namespace Wolf
 		virtual void record(const RecordContext& context) = 0;
 		virtual void submit(const SubmitContext& context) = 0;
 
-		const Wolf::Semaphore* getSemaphore() const { return m_semaphore.get(); }
+		[[nodiscard]] virtual const Semaphore* getSemaphore() const { return m_semaphore.get(); }
 
 	protected:
-		std::unique_ptr<Wolf::CommandBuffer> m_commandBuffer;
-		std::unique_ptr<Wolf::Semaphore> m_semaphore;
+		std::unique_ptr<CommandBuffer> m_commandBuffer;
+		std::unique_ptr<Semaphore> m_semaphore;
 	};
 }

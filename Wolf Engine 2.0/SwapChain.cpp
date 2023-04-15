@@ -78,8 +78,8 @@ void Wolf::SwapChain::initialize(GLFWwindow* window)
 	SwapChainSupportDetails swapChainSupport;
 	querySwapChainSupport(swapChainSupport, g_vulkanInstance->getPhysicalDevice(), g_vulkanInstance->getSurface());
 
-	VkSurfaceFormatKHR surfaceFormat = chooseSurfaceFormat(swapChainSupport.formats);
-	VkPresentModeKHR presentMode = choosePresentMode(swapChainSupport.presentModes);
+	const VkSurfaceFormatKHR surfaceFormat = chooseSurfaceFormat(swapChainSupport.formats);
+	const VkPresentModeKHR presentMode = choosePresentMode(swapChainSupport.presentModes);
 #ifdef __ANDROID__
 	int32_t width = ANativeWindow_getWidth(window);
     int32_t height = ANativeWindow_getHeight(window);
@@ -107,7 +107,7 @@ void Wolf::SwapChain::initialize(GLFWwindow* window)
 	createInfo.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT;
 
 	const QueueFamilyIndices& indices = g_vulkanInstance->getQueueFamilyIndices();
-	uint32_t queueFamilyIndices[] = { static_cast<uint32_t>(indices.graphicsFamily), static_cast<uint32_t>(indices.presentFamily) };
+	const uint32_t queueFamilyIndices[] = { static_cast<uint32_t>(indices.graphicsFamily), static_cast<uint32_t>(indices.presentFamily) };
 
 	if (indices.graphicsFamily != indices.presentFamily)
 	{
@@ -166,16 +166,16 @@ Wolf::SwapChain::~SwapChain()
 	vkDestroySwapchainKHR(g_vulkanInstance->getDevice(), m_swapChain, nullptr);
 }
 
-void Wolf::SwapChain::synchroniseCPUFromGPU(uint32_t currentFrame)
+void Wolf::SwapChain::synchroniseCPUFromGPU(uint32_t currentFrame) const
 {
 	m_frameFences[currentFrame % m_frameFences.size()]->waitForFence();
 	m_frameFences[currentFrame % m_frameFences.size()]->resetFence();
 }
 
-uint32_t Wolf::SwapChain::getCurrentImage(uint32_t currentFrame)
+uint32_t Wolf::SwapChain::getCurrentImage(uint32_t currentFrame) const
 {
 	uint32_t imageIndex;
-	VkResult result = vkAcquireNextImageKHR(g_vulkanInstance->getDevice(), m_swapChain, std::numeric_limits<uint64_t>::max(), m_imageAvailableSemaphores[currentFrame % m_imageAvailableSemaphores.size()]->getSemaphore(), VK_NULL_HANDLE, &imageIndex);
+	const VkResult result = vkAcquireNextImageKHR(g_vulkanInstance->getDevice(), m_swapChain, std::numeric_limits<uint64_t>::max(), m_imageAvailableSemaphores[currentFrame % m_imageAvailableSemaphores.size()]->getSemaphore(), VK_NULL_HANDLE, &imageIndex);
 
 	if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR)
 	{
@@ -185,7 +185,7 @@ uint32_t Wolf::SwapChain::getCurrentImage(uint32_t currentFrame)
 	return imageIndex;
 }
 
-void Wolf::SwapChain::present(VkSemaphore waitSemaphore, uint32_t imageIndex)
+void Wolf::SwapChain::present(VkSemaphore waitSemaphore, uint32_t imageIndex) const
 {
 	VkPresentInfoKHR presentInfo = {};
 	presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
@@ -201,7 +201,7 @@ void Wolf::SwapChain::present(VkSemaphore waitSemaphore, uint32_t imageIndex)
 		presentInfo.pWaitSemaphores = nullptr;
 	}
 
-	VkSwapchainKHR swapChains[] = { m_swapChain };
+	const VkSwapchainKHR swapChains[] = { m_swapChain };
 	presentInfo.swapchainCount = 1;
 	presentInfo.pSwapchains = swapChains;
 	presentInfo.pImageIndices = &imageIndex;
@@ -217,7 +217,7 @@ void Wolf::SwapChain::present(VkSemaphore waitSemaphore, uint32_t imageIndex)
 	}
 	 m_lastFrameTimeCounter = std::chrono::high_resolution_clock::now();*/
 
-	VkResult result = vkQueuePresentKHR(g_vulkanInstance->getPresentQueue(), &presentInfo);
+	const VkResult result = vkQueuePresentKHR(g_vulkanInstance->getPresentQueue(), &presentInfo);
 
 	/*if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR)
 		recreateSwapChain();

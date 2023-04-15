@@ -10,8 +10,8 @@ namespace Wolf
 		MipMapGenerator(const unsigned char* firstMipPixels, VkExtent2D extent, VkFormat format, int mipCount = -1);
 		MipMapGenerator(const MipMapGenerator&) = delete;
 
-		uint32_t getMipLevelCount() { return static_cast<uint32_t>(m_mipLevels.size()) + 1; }
-		const unsigned char* getMipLevel(uint32_t mipLevel) { return m_mipLevels[mipLevel - 1].data(); }
+		uint32_t getMipLevelCount() const { return static_cast<uint32_t>(m_mipLevels.size()) + 1; }
+		const unsigned char* getMipLevel(uint32_t mipLevel) const { return m_mipLevels[mipLevel - 1].data(); }
 
 	private:
 		static uint8_t mergeColor(uint8_t c00, uint8_t c01, uint8_t c10, uint8_t c11);

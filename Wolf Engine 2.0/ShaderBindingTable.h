@@ -11,8 +11,8 @@ namespace Wolf
 	public:
 		ShaderBindingTable(uint32_t shaderCount, VkPipeline pipeline);
 
-		uint32_t getBaseAlignment() const { return m_baseAlignement; }
-		const Buffer& getBuffer() const { return *m_buffer.get(); }
+		[[nodiscard]] uint32_t getBaseAlignment() const { return m_baseAlignement; }
+		[[nodiscard]] const Buffer& getBuffer() const { return *m_buffer; }
 
 	private:
 		uint32_t m_baseAlignement;

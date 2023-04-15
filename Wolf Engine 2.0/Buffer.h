@@ -14,20 +14,20 @@ namespace Wolf
 		Buffer(const Buffer&) = delete;
 		~Buffer();
 
-		void transferCPUMemory(void* data, VkDeviceSize srcSize, VkDeviceSize srcOffset = 0, uint32_t idx = 0);
-		void transferCPUMemoryWithStagingBuffer(void* data, VkDeviceSize srcSize, VkDeviceSize srcOffset = 0, uint32_t idx = 0);
-		void transferGPUMemory(const Buffer& bufferSrc, const VkBufferCopy& copyRegion, uint32_t idx = 0);
+		void transferCPUMemory(const void* data, VkDeviceSize srcSize, VkDeviceSize srcOffset = 0, uint32_t idx = 0) const;
+		void transferCPUMemoryWithStagingBuffer(void* data, VkDeviceSize srcSize, VkDeviceSize srcOffset = 0, uint32_t idx = 0) const;
+		void transferGPUMemory(const Buffer& bufferSrc, const VkBufferCopy& copyRegion, uint32_t idx = 0) const;
 
-		void map(void** pData, VkDeviceSize size = 0, uint32_t idx = 0);
-		void unmap(uint32_t idx = 0);
+		void map(void** pData, VkDeviceSize size = 0, uint32_t idx = 0) const;
+		void unmap(uint32_t idx = 0) const;
 
-		void getContent(void* outputData, uint32_t idx = 0);
+		void getContent(void* outputData, uint32_t idx = 0) const;
 
-		VkBuffer getBuffer(uint32_t idx = 0) const { return m_buffers[idx].buffer; }
-		VkDeviceMemory getBufferMemory(uint32_t idx = 0) const { return m_buffers[idx].bufferMemory; }
-		VkDeviceSize getBufferSize() const { return m_bufferSize; }
+		[[nodiscard]] VkBuffer getBuffer(uint32_t idx = 0) const { return m_buffers[idx].buffer; }
+		[[nodiscard]] VkDeviceMemory getBufferMemory(uint32_t idx = 0) const { return m_buffers[idx].bufferMemory; }
+		[[nodiscard]] VkDeviceSize getBufferSize() const { return m_bufferSize; }
 #if !defined(__ANDROID__) or __ANDROID_MIN_SDK_VERSION__ > 30
-		VkDeviceAddress getBufferDeviceAddress(uint32_t idx = 0) const;
+		[[nodiscard]] VkDeviceAddress getBufferDeviceAddress(uint32_t idx = 0) const;
 #endif
 
 	private:

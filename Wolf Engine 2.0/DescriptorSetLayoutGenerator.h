@@ -16,9 +16,9 @@ namespace Wolf
 		void addImages(VkDescriptorType descriptorType, VkShaderStageFlags accessibility, uint32_t binding, uint32_t count);
 		void addAccelerationStructure(VkShaderStageFlags accessibility, uint32_t binding);
 
-		const std::vector<Wolf::DescriptorLayout>& getDescriptorLayouts() const { return m_descriptorLayouts; }
+		[[nodiscard]] const std::vector<DescriptorLayout>& getDescriptorLayouts() const { return m_descriptorLayouts; }
 
 	private:
-		std::vector<Wolf::DescriptorLayout> m_descriptorLayouts;
+		std::vector<DescriptorLayout> m_descriptorLayouts;
 	};
 }

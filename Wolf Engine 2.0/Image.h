@@ -42,24 +42,24 @@ namespace Wolf
 		void copyGPUBuffer(const Buffer& bufferSrc, const VkBufferImageCopy& copyRegion);
 		void copyImagesToCubemap(std::array<Image*, 6> images, std::vector<std::pair<uint8_t, uint8_t>> mipsToCopy, bool generateMipsLevels);
 
-		[[nodiscard]] void* map();
-		void unmap();
-		void getResourceLayout(VkSubresourceLayout& output);
+		[[nodiscard]] void* map() const;
+		void unmap() const;
+		void getResourceLayout(VkSubresourceLayout& output) const;
 
 		void setImageLayout(VkImageLayout dstLayout, VkAccessFlags dstAccessMask, VkPipelineStageFlags dstPipelineStageFlags);
 		void transitionImageLayout(VkCommandBuffer commandBuffer, VkImageLayout dstLayout, VkAccessFlags dstAccessMask, VkPipelineStageFlags dstPipelineStageFlags, uint32_t baseMipLevel = 0, uint32_t levelCount = MAX_MIP_COUNT);
 		void setImageLayoutWithoutOperation(VkImageLayout newImageLayout, uint32_t baseMipLevel = 0, uint32_t levelCount = MAX_MIP_COUNT);
 
-		VkImage getImage() const { return m_image; }
-		VkDeviceMemory getImageMemory() const { return m_imageMemory; }
-		VkFormat getFormat() const { return m_imageFormat; }
-		VkSampleCountFlagBits getSampleCount() const { return m_sampleCount; }
-		VkExtent3D getExtent() const { return m_extent; }
-		VkImageLayout getImageLayout(uint32_t mipLevel = 0) const { return m_imageLayouts[mipLevel]; }
-		uint32_t getMipLevelCount() const { return m_mipLevelCount; }
+		[[nodiscard]] VkImage getImage() const { return m_image; }
+		[[nodiscard]] VkDeviceMemory getImageMemory() const { return m_imageMemory; }
+		[[nodiscard]] VkFormat getFormat() const { return m_imageFormat; }
+		[[nodiscard]] VkSampleCountFlagBits getSampleCount() const { return m_sampleCount; }
+		[[nodiscard]] VkExtent3D getExtent() const { return m_extent; }
+		[[nodiscard]] VkImageLayout getImageLayout(uint32_t mipLevel = 0) const { return m_imageLayouts[mipLevel]; }
+		[[nodiscard]] uint32_t getMipLevelCount() const { return m_mipLevelCount; }
 		VkImageView getImageView(VkFormat format);
 		VkImageView getDefaultImageView();
-		uint32_t getBBP() { return m_bbp; }
+		uint32_t getBBP() const { return m_bbp; }
 
 	private:
 		void createImageView(VkFormat format);

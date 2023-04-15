@@ -11,7 +11,7 @@ namespace Wolf
 		Framebuffer(VkRenderPass renderPass, const std::vector<Attachment>& attachments);
 		~Framebuffer();
 
-		VkFramebuffer getFramebuffer() const { return m_framebuffer; }
+		[[nodiscard]] VkFramebuffer getFramebuffer() const { return m_framebuffer; }
 
 	private:
 		VkFramebuffer m_framebuffer;

@@ -36,7 +36,7 @@ namespace Wolf
 			m_callback(severity, Type::VULKAN, message);
 		}
 
-		static void setCallback(const std::function<void(Severity, Debug::Type, const std::string&)>& callback)
+		static void setCallback(const std::function<void(Severity, Type, const std::string&)>& callback)
 		{
 			m_callback = callback;
 		}
@@ -45,6 +45,6 @@ namespace Wolf
 		Debug() = default;
 		~Debug() = default;
 
-		inline static std::function<void(Debug::Severity, Debug::Type, const std::string&)> m_callback;
+		inline static std::function<void(Severity, Type, const std::string&)> m_callback;
 	};
 }

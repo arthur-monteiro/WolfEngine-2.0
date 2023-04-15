@@ -67,7 +67,7 @@ Wolf::ObjLoader::ObjLoader(ModelLoadingInfo& modelLoadingInfo)
 				input.read(reinterpret_cast<char*>(&extent), sizeof(extent));
 
 				CreateImageInfo createImageInfo;
-				createImageInfo.extent = { (uint32_t)extent.width, (uint32_t)extent.height, 1 };
+				createImageInfo.extent = { (extent.width), (extent.height), 1 };
 				createImageInfo.aspect = VK_IMAGE_ASPECT_COLOR_BIT;
 				createImageInfo.format = i % 5 == 0 ? VK_FORMAT_R8G8B8A8_SRGB : VK_FORMAT_R8G8B8A8_UNORM;
 				createImageInfo.mipLevelCount = MAX_MIP_COUNT;
@@ -99,7 +99,7 @@ Wolf::ObjLoader::ObjLoader(ModelLoadingInfo& modelLoadingInfo)
 	std::vector<tinyobj::material_t> materials;
 	std::string err, warn;
 
-	if (!tinyobj::LoadObj(&attrib, &shapes, &materials, &warn, &err, modelLoadingInfo.filename.c_str(), modelLoadingInfo.mtlFolder.c_str()))
+	if (!LoadObj(&attrib, &shapes, &materials, &warn, &err, modelLoadingInfo.filename.c_str(), modelLoadingInfo.mtlFolder.c_str()))
 		Debug::sendCriticalError(err);
 
 	if (!err.empty())
@@ -188,7 +188,7 @@ Wolf::ObjLoader::ObjLoader(ModelLoadingInfo& modelLoadingInfo)
 			tangent.x = f * (deltaUV2.y * edge1.x - deltaUV1.y * edge2.x);
 			tangent.y = f * (deltaUV2.y * edge1.y - deltaUV1.y * edge2.y);
 			tangent.z = f * (deltaUV2.y * edge1.z - deltaUV1.y * edge2.z);
-			tangent = glm::normalize(tangent);
+			tangent = normalize(tangent);
 
 			for (size_t j(i - 1); j > i - 4; --j)
 				vertices[indices[j]].tangent = tangent;
@@ -225,21 +225,21 @@ Wolf::ObjLoader::ObjLoader(ModelLoadingInfo& modelLoadingInfo)
 		std::fstream outCacheFile(modelLoadingInfo.filename + ".bin", std::ios::out | std::ios::binary);
 
 		/* Geometry */
-		uint32_t verticesCount = static_cast<uint32_t>(vertices.size());
-		outCacheFile.write((char*)&verticesCount, sizeof(uint32_t));
-		outCacheFile.write((char*)vertices.data(), verticesCount * sizeof(vertices[0]));
-		uint32_t indicesCount = static_cast<uint32_t>(indices.size());
-		outCacheFile.write((char*)&indicesCount, sizeof(uint32_t));
-		outCacheFile.write((char*)indices.data(), indicesCount * sizeof(indices[0]));
+		uint32_t verticesCount = vertices.size();
+		outCacheFile.write(reinterpret_cast<char*>(&verticesCount), sizeof(uint32_t));
+		outCacheFile.write(reinterpret_cast<char*>(vertices.data()), verticesCount * sizeof(vertices[0]));
+		uint32_t indicesCount = indices.size();
+		outCacheFile.write(reinterpret_cast<char*>(&indicesCount), sizeof(uint32_t));
+		outCacheFile.write(reinterpret_cast<char*>(indices.data()), indicesCount * sizeof(indices[0]));
 
 		/* Textures*/
-		uint32_t imageCount = static_cast<uint32_t>(m_images.size());
-		outCacheFile.write((char*)&imageCount, sizeof(uint32_t));
+		uint32_t imageCount = m_images.size();
+		outCacheFile.write(reinterpret_cast<char*>(&imageCount), sizeof(uint32_t));
 		for (uint32_t i = 0; i < m_imagesData.size(); ++i)
 		{
 			VkExtent3D extent = m_images[i]->getExtent();
-			outCacheFile.write((char*)&extent, sizeof(VkExtent3D));
-			outCacheFile.write((char*)m_imagesData[i].data(), m_imagesData[i].size());
+			outCacheFile.write(reinterpret_cast<char*>(&extent), sizeof(VkExtent3D));
+			outCacheFile.write(reinterpret_cast<char*>(m_imagesData[i].data()), m_imagesData[i].size());
 		}
 
 		outCacheFile.close();
@@ -262,9 +262,9 @@ inline std::string Wolf::ObjLoader::getTexName(const std::string& texName, const
 
 void Wolf::ObjLoader::setImage(const std::string& filename, uint32_t idx, bool sRGB)
 {
-	VkFormat format = sRGB ? VK_FORMAT_R8G8B8A8_SRGB : VK_FORMAT_R8G8B8A8_UNORM;
+	const VkFormat format = sRGB ? VK_FORMAT_R8G8B8A8_SRGB : VK_FORMAT_R8G8B8A8_UNORM;
 
-	ImageFileLoader imageFileLoader(filename);
+	const ImageFileLoader imageFileLoader(filename);
 	MipMapGenerator mipmapGenerator(imageFileLoader.getPixels(), { (uint32_t)imageFileLoader.getWidth(), (uint32_t)imageFileLoader.getHeight() }, format);
 
 	CreateImageInfo createImageInfo;
@@ -292,8 +292,8 @@ void Wolf::ObjLoader::setImage(const std::string& filename, uint32_t idx, bool s
 		VkDeviceSize copyOffset = 0;
 		for (uint32_t mipLevel = 0; mipLevel < mipmapGenerator.getMipLevelCount(); ++mipLevel)
 		{
-			VkDeviceSize copySize = (m_images[idx]->getExtent().width * m_images[idx]->getExtent().height * m_images[idx]->getExtent().depth * m_images[idx]->getBBP()) >> mipLevel;
-			void* dataPtr = (void*)imageFileLoader.getPixels();
+			const VkDeviceSize copySize = (m_images[idx]->getExtent().width * m_images[idx]->getExtent().height * m_images[idx]->getExtent().depth * m_images[idx]->getBBP()) >> mipLevel;
+			const void* dataPtr = (void*)imageFileLoader.getPixels();
 			if (mipLevel > 0)
 				dataPtr = (void*)mipmapGenerator.getMipLevel(mipLevel);
 			memcpy(m_imagesData[idx].data() + copyOffset, dataPtr, copySize);

@@ -11,17 +11,17 @@ namespace Wolf
 	class UltraLightSurface : public ultralight::Surface
 	{
 	public:
-		virtual uint32_t width() const override { return m_width; }
-		virtual uint32_t height() const override { return m_height; }
-		virtual uint32_t row_bytes() const override { return m_rowBytes; }
-		virtual size_t size() const override { return m_size; }
+		[[nodiscard]] virtual uint32_t width() const override { return m_width; }
+		[[nodiscard]] virtual uint32_t height() const override { return m_height; }
+		[[nodiscard]] virtual uint32_t row_bytes() const override { return m_rowBytes; }
+		[[nodiscard]] virtual size_t size() const override { return m_size; }
 
 		virtual void* LockPixels() override;
 		virtual void UnlockPixels() override;
 
 		virtual void Resize(uint32_t width, uint32_t height) override;
 
-		Image* getImage() { return m_image.get(); }
+		Image* getImage() const { return m_image.get(); }
 
 	private:
 		uint32_t m_width;

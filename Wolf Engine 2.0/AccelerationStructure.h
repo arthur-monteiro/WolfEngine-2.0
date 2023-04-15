@@ -11,8 +11,8 @@ namespace Wolf
 	public:
 		void build(VkCommandBuffer commandBuffer);
 
-		const Buffer& getStructureBuffer() const { return *m_structureBuffer.get(); }
-		const VkAccelerationStructureKHR* getStructure() const { return &m_accelerationStructure; }
+		[[nodiscard]] const Buffer& getStructureBuffer() const { return *m_structureBuffer; }
+		[[nodiscard]] const VkAccelerationStructureKHR* getStructure() const { return &m_accelerationStructure; }
 
 	protected:
 		VkAccelerationStructureKHR m_accelerationStructure = VK_NULL_HANDLE;

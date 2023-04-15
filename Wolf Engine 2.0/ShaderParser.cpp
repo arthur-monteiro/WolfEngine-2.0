@@ -160,7 +160,7 @@ void Wolf::ShaderParser::readFile(std::vector<char>& output, const std::string& 
     if (!file.is_open())
         Debug::sendError("Error opening file : " + filename);
 
-    size_t fileSize = std::filesystem::file_size(filename);
+    const size_t fileSize = std::filesystem::file_size(filename);
     output.resize(fileSize);
 
     file.seekg(0);

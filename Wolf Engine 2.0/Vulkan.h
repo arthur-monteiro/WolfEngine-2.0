@@ -26,20 +26,20 @@ namespace Wolf
 #endif
 
 		// Getters
-		VkDevice getDevice() const { return m_device; }
-		VkPhysicalDevice getPhysicalDevice() const { return m_physicalDevice; }
-		VkSurfaceKHR getSurface() const { return m_surface; }
-		const QueueFamilyIndices& getQueueFamilyIndices() const { return m_queueFamilyIndices; }
-		VkQueue getPresentQueue() const { return m_presentQueue; }
-		const CommandPool* getGraphicsCommandPool() const { return m_graphicsCommandPool.get(); }
-		const CommandPool* getGraphicsTransientCommandPool() const { return m_graphicsTransientCommandPool.get(); }
-		const CommandPool* getComputeCommandPool() const { return m_computeCommandPool.get(); }
-		const CommandPool* getComputeTransientCommandPool() const { return m_computeTransientCommandPool.get(); }
-		VkQueue getGraphicsQueue() const { return m_graphicsQueue; }
-		VkQueue getComputeQueue() const { return m_computeQueue; }
-		VkDescriptorPool getDescriptorPool() const { return m_descriptorPool->getDescriptorPool(); }
-		const VkPhysicalDeviceRayTracingPipelinePropertiesKHR& getRayTracingProperties() const { return m_raytracingProperties; }
-		const HardwareCapabilities& getHardwareCapabilities() const { return m_hardwareCapabilities; }
+		[[nodiscard]] VkDevice getDevice() const { return m_device; }
+		[[nodiscard]] VkPhysicalDevice getPhysicalDevice() const { return m_physicalDevice; }
+		[[nodiscard]] VkSurfaceKHR getSurface() const { return m_surface; }
+		[[nodiscard]] const QueueFamilyIndices& getQueueFamilyIndices() const { return m_queueFamilyIndices; }
+		[[nodiscard]] VkQueue getPresentQueue() const { return m_presentQueue; }
+		[[nodiscard]] const CommandPool* getGraphicsCommandPool() const { return m_graphicsCommandPool.get(); }
+		[[nodiscard]] const CommandPool* getGraphicsTransientCommandPool() const { return m_graphicsTransientCommandPool.get(); }
+		[[nodiscard]] const CommandPool* getComputeCommandPool() const { return m_computeCommandPool.get(); }
+		[[nodiscard]] const CommandPool* getComputeTransientCommandPool() const { return m_computeTransientCommandPool.get(); }
+		[[nodiscard]] VkQueue getGraphicsQueue() const { return m_graphicsQueue; }
+		[[nodiscard]] VkQueue getComputeQueue() const { return m_computeQueue; }
+		[[nodiscard]] VkDescriptorPool getDescriptorPool() const { return m_descriptorPool->getDescriptorPool(); }
+		[[nodiscard]] const VkPhysicalDeviceRayTracingPipelinePropertiesKHR& getRayTracingProperties() const { return m_raytracingProperties; }
+		[[nodiscard]] const HardwareCapabilities& getHardwareCapabilities() const { return m_hardwareCapabilities; }
 
 	private:
 		/* Main Loading Functions */
@@ -51,8 +51,8 @@ namespace Wolf
 
 		void populateDebugMessengerCreateInfo(VkDebugUtilsMessengerCreateInfoEXT& createInfo);
 
-		bool isDeviceSuitable(VkPhysicalDevice physicalDevice, const std::vector<const char*>& deviceExtensions, HardwareCapabilities& outHardwareCapabilities);
-		void getPhysicalDeviceRayTracingProperties(VkPhysicalDeviceRayTracingPipelinePropertiesKHR& raytracingProperties);
+		bool isDeviceSuitable(VkPhysicalDevice physicalDevice, const std::vector<const char*>& deviceExtensions, HardwareCapabilities& outHardwareCapabilities) const;
+		void getPhysicalDeviceRayTracingProperties(VkPhysicalDeviceRayTracingPipelinePropertiesKHR& raytracingProperties) const;
 
 	private:
 		VkInstance m_instance;

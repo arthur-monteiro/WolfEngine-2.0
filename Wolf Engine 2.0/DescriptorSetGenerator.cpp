@@ -40,7 +40,7 @@ Wolf::DescriptorSetGenerator::DescriptorSetGenerator(const std::span<const Descr
 
 void Wolf::DescriptorSetGenerator::setBuffer(uint32_t binding, const Buffer& buffer)
 {
-	std::pair<DescriptorType, uint32_t /* descriptor index */>& descriptor = m_mapBindingCreateInfo[binding];
+	const std::pair<DescriptorType, uint32_t /* descriptor index */>& descriptor = m_mapBindingCreateInfo[binding];
 
 	if (descriptor.first != DescriptorType::BUFFER)
 		Debug::sendError("Binding provided is not a buffer");
@@ -51,7 +51,7 @@ void Wolf::DescriptorSetGenerator::setBuffer(uint32_t binding, const Buffer& buf
 
 void Wolf::DescriptorSetGenerator::setCombinedImageSampler(uint32_t binding, VkImageLayout imageLayout, VkImageView imageView, const Sampler& sampler)
 {
-	std::pair<DescriptorType, uint32_t /* descriptor index */>& descriptor = m_mapBindingCreateInfo[binding];
+	const std::pair<DescriptorType, uint32_t /* descriptor index */>& descriptor = m_mapBindingCreateInfo[binding];
 
 	if (descriptor.first != DescriptorType::IMAGE)
 		Debug::sendError("Binding provided is not an image");
@@ -67,7 +67,7 @@ void Wolf::DescriptorSetGenerator::setCombinedImageSampler(uint32_t binding, VkI
 
 void Wolf::DescriptorSetGenerator::setImage(uint32_t binding, ImageDescription& imageDescription)
 {
-	std::pair<DescriptorType, uint32_t /* descriptor index */>& descriptor = m_mapBindingCreateInfo[binding];
+	const std::pair<DescriptorType, uint32_t /* descriptor index */>& descriptor = m_mapBindingCreateInfo[binding];
 
 	if (descriptor.first != DescriptorType::IMAGE)
 		Debug::sendError("Binding provided is not an image");
@@ -83,13 +83,13 @@ void Wolf::DescriptorSetGenerator::setImage(uint32_t binding, ImageDescription& 
 
 void Wolf::DescriptorSetGenerator::setImages(uint32_t binding, std::vector<ImageDescription>& imageDescriptions)
 {
-	std::pair<DescriptorType, uint32_t /* descriptor index */>& descriptor = m_mapBindingCreateInfo[binding];
+	const std::pair<DescriptorType, uint32_t /* descriptor index */>& descriptor = m_mapBindingCreateInfo[binding];
 
 	if (descriptor.first != DescriptorType::IMAGE)
 		Debug::sendError("Binding provided is not an image");
 
 	m_descriptorSetCreateInfo.descriptorImages[descriptor.second].images.reserve(imageDescriptions.size());
-	for (ImageDescription& imageDescription : imageDescriptions)
+	for (const ImageDescription& imageDescription : imageDescriptions)
 	{
 		DescriptorSetCreateInfo::ImageData imageData;
 		imageData.imageLayout = imageDescription.imageLayout;
@@ -102,7 +102,7 @@ void Wolf::DescriptorSetGenerator::setImages(uint32_t binding, std::vector<Image
 
 void Wolf::DescriptorSetGenerator::setSampler(uint32_t binding, const Sampler& sampler)
 {
-	std::pair<DescriptorType, uint32_t /* descriptor index */>& descriptor = m_mapBindingCreateInfo[binding];
+	const std::pair<DescriptorType, uint32_t /* descriptor index */>& descriptor = m_mapBindingCreateInfo[binding];
 
 	if (descriptor.first != DescriptorType::IMAGE)
 		Debug::sendError("Binding provided is not an image");
@@ -116,7 +116,7 @@ void Wolf::DescriptorSetGenerator::setSampler(uint32_t binding, const Sampler& s
 
 void Wolf::DescriptorSetGenerator::setAccelerationStructure(uint32_t binding, const TopLevelAccelerationStructure& accelerationStructure)
 {
-	std::pair<DescriptorType, uint32_t /* descriptor index */>& descriptor = m_mapBindingCreateInfo[binding];
+	const std::pair<DescriptorType, uint32_t /* descriptor index */>& descriptor = m_mapBindingCreateInfo[binding];
 
 	if (descriptor.first != DescriptorType::ACCELERATION_STRUCTURE)
 		Debug::sendError("Binding provided is not an acceleration structure");

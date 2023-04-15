@@ -31,7 +31,7 @@ namespace Wolf
 		void setSampler(uint32_t binding, const Sampler& sampler);
 		void setAccelerationStructure(uint32_t binding, const TopLevelAccelerationStructure& accelerationStructure);
 
-		const DescriptorSetCreateInfo& getDescriptorSetCreateInfo() const { return m_descriptorSetCreateInfo; }
+		[[nodiscard]] const DescriptorSetCreateInfo& getDescriptorSetCreateInfo() const { return m_descriptorSetCreateInfo; }
 
 	private:
 		DescriptorSetCreateInfo m_descriptorSetCreateInfo;

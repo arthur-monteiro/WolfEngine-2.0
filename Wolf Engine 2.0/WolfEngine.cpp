@@ -1,5 +1,7 @@
 #include "WolfEngine.h"
 
+#include <filesystem>
+
 #include "VulkanHelper.h"
 
 Wolf::WolfEngine::WolfEngine(const WolfInstanceCreateInfo& createInfo)
@@ -31,14 +33,27 @@ Wolf::WolfEngine::WolfEngine(const WolfInstanceCreateInfo& createInfo)
 #endif
 
 #ifndef __ANDROID__
-	if(createInfo.htmlStringUI)
-		m_ultraLight.reset(new UltraLight(m_configuration->getWindowWidth(), m_configuration->getWindowHeight(), createInfo.htmlStringUI));
+	if(createInfo.htmlURL)
+	{
+		std::string currentPath = std::filesystem::current_path().string();
+		std::ranges::replace(currentPath, '\\', '/');
+		std::string escapedCurrentPath;
+		for (const char currentPathChar : currentPath)
+		{
+			if (currentPathChar == ' ')
+				escapedCurrentPath += "%20";
+			else
+				escapedCurrentPath += currentPathChar;
+		}
+		const std::string absoluteURL = "file:///" + escapedCurrentPath + "/" + createInfo.htmlURL;
+		m_ultraLight.reset(new UltraLight(m_configuration->getWindowWidth(), m_configuration->getWindowHeight(), absoluteURL));
+	}
 #endif
 
 	m_gameContexts.resize(m_configuration->getMaxCachedFrames());
 }
 
-void Wolf::WolfEngine::initializePass(CommandRecordBase* pass)
+void Wolf::WolfEngine::initializePass(CommandRecordBase* pass) const
 {
 	InitializationContext context;
 	fillInitializeContext(context);
@@ -46,7 +61,7 @@ void Wolf::WolfEngine::initializePass(CommandRecordBase* pass)
 	pass->initializeResources(context);
 }
 
-bool Wolf::WolfEngine::windowShouldClose()
+bool Wolf::WolfEngine::windowShouldClose() const
 {
 #ifndef __ANDROID__
 	return m_window->windowShouldClose();
@@ -99,7 +114,7 @@ void Wolf::WolfEngine::frame(const std::span<CommandRecordBase*>& passes, const 
 #endif
 
 	m_swapChain->synchroniseCPUFromGPU(m_currentFrame);
-	uint32_t currentSwapChainImageIndex = m_swapChain->getCurrentImage(m_currentFrame);
+	const uint32_t currentSwapChainImageIndex = m_swapChain->getCurrentImage(m_currentFrame);
 
 	RecordContext recordContext;
 	recordContext.currentFrameIdx = m_currentFrame;
@@ -134,19 +149,19 @@ void Wolf::WolfEngine::frame(const std::span<CommandRecordBase*>& passes, const 
 	m_currentFrame++;
 }
 
-void Wolf::WolfEngine::waitIdle()
+void Wolf::WolfEngine::waitIdle() const
 {
 	vkDeviceWaitIdle(m_vulkan->getDevice());
 }
 
 #ifndef __ANDROID__
-void Wolf::WolfEngine::getUserInterfaceJSObject(ultralight::JSObject& outObject)
+void Wolf::WolfEngine::getUserInterfaceJSObject(ultralight::JSObject& outObject) const
 {
 	m_ultraLight->getJSObject(outObject);
 }
 #endif
 
-void Wolf::WolfEngine::fillInitializeContext(InitializationContext& context)
+void Wolf::WolfEngine::fillInitializeContext(InitializationContext& context) const
 {
 	context.swapChainWidth = m_swapChain->getImage(0)->getExtent().width;
 	context.swapChainHeight = m_swapChain->getImage(0)->getExtent().height;

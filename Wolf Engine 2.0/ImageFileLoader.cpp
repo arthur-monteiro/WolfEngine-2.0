@@ -20,7 +20,7 @@ Wolf::ImageFileLoader::ImageFileLoader(const std::string& filename)
 	else
 	{
 		stbi_uc* pixels = stbi_load(filename.c_str(), &m_width, &m_height, &m_channels, STBI_rgb_alpha);
-		m_pixels = (unsigned char*)pixels;
+		m_pixels = pixels;
 		m_channels = 4;
 
 		if (!pixels)

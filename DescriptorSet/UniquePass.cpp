@@ -55,8 +55,9 @@ void UniquePass::initializeResources(const InitializationContext& context)
 	m_uniformBuffer.reset(new Buffer(sizeof(float), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, UpdateRate::EACH_FRAME));
 
 	DescriptorSetGenerator descriptorSetGenerator(descriptorSetLayoutGenerator.getDescriptorLayouts());
-	descriptorSetGenerator.setBuffer(0, *m_uniformBuffer.get());
-	descriptorSetGenerator.setCombinedImageSampler(1, m_texture->getImageLayout(), m_texture->getDefaultImageView(), *m_sampler.get());
+	descriptorSetGenerator.setBuffer(0, *m_uniformBuffer);
+	descriptorSetGenerator.setCombinedImageSampler(1, m_texture->getImageLayout(), m_texture->getDefaultImageView(), *
+	                                               m_sampler);
 
 	m_descriptorSet.reset(new DescriptorSet(m_descriptorSetLayout->getDescriptorSetLayout(), UpdateRate::EACH_FRAME));
 	m_descriptorSet->update(descriptorSetGenerator.getDescriptorSetCreateInfo());
@@ -82,7 +83,7 @@ void UniquePass::initializeResources(const InitializationContext& context)
 	m_triangle.reset(new Mesh(vertices, indices));
 }
 
-void UniquePass::resize(const Wolf::InitializationContext& context)
+void UniquePass::resize(const InitializationContext& context)
 {
 	createDepthImage(context);
 	m_renderPass->setExtent({ context.swapChainWidth, context.swapChainHeight });
@@ -102,21 +103,21 @@ void UniquePass::resize(const Wolf::InitializationContext& context)
 	createPipeline(context.swapChainWidth, context.swapChainHeight);
 }
 
-void UniquePass::record(const Wolf::RecordContext& context)
+void UniquePass::record(const RecordContext& context)
 {
 	/* Update */
-	auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - m_startTimePoint).count();
+	const auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - m_startTimePoint).count();
 	float offset = glm::sin(static_cast<float>(duration) / 1000.0f);
-	m_uniformBuffer->transferCPUMemory((void*)&offset, sizeof(float), 0 /* srcOffet */, context.commandBufferIdx);
+	m_uniformBuffer->transferCPUMemory(&offset, sizeof(float), 0 /* srcOffet */, context.commandBufferIdx);
 
 	/* Command buffer record */
-	uint32_t frameBufferIdx = context.swapChainImageIdx;
+	const uint32_t frameBufferIdx = context.swapChainImageIdx;
 
 	m_commandBuffer->beginCommandBuffer(context.commandBufferIdx);
 
 	std::vector<VkClearValue> clearValues(2);
-	clearValues[0] = { 1.0f };
-	clearValues[1] = { 0.1f, 0.1f, 0.1f, 1.0f };
+	clearValues[0] = {{{1.0f}}};
+	clearValues[1] = {{{0.1f, 0.1f, 0.1f, 1.0f}}};
 	m_renderPass->beginRenderPass(m_frameBuffers[frameBufferIdx]->getFramebuffer(), clearValues, m_commandBuffer->getCommandBuffer(context.commandBufferIdx));
 
 	vkCmdBindPipeline(m_commandBuffer->getCommandBuffer(context.commandBufferIdx), VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipeline->getPipeline());
@@ -130,10 +131,10 @@ void UniquePass::record(const Wolf::RecordContext& context)
 	m_commandBuffer->endCommandBuffer(context.commandBufferIdx);
 }
 
-void UniquePass::submit(const Wolf::SubmitContext& context)
+void UniquePass::submit(const SubmitContext& context)
 {
-	std::vector<const Semaphore*> waitSemaphores{ context.imageAvailableSemaphore };
-	std::vector<VkSemaphore> signalSemaphores{ m_semaphore->getSemaphore() };
+	const std::vector waitSemaphores{ context.imageAvailableSemaphore };
+	const std::vector signalSemaphores{ m_semaphore->getSemaphore() };
 	m_commandBuffer->submit(context.commandBufferIdx, waitSemaphores, signalSemaphores, context.frameFence);
 
 	bool anyShaderModified = m_vertexShaderParser->compileIfFileHasBeenModified();
@@ -147,7 +148,7 @@ void UniquePass::submit(const Wolf::SubmitContext& context)
 	}
 }
 
-void UniquePass::createDepthImage(const Wolf::InitializationContext& context)
+void UniquePass::createDepthImage(const InitializationContext& context)
 {
 	CreateImageInfo depthImageCreateInfo;
 	depthImageCreateInfo.format = context.depthFormat;
@@ -190,14 +191,14 @@ void UniquePass::createPipeline(uint32_t width, uint32_t height)
 	pipelineCreateInfo.vertexInputBindingDescriptions = bindingDescriptions;
 
 	// Resources
-	std::vector<VkDescriptorSetLayout> descriptorSetLayouts = { m_descriptorSetLayout->getDescriptorSetLayout() };
+	std::vector descriptorSetLayouts = { m_descriptorSetLayout->getDescriptorSetLayout() };
 	pipelineCreateInfo.descriptorSetLayouts = descriptorSetLayouts;
 
 	// Viewport
 	pipelineCreateInfo.extent = { width, height };
 
 	// Color Blend
-	std::vector<RenderingPipelineCreateInfo::BLEND_MODE> blendModes = { RenderingPipelineCreateInfo::BLEND_MODE::OPAQUE };
+	std::vector blendModes = { RenderingPipelineCreateInfo::BLEND_MODE::OPAQUE };
 	pipelineCreateInfo.blendModes = blendModes;
 
 	m_pipeline.reset(new Pipeline(pipelineCreateInfo));

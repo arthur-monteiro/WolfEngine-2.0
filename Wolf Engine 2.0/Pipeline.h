@@ -78,8 +78,8 @@ namespace Wolf
 		Pipeline(const RayTracingPipelineCreateInfo& rayTracingPipelineCreateInfo, std::span<VkDescriptorSetLayout> descriptorSetLayouts);
 		~Pipeline();
 
-		VkPipeline getPipeline() const { return m_pipeline; }
-		VkPipelineLayout getPipelineLayout() const { return m_pipelineLayout; }
+		[[nodiscard]] VkPipeline getPipeline() const { return m_pipeline; }
+		[[nodiscard]] VkPipelineLayout getPipelineLayout() const { return m_pipelineLayout; }
 
 	private:
 		VkPipelineLayout m_pipelineLayout;

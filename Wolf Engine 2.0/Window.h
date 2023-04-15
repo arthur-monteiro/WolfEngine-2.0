@@ -15,10 +15,10 @@ namespace Wolf
 		Window(std::string appName, int width, int height, void* systemManagerInstance, std::function<void(void*, int, int)> resizeCallback);
 
 		void pollEvents();
-		bool windowShouldClose();
-		bool windowVisible();
+		bool windowShouldClose() const;
+		bool windowVisible() const;
 
-		GLFWwindow* getWindow() const { return m_window; }
+		[[nodiscard]] GLFWwindow* getWindow() const { return m_window; }
 
 	private:
 		static void onWindowResized(GLFWwindow* window, int width, int height)
@@ -28,7 +28,7 @@ namespace Wolf
 			Window* windowManager = reinterpret_cast<Window*>(glfwGetWindowUserPointer(window));
 			windowManager->callResizeCallback(width, height);
 		}
-		inline void callResizeCallback(int width, int height) { m_resizeCallback(m_systemManagerInstance, width, height); }
+		inline void callResizeCallback(int width, int height) const { m_resizeCallback(m_systemManagerInstance, width, height); }
 
 	private:
 		GLFWwindow* m_window;

@@ -17,12 +17,12 @@ Wolf::Fence::~Fence()
 	vkDestroyFence(g_vulkanInstance->getDevice(), m_fence, nullptr);
 }
 
-void Wolf::Fence::waitForFence()
+void Wolf::Fence::waitForFence() const
 {
 	vkWaitForFences(g_vulkanInstance->getDevice(), 1, &m_fence, VK_TRUE, UINT64_MAX);
 }
 
-void Wolf::Fence::resetFence()
+void Wolf::Fence::resetFence() const
 {
 	vkResetFences(g_vulkanInstance->getDevice(), 1, &m_fence);
 }

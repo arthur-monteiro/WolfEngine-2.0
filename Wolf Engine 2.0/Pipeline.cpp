@@ -195,7 +195,7 @@ Wolf::Pipeline::Pipeline(const ShaderCreateInfo& computeShaderInfo, std::span<Vk
 		Debug::sendError("Error : create pipeline layout");
 
 	/* Shader */
-	VkShaderModule computeShaderModule = createShaderModule(computeShaderInfo.shaderCode);
+	const VkShaderModule computeShaderModule = createShaderModule(computeShaderInfo.shaderCode);
 
 	VkPipelineShaderStageCreateInfo compShaderStageInfo = {};
 	compShaderStageInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;

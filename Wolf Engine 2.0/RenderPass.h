@@ -14,11 +14,11 @@ namespace Wolf
 		RenderPass(const std::vector<Attachment>& attachments);
 		~RenderPass();
 
-		void beginRenderPass(VkFramebuffer framebuffer, const std::vector<VkClearValue>& clearValues, VkCommandBuffer commandBuffer);
+		void beginRenderPass(VkFramebuffer framebuffer, const std::vector<VkClearValue>& clearValues, VkCommandBuffer commandBuffer) const;
 		void endRenderPass(VkCommandBuffer commandBuffer);
 
 		// Getters
-		VkRenderPass getRenderPass() const { return m_renderPass; }
+		[[nodiscard]] VkRenderPass getRenderPass() const { return m_renderPass; }
 
 		// Setters
 		void setExtent(VkExtent2D extent) { m_extent = extent; }
