@@ -1,6 +1,5 @@
 #pragma once
 
-#include <iostream>
 #ifdef __ANDROID__
 #include <android/native_window.h>
 #include <android/native_window_jni.h>
@@ -22,9 +21,9 @@ namespace Wolf
 #endif
 		~SwapChain();
 
-		void synchroniseCPUFromGPU(uint32_t currentFrameGPU);
-		uint32_t getCurrentImage(uint32_t currentFrameGPU);
-		void present(VkSemaphore waitSemaphore, uint32_t imageIndex);
+		void synchroniseCPUFromGPU(uint32_t currentFrameGPU) const;
+		uint32_t getCurrentImage(uint32_t currentFrameGPU) const;
+		void present(VkSemaphore waitSemaphore, uint32_t imageIndex) const;
 
 #ifndef __ANDROID__
 		void recreate(GLFWwindow* window);
@@ -33,10 +32,10 @@ namespace Wolf
 #endif
 
 		// Getters
-		Image* getImage(uint32_t index) const { return m_images[index].get(); }
-		uint32_t getImageCount() const { return static_cast<uint32_t>(m_images.size()); }
-		const Semaphore* getImageAvailableSemaphore(uint32_t index) const { return m_imageAvailableSemaphores[index].get(); }
-		VkFence getFrameFence(uint32_t index) const { return m_frameFences[index]->getFence(); }
+		[[nodiscard]] Image* getImage(uint32_t index) const { return m_images[index].get(); }
+		[[nodiscard]] uint32_t getImageCount() const { return m_images.size(); }
+		[[nodiscard]] const Semaphore* getImageAvailableSemaphore(uint32_t index) const { return m_imageAvailableSemaphores[index].get(); }
+		[[nodiscard]] VkFence getFrameFence(uint32_t index) const { return m_frameFences[index]->getFence(); }
 
 	private:
 #ifndef __ANDROID__

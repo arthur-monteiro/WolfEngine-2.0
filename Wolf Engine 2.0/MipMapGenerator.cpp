@@ -8,7 +8,7 @@ Wolf::MipMapGenerator::MipMapGenerator(const unsigned char* firstMipPixels, VkEx
 		mipCount = static_cast<uint32_t>(std::floor(std::log2(std::max(extent.width, extent.height)))) + 1;
 	m_mipLevels.resize(mipCount - 1);
 
-	uint32_t pixelCount = extent.width * extent.height;
+	const uint32_t pixelCount = extent.width * extent.height;
 
 	for (uint32_t mipLevel = 1; mipLevel < static_cast<uint32_t>(mipCount); ++mipLevel)
 	{
@@ -32,15 +32,15 @@ Wolf::MipMapGenerator::MipMapGenerator(const unsigned char* firstMipPixels, VkEx
 
 uint8_t Wolf::MipMapGenerator::mergeColor(uint8_t c00, uint8_t c01, uint8_t c10, uint8_t c11)
 {
-	float f00 = c00 / 255.0f;
-	float f01 = c01 / 255.0f;
-	float f10 = c10 / 255.0f;
-	float f11 = c11 / 255.0f;
+	const float f00 = c00 / 255.0f;
+	const float f01 = c01 / 255.0f;
+	const float f10 = c10 / 255.0f;
+	const float f11 = c11 / 255.0f;
 
-	float merged0 = (f00 + f01) / 2.0f;
-	float merged1 = (f10 + f11) / 2.0f;
+	const float merged0 = (f00 + f01) / 2.0f;
+	const float merged1 = (f10 + f11) / 2.0f;
 
-	float merged = (merged0 + merged1) / 2.0f;
+	const float merged = (merged0 + merged1) / 2.0f;
 
 	return static_cast<uint8_t>(merged * 255);
 }
@@ -56,7 +56,7 @@ void Wolf::MipMapGenerator::createMipLevel(RGBA8* previousMip, RGBA8* currentMip
 			RGBA8& block10 = previousMip[(x + 1) + y * height];
 			RGBA8& block11 = previousMip[(x + 1) + (y + 1) * height];
 
-			RGBA8 mergedPixel = RGBA8::mergeBlock(block00, block01, block10, block11);
+			const RGBA8 mergedPixel = RGBA8::mergeBlock(block00, block01, block10, block11);
 			currentMip[x / 2 + (y / 2) * (height / 2)] = mergedPixel;
 		}
 	}
@@ -64,10 +64,10 @@ void Wolf::MipMapGenerator::createMipLevel(RGBA8* previousMip, RGBA8* currentMip
 
 Wolf::MipMapGenerator::RGBA8 Wolf::MipMapGenerator::RGBA8::mergeBlock(RGBA8& block00, RGBA8& block01, RGBA8& block10, RGBA8& block11)
 {
-	uint8_t r = mergeColor(block00.r, block01.r, block10.r, block11.r);
-	uint8_t g = mergeColor(block00.g, block01.g, block10.g, block11.g);
-	uint8_t b = mergeColor(block00.b, block01.b, block10.b, block11.b);
-	uint8_t a = mergeColor(block00.a, block01.a, block10.a, block11.a);
+	const uint8_t r = mergeColor(block00.r, block01.r, block10.r, block11.r);
+	const uint8_t g = mergeColor(block00.g, block01.g, block10.g, block11.g);
+	const uint8_t b = mergeColor(block00.b, block01.b, block10.b, block11.b);
+	const uint8_t a = mergeColor(block00.a, block01.a, block10.a, block11.a);
 
 	return RGBA8(r, g, b, a);
 }

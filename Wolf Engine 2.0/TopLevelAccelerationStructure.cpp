@@ -53,7 +53,7 @@ Wolf::TopLevelAccelerationStructure::TopLevelAccelerationStructure(std::span<BLA
 	accelerationStructureCreateInfo.buffer = m_structureBuffer->getBuffer();
 
 	if (vkCreateAccelerationStructureKHR(g_vulkanInstance->getDevice(), &accelerationStructureCreateInfo, nullptr, &m_accelerationStructure))
-		Wolf::Debug::sendError("vkCreateAccelerationStructureNV failed");
+		Debug::sendError("vkCreateAccelerationStructureNV failed");
 
 	m_buildInfo.dstAccelerationStructure = m_accelerationStructure;
 

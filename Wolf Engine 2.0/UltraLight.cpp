@@ -7,7 +7,7 @@
 
 using namespace ultralight;
 
-Wolf::UltraLight::UltraLight(uint32_t width, uint32_t height, const char* htmlString)
+Wolf::UltraLight::UltraLight(uint32_t width, uint32_t height, const std::string& absoluteURL)
 {
     Config config;
     config.device_scale = 1.0;
@@ -23,7 +23,8 @@ Wolf::UltraLight::UltraLight(uint32_t width, uint32_t height, const char* htmlSt
     m_renderer = Renderer::Create();
     m_view = m_renderer->CreateView(width, height, true, nullptr);
     m_view->set_load_listener(this);
-    m_view->LoadHTML(htmlString);
+    //m_view->LoadHTML(htmlString);
+    m_view->LoadURL(absoluteURL.c_str());
 
     while (!m_done)
     {
@@ -33,7 +34,7 @@ Wolf::UltraLight::UltraLight(uint32_t width, uint32_t height, const char* htmlSt
     }
 }
 
-void Wolf::UltraLight::OnFinishLoading(ultralight::View* caller, uint64_t frame_id, bool is_main_frame, const ultralight::String& url)
+void Wolf::UltraLight::OnFinishLoading(View* caller, uint64_t frame_id, bool is_main_frame, const String& url)
 {
     if (is_main_frame)
     {
@@ -41,18 +42,18 @@ void Wolf::UltraLight::OnFinishLoading(ultralight::View* caller, uint64_t frame_
     }
 }
 
-void Wolf::UltraLight::LogMessage(ultralight::LogLevel log_level, const ultralight::String16& message)
+void Wolf::UltraLight::LogMessage(LogLevel log_level, const String16& message)
 {
     switch (log_level)
     {
-    case ultralight::kLogLevel_Error:
-        Debug::sendError(ultralight::String(message).utf8().data());
+    case kLogLevel_Error:
+        Debug::sendError(String(message).utf8().data());
         break;
-    case ultralight::kLogLevel_Warning:
-        Debug::sendWarning(ultralight::String(message).utf8().data());
+    case kLogLevel_Warning:
+        Debug::sendWarning(String(message).utf8().data());
         break;
-    case ultralight::kLogLevel_Info:
-        Debug::sendInfo(ultralight::String(message).utf8().data());
+    case kLogLevel_Info:
+        Debug::sendInfo(String(message).utf8().data());
         break;
     default:
         __debugbreak();
@@ -60,13 +61,13 @@ void Wolf::UltraLight::LogMessage(ultralight::LogLevel log_level, const ultralig
     }
 }
 
-void Wolf::UltraLight::OnDOMReady(ultralight::View* caller, uint64_t frame_id, bool is_main_frame, const ultralight::String& url)
+void Wolf::UltraLight::OnDOMReady(View* caller, uint64_t frame_id, bool is_main_frame, const String& url)
 {
     Ref<JSContext> context = caller->LockJSContext();
     SetJSContext(context.get());
 }
 
-Wolf::Image* Wolf::UltraLight::getImage()
+Wolf::Image* Wolf::UltraLight::getImage() const
 {
     UltraLightSurface* surface = (UltraLightSurface*)m_view->surface();
     return surface->getImage();
@@ -77,7 +78,7 @@ void Wolf::UltraLight::getJSObject(JSObject& outObject)
     outObject = JSGlobalObject();
 }
 
-void Wolf::UltraLight::update(GLFWwindow* window)
+void Wolf::UltraLight::update(GLFWwindow* window) const
 {
     float xscale, yscale;
     glfwGetMonitorContentScale(glfwGetPrimaryMonitor(), &xscale, &yscale);
@@ -94,7 +95,7 @@ void Wolf::UltraLight::update(GLFWwindow* window)
 
     m_view->FireMouseEvent(mouseEvent);
 
-    int state = glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT);
+    const int state = glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT);
     if (state == GLFW_PRESS)
     {
         mouseEvent.type = MouseEvent::kType_MouseDown;
@@ -113,12 +114,12 @@ void Wolf::UltraLight::update(GLFWwindow* window)
     m_renderer->Update();
 }
 
-void Wolf::UltraLight::render()
+void Wolf::UltraLight::render() const
 {
     m_renderer->Render();
 }
 
-void Wolf::UltraLight::resize(uint32_t width, uint32_t height)
+void Wolf::UltraLight::resize(uint32_t width, uint32_t height) const
 {
     m_view->Resize(width, height);
     m_renderer->Update();

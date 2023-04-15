@@ -15,9 +15,10 @@ namespace Wolf
 		Mesh(const std::vector<T>& vertices, const std::vector<uint32_t>& indices, VkBufferUsageFlags additionalVertexBufferUsages = 0, VkBufferUsageFlags additionalIndexBufferUsages = 0, VkFormat vertexFormat = VK_FORMAT_UNDEFINED);
 		Mesh(const Mesh&) = delete;
 
-		const uint32_t getVertexCount() const { return m_vertexCount; }
-		const uint32_t getVertexSize() const { return m_vertexSize; }
-		const VkFormat getVertexFormat() const 
+		[[nodiscard]] uint32_t getVertexCount() const { return m_vertexCount; }
+		[[nodiscard]] uint32_t getVertexSize() const { return m_vertexSize; }
+
+		[[nodiscard]] VkFormat getVertexFormat() const
 		{ 
 			if (m_vertexFormat == VK_FORMAT_UNDEFINED)
 			{
@@ -25,9 +26,10 @@ namespace Wolf
 			}
 			return m_vertexFormat; 
 		}
-		const uint32_t getIndexCount() const { return m_indexCount; }
-		const Buffer& getVertexBuffer() const { return *m_vertexBuffer.get(); }
-		const Buffer& getIndexBuffer() const { return *m_indexBuffer.get(); }
+
+		[[nodiscard]] uint32_t getIndexCount() const { return m_indexCount; }
+		[[nodiscard]] const Buffer& getVertexBuffer() const { return *m_vertexBuffer; }
+		[[nodiscard]] const Buffer& getIndexBuffer() const { return *m_indexBuffer; }
 
 		void draw(VkCommandBuffer commandBuffer) const;
 
@@ -42,7 +44,7 @@ namespace Wolf
 	};
 
 	template<typename T>
-	inline Mesh::Mesh(const std::vector<T>& vertices, const std::vector<uint32_t>& indices, VkBufferUsageFlags additionalVertexBufferUsages, VkBufferUsageFlags additionalIndexBufferUsages, VkFormat vertexFormat)
+	Mesh::Mesh(const std::vector<T>& vertices, const std::vector<uint32_t>& indices, VkBufferUsageFlags additionalVertexBufferUsages, VkBufferUsageFlags additionalIndexBufferUsages, VkFormat vertexFormat)
 	{
 		m_vertexBuffer.reset(new Buffer(sizeof(T) * vertices.size(), VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | additionalVertexBufferUsages, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, UpdateRate::NEVER));
 		m_vertexBuffer->transferCPUMemoryWithStagingBuffer((void*)vertices.data(), sizeof(T) * vertices.size());

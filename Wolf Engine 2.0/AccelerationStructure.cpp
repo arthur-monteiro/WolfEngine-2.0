@@ -9,6 +9,6 @@ void Wolf::AccelerationStructure::build(VkCommandBuffer commandBuffer)
 
 	m_buildInfo.scratchData.deviceAddress = m_scratchBuffer->getBufferDeviceAddress();
 
-	VkAccelerationStructureBuildRangeInfoKHR* rangeInfoPtr = &m_rangeInfo;
+	const VkAccelerationStructureBuildRangeInfoKHR* rangeInfoPtr = &m_rangeInfo;
 	vkCmdBuildAccelerationStructuresKHR(commandBuffer, 1, &m_buildInfo, &rangeInfoPtr);
 }

@@ -3,11 +3,9 @@
 #include <filesystem>
 #include <fstream>
 
-#include <Attachment.h>
 #include <DescriptorSetGenerator.h>
 #include <DescriptorSetLayoutGenerator.h>
 #include <Image.h>
-#include <FrameBuffer.h>
 #include <RayTracingShaderGroupGenerator.h>
 #include <ShaderBindingTable.h>
 
@@ -33,19 +31,19 @@ void UniquePass::initializeResources(const InitializationContext& context)
 	createPipeline();
 
 	// Load triangle
-	std::vector<Vertex2D> vertices =
+	const std::vector<Vertex2D> vertices =
 	{
 		{ glm::vec2(0.0f, -0.75f) }, // top
 		{ glm::vec2(-0.75f, 0.75f) }, // bot left
 		{ glm::vec2(0.75f, 0.75f) } // bot right
 	};
 
-	std::vector<uint32_t> indices =
+	const std::vector<uint32_t> indices =
 	{
 		0, 1, 2
 	};
 
-	VkBufferUsageFlags rayTracingFlags = VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT | VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_BUILD_INPUT_READ_ONLY_BIT_KHR | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
+	const VkBufferUsageFlags rayTracingFlags = VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT | VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_BUILD_INPUT_READ_ONLY_BIT_KHR | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
 	m_triangle.reset(new Mesh(vertices, indices, rayTracingFlags, rayTracingFlags, VK_FORMAT_R32G32_SFLOAT));
 
 	BottomLevelAccelerationStructureCreateInfo blasCreateInfo;
@@ -60,19 +58,19 @@ void UniquePass::initializeResources(const InitializationContext& context)
 	blasInstance.hitGroupIndex = 0;
 	blasInstance.transform = glm::mat4(1.0f);
 	blasInstance.instanceID = 0;
-	std::vector<BLASInstance> blasInstances = { blasInstance };
+	std::vector blasInstances = { blasInstance };
 	m_tlas.reset(new TopLevelAccelerationStructure(blasInstances));
 
 	m_descriptorSets.resize(context.swapChainImageCount);
 	createDescriptorSets(context);
 }
 
-void UniquePass::resize(const Wolf::InitializationContext& context)
+void UniquePass::resize(const InitializationContext& context)
 {
 	createDescriptorSets(context);
 }
 
-void UniquePass::record(const Wolf::RecordContext& context)
+void UniquePass::record(const RecordContext& context)
 {
 	uint32_t frameBufferIdx = context.swapChainImageIdx;
 
@@ -83,22 +81,22 @@ void UniquePass::record(const Wolf::RecordContext& context)
 	vkCmdBindPipeline(m_commandBuffer->getCommandBuffer(context.commandBufferIdx), VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR, m_pipeline->getPipeline());
 	vkCmdBindDescriptorSets(m_commandBuffer->getCommandBuffer(context.commandBufferIdx), VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR, m_pipeline->getPipelineLayout(), 0, 1, m_descriptorSets[context.swapChainImageIdx]->getDescriptorSet(), 0, nullptr);
 
-	VkStridedDeviceAddressRegionKHR rgenRegion{};
+	VkStridedDeviceAddressRegionKHR rgenRegion;
 	rgenRegion.deviceAddress = m_shaderBindingTable->getBuffer().getBufferDeviceAddress();
 	rgenRegion.stride = m_shaderBindingTable->getBaseAlignment();
 	rgenRegion.size = m_shaderBindingTable->getBaseAlignment();
 
-	VkStridedDeviceAddressRegionKHR rmissRegion{};
+	VkStridedDeviceAddressRegionKHR rmissRegion;
 	rmissRegion.deviceAddress = m_shaderBindingTable->getBuffer().getBufferDeviceAddress() + rgenRegion.size;
 	rmissRegion.stride = m_shaderBindingTable->getBaseAlignment();
 	rmissRegion.size = m_shaderBindingTable->getBaseAlignment();
 
-	VkStridedDeviceAddressRegionKHR rhitRegion{};
+	VkStridedDeviceAddressRegionKHR rhitRegion;
 	rhitRegion.deviceAddress = m_shaderBindingTable->getBuffer().getBufferDeviceAddress() + rgenRegion.size + rmissRegion.size;
 	rhitRegion.stride = m_shaderBindingTable->getBaseAlignment();
 	rhitRegion.size = m_shaderBindingTable->getBaseAlignment();
 
-	VkStridedDeviceAddressRegionKHR callRegion{};
+	const VkStridedDeviceAddressRegionKHR callRegion{};
 
 	vkCmdTraceRaysKHR(m_commandBuffer->getCommandBuffer(context.commandBufferIdx), &rgenRegion,
 		&rmissRegion,
@@ -110,10 +108,10 @@ void UniquePass::record(const Wolf::RecordContext& context)
 	m_commandBuffer->endCommandBuffer(context.commandBufferIdx);
 }
 
-void UniquePass::submit(const Wolf::SubmitContext& context)
+void UniquePass::submit(const SubmitContext& context)
 {
-	std::vector<const Semaphore*> waitSemaphores{ context.imageAvailableSemaphore };
-	std::vector<VkSemaphore> signalSemaphores{ m_semaphore->getSemaphore() };
+	const std::vector waitSemaphores{ context.imageAvailableSemaphore };
+	const std::vector signalSemaphores{ m_semaphore->getSemaphore() };
 	m_commandBuffer->submit(context.commandBufferIdx, waitSemaphores, signalSemaphores, context.frameFence);
 
 	bool anyShaderModified = m_rayGenShaderParser->compileIfFileHasBeenModified();
@@ -158,20 +156,20 @@ void UniquePass::createPipeline()
 
 	pipelineCreateInfo.shaderGroupsCreateInfos = shaderGroupGenerator.getShaderGroups();
 
-	std::vector<VkDescriptorSetLayout> descriptorSetLayouts = { m_descriptorSetLayout->getDescriptorSetLayout() };
+	std::vector descriptorSetLayouts = { m_descriptorSetLayout->getDescriptorSetLayout() };
 	m_pipeline.reset(new Pipeline(pipelineCreateInfo, descriptorSetLayouts));
 
 	m_shaderBindingTable.reset(new ShaderBindingTable(static_cast<uint32_t>(shaders.size()), m_pipeline->getPipeline()));
 }
 
-void UniquePass::createDescriptorSets(const Wolf::InitializationContext& context)
+void UniquePass::createDescriptorSets(const InitializationContext& context)
 {
 	for (uint32_t i = 0; i < context.swapChainImageCount; ++i)
 	{
 		DescriptorSetGenerator::ImageDescription image(VK_IMAGE_LAYOUT_GENERAL, context.swapChainImages[i]->getDefaultImageView());
 
 		DescriptorSetGenerator descriptorSetGenerator(m_descriptorSetLayoutGenerator.getDescriptorLayouts());
-		descriptorSetGenerator.setAccelerationStructure(0, *m_tlas.get());
+		descriptorSetGenerator.setAccelerationStructure(0, *m_tlas);
 		descriptorSetGenerator.setImage(1, image);
 		descriptorSetGenerator.setBuffer(2, m_triangle->getVertexBuffer());
 		descriptorSetGenerator.setBuffer(3, m_triangle->getIndexBuffer());

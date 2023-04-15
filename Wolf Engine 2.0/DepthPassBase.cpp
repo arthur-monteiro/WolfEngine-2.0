@@ -32,10 +32,10 @@ void Wolf::DepthPassBase::resize(const InitializationContext& context)
 
 void Wolf::DepthPassBase::record(const RecordContext& context)
 {
-	VkCommandBuffer commandBuffer = getCommandBuffer(context);
+	const VkCommandBuffer commandBuffer = getCommandBuffer(context);
 
 	std::vector<VkClearValue> clearValues(1);
-	clearValues[0] = { 1.0f };
+	clearValues[0] = {{{1.0f}}};
 	m_renderPass->beginRenderPass(m_frameBuffer->getFramebuffer(), clearValues, commandBuffer);
 
 	recordDraws(context);

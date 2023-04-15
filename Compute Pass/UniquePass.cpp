@@ -18,7 +18,7 @@ void UniquePass::initializeResources(const InitializationContext& context)
 	m_semaphore.reset(new Semaphore(VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT));
 
 	m_computeShaderParser.reset(new ShaderParser("Shaders/shader.comp"));
-;
+
 	m_descriptorSetLayoutGenerator.addStorageImage(VK_SHADER_STAGE_COMPUTE_BIT, 0);
 	m_descriptorSetLayout.reset(new DescriptorSetLayout(m_descriptorSetLayoutGenerator.getDescriptorLayouts()));
 
@@ -28,14 +28,14 @@ void UniquePass::initializeResources(const InitializationContext& context)
 	createPipeline(context.swapChainWidth, context.swapChainHeight);
 }
 
-void UniquePass::resize(const Wolf::InitializationContext& context)
+void UniquePass::resize(const InitializationContext& context)
 {
 	createDescriptorSets(context);
 	m_swapChainWidth = context.swapChainWidth;
 	m_swapChainHeight = context.swapChainHeight;
 }
 
-void UniquePass::record(const Wolf::RecordContext& context)
+void UniquePass::record(const RecordContext& context)
 {
 	/* Command buffer record */
 	uint32_t frameBufferIdx = context.swapChainImageIdx;
@@ -48,9 +48,9 @@ void UniquePass::record(const Wolf::RecordContext& context)
 
 	vkCmdBindPipeline(m_commandBuffer->getCommandBuffer(context.commandBufferIdx), VK_PIPELINE_BIND_POINT_COMPUTE, m_pipeline->getPipeline());
 
-	VkExtent3D dispatchGroups = { 16, 16, 1 };
-	uint32_t groupSizeX = m_swapChainWidth % dispatchGroups.width != 0 ? m_swapChainWidth / dispatchGroups.width + 1 : m_swapChainWidth / dispatchGroups.width;
-	uint32_t groupSizeY = m_swapChainHeight % dispatchGroups.height != 0 ? m_swapChainHeight / dispatchGroups.height + 1 : m_swapChainHeight / dispatchGroups.height;
+	const VkExtent3D dispatchGroups = { 16, 16, 1 };
+	const uint32_t groupSizeX = m_swapChainWidth % dispatchGroups.width != 0 ? m_swapChainWidth / dispatchGroups.width + 1 : m_swapChainWidth / dispatchGroups.width;
+	const uint32_t groupSizeY = m_swapChainHeight % dispatchGroups.height != 0 ? m_swapChainHeight / dispatchGroups.height + 1 : m_swapChainHeight / dispatchGroups.height;
 	vkCmdDispatch(m_commandBuffer->getCommandBuffer(context.commandBufferIdx), groupSizeX, groupSizeY, dispatchGroups.depth);
 
 	context.swapchainImage->transitionImageLayout(m_commandBuffer->getCommandBuffer(context.commandBufferIdx), VK_IMAGE_LAYOUT_PRESENT_SRC_KHR, 0, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT);
@@ -58,10 +58,10 @@ void UniquePass::record(const Wolf::RecordContext& context)
 	m_commandBuffer->endCommandBuffer(context.commandBufferIdx);
 }
 
-void UniquePass::submit(const Wolf::SubmitContext& context)
+void UniquePass::submit(const SubmitContext& context)
 {
-	std::vector<const Semaphore*> waitSemaphores{ context.imageAvailableSemaphore };
-	std::vector<VkSemaphore> signalSemaphores{ m_semaphore->getSemaphore() };
+	const std::vector waitSemaphores{ context.imageAvailableSemaphore };
+	const std::vector signalSemaphores{ m_semaphore->getSemaphore() };
 	m_commandBuffer->submit(context.commandBufferIdx, waitSemaphores, signalSemaphores, context.frameFence);
 
 	if (m_computeShaderParser->compileIfFileHasBeenModified())
@@ -89,7 +89,7 @@ void UniquePass::createPipeline(uint32_t width, uint32_t height)
 	m_swapChainHeight = height;
 }
 
-void UniquePass::createDescriptorSets(const Wolf::InitializationContext& context)
+void UniquePass::createDescriptorSets(const InitializationContext& context)
 {
 	for (uint32_t i = 0; i < context.swapChainImageCount; ++i)
 	{

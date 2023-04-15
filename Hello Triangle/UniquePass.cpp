@@ -57,7 +57,7 @@ void UniquePass::initializeResources(const InitializationContext& context)
 	m_indexBuffer->transferCPUMemoryWithStagingBuffer(indices.data(), sizeof(uint16_t) * indices.size());
 }
 
-void UniquePass::resize(const Wolf::InitializationContext& context)
+void UniquePass::resize(const InitializationContext& context)
 {
 	createDepthImage(context);
 	m_renderPass->setExtent({ context.swapChainWidth, context.swapChainHeight });
@@ -77,21 +77,21 @@ void UniquePass::resize(const Wolf::InitializationContext& context)
 	createPipeline(context.swapChainWidth, context.swapChainHeight);
 }
 
-void UniquePass::record(const Wolf::RecordContext& context)
+void UniquePass::record(const RecordContext& context)
 {
-	uint32_t frameBufferIdx = context.swapChainImageIdx;
+	const uint32_t frameBufferIdx = context.swapChainImageIdx;
 
 	m_commandBuffer->beginCommandBuffer(context.commandBufferIdx);
 
 	std::vector<VkClearValue> clearValues(2);
-	clearValues[0] = { 1.0f };
-	clearValues[1] = { 0.1f, 0.1f, 0.1f, 1.0f };
+	clearValues[0] = {{{1.0f}}};
+	clearValues[1] = {{{0.1f, 0.1f, 0.1f, 1.0f}}};
 	m_renderPass->beginRenderPass(m_frameBuffers[frameBufferIdx]->getFramebuffer(), clearValues, m_commandBuffer->getCommandBuffer(context.commandBufferIdx));
 
 	vkCmdBindPipeline(m_commandBuffer->getCommandBuffer(context.commandBufferIdx), VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipeline->getPipeline());
 
-	const VkDeviceSize offsets[1] = { 0 };
-	VkBuffer vertexBuffer = m_vertexBuffer->getBuffer();
+	constexpr VkDeviceSize offsets[1] = { 0 };
+	const VkBuffer vertexBuffer = m_vertexBuffer->getBuffer();
 	vkCmdBindVertexBuffers(m_commandBuffer->getCommandBuffer(context.commandBufferIdx), 0, 1, &vertexBuffer, offsets);
 	vkCmdBindIndexBuffer(m_commandBuffer->getCommandBuffer(context.commandBufferIdx), m_indexBuffer->getBuffer(), 0, VK_INDEX_TYPE_UINT16);
 
@@ -102,10 +102,10 @@ void UniquePass::record(const Wolf::RecordContext& context)
 	m_commandBuffer->endCommandBuffer(context.commandBufferIdx);
 }
 
-void UniquePass::submit(const Wolf::SubmitContext& context)
+void UniquePass::submit(const SubmitContext& context)
 {
-	std::vector<const Semaphore*> waitSemaphores{ context.imageAvailableSemaphore };
-	std::vector<VkSemaphore> signalSemaphores{ m_semaphore->getSemaphore() };
+	const std::vector waitSemaphores{ context.imageAvailableSemaphore };
+	const std::vector signalSemaphores{ m_semaphore->getSemaphore() };
 	m_commandBuffer->submit(context.commandBufferIdx, waitSemaphores, signalSemaphores, context.frameFence);
 
 	bool anyShaderModified = m_vertexShaderParser->compileIfFileHasBeenModified();
@@ -119,7 +119,7 @@ void UniquePass::submit(const Wolf::SubmitContext& context)
 	}
 }
 
-void UniquePass::createDepthImage(const Wolf::InitializationContext& context)
+void UniquePass::createDepthImage(const InitializationContext& context)
 {
 	CreateImageInfo depthImageCreateInfo;
 	depthImageCreateInfo.format = context.depthFormat;
@@ -165,7 +165,7 @@ void UniquePass::createPipeline(uint32_t width, uint32_t height)
 	pipelineCreateInfo.extent = { width, height };
 
 	// Color Blend
-	std::vector<RenderingPipelineCreateInfo::BLEND_MODE> blendModes = { RenderingPipelineCreateInfo::BLEND_MODE::OPAQUE };
+	std::vector blendModes = { RenderingPipelineCreateInfo::BLEND_MODE::OPAQUE };
 	pipelineCreateInfo.blendModes = blendModes;
 
 	m_pipeline.reset(new Pipeline(pipelineCreateInfo));

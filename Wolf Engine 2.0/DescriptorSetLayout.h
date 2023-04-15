@@ -13,7 +13,7 @@ namespace Wolf
 		DescriptorSetLayout(const DescriptorSetLayout&) = delete;
 		~DescriptorSetLayout();
 
-		VkDescriptorSetLayout getDescriptorSetLayout() const { return m_descriptorSetLayout; }
+		[[nodiscard]] VkDescriptorSetLayout getDescriptorSetLayout() const { return m_descriptorSetLayout; }
 
 	private:
 		VkDescriptorSetLayout m_descriptorSetLayout;

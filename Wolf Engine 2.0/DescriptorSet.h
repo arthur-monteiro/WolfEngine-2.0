@@ -43,10 +43,10 @@ namespace Wolf
 		DescriptorSet(VkDescriptorSetLayout descriptorSetLayout, UpdateRate updateRate);
 		DescriptorSet(const DescriptorSet&) = delete;
 
-		void update(const DescriptorSetCreateInfo& descriptorSetCreateInfo);
-		void update(const DescriptorSetCreateInfo& descriptorSetCreateInfo, uint32_t idx);
+		void update(const DescriptorSetCreateInfo& descriptorSetCreateInfo) const;
+		void update(const DescriptorSetCreateInfo& descriptorSetCreateInfo, uint32_t idx) const;
 
-		const VkDescriptorSet* getDescriptorSet(uint32_t idx = 0) const { return &m_descriptorSets[idx]; }
+		[[nodiscard]] const VkDescriptorSet* getDescriptorSet(uint32_t idx = 0) const { return &m_descriptorSets[idx]; }
 
 	private:
 		void createDescriptorSet(uint32_t idx, VkDescriptorSetLayout descriptorSetLayout);

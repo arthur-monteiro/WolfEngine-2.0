@@ -27,7 +27,7 @@ namespace Wolf
 
 		std::string configFilename;
 
-		const char* htmlStringUI = nullptr;
+		const char* htmlURL = nullptr;
 
 		bool useOVR = false;
 
@@ -44,23 +44,24 @@ namespace Wolf
 	public:
 		WolfEngine(const WolfInstanceCreateInfo& createInfo);
 
-		void initializePass(CommandRecordBase* pass);
+		void initializePass(CommandRecordBase* pass) const;
 
-		bool windowShouldClose();
+		bool windowShouldClose() const;
 		void frame(const std::span<CommandRecordBase*>& passes, const Semaphore* frameEndedSemaphore);
 
-		void waitIdle();
+		void waitIdle() const;
 
 #ifndef __ANDROID__
-		void getUserInterfaceJSObject(ultralight::JSObject& outObject);
+		void getUserInterfaceJSObject(ultralight::JSObject& outObject) const;
 #endif
-		const HardwareCapabilities& getHardwareCapabilities() const { return m_vulkan->getHardwareCapabilities(); }
+		[[nodiscard]] const HardwareCapabilities& getHardwareCapabilities() const { return m_vulkan->getHardwareCapabilities(); }
+		[[nodiscard]] uint32_t getCurrentFrame() const { return m_currentFrame; }
 
 		void setCameraInterface(CameraInterface* cameraInterface) { m_cameraInterface = cameraInterface; }
 		void setGameContexts(const std::vector<void*>& gameContexts) { m_gameContexts = gameContexts; }
 
 	private:
-		void fillInitializeContext(InitializationContext& context);
+		void fillInitializeContext(InitializationContext& context) const;
 
 		static void windowResizeCallback(void* systemManagerInstance, int width, int height)
 		{

@@ -12,7 +12,7 @@ namespace Wolf
 		DescriptorPool(const DescriptorPool&) = delete;
 		~DescriptorPool();
 
-		VkDescriptorPool getDescriptorPool() const { return m_descriptorPool; }
+		[[nodiscard]] VkDescriptorPool getDescriptorPool() const { return m_descriptorPool; }
 
 	private:
 		static void addDescriptorPoolSize(VkDescriptorType descriptorType, uint32_t descriptorCount, std::vector<VkDescriptorPoolSize>& poolSizes);

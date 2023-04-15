@@ -16,7 +16,7 @@ namespace Wolf
 		void resize(const InitializationContext& context);
 		void record(const RecordContext& context);
 
-		Image* getOutput() const { return m_depthImage.get(); }
+		[[nodiscard]] Image* getOutput() const { return m_depthImage.get(); }
 
 	private:
 		void getAttachments(const InitializationContext& context, std::vector<Attachment>& attachments);

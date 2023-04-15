@@ -20,7 +20,7 @@ Wolf::Configuration::Configuration(const std::string& filename, AAssetManager* a
 	std::string line;
 	while (std::getline(configFile, line))
 	{
-		if (size_t pos = line.find("="); pos != std::string::npos)
+		if (const size_t pos = line.find("="); pos != std::string::npos)
 		{
 			std::string token = line.substr(0, pos);
 			line.erase(0, pos + 1);

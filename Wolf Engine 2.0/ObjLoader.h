@@ -113,7 +113,7 @@ namespace Wolf
 		ObjLoader(ModelLoadingInfo& modelLoadingInfo);
 		ObjLoader(const ObjLoader&) = delete;
 
-		const Mesh* getMesh() const { return m_mesh.get(); }
+		[[nodiscard]] const Mesh* getMesh() const { return m_mesh.get(); }
 		const void getImages(std::vector<Image*>& images);
 
 	private:

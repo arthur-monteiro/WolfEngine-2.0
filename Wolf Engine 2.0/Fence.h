@@ -11,10 +11,10 @@ namespace Wolf
 		Fence(const Fence&) = delete;
 		~Fence();
 
-		void waitForFence();
-		void resetFence();
+		void waitForFence() const;
+		void resetFence() const;
 
-		VkFence getFence() const { return m_fence; }
+		[[nodiscard]] VkFence getFence() const { return m_fence; }
 
 	private:
 		VkFence m_fence;

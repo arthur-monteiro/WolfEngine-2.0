@@ -9,16 +9,17 @@
 
 Wolf::Buffer::Buffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties, UpdateRate updateRate)
 {
-	uint32_t bufferCount;
+	uint32_t bufferCount = 0;
 	switch (updateRate)
 	{
-	case Wolf::UpdateRate::EACH_FRAME:
+	case UpdateRate::EACH_FRAME:
 		bufferCount = g_configuration->getMaxCachedFrames();
 		break;
-	case Wolf::UpdateRate::NEVER:
+	case UpdateRate::NEVER:
 		bufferCount = 1;
 		break;
 	default:
+		Debug::sendCriticalError("Unhandled update rate");
 		break;
 	}
 
@@ -31,14 +32,14 @@ Wolf::Buffer::Buffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryProper
 
 Wolf::Buffer::~Buffer()
 {
-	for (BufferElements& bufferElements : m_buffers)
+	for (const BufferElements& bufferElements : m_buffers)
 	{
 		vkDestroyBuffer(g_vulkanInstance->getDevice(), bufferElements.buffer, nullptr);
 		vkFreeMemory(g_vulkanInstance->getDevice(), bufferElements.bufferMemory, nullptr);
 	}
 }
 
-void Wolf::Buffer::transferCPUMemory(void* data, VkDeviceSize srcSize, VkDeviceSize srcOffset, uint32_t idx)
+void Wolf::Buffer::transferCPUMemory(const void* data, VkDeviceSize srcSize, VkDeviceSize srcOffset, uint32_t idx) const
 {
 	void* pData;
 	map(&pData, srcSize, idx);
@@ -46,13 +47,13 @@ void Wolf::Buffer::transferCPUMemory(void* data, VkDeviceSize srcSize, VkDeviceS
 	unmap(idx);
 }
 
-void Wolf::Buffer::transferCPUMemoryWithStagingBuffer(void* data, VkDeviceSize srcSize, VkDeviceSize srcOffset, uint32_t idx)
+void Wolf::Buffer::transferCPUMemoryWithStagingBuffer(void* data, VkDeviceSize srcSize, VkDeviceSize srcOffset, uint32_t idx) const
 {
-	Buffer stagingBuffer(srcSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, UpdateRate::NEVER);
+	const Buffer stagingBuffer(srcSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, UpdateRate::NEVER);
 
 	void* mappedData;
 	vkMapMemory(g_vulkanInstance->getDevice(), stagingBuffer.getBufferMemory(), 0, srcSize, 0, &mappedData);
-	std::memcpy(mappedData, (char*)data + srcOffset, static_cast<size_t>(srcSize));
+	std::memcpy(mappedData, static_cast<char*>(data) + srcOffset, srcSize);
 	vkUnmapMemory(g_vulkanInstance->getDevice(), stagingBuffer.getBufferMemory());
 
 	VkBufferCopy bufferCopy;
@@ -62,7 +63,7 @@ void Wolf::Buffer::transferCPUMemoryWithStagingBuffer(void* data, VkDeviceSize s
 	transferGPUMemory(stagingBuffer, bufferCopy, idx);
 }
 
-void Wolf::Buffer::transferGPUMemory(const Buffer& bufferSrc, const VkBufferCopy& copyRegion, uint32_t idx)
+void Wolf::Buffer::transferGPUMemory(const Buffer& bufferSrc, const VkBufferCopy& copyRegion, uint32_t idx) const
 {
 	CommandBuffer commandBuffer(QueueType::TRANSFER, true);
 	commandBuffer.beginCommandBuffer(0);
@@ -71,26 +72,26 @@ void Wolf::Buffer::transferGPUMemory(const Buffer& bufferSrc, const VkBufferCopy
 
 	commandBuffer.endCommandBuffer(0);
 
-	std::vector<const Semaphore*> waitSemaphores;
-	std::vector<VkSemaphore> signalSemaphores;
+	const std::vector<const Semaphore*> waitSemaphores;
+	const std::vector<VkSemaphore> signalSemaphores;
 	Fence fence(0);
 	commandBuffer.submit(0, waitSemaphores, signalSemaphores, fence.getFence());
 	fence.waitForFence();
 }
 
-void Wolf::Buffer::map(void** pData, VkDeviceSize size, uint32_t idx)
+void Wolf::Buffer::map(void** pData, VkDeviceSize size, uint32_t idx) const
 {
 	if (size == 0)
 		size = m_bufferSize;
 	vkMapMemory(g_vulkanInstance->getDevice(), m_buffers[idx].bufferMemory, 0, size, 0, pData);
 }
 
-void Wolf::Buffer::unmap(uint32_t idx)
+void Wolf::Buffer::unmap(uint32_t idx) const
 {
 	vkUnmapMemory(g_vulkanInstance->getDevice(), m_buffers[idx].bufferMemory);
 }
 
-void Wolf::Buffer::getContent(void* outputData, uint32_t idx)
+void Wolf::Buffer::getContent(void* outputData, uint32_t idx) const
 {
 	void* pData;
 	vkMapMemory(g_vulkanInstance->getDevice(), m_buffers[idx].bufferMemory, 0, m_bufferSize, 0, &pData);

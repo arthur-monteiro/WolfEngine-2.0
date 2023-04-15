@@ -13,13 +13,13 @@ namespace Wolf
 		CommandBuffer(QueueType queueType, bool isTransient);
 		~CommandBuffer();
 
-		void beginCommandBuffer(uint32_t index);
-		void endCommandBuffer(uint32_t index);
-		void submit(uint32_t index, const std::vector<const Wolf::Semaphore*>& waitSemaphores, const std::vector<VkSemaphore>& signalSemaphores, VkFence fence);
+		void beginCommandBuffer(uint32_t index) const;
+		void endCommandBuffer(uint32_t index) const;
+		void submit(uint32_t index, const std::vector<const Semaphore*>& waitSemaphores, const std::vector<VkSemaphore>& signalSemaphores, VkFence fence) const;
 
 		// Getter
 	public:
-		VkCommandBuffer getCommandBuffer(uint32_t index) const { return m_commandBuffers[index]; }
+		[[nodiscard]] VkCommandBuffer getCommandBuffer(uint32_t index) const { return m_commandBuffers[index]; }
 
 	private:
 		std::vector<VkCommandBuffer> m_commandBuffers;

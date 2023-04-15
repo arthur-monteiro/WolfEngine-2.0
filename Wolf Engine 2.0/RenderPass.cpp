@@ -54,7 +54,7 @@ Wolf::RenderPass::RenderPass(const std::vector<Attachment>& attachments)
 		subpass.pResolveAttachments = resolveAttachmentRefs.data();
 
 	// Dependencies
-	std::vector<VkSubpassDependency> dependencies(0);
+	const std::vector<VkSubpassDependency> dependencies(0);
 
 	VkRenderPassCreateInfo renderPassInfo = {};
 	renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
@@ -77,7 +77,7 @@ Wolf::RenderPass::~RenderPass()
 	vkDestroyRenderPass(g_vulkanInstance->getDevice(), m_renderPass, nullptr);
 }
 
-void Wolf::RenderPass::beginRenderPass(VkFramebuffer frameBuffer, const std::vector<VkClearValue>& clearValues, VkCommandBuffer commandBuffer)
+void Wolf::RenderPass::beginRenderPass(VkFramebuffer frameBuffer, const std::vector<VkClearValue>& clearValues, VkCommandBuffer commandBuffer) const
 {
 	VkRenderPassBeginInfo renderPassInfo = {};
 	renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;

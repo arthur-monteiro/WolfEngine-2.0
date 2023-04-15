@@ -9,7 +9,7 @@ Wolf::DescriptorSetLayout::DescriptorSetLayout(const std::span<const DescriptorL
 {
 	std::vector<VkDescriptorSetLayoutBinding> bindings;
 
-	for (auto descriptorLayout : descriptorLayouts)
+	for (const auto descriptorLayout : descriptorLayouts)
 	{
 		VkDescriptorSetLayoutBinding descriptorSetLayoutBinding = {};
 		descriptorSetLayoutBinding.binding = descriptorLayout.binding;

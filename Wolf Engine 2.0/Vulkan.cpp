@@ -22,7 +22,7 @@ Wolf::Vulkan::Vulkan(GLFWwindow* glfwWindowPtr, bool useOVR)
 #ifndef __ANDROID__
 	if(useOVR)
 	{
-		ovrInitParams initParams = { ovrInit_RequestVersion | ovrInit_FocusAware, OVR_MINOR_VERSION, NULL, 0, 0 };
+		const ovrInitParams initParams = { ovrInit_RequestVersion | ovrInit_FocusAware, OVR_MINOR_VERSION, NULL, 0, 0 };
 		ovrResult result = ovr_Initialize(&initParams);
 		if (!OVR_SUCCESS(result))
 		{
@@ -39,7 +39,7 @@ Wolf::Vulkan::Vulkan(GLFWwindow* glfwWindowPtr, bool useOVR)
 	}
 #endif
 
-	bool useVIL = g_configuration->getUseVIL();
+	const bool useVIL = g_configuration->getUseVIL();
 
 //#ifndef NDEBUG
 	if(useVIL)
@@ -133,7 +133,7 @@ void Wolf::Vulkan::createInstance()
 	createInfo.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
 	createInfo.pApplicationInfo = &appInfo;
 
-	std::vector<const char*> extensions = getRequiredExtensions();
+	const std::vector<const char*> extensions = getRequiredExtensions();
 //	extensions.push_back(VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_EXTENSION_NAME);
 //	extensions.push_back(VK_KHR_EXTERNAL_FENCE_CAPABILITIES_EXTENSION_NAME);
 	createInfo.enabledExtensionCount = static_cast<uint32_t>(extensions.size());
@@ -144,7 +144,7 @@ void Wolf::Vulkan::createInstance()
 	createInfo.ppEnabledLayerNames = m_validationLayers.data();
 
 	populateDebugMessengerCreateInfo(debugCreateInfo);
-	createInfo.pNext = (VkDebugUtilsMessengerCreateInfoEXT*)&debugCreateInfo;
+	createInfo.pNext = &debugCreateInfo;
 
 	//createInfo.enabledLayerCount = 0;
 	//createInfo.pNext = nullptr;
@@ -155,7 +155,7 @@ void Wolf::Vulkan::createInstance()
 
 VkResult CreateDebugUtilsMessengerEXT(VkInstance instance, const VkDebugUtilsMessengerCreateInfoEXT* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkDebugUtilsMessengerEXT* pDebugMessenger) 
 {
-	auto func = (PFN_vkCreateDebugUtilsMessengerEXT)vkGetInstanceProcAddr(instance, "vkCreateDebugUtilsMessengerEXT");
+	const auto func = (PFN_vkCreateDebugUtilsMessengerEXT)vkGetInstanceProcAddr(instance, "vkCreateDebugUtilsMessengerEXT");
 	if (func != nullptr)
 	{
 		return func(instance, pCreateInfo, pAllocator, pDebugMessenger);
@@ -244,7 +244,7 @@ VkSampleCountFlagBits getMaxUsableSampleCount(VkPhysicalDevice physicalDevice)
 	VkPhysicalDeviceProperties physicalDeviceProperties;
 	vkGetPhysicalDeviceProperties(physicalDevice, &physicalDeviceProperties);
 
-	VkSampleCountFlags counts = std::min(physicalDeviceProperties.limits.framebufferColorSampleCounts, physicalDeviceProperties.limits.framebufferDepthSampleCounts);
+	const VkSampleCountFlags counts = std::min(physicalDeviceProperties.limits.framebufferColorSampleCounts, physicalDeviceProperties.limits.framebufferDepthSampleCounts);
 	if (counts & VK_SAMPLE_COUNT_64_BIT) { return VK_SAMPLE_COUNT_64_BIT; }
 	if (counts & VK_SAMPLE_COUNT_32_BIT) { return VK_SAMPLE_COUNT_32_BIT; }
 	if (counts & VK_SAMPLE_COUNT_16_BIT) { return VK_SAMPLE_COUNT_16_BIT; }
@@ -278,7 +278,7 @@ void Wolf::Vulkan::pickPhysicalDevice()
 #ifndef __ANDROID__
 	if (m_session)
 	{
-		ovrResult result = ovr_GetSessionPhysicalDeviceVk(m_session, m_luid, m_instance, &m_physicalDevice);
+		const ovrResult result = ovr_GetSessionPhysicalDeviceVk(m_session, m_luid, m_instance, &m_physicalDevice);
 		if (!OVR_SUCCESS(result))
 		{
 			Debug::sendCriticalError("Failed to get physical device from OVR");
@@ -297,7 +297,7 @@ void Wolf::Vulkan::pickPhysicalDevice()
 	std::vector<VkPhysicalDevice> devices(deviceCount);
 	vkEnumeratePhysicalDevices(m_instance, &deviceCount, devices.data());
 
-	for (auto& device : devices)
+	for (const auto& device : devices)
 	{
 		if (isDeviceSuitable(device, m_deviceExtensions, m_hardwareCapabilities))
 		{
@@ -336,7 +336,7 @@ void Wolf::Vulkan::createDevice()
 	findQueueFamilies(m_queueFamilyIndices, m_physicalDevice, m_surface);
 
 	std::vector<VkDeviceQueueCreateInfo> queueCreateInfos;
-	std::set<int> uniqueQueueFamilies = { m_queueFamilyIndices.graphicsFamily, m_queueFamilyIndices.presentFamily };
+	std::set uniqueQueueFamilies = { m_queueFamilyIndices.graphicsFamily, m_queueFamilyIndices.presentFamily };
 
 	float queuePriority = 1.0f;
 	for (int queueFamily : uniqueQueueFamilies)
@@ -441,7 +441,7 @@ void Wolf::Vulkan::populateDebugMessengerCreateInfo(VkDebugUtilsMessengerCreateI
 	createInfo.pfnUserCallback = debugCallback;
 }
 
-bool Wolf::Vulkan::isDeviceSuitable(VkPhysicalDevice physicalDevice, const std::vector<const char*>& deviceExtensions, HardwareCapabilities& outHardwareCapabilities)
+bool Wolf::Vulkan::isDeviceSuitable(VkPhysicalDevice physicalDevice, const std::vector<const char*>& deviceExtensions, HardwareCapabilities& outHardwareCapabilities) const
 {
 	QueueFamilyIndices queueFamilyIndices;
 	findQueueFamilies(queueFamilyIndices, physicalDevice, m_surface);
@@ -478,7 +478,7 @@ bool Wolf::Vulkan::isDeviceSuitable(VkPhysicalDevice physicalDevice, const std::
 	return queueFamilyIndices.isComplete() && extensionsSupported && swapChainAdequate /*&& supportedFeatures.samplerAnisotropy*/;
 }
 
-void Wolf::Vulkan::getPhysicalDeviceRayTracingProperties(VkPhysicalDeviceRayTracingPipelinePropertiesKHR& raytracingProperties)
+void Wolf::Vulkan::getPhysicalDeviceRayTracingProperties(VkPhysicalDeviceRayTracingPipelinePropertiesKHR& raytracingProperties) const
 {
 #ifndef __ANDROID__
 	// Query the values of shaderHeaderSize and maxRecursionDepth in current implementation

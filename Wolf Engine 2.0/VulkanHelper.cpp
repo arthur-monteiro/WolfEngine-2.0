@@ -49,7 +49,7 @@ VkFormat Wolf::findDepthFormat(VkPhysicalDevice physicalDevice)
 
 VkFormat Wolf::findSupportedFormat(const std::vector<VkFormat>& candidates, VkImageTiling tiling, VkFormatFeatureFlags features, VkPhysicalDevice physicalDevice)
 {
-	for (VkFormat format : candidates)
+	for (const VkFormat format : candidates)
 	{
 		VkFormatProperties props;
 		vkGetPhysicalDeviceFormatProperties(physicalDevice, format, &props);

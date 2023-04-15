@@ -11,7 +11,7 @@ namespace Wolf
 		Sampler(const Sampler&) = delete;
 		~Sampler();
 
-		VkSampler getSampler() const { return m_sampler; }
+		[[nodiscard]] VkSampler getSampler() const { return m_sampler; }
 
 	private:
 		VkSampler m_sampler;

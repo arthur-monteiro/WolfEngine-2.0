@@ -11,9 +11,8 @@ namespace Wolf
         ~Semaphore();
 
         // Getters
-    public:
-        VkSemaphore getSemaphore() const { return m_semaphore; }
-        VkPipelineStageFlags getPipelineStage() const { return m_pipelineStage; }
+        [[nodiscard]] VkSemaphore getSemaphore() const { return m_semaphore; }
+        [[nodiscard]] VkPipelineStageFlags getPipelineStage() const { return m_pipelineStage; }
 
     private:
         VkSemaphore m_semaphore;

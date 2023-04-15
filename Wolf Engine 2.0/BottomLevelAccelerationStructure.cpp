@@ -33,8 +33,7 @@ Wolf::BottomLevelAccelerationStructure::BottomLevelAccelerationStructure(const B
 		geometry.flags = VK_GEOMETRY_OPAQUE_BIT_KHR;
 
 		m_vertexBuffers.emplace_back(geometry);
-
-		VkAccelerationStructureBuildRangeInfoKHR offset;
+		
 		m_rangeInfo.primitiveCount += geometryInfo.mesh->getIndexCount() / 3;
 	}
 
@@ -58,7 +57,7 @@ Wolf::BottomLevelAccelerationStructure::BottomLevelAccelerationStructure(const B
 	accelerationStructureCreateInfo.buffer = m_structureBuffer->getBuffer();
 
 	if (vkCreateAccelerationStructureKHR(g_vulkanInstance->getDevice(), &accelerationStructureCreateInfo, nullptr, &m_accelerationStructure))
-		Wolf::Debug::sendError("vkCreateAccelerationStructureNV failed");
+		Debug::sendError("vkCreateAccelerationStructureNV failed");
 
 	m_buildInfo.dstAccelerationStructure = m_accelerationStructure;
 

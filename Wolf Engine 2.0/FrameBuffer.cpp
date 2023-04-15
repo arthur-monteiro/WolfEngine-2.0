@@ -5,7 +5,7 @@
 Wolf::Framebuffer::Framebuffer(VkRenderPass renderPass, const std::vector<Attachment>& attachments)
 {
 	std::vector<VkImageView> imageViewAttachments(attachments.size());
-	for (int i(0); i < attachments.size(); ++i)
+	for (uint32_t i = 0; i < attachments.size(); ++i)
 	{
 		imageViewAttachments[i] = attachments[i].imageView;
 	}

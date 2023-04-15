@@ -38,7 +38,7 @@ Wolf::Image::Image(const CreateImageInfo& createImageInfo)
 	imageInfo.flags = m_arrayLayerCount == 6 ? VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT : 0;
 
 	if (vkCreateImage(g_vulkanInstance->getDevice(), &imageInfo, nullptr, &m_image) != VK_SUCCESS)
-		Wolf::Debug::sendError("Error : create image");
+		Debug::sendError("Error : create image");
 
 	VkMemoryRequirements memRequirements;
 	vkGetImageMemoryRequirements(g_vulkanInstance->getDevice(), m_image, &memRequirements);
@@ -49,12 +49,12 @@ Wolf::Image::Image(const CreateImageInfo& createImageInfo)
 	allocInfo.memoryTypeIndex = findMemoryType(g_vulkanInstance->getPhysicalDevice(), memRequirements.memoryTypeBits, createImageInfo.memoryProperties);
 
 	if (allocInfo.memoryTypeIndex < 0)
-		Wolf::Debug::sendError("Error : no memory type found");
+		Debug::sendError("Error : no memory type found");
 
-	if (vkAllocateMemory(Wolf::g_vulkanInstance->getDevice(), &allocInfo, nullptr, &m_imageMemory) != VK_SUCCESS)
-		Wolf::Debug::sendError("Failed to allocate image memory");
+	if (vkAllocateMemory(g_vulkanInstance->getDevice(), &allocInfo, nullptr, &m_imageMemory) != VK_SUCCESS)
+		Debug::sendError("Failed to allocate image memory");
 
-	vkBindImageMemory(Wolf::g_vulkanInstance->getDevice(), m_image, m_imageMemory, 0);
+	vkBindImageMemory(g_vulkanInstance->getDevice(), m_image, m_imageMemory, 0);
 
 	setBBP();
 }
@@ -79,7 +79,7 @@ Wolf::Image::Image(VkImage image, VkFormat format, VkImageAspectFlags aspect, Vk
 
 Wolf::Image::~Image()
 {
-	for (std::pair<uint32_t, VkImageView> imageView : m_imageViews)
+	for (const std::pair<uint32_t, VkImageView> imageView : m_imageViews)
 		vkDestroyImageView(g_vulkanInstance->getDevice(), imageView.second, nullptr);
 
 	if (m_imageMemory == VK_NULL_HANDLE)
@@ -90,13 +90,13 @@ Wolf::Image::~Image()
 
 void Wolf::Image::copyCPUBuffer(const unsigned char* pixels, uint32_t mipLevel)
 {
-	VkDeviceSize imageSize = (m_extent.width * m_extent.height * m_extent.depth * m_bbp) >> mipLevel;
+	const VkDeviceSize imageSize = (m_extent.width * m_extent.height * m_extent.depth * m_bbp) >> mipLevel;
 
-	Buffer stagingBuffer(imageSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, UpdateRate::NEVER);
+	const Buffer stagingBuffer(imageSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, UpdateRate::NEVER);
 	
 	void* mappedData;
 	vkMapMemory(g_vulkanInstance->getDevice(), stagingBuffer.getBufferMemory(), 0, imageSize, 0, &mappedData);
-	std::memcpy(mappedData, pixels, static_cast<size_t>(imageSize));
+	std::memcpy(mappedData, pixels, imageSize);
 	vkUnmapMemory(g_vulkanInstance->getDevice(), stagingBuffer.getBufferMemory());
 
 	VkBufferImageCopy copyRegion;
@@ -110,7 +110,7 @@ void Wolf::Image::copyCPUBuffer(const unsigned char* pixels, uint32_t mipLevel)
 	copyRegion.imageSubresource.layerCount = 1;
 
 	copyRegion.imageOffset = { 0, 0, 0 };
-	VkExtent3D extent = { m_extent.width >> mipLevel, m_extent.height >> mipLevel, m_extent.depth };
+	const VkExtent3D extent = { m_extent.width >> mipLevel, m_extent.height >> mipLevel, m_extent.depth };
 	copyRegion.imageExtent = extent;
 
 	copyGPUBuffer(stagingBuffer, copyRegion);
@@ -127,27 +127,27 @@ void Wolf::Image::copyGPUBuffer(const Buffer& bufferSrc, const VkBufferImageCopy
 
 	commandBuffer.endCommandBuffer(0);
 
-	std::vector<const Semaphore*> waitSemaphores;
-	std::vector<VkSemaphore> signalSemaphores;
+	const std::vector<const Semaphore*> waitSemaphores;
+	const std::vector<VkSemaphore> signalSemaphores;
 	Fence fence(0);
 	commandBuffer.submit(0, waitSemaphores, signalSemaphores, fence.getFence());
 	fence.waitForFence();
 }
 
-void* Wolf::Image::map()
+void* Wolf::Image::map() const
 {
-	VkDeviceSize imageSize = m_extent.width * m_extent.height * m_extent.depth * m_bbp;
+	const VkDeviceSize imageSize = m_extent.width * m_extent.height * m_extent.depth * m_bbp;
 	void* mappedData;
 	vkMapMemory(g_vulkanInstance->getDevice(), m_imageMemory, 0, imageSize, 0, &mappedData);
 	return mappedData;
 }
 
-void Wolf::Image::unmap()
+void Wolf::Image::unmap() const
 {
 	vkUnmapMemory(g_vulkanInstance->getDevice(), m_imageMemory);
 }
 
-void Wolf::Image::getResourceLayout(VkSubresourceLayout& output)
+void Wolf::Image::getResourceLayout(VkSubresourceLayout& output) const
 {
 	VkImageSubresource subresource{};
 	subresource.aspectMask = m_aspectFlags;
@@ -165,8 +165,8 @@ void Wolf::Image::setImageLayout(VkImageLayout dstLayout, VkAccessFlags dstAcces
 
 	commandBuffer.endCommandBuffer(0);
 
-	std::vector<const Semaphore*> waitSemaphores;
-	std::vector<VkSemaphore> signalSemaphores;
+	const std::vector<const Semaphore*> waitSemaphores;
+	const std::vector<VkSemaphore> signalSemaphores;
 	Fence fence(0);
 	commandBuffer.submit(0, waitSemaphores, signalSemaphores, fence.getFence());
 	fence.waitForFence();
@@ -191,10 +191,10 @@ void Wolf::Image::createImageView(VkFormat format)
 	viewInfo.subresourceRange.layerCount = m_arrayLayerCount;
 
 	VkImageView imageView;
-	if (vkCreateImageView(Wolf::g_vulkanInstance->getDevice(), &viewInfo, nullptr, &imageView) != VK_SUCCESS)
-		Wolf::Debug::sendError("Error : create image view");
+	if (vkCreateImageView(g_vulkanInstance->getDevice(), &viewInfo, nullptr, &imageView) != VK_SUCCESS)
+		Debug::sendError("Error : create image view");
 
-	uint32_t hash = computeImageViewHash(m_imageFormat);
+	const uint32_t hash = computeImageViewHash(m_imageFormat);
 	m_imageViews[hash] = imageView;
 }
 
@@ -224,7 +224,7 @@ void Wolf::Image::setBBP()
 
 VkImageView Wolf::Image::getImageView(VkFormat format)
 {
-	uint32_t hash = computeImageViewHash(format);
+	const uint32_t hash = computeImageViewHash(format);
 	if (m_imageViews.find(hash) == m_imageViews.end())
 	{
 		createImageView(format);
@@ -245,7 +245,7 @@ void Wolf::Image::transitionImageLayout(VkCommandBuffer commandBuffer, VkImageLa
 
 	// Sanity check
 	{
-		VkImageLayout imageLayout = m_imageLayouts[baseMipLevel];
+		const VkImageLayout imageLayout = m_imageLayouts[baseMipLevel];
 		for (uint32_t mipLevel = baseMipLevel; mipLevel < levelCount; mipLevel++)
 		{
 			if (m_imageLayouts[mipLevel] != imageLayout)

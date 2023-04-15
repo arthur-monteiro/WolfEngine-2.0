@@ -16,19 +16,19 @@ namespace Wolf
     class UltraLight : public ultralight::LoadListener, public ultralight::Logger
     {
     public:
-        UltraLight(uint32_t width, uint32_t height, const char* htmlString);
+        UltraLight(uint32_t width, uint32_t height, const std::string& absoluteURL);
         UltraLight(const UltraLight&) = delete;
 
         virtual void OnFinishLoading(ultralight::View* caller, uint64_t frame_id, bool is_main_frame, const ultralight::String& url) override;
         virtual void LogMessage(ultralight::LogLevel log_level, const ultralight::String16& message) override;
         virtual void OnDOMReady(ultralight::View* caller, uint64_t frame_id, bool is_main_frame, const ultralight::String& url) override;
 
-        Image* getImage();
+        Image* getImage() const;
         void getJSObject(ultralight::JSObject& outObject);
 
-        void update(GLFWwindow* window);
-        void render();
-        void resize(uint32_t width, uint32_t height);
+        void update(GLFWwindow* window) const;
+        void render() const;
+        void resize(uint32_t width, uint32_t height) const;
 
     private:
         bool m_done = false;

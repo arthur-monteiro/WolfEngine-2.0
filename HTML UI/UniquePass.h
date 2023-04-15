@@ -26,7 +26,7 @@ public:
 	void record(const Wolf::RecordContext& context) override;
 	void submit(const Wolf::SubmitContext& context) override;
 
-	void setTriangleColor(const ultralight::JSObject& thisObject, const ultralight::JSArgs& args);
+	void setTriangleColor(const ultralight::JSObject& thisObject, const ultralight::JSArgs& args) const;
 
 private:
 	void createDepthImage(const Wolf::InitializationContext& context);

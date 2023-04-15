@@ -17,15 +17,15 @@ namespace Wolf
 #else
         virtual void update() = 0;
 #endif
-		
-		virtual glm::mat4 getViewMatrix() const = 0;
-		virtual glm::mat4 getPreviousViewMatrix() const = 0;
-		virtual glm::mat4 getProjection() const = 0;
 
-		virtual float getNear() const = 0;
-		virtual float getFar() const = 0;
-		virtual float getFOV() const = 0;
-		virtual glm::vec3 getPosition() const = 0;
-		virtual glm::vec3 getOrientation() const = 0;
+		[[nodiscard]] virtual glm::mat4 getViewMatrix() const = 0;
+		[[nodiscard]] virtual glm::mat4 getPreviousViewMatrix() const = 0;
+		[[nodiscard]] virtual glm::mat4 getProjection() const = 0;
+
+		[[nodiscard]] virtual float getNear() const = 0;
+		[[nodiscard]] virtual float getFar() const = 0;
+		[[nodiscard]] virtual float getFOV() const = 0;
+		[[nodiscard]] virtual glm::vec3 getPosition() const = 0;
+		[[nodiscard]] virtual glm::vec3 getOrientation() const = 0;
 	};
 }

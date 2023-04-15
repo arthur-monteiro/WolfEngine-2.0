@@ -26,7 +26,7 @@ Wolf::CommandBuffer::CommandBuffer(QueueType queueType, bool oneTimeSubmit)
 
 	allocInfo.commandPool = commandPool;
 	allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-	uint32_t commandBufferCount = oneTimeSubmit ? 1 : g_configuration->getMaxCachedFrames();;
+	const uint32_t commandBufferCount = oneTimeSubmit ? 1 : g_configuration->getMaxCachedFrames();;
 	allocInfo.commandBufferCount = commandBufferCount;
 
 	m_commandBuffers.resize(commandBufferCount);
@@ -40,10 +40,10 @@ Wolf::CommandBuffer::CommandBuffer(QueueType queueType, bool oneTimeSubmit)
 
 Wolf::CommandBuffer::~CommandBuffer()
 {
-	vkFreeCommandBuffers(g_vulkanInstance->getDevice(), m_usedCommandPool, static_cast<uint32_t>(m_commandBuffers.size()), m_commandBuffers.data());
+	vkFreeCommandBuffers(g_vulkanInstance->getDevice(), m_usedCommandPool, m_commandBuffers.size(), m_commandBuffers.data());
 }
 
-void Wolf::CommandBuffer::beginCommandBuffer(uint32_t index)
+void Wolf::CommandBuffer::beginCommandBuffer(uint32_t index) const
 {
 	VkCommandBufferBeginInfo beginInfo = {};
 	beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
@@ -52,13 +52,13 @@ void Wolf::CommandBuffer::beginCommandBuffer(uint32_t index)
 	vkBeginCommandBuffer(m_commandBuffers[index], &beginInfo);
 }
 
-void Wolf::CommandBuffer::endCommandBuffer(uint32_t index)
+void Wolf::CommandBuffer::endCommandBuffer(uint32_t index) const
 {
 	if (vkEndCommandBuffer(m_commandBuffers[index]) != VK_SUCCESS)
 		Debug::sendError("Error : end command buffer");
 }
 
-void Wolf::CommandBuffer::submit(uint32_t index, const std::vector<const Wolf::Semaphore*>& waitSemaphores, const std::vector<VkSemaphore>& signalSemaphores, VkFence fence)
+void Wolf::CommandBuffer::submit(uint32_t index, const std::vector<const Semaphore*>& waitSemaphores, const std::vector<VkSemaphore>& signalSemaphores, VkFence fence) const
 {
 	VkQueue queue;
 	if (m_queueType == QueueType::GRAPHIC || m_queueType == QueueType::TRANSFER)
@@ -72,7 +72,7 @@ void Wolf::CommandBuffer::submit(uint32_t index, const std::vector<const Wolf::S
 	submitInfo.signalSemaphoreCount = static_cast<uint32_t>(signalSemaphores.size());
 	submitInfo.pSignalSemaphores = signalSemaphores.data();
 
-	VkCommandBuffer commandBuffer = m_commandBuffers[index];
+	const VkCommandBuffer commandBuffer = m_commandBuffers[index];
 	submitInfo.pCommandBuffers = &commandBuffer;
 	submitInfo.commandBufferCount = 1;
 
@@ -87,7 +87,7 @@ void Wolf::CommandBuffer::submit(uint32_t index, const std::vector<const Wolf::S
 	submitInfo.pWaitSemaphores = semaphores.data();
 	submitInfo.pWaitDstStageMask = stages.data();
 
-	if (VkResult result = vkQueueSubmit(queue, 1, &submitInfo, fence); result != VK_SUCCESS)
+	if (const VkResult result = vkQueueSubmit(queue, 1, &submitInfo, fence); result != VK_SUCCESS)
 	{
 		Debug::sendCriticalError("Error : submit to graphics queue");
 	}
