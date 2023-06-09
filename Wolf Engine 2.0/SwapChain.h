@@ -4,13 +4,17 @@
 #include <android/native_window.h>
 #include <android/native_window_jni.h>
 #endif
+#include <memory>
 
 #include "Fence.h"
 #include "Image.h"
-#include "Semaphore.h"
+
+struct GLFWwindow;
 
 namespace Wolf
 {
+	class Semaphore;
+
 	class SwapChain
 	{
 	public:

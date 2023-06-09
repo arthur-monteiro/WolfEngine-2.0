@@ -2,10 +2,15 @@
 
 #include <filesystem>
 
+#include "Configuration.h"
+#include "Dump.h"
 #include "VulkanHelper.h"
 
 Wolf::WolfEngine::WolfEngine(const WolfInstanceCreateInfo& createInfo)
 {
+#ifdef _WIN32
+	SetUnhandledExceptionFilter(unhandledExceptionFilter);
+#endif
 	Debug::setCallback(createInfo.debugCallback);
 
 #ifndef __ANDROID__
@@ -70,15 +75,10 @@ bool Wolf::WolfEngine::windowShouldClose() const
 #endif
 }
 
-void Wolf::WolfEngine::frame(const std::span<CommandRecordBase*>& passes, const Semaphore* frameEndedSemaphore)
+void Wolf::WolfEngine::updateEvents() const
 {
-	if (passes.empty())
-		Debug::sendError("No pass sent to frame");
-
 #ifndef __ANDROID__
 	m_window->pollEvents();
-	if (!m_window->windowVisible())
-		return;
 #endif
 
 	if (m_cameraInterface)
@@ -89,6 +89,15 @@ void Wolf::WolfEngine::frame(const std::span<CommandRecordBase*>& passes, const 
 		m_cameraInterface->update();
 #endif
 	}
+}
+
+void Wolf::WolfEngine::frame(const std::span<CommandRecordBase*>& passes, const Semaphore* frameEndedSemaphore)
+{
+	if (passes.empty())
+		Debug::sendError("No pass sent to frame");
+
+	if (!m_window->windowVisible())
+		return;
 
 	if (m_resizeIsNeeded)
 	{
@@ -113,7 +122,6 @@ void Wolf::WolfEngine::frame(const std::span<CommandRecordBase*>& passes, const 
 	}
 #endif
 
-	m_swapChain->synchroniseCPUFromGPU(m_currentFrame);
 	const uint32_t currentSwapChainImageIndex = m_swapChain->getCurrentImage(m_currentFrame);
 
 	RecordContext recordContext;
@@ -145,6 +153,7 @@ void Wolf::WolfEngine::frame(const std::span<CommandRecordBase*>& passes, const 
 	}
 
 	m_swapChain->present(frameEndedSemaphore->getSemaphore(), currentSwapChainImageIndex);
+	m_swapChain->synchroniseCPUFromGPU(m_currentFrame); // don't update UBs while a frame is being rendered
 
 	m_currentFrame++;
 }

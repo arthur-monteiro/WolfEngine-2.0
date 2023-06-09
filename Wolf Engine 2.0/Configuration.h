@@ -16,10 +16,10 @@ namespace Wolf
 		Configuration(const std::string& filename, AAssetManager* androidAssetManager);
 #endif
 
-		[[nodiscard]] const uint32_t getWindowWidth() const { return m_windowWidth; }
-		[[nodiscard]] const uint32_t getWindowHeight() const { return m_windowHeight; }
-		[[nodiscard]] const uint32_t getMaxCachedFrames() const { return 2; }
-		[[nodiscard]] const bool getUseVIL() const { return m_useVIL; }
+		[[nodiscard]] uint32_t getWindowWidth() const { return m_windowWidth; }
+		[[nodiscard]] uint32_t getWindowHeight() const { return m_windowHeight; }
+		[[nodiscard]] uint32_t getMaxCachedFrames() const { return m_maxCachedFrames; }
+		[[nodiscard]] bool getUseVIL() const { return m_useVIL; }
 
 #ifdef __ANDROID__
 		AAssetManager* getAndroidAssetManager() { return m_androidAssetManager; }

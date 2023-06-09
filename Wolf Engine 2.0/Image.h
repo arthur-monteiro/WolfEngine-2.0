@@ -1,9 +1,6 @@
 #pragma once
 
 #include <array>
-#include <cmath>
-#include <cstring>
-#include <iostream>
 #include <unordered_map>
 
 #define STB_IMAGE_STATIC
@@ -11,7 +8,6 @@
 #include <stb_image.h>
 
 #include "Buffer.h"
-#include "Vulkan.h"
 
 namespace Wolf
 {

@@ -47,6 +47,7 @@ namespace Wolf
 		void initializePass(CommandRecordBase* pass) const;
 
 		bool windowShouldClose() const;
+		void updateEvents() const;
 		void frame(const std::span<CommandRecordBase*>& passes, const Semaphore* frameEndedSemaphore);
 
 		void waitIdle() const;
@@ -65,7 +66,7 @@ namespace Wolf
 
 		static void windowResizeCallback(void* systemManagerInstance, int width, int height)
 		{
-			reinterpret_cast<WolfEngine*>(systemManagerInstance)->resize(width, height);
+			static_cast<WolfEngine*>(systemManagerInstance)->resize(width, height);
 		}
 		void resize(int width, int height);
 

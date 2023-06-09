@@ -158,6 +158,7 @@
     <ClCompile Include="DescriptorSetGenerator.cpp" />
     <ClCompile Include="DescriptorSetLayout.cpp" />
     <ClCompile Include="DescriptorSetLayoutGenerator.cpp" />
+    <ClCompile Include="Dump.cpp" />
     <ClCompile Include="Fence.cpp" />
     <ClCompile Include="FrameBuffer.cpp" />
     <ClCompile Include="Image.cpp" />
@@ -203,6 +204,7 @@
     <ClInclude Include="DescriptorSetGenerator.h" />
     <ClInclude Include="DescriptorSetLayout.h" />
     <ClInclude Include="DescriptorSetLayoutGenerator.h" />
+    <ClInclude Include="Dump.h" />
     <ClInclude Include="Fence.h" />
     <ClInclude Include="FrameBuffer.h" />
     <ClInclude Include="HardwareCapabilities.h" />
