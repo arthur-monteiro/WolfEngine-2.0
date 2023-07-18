@@ -214,6 +214,8 @@ Wolf::Pipeline::Pipeline(const ShaderCreateInfo& computeShaderInfo, std::span<Vk
 
 	if (vkCreateComputePipelines(g_vulkanInstance->getDevice(), VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &m_pipeline) != VK_SUCCESS)
 		Debug::sendError("Error : create compute pipeline");
+
+	vkDestroyShaderModule(g_vulkanInstance->getDevice(), computeShaderModule, nullptr);
 }
 
 Wolf::Pipeline::Pipeline(const RayTracingPipelineCreateInfo& rayTracingPipelineCreateInfo, std::span<VkDescriptorSetLayout> descriptorSetLayouts)
@@ -263,6 +265,9 @@ Wolf::Pipeline::Pipeline(const RayTracingPipelineCreateInfo& rayTracingPipelineC
 
 	if (vkCreateRayTracingPipelinesKHR(g_vulkanInstance->getDevice(), VK_NULL_HANDLE, VK_NULL_HANDLE, 1, &rayPipelineInfo, nullptr, &m_pipeline) != VK_SUCCESS)
 		Debug::sendError("Error: create ray tracing pipeline");
+
+	for (const auto& shaderModule : shaderModules)
+		vkDestroyShaderModule(g_vulkanInstance->getDevice(), shaderModule, nullptr);
 }
 
 Wolf::Pipeline::~Pipeline()

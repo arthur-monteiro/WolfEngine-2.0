@@ -1,6 +1,7 @@
 #pragma once
 
-#include "Vulkan.h"
+#include <vector>
+#include <vulkan/vulkan.h>
 
 namespace Wolf
 {
@@ -21,9 +22,10 @@ namespace Wolf
 			uint8_t r, g, b, a;
 
 			RGBA8(uint8_t r, uint8_t g, uint8_t b, uint8_t a) : r(r), g(g), b(b), a(a) {}
-			static RGBA8 mergeBlock(RGBA8& block00, RGBA8& block01, RGBA8& block10, RGBA8& block11);
+			static RGBA8 mergeBlock(const RGBA8& block00, const RGBA8& block01, const RGBA8& block10, const RGBA8& block11);
 		};
-		void createMipLevel(RGBA8* previousMip, RGBA8* currentMip, uint32_t width, uint32_t height);
+
+		static void createMipLevel(const RGBA8* previousMip, RGBA8* currentMip, uint32_t width, uint32_t height);
 
 		std::vector<std::vector<unsigned char>> m_mipLevels;
 	};

@@ -1,7 +1,6 @@
 #pragma once
 
 #include <functional>
-#include <iostream>
 #include <memory>
 #include <span>
 #ifdef __ANDROID__
@@ -12,6 +11,7 @@
 #include "CommandRecordBase.h"
 #include "Configuration.h"
 #include "Debug.h"
+#include "InputHandlerInterface.h"
 #include "SwapChain.h"
 #include "UltraLight.h"
 #include "Vulkan.h"
@@ -47,6 +47,7 @@ namespace Wolf
 		void initializePass(CommandRecordBase* pass) const;
 
 		bool windowShouldClose() const;
+		void updateEvents() const;
 		void frame(const std::span<CommandRecordBase*>& passes, const Semaphore* frameEndedSemaphore);
 
 		void waitIdle() const;
@@ -59,13 +60,18 @@ namespace Wolf
 
 		void setCameraInterface(CameraInterface* cameraInterface) { m_cameraInterface = cameraInterface; }
 		void setGameContexts(const std::vector<void*>& gameContexts) { m_gameContexts = gameContexts; }
+		void registerInputHandlerInterface(InputHandlerInterface* inputHandlerInterface) const { inputHandlerInterface->initialize(
+#ifndef __ANDROID__
+			m_window->getWindow()
+#endif
+		); }
 
 	private:
 		void fillInitializeContext(InitializationContext& context) const;
 
 		static void windowResizeCallback(void* systemManagerInstance, int width, int height)
 		{
-			reinterpret_cast<WolfEngine*>(systemManagerInstance)->resize(width, height);
+			static_cast<WolfEngine*>(systemManagerInstance)->resize(width, height);
 		}
 		void resize(int width, int height);
 

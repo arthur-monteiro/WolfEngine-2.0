@@ -1,7 +1,5 @@
 #pragma once
 
-#include <iostream>
-
 #include "Buffer.h"
 #include "CommandBuffer.h"
 #include "Debug.h"

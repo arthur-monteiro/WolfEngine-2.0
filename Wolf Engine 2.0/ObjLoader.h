@@ -95,6 +95,7 @@ namespace Wolf
 
 		// Material options
 		bool loadMaterials = true;
+		uint32_t materialIdOffset = 0;
 
 		// Cache options
 		bool useCache = true;
@@ -114,7 +115,7 @@ namespace Wolf
 		ObjLoader(const ObjLoader&) = delete;
 
 		[[nodiscard]] const Mesh* getMesh() const { return m_mesh.get(); }
-		const void getImages(std::vector<Image*>& images);
+		void getImages(std::vector<Image*>& images);
 
 	private:
 		static std::string getTexName(const std::string& texName, const std::string& folder);

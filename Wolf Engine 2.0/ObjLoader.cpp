@@ -42,7 +42,6 @@ Wolf::ObjLoader::ObjLoader(ModelLoadingInfo& modelLoadingInfo)
 			uint32_t textureCount;
 			input.read(reinterpret_cast<char*>(&textureCount), sizeof(textureCount));
 			m_images.resize(textureCount);
-			int indexTexture = 0;
 
 			if (modelLoadingInfo.vulkanQueueLock)
 				modelLoadingInfo.vulkanQueueLock->lock();
@@ -151,8 +150,8 @@ Wolf::ObjLoader::ObjLoader(ModelLoadingInfo& modelLoadingInfo)
 			}
 
 			if (!modelLoadingInfo.loadMaterials)
-				vertex.materialID = 0;
-			else vertex.materialID = shape.mesh.material_ids[numVertex / 3];
+				vertex.materialID = modelLoadingInfo.materialIdOffset;
+			else vertex.materialID = modelLoadingInfo.materialIdOffset + shape.mesh.material_ids[numVertex / 3];
 
 			if (uniqueVertices.count(vertex) == 0)
 			{
@@ -190,7 +189,7 @@ Wolf::ObjLoader::ObjLoader(ModelLoadingInfo& modelLoadingInfo)
 			tangent.z = f * (deltaUV2.y * edge1.z - deltaUV1.y * edge2.z);
 			tangent = normalize(tangent);
 
-			for (size_t j(i - 1); j > i - 4; --j)
+			for (int32_t j(static_cast<int32_t>(i) - 1); j >= static_cast<int32_t>(i - 3); --j)
 				vertices[indices[j]].tangent = tangent;
 		}
 
@@ -206,13 +205,13 @@ Wolf::ObjLoader::ObjLoader(ModelLoadingInfo& modelLoadingInfo)
 		if (m_useCache)
 			m_imagesData.resize(materials.size() * 5);
 		int indexTexture = 0;
-		for (int i(0); i < materials.size(); ++i)
+		for (auto& material : materials)
 		{
-			setImage(getTexName(materials[i].diffuse_texname, modelLoadingInfo.mtlFolder), indexTexture++, true);
-			setImage(getTexName(materials[i].bump_texname, modelLoadingInfo.mtlFolder), indexTexture++, false);
-			setImage(getTexName(materials[i].specular_highlight_texname, modelLoadingInfo.mtlFolder), indexTexture++, false);
-			setImage(getTexName(materials[i].ambient_texname, modelLoadingInfo.mtlFolder), indexTexture++, false);
-			setImage(getTexName(materials[i].ambient_texname, modelLoadingInfo.mtlFolder), indexTexture++, false);
+			setImage(getTexName(material.diffuse_texname, modelLoadingInfo.mtlFolder), indexTexture++, true);
+			setImage(getTexName(material.bump_texname, modelLoadingInfo.mtlFolder), indexTexture++, false);
+			setImage(getTexName(material.specular_highlight_texname, modelLoadingInfo.mtlFolder), indexTexture++, false);
+			setImage(getTexName(material.ambient_texname, modelLoadingInfo.mtlFolder), indexTexture++, false);
+			setImage(getTexName(material.ambient_texname, modelLoadingInfo.mtlFolder), indexTexture++, false);
 		}
 	}
 
@@ -246,7 +245,7 @@ Wolf::ObjLoader::ObjLoader(ModelLoadingInfo& modelLoadingInfo)
 	}
 }
 
-const void Wolf::ObjLoader::getImages(std::vector<Image*>& images)
+void Wolf::ObjLoader::getImages(std::vector<Image*>& images)
 {
 	images.reserve(m_images.size());
 	for (std::unique_ptr<Image>& image : m_images)
@@ -257,7 +256,7 @@ const void Wolf::ObjLoader::getImages(std::vector<Image*>& images)
 
 inline std::string Wolf::ObjLoader::getTexName(const std::string& texName, const std::string& folder)
 {
-	return texName != "" ? folder + "/" + texName : "Textures/white_pixel.jpg";
+	return !texName.empty() ? folder + "/" + texName : "Textures/white_pixel.jpg";
 }
 
 void Wolf::ObjLoader::setImage(const std::string& filename, uint32_t idx, bool sRGB)

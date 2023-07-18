@@ -1,7 +1,13 @@
 #include "SwapChain.h"
 
 #include "Configuration.h"
+#include "Image.h"
+#include "Fence.h"
+#include "Semaphore.h"
+#include "SwapChainSupportDetails.h"
+#include "Vulkan.h"
 #include "VulkanHelper.h"
+#include "Window.h"
 
 VkSurfaceFormatKHR chooseSurfaceFormat(const std::vector<VkSurfaceFormatKHR>& availableFormats)
 {
@@ -205,17 +211,6 @@ void Wolf::SwapChain::present(VkSemaphore waitSemaphore, uint32_t imageIndex) co
 	presentInfo.swapchainCount = 1;
 	presentInfo.pSwapchains = swapChains;
 	presentInfo.pImageIndices = &imageIndex;
-
-	/*if (m_maxFPS > 0)
-	{
-		long long microsecondOffset = std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::high_resolution_clock::now() - m_lastFrameTimeCounter).count();
-		if (microsecondOffset < (long long)((1.0 / m_maxFPS) * 1'000'000.0))
-		{
-			std::chrono::microseconds timespan((long long)((1.0 / m_maxFPS) * 1'000'000.0) - microsecondOffset - 1000);
-			std::this_thread::sleep_for(timespan);
-		}
-	}
-	 m_lastFrameTimeCounter = std::chrono::high_resolution_clock::now();*/
 
 	const VkResult result = vkQueuePresentKHR(g_vulkanInstance->getPresentQueue(), &presentInfo);
 

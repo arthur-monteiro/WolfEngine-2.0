@@ -1,17 +1,14 @@
 #pragma once
 
 #include <array>
-#include <cmath>
-#include <cstring>
-#include <iostream>
 #include <unordered_map>
 
 #define STB_IMAGE_STATIC
 #define STB_IMAGE_IMPLEMENTATION
 #include <stb_image.h>
+#include <string>
 
 #include "Buffer.h"
-#include "Vulkan.h"
 
 namespace Wolf
 {
@@ -40,11 +37,13 @@ namespace Wolf
 
 		void copyCPUBuffer(const unsigned char* pixels, uint32_t mipLevel = 0);
 		void copyGPUBuffer(const Buffer& bufferSrc, const VkBufferImageCopy& copyRegion);
+		void copyGPUImage(const Image& imageSrc, const VkImageCopy& imageCopy);
 		void copyImagesToCubemap(std::array<Image*, 6> images, std::vector<std::pair<uint8_t, uint8_t>> mipsToCopy, bool generateMipsLevels);
 
 		[[nodiscard]] void* map() const;
 		void unmap() const;
 		void getResourceLayout(VkSubresourceLayout& output) const;
+		void exportToFile(const std::string& filename) const;
 
 		void setImageLayout(VkImageLayout dstLayout, VkAccessFlags dstAccessMask, VkPipelineStageFlags dstPipelineStageFlags);
 		void transitionImageLayout(VkCommandBuffer commandBuffer, VkImageLayout dstLayout, VkAccessFlags dstAccessMask, VkPipelineStageFlags dstPipelineStageFlags, uint32_t baseMipLevel = 0, uint32_t levelCount = MAX_MIP_COUNT);
@@ -81,5 +80,6 @@ namespace Wolf
 		uint32_t m_arrayLayerCount;
 		uint32_t m_bbp;
 		VkImageAspectFlags m_aspectFlags;
+		VkMemoryPropertyFlags m_memoryProperties = VK_MEMORY_PROPERTY_FLAG_BITS_MAX_ENUM;
 	};
 }

@@ -150,6 +150,9 @@
     <ClCompile Include="AndroidCacheHelper.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="Dump.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="WolfEngine.h">
@@ -291,6 +294,15 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="AndroidCacheHelper.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Dump.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ExportImage.h">
+      <Filter>Helpers</Filter>
+    </ClInclude>
+    <ClInclude Include="InputHandlerInterface.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
