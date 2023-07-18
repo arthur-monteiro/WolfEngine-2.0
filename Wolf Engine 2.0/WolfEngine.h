@@ -60,7 +60,11 @@ namespace Wolf
 
 		void setCameraInterface(CameraInterface* cameraInterface) { m_cameraInterface = cameraInterface; }
 		void setGameContexts(const std::vector<void*>& gameContexts) { m_gameContexts = gameContexts; }
-		void registerInputHandlerInterface(InputHandlerInterface* inputHandlerInterface) const { inputHandlerInterface->initialize(m_window->getWindow()); }
+		void registerInputHandlerInterface(InputHandlerInterface* inputHandlerInterface) const { inputHandlerInterface->initialize(
+#ifndef __ANDROID__
+			m_window->getWindow()
+#endif
+		); }
 
 	private:
 		void fillInitializeContext(InitializationContext& context) const;
