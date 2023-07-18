@@ -96,8 +96,10 @@ void Wolf::WolfEngine::frame(const std::span<CommandRecordBase*>& passes, const 
 	if (passes.empty())
 		Debug::sendError("No pass sent to frame");
 
+#ifndef __ANDROID__
 	if (!m_window->windowVisible())
 		return;
+#endif
 
 	if (m_resizeIsNeeded)
 	{

@@ -1,7 +1,6 @@
 #pragma once
 
 #include <functional>
-#include <iostream>
 #include <memory>
 #include <span>
 #ifdef __ANDROID__
@@ -12,6 +11,7 @@
 #include "CommandRecordBase.h"
 #include "Configuration.h"
 #include "Debug.h"
+#include "InputHandlerInterface.h"
 #include "SwapChain.h"
 #include "UltraLight.h"
 #include "Vulkan.h"
@@ -60,6 +60,7 @@ namespace Wolf
 
 		void setCameraInterface(CameraInterface* cameraInterface) { m_cameraInterface = cameraInterface; }
 		void setGameContexts(const std::vector<void*>& gameContexts) { m_gameContexts = gameContexts; }
+		void registerInputHandlerInterface(InputHandlerInterface* inputHandlerInterface) const { inputHandlerInterface->initialize(m_window->getWindow()); }
 
 	private:
 		void fillInitializeContext(InitializationContext& context) const;

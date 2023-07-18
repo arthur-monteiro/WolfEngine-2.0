@@ -22,7 +22,7 @@ Wolf::Vulkan::Vulkan(GLFWwindow* glfwWindowPtr, bool useOVR)
 #ifndef __ANDROID__
 	if(useOVR)
 	{
-		const ovrInitParams initParams = { ovrInit_RequestVersion | ovrInit_FocusAware, OVR_MINOR_VERSION, NULL, 0, 0 };
+		constexpr ovrInitParams initParams = { ovrInit_RequestVersion | ovrInit_FocusAware, OVR_MINOR_VERSION, NULL, 0, 0 };
 		ovrResult result = ovr_Initialize(&initParams);
 		if (!OVR_SUCCESS(result))
 		{

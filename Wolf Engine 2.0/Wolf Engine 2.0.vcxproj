@@ -115,7 +115,7 @@
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>_DEBUG;_CONSOLE;_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp20</LanguageStandard>
       <ScanSourceForModuleDependencies>true</ScanSourceForModuleDependencies>
@@ -205,11 +205,13 @@
     <ClInclude Include="DescriptorSetLayout.h" />
     <ClInclude Include="DescriptorSetLayoutGenerator.h" />
     <ClInclude Include="Dump.h" />
+    <ClInclude Include="ExportImage.h" />
     <ClInclude Include="Fence.h" />
     <ClInclude Include="FrameBuffer.h" />
     <ClInclude Include="HardwareCapabilities.h" />
     <ClInclude Include="Image.h" />
     <ClInclude Include="ImageFileLoader.h" />
+    <ClInclude Include="InputHandlerInterface.h" />
     <ClInclude Include="Mesh.h" />
     <ClInclude Include="MipMapGenerator.h" />
     <ClInclude Include="ObjLoader.h" />

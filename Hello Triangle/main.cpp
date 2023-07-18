@@ -1,3 +1,5 @@
+#include <iostream>
+
 #include <WolfEngine.h>
 
 #include "UniquePass.h"

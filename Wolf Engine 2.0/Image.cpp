@@ -1,5 +1,8 @@
 #include "Image.h"
 
+#define STB_IMAGE_WRITE_IMPLEMENTATION
+#include <stb_image_write.h>
+
 #include "Buffer.h"
 #include "CommandBuffer.h"
 #include "Fence.h"
@@ -46,6 +49,7 @@ Wolf::Image::Image(const CreateImageInfo& createImageInfo)
 	VkMemoryAllocateInfo allocInfo = {};
 	allocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
 	allocInfo.allocationSize = memRequirements.size;
+	m_memoryProperties = createImageInfo.memoryProperties;
 	allocInfo.memoryTypeIndex = findMemoryType(g_vulkanInstance->getPhysicalDevice(), memRequirements.memoryTypeBits, createImageInfo.memoryProperties);
 
 	if (allocInfo.memoryTypeIndex < 0)
@@ -118,7 +122,7 @@ void Wolf::Image::copyCPUBuffer(const unsigned char* pixels, uint32_t mipLevel)
 
 void Wolf::Image::copyGPUBuffer(const Buffer& bufferSrc, const VkBufferImageCopy& copyRegion)
 {
-	CommandBuffer commandBuffer(QueueType::TRANSFER, true);
+	const CommandBuffer commandBuffer(QueueType::TRANSFER, true);
 	commandBuffer.beginCommandBuffer(0);
 
 	transitionImageLayout(commandBuffer.getCommandBuffer(0), VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_ACCESS_TRANSFER_WRITE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, copyRegion.imageSubresource.mipLevel, 1);
@@ -130,6 +134,24 @@ void Wolf::Image::copyGPUBuffer(const Buffer& bufferSrc, const VkBufferImageCopy
 	const std::vector<const Semaphore*> waitSemaphores;
 	const std::vector<VkSemaphore> signalSemaphores;
 	Fence fence(0);
+	commandBuffer.submit(0, waitSemaphores, signalSemaphores, fence.getFence());
+	fence.waitForFence();
+}
+
+void Wolf::Image::copyGPUImage(const Image& imageSrc, const VkImageCopy& imageCopy)
+{
+	const CommandBuffer commandBuffer(QueueType::TRANSFER, true);
+	commandBuffer.beginCommandBuffer(0);
+	
+	transitionImageLayout(commandBuffer.getCommandBuffer(0), VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_ACCESS_TRANSFER_WRITE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, imageCopy.dstSubresource.mipLevel, 1);
+	vkCmdCopyImage(commandBuffer.getCommandBuffer(0), imageSrc.getImage(), imageSrc.getImageLayout(imageCopy.srcSubresource.mipLevel), m_image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &imageCopy);
+	transitionImageLayout(commandBuffer.getCommandBuffer(0), VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_ACCESS_SHADER_READ_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, imageCopy.dstSubresource.mipLevel, 1);
+
+	commandBuffer.endCommandBuffer(0);
+
+	const std::vector<const Semaphore*> waitSemaphores;
+	const std::vector<VkSemaphore> signalSemaphores;
+	const Fence fence(0);
 	commandBuffer.submit(0, waitSemaphores, signalSemaphores, fence.getFence());
 	fence.waitForFence();
 }
@@ -149,16 +171,97 @@ void Wolf::Image::unmap() const
 
 void Wolf::Image::getResourceLayout(VkSubresourceLayout& output) const
 {
-	VkImageSubresource subresource{};
+	VkImageSubresource subresource;
 	subresource.aspectMask = m_aspectFlags;
 	subresource.mipLevel = 0;
 	subresource.arrayLayer = 0;
 	vkGetImageSubresourceLayout(g_vulkanInstance->getDevice(), m_image, &subresource, &output);
 }
 
+void Wolf::Image::exportToFile(const std::string& filename) const
+{
+	if (m_sampleCount != VK_SAMPLE_COUNT_1_BIT)
+	{
+		Debug::sendError("Can't export multi-sampled image");
+		return;
+	}
+	if (m_extent.depth != 1)
+	{
+		Debug::sendError("Can't export 3D image");
+		return;
+	}
+	if (m_arrayLayerCount != 1)
+	{
+		Debug::sendError("Can't export multi-layer image");
+		return;
+	}
+
+	if (m_memoryProperties & VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT)
+	{
+		Debug::sendWarning("Memory is host visible, no need for a staging image");
+	}
+
+	CreateImageInfo stagingCreateImageInfo{};
+	stagingCreateImageInfo.extent = m_extent;
+	stagingCreateImageInfo.format = m_imageFormat;
+	stagingCreateImageInfo.arrayLayerCount = m_arrayLayerCount;
+	stagingCreateImageInfo.aspect = m_aspectFlags;
+	stagingCreateImageInfo.sampleCount = m_sampleCount;
+	stagingCreateImageInfo.usage = VK_IMAGE_USAGE_TRANSFER_DST_BIT;
+	stagingCreateImageInfo.memoryProperties = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
+	stagingCreateImageInfo.imageTiling = VK_IMAGE_TILING_LINEAR;
+	stagingCreateImageInfo.mipLevelCount = 1;
+	Image stagingBuffer(stagingCreateImageInfo);
+
+	VkImageCopy copyRegion = {};
+
+	copyRegion.srcSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+	copyRegion.srcSubresource.baseArrayLayer = 0;
+	copyRegion.srcSubresource.mipLevel = 0;
+	copyRegion.srcSubresource.layerCount = 1;
+	copyRegion.srcOffset = { 0, 0, 0 };
+
+	copyRegion.dstSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+	copyRegion.dstSubresource.baseArrayLayer = 0;
+	copyRegion.dstSubresource.mipLevel = 0;
+	copyRegion.dstSubresource.layerCount = 1;
+	copyRegion.dstOffset = { 0, 0, 0 };
+
+	copyRegion.extent.width = m_extent.width;
+	copyRegion.extent.height = m_extent.height;
+	copyRegion.extent.depth = m_extent.depth;
+
+	stagingBuffer.copyGPUImage(*this, copyRegion);
+
+	if(m_imageFormat != VK_FORMAT_R32_SFLOAT)
+	{
+		Debug::sendError("Only VK_FORMAT_R32_SFLOAT can be exported for now, code needs to be updated");
+		return;
+	}
+
+	struct ImageOutputPixel
+	{
+		uint8_t r;
+		uint8_t g;
+		uint8_t b;
+	};
+	const float* floatPixels = static_cast<float*>(stagingBuffer.map());
+	std::vector<ImageOutputPixel> outputPixels(m_extent.width * m_extent.height);
+	for(uint32_t i = 0, end = m_extent.width * m_extent.height; i < end; ++i)
+	{
+		outputPixels[i].r = static_cast<uint8_t>(floatPixels[i] * 255);
+		outputPixels[i].g = 0;
+		outputPixels[i].b = 0;
+	}
+
+	stbi_write_jpg(filename.c_str(), m_extent.width, m_extent.height, 3, outputPixels.data(), 100);
+
+	stagingBuffer.unmap();
+}
+
 void Wolf::Image::setImageLayout(VkImageLayout dstLayout, VkAccessFlags dstAccessMask, VkPipelineStageFlags dstPipelineStageFlags)
 {
-	CommandBuffer commandBuffer(QueueType::GRAPHIC, true);
+	const CommandBuffer commandBuffer(QueueType::GRAPHIC, true);
 	commandBuffer.beginCommandBuffer(0);
 
 	transitionImageLayout(commandBuffer.getCommandBuffer(0), dstLayout, dstAccessMask, dstPipelineStageFlags);
@@ -202,6 +305,9 @@ void Wolf::Image::setBBP()
 {
 	switch (m_imageFormat)
 	{
+	case VK_FORMAT_R32G32B32A32_SFLOAT:
+		m_bbp = 16;
+		break;
 	case VK_FORMAT_R32G32_SFLOAT:
 		m_bbp = 8;
 		break;

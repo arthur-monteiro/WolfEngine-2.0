@@ -1,6 +1,7 @@
 #pragma once
 
-#include "Vulkan.h"
+#include <vector>
+#include <vulkan/vulkan.h>
 
 namespace Wolf
 {
