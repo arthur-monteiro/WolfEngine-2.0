@@ -25,7 +25,7 @@ namespace Wolf
 		{
 			if (width == 0 || height == 0) return;
 
-			Window* windowManager = reinterpret_cast<Window*>(glfwGetWindowUserPointer(window));
+			const Window* windowManager = static_cast<Window*>(glfwGetWindowUserPointer(window));
 			windowManager->callResizeCallback(width, height);
 		}
 		inline void callResizeCallback(int width, int height) const { m_resizeCallback(m_systemManagerInstance, width, height); }

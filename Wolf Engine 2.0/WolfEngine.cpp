@@ -20,6 +20,15 @@ Wolf::WolfEngine::WolfEngine(const WolfInstanceCreateInfo& createInfo)
 #endif
 	g_configuration = m_configuration.get();
 
+	if(m_configuration->getUseRenderDoc())
+	{
+#ifdef _WIN32
+		LoadLibrary(L"renderdoc.dll");
+#else
+		Debug::sendError("Can't open renderdoc dll");
+#endif
+	}
+
 #ifndef __ANDROID__
 	m_window.reset(new Window(createInfo.applicationName, m_configuration->getWindowWidth(), m_configuration->getWindowHeight(), this, windowResizeCallback));
 #endif

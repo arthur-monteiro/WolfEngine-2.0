@@ -133,7 +133,7 @@ void Wolf::Image::copyGPUBuffer(const Buffer& bufferSrc, const VkBufferImageCopy
 
 	const std::vector<const Semaphore*> waitSemaphores;
 	const std::vector<VkSemaphore> signalSemaphores;
-	Fence fence(0);
+	const Fence fence(0);
 	commandBuffer.submit(0, waitSemaphores, signalSemaphores, fence.getFence());
 	fence.waitForFence();
 }
@@ -171,7 +171,7 @@ void Wolf::Image::unmap() const
 
 void Wolf::Image::getResourceLayout(VkSubresourceLayout& output) const
 {
-	VkImageSubresource subresource;
+	VkImageSubresource subresource{};
 	subresource.aspectMask = m_aspectFlags;
 	subresource.mipLevel = 0;
 	subresource.arrayLayer = 0;

@@ -153,6 +153,12 @@
     <ClCompile Include="Dump.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="DebugMarkerSymbols.cpp">
+      <Filter>Helpers</Filter>
+    </ClCompile>
+    <ClCompile Include="DebugMarker.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="WolfEngine.h">
@@ -303,6 +309,9 @@
       <Filter>Helpers</Filter>
     </ClInclude>
     <ClInclude Include="InputHandlerInterface.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="DebugMarker.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

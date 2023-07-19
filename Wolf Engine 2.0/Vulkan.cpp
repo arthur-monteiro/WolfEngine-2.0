@@ -8,6 +8,8 @@
 
 Wolf::Vulkan* Wolf::g_vulkanInstance = nullptr;
 
+void registerGlobalDeviceForDebugMarker(VkDevice device);
+
 #ifdef __ANDROID__
 Wolf::Vulkan::Vulkan(struct ANativeWindow* window)
 #else
@@ -40,6 +42,7 @@ Wolf::Vulkan::Vulkan(GLFWwindow* glfwWindowPtr, bool useOVR)
 #endif
 
 	const bool useVIL = g_configuration->getUseVIL();
+	const bool useRenderDoc = g_configuration->getUseRenderDoc();
 
 //#ifndef NDEBUG
 	if(useVIL)
@@ -75,6 +78,10 @@ Wolf::Vulkan::Vulkan(GLFWwindow* glfwWindowPtr, bool useOVR)
 		m_raytracingDeviceExtensions = { VK_KHR_ACCELERATION_STRUCTURE_EXTENSION_NAME, VK_KHR_RAY_TRACING_PIPELINE_EXTENSION_NAME, VK_KHR_DEFERRED_HOST_OPERATIONS_EXTENSION_NAME,
 			VK_EXT_DESCRIPTOR_INDEXING_EXTENSION_NAME, VK_KHR_BUFFER_DEVICE_ADDRESS_EXTENSION_NAME, VK_KHR_SPIRV_1_4_EXTENSION_NAME,  };
 	}
+	if(useRenderDoc)
+	{
+		m_deviceExtensions.push_back(VK_EXT_DEBUG_MARKER_EXTENSION_NAME);
+	}
 	//m_meshShaderDeviceExtensions = { VK_NV_MESH_SHADER_EXTENSION_NAME };
 #else
     m_deviceExtensions = { VK_KHR_SWAPCHAIN_EXTENSION_NAME, VK_KHR_EXTERNAL_MEMORY_EXTENSION_NAME };
@@ -82,6 +89,11 @@ Wolf::Vulkan::Vulkan(GLFWwindow* glfwWindowPtr, bool useOVR)
 
 	pickPhysicalDevice();
 	createDevice();
+
+	if(useRenderDoc)
+	{
+		registerGlobalDeviceForDebugMarker(m_device);
+	}
 
 	createCommandPools();
 

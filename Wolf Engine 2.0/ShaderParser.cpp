@@ -14,6 +14,7 @@
 Wolf::ShaderParser::ShaderParser(const std::string& filename, const std::vector<std::string>& conditionBlocksToInclude)
 {
     m_filename = filename;
+    m_filenamesWithLastModifiedTime.insert({ filename, std::filesystem::last_write_time(filename) });
     m_conditionBlocksToInclude = conditionBlocksToInclude;
 
     parseAndCompile();
@@ -21,7 +22,17 @@ Wolf::ShaderParser::ShaderParser(const std::string& filename, const std::vector<
 
 bool Wolf::ShaderParser::compileIfFileHasBeenModified()
 {
-    if (m_lastModifiedTime != std::filesystem::last_write_time(m_filename))
+    bool needToRecompile = false;
+    for(std::map<std::string, std::filesystem::file_time_type>::value_type& file : m_filenamesWithLastModifiedTime)
+    {
+	    if(std::filesystem::file_time_type time = std::filesystem::last_write_time(file.first); file.second != time)
+	    {
+            needToRecompile = true;
+            file.second = time;
+	    }
+    }
+
+    if (needToRecompile)
     {
         parseAndCompile();
         return true;
@@ -47,7 +58,7 @@ void Wolf::ShaderParser::parseAndCompile()
 
     std::string parsedFilename = m_filename;
 
-    std::string extensionFound = "";
+    std::string extensionFound;
     for (std::string& extension : extensions)
     {
         size_t extensionPosInStr = parsedFilename.find(extension);
@@ -94,11 +105,34 @@ void Wolf::ShaderParser::parseAndCompile()
         {
             outFileGLSL << shaderCommonStr;
         }
+        else if(size_t tokenPos = inShaderLine.find("#include "); tokenPos != std::string::npos)
+        {
+            std::string includeFilename = inShaderLine.substr(tokenPos + 9);
+            std::erase(includeFilename, '"');
+            std::erase(includeFilename, ' ');
+
+            size_t found = m_filename.find_last_of("/\\");
+            std::string folderPath = m_filename.substr(0, found);
+            std::string fullIncludeFilename = folderPath + '/' + includeFilename;
+            if (!m_filenamesWithLastModifiedTime.contains(fullIncludeFilename))
+            {
+                m_filenamesWithLastModifiedTime.insert({ fullIncludeFilename, std::filesystem::last_write_time(fullIncludeFilename) });
+            }
+
+            // includes seems to work with glslc so no need to copy content
+            outFileGLSL << inShaderLine << std::endl;
+        }
         else if (size_t tokenPos = inShaderLine.find("#if "); tokenPos != std::string::npos)
         {
             std::string conditionStr = inShaderLine.substr(tokenPos + 4);
-            conditionStr.erase(std::remove(conditionStr.begin(), conditionStr.end(), ' '), conditionStr.end());
+            std::erase(conditionStr, ' ');
             currentConditions.push_back(conditionStr);
+        }
+        else if (size_t tokenPos = inShaderLine.find("#else"); tokenPos != std::string::npos)
+        {
+            std::string conditionStr = currentConditions.back();
+            currentConditions.pop_back();
+            currentConditions.push_back("!" + conditionStr);
         }
         else
         {
@@ -114,6 +148,10 @@ void Wolf::ShaderParser::parseAndCompile()
     commandToCompile += " -o ";
     commandToCompile += compiledFilename;
     commandToCompile += " --target-spv=spv1.4";
+    if(g_configuration->getUseRenderDoc())
+    {
+        commandToCompile += " -g";
+    }
     std::system(commandToCompile.c_str());
 #else
     shaderc::Compiler compiler;
@@ -150,7 +188,6 @@ void Wolf::ShaderParser::parseAndCompile()
 #endif
 
     m_compileFilename = compiledFilename;
-    m_lastModifiedTime = std::filesystem::last_write_time(m_filename);
 }
 
 void Wolf::ShaderParser::readFile(std::vector<char>& output, const std::string& filename) const
@@ -171,10 +208,17 @@ void Wolf::ShaderParser::readFile(std::vector<char>& output, const std::string& 
 
 bool Wolf::ShaderParser::isRespectingConditions(const std::vector<std::string>& conditions)
 {
-    for (const std::string& condition : conditions)
-    {
-        if (std::find(m_conditionBlocksToInclude.begin(), m_conditionBlocksToInclude.end(), condition) == m_conditionBlocksToInclude.end())
-            return false;
-    }
-    return true;
+    return std::ranges::all_of(conditions.begin(), conditions.end(), [this](const std::string& condition)
+		{
+			if(condition[0] == '!') // condition must not be included
+			{
+                std::string conditionCpy = condition;
+                std::erase(conditionCpy, '!');
+				return std::ranges::find(m_conditionBlocksToInclude, conditionCpy) == m_conditionBlocksToInclude.end();
+			}
+            else
+            {
+                return std::ranges::find(m_conditionBlocksToInclude, condition) != m_conditionBlocksToInclude.end();
+            }
+		});
 }

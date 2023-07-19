@@ -33,6 +33,8 @@ Wolf::Configuration::Configuration(const std::string& filename, AAssetManager* a
 				m_maxCachedFrames = std::stoi(line);
 			if (token == "useVIL")
 				m_useVIL = std::stoi(line);
+			if (token == "useRenderDoc")
+				m_useRenderDoc = std::stoi(line);
 		}
 	}
 

@@ -152,6 +152,8 @@
     <ClCompile Include="CommandPool.cpp" />
     <ClCompile Include="Configuration.cpp" />
     <ClCompile Include="Debug.cpp" />
+    <ClCompile Include="DebugMarker.cpp" />
+    <ClCompile Include="DebugMarkerSymbols.cpp" />
     <ClCompile Include="DepthPassBase.cpp" />
     <ClCompile Include="DescriptorPool.cpp" />
     <ClCompile Include="DescriptorSet.cpp" />
@@ -197,6 +199,7 @@
     <ClInclude Include="CommandPool.h" />
     <ClInclude Include="Configuration.h" />
     <ClInclude Include="Debug.h" />
+    <ClInclude Include="DebugMarker.h" />
     <ClInclude Include="DepthPassBase.h" />
     <ClInclude Include="DescriptorLayout.h" />
     <ClInclude Include="DescriptorPool.h" />

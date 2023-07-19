@@ -12,5 +12,5 @@ namespace Wolf
 	VkFormat findSupportedFormat(const std::vector<VkFormat>& candidates, VkImageTiling tiling, VkFormatFeatureFlags features, VkPhysicalDevice physicalDevice);
 	bool hasDepthComponent(VkFormat format);
 	bool hasStencilComponent(VkFormat format);
-	VkTransformMatrixKHR toTransformMatrixKHR(glm::mat4 matrix);
+	VkTransformMatrixKHR toTransformMatrixKHR(const glm::mat4* matrix);
 }
