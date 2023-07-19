@@ -12,7 +12,7 @@ Wolf::TopLevelAccelerationStructure::TopLevelAccelerationStructure(std::span<BLA
     for (const BLASInstance& blasInstance : blasInstances)
     {
         VkAccelerationStructureInstanceKHR rayInst{};
-        rayInst.transform = toTransformMatrixKHR(blasInstance.transform);
+        rayInst.transform = toTransformMatrixKHR(&blasInstance.transform);
         rayInst.instanceCustomIndex = blasInstance.instanceID; // gl_InstanceCustomIndexEXT
         rayInst.accelerationStructureReference = blasInstance.bottomLevelAS->getStructureBuffer().getBufferDeviceAddress();
         rayInst.flags = VK_GEOMETRY_INSTANCE_TRIANGLE_FACING_CULL_DISABLE_BIT_KHR;
@@ -40,7 +40,7 @@ Wolf::TopLevelAccelerationStructure::TopLevelAccelerationStructure(std::span<BLA
 	m_buildInfo.geometryCount = 1;
 	m_buildInfo.pGeometries = &topASGeometry;
 
-	uint32_t instanceCount = instances.size();
+	uint32_t instanceCount = static_cast<uint32_t>(instances.size());
 	m_buildSizeInfo.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_BUILD_SIZES_INFO_KHR;
 	vkGetAccelerationStructureBuildSizesKHR(g_vulkanInstance->getDevice(), VK_ACCELERATION_STRUCTURE_BUILD_TYPE_DEVICE_KHR, &m_buildInfo, &instanceCount, &m_buildSizeInfo);
 
@@ -57,7 +57,7 @@ Wolf::TopLevelAccelerationStructure::TopLevelAccelerationStructure(std::span<BLA
 
 	m_buildInfo.dstAccelerationStructure = m_accelerationStructure;
 
-	m_rangeInfo.primitiveCount = instances.size();
+	m_rangeInfo.primitiveCount = instanceCount;
 
 	CommandBuffer commandBuffer(QueueType::COMPUTE, true);
 	commandBuffer.beginCommandBuffer(0);

@@ -20,6 +20,7 @@ namespace Wolf
 		[[nodiscard]] uint32_t getWindowHeight() const { return m_windowHeight; }
 		[[nodiscard]] uint32_t getMaxCachedFrames() const { return m_maxCachedFrames; }
 		[[nodiscard]] bool getUseVIL() const { return m_useVIL; }
+		[[nodiscard]] bool getUseRenderDoc() const { return m_useRenderDoc; }
 
 #ifdef __ANDROID__
 		AAssetManager* getAndroidAssetManager() { return m_androidAssetManager; }
@@ -30,6 +31,7 @@ namespace Wolf
 		uint32_t m_windowHeight = 0;
 		uint32_t m_maxCachedFrames = 0;
 		bool m_useVIL = false;
+		bool m_useRenderDoc = false;
 
 #ifdef __ANDROID__
 		AAssetManager* m_androidAssetManager;

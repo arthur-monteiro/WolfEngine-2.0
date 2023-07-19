@@ -74,9 +74,9 @@ bool Wolf::hasStencilComponent(VkFormat format)
 	return format == VK_FORMAT_D32_SFLOAT_S8_UINT || format == VK_FORMAT_D24_UNORM_S8_UINT;
 }
 
-VkTransformMatrixKHR Wolf::toTransformMatrixKHR(glm::mat4 matrix)
+VkTransformMatrixKHR Wolf::toTransformMatrixKHR(const glm::mat4* matrix)
 {
 	VkTransformMatrixKHR outMatrix;
-	memcpy(&outMatrix, &matrix, sizeof(VkTransformMatrixKHR));
+	memcpy(&outMatrix, matrix, sizeof(VkTransformMatrixKHR));
 	return outMatrix;
 }

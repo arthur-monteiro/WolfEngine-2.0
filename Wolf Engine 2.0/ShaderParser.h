@@ -1,6 +1,7 @@
 #pragma once
 
 #include <filesystem>
+#include <map>
 #include <string>
 #include <vector>
 
@@ -21,8 +22,8 @@ namespace Wolf
 
 	private:
 		std::string m_filename;
+		std::map<std::string, std::filesystem::file_time_type> m_filenamesWithLastModifiedTime;
 		std::vector<std::string> m_conditionBlocksToInclude;
-		std::filesystem::file_time_type m_lastModifiedTime;
 		std::string m_compileFilename;
 	};
 }
