@@ -208,6 +208,7 @@ void Wolf::ShaderParser::readFile(std::vector<char>& output, const std::string& 
 
 bool Wolf::ShaderParser::isRespectingConditions(const std::vector<std::string>& conditions)
 {
+#ifndef __ANDROID__
     return std::ranges::all_of(conditions.begin(), conditions.end(), [this](const std::string& condition)
 		{
 			if(condition[0] == '!') // condition must not be included
@@ -221,4 +222,10 @@ bool Wolf::ShaderParser::isRespectingConditions(const std::vector<std::string>& 
                 return std::ranges::find(m_conditionBlocksToInclude, condition) != m_conditionBlocksToInclude.end();
             }
 		});
+#else
+    if(!conditions.empty())
+    {
+        Debug::sendError("Permutations are not available on android (std::ranges not supported)");
+    }
+#endif
 }
