@@ -12,7 +12,7 @@ namespace Wolf
 	public:
 		ShaderParser(const std::string& filename, const std::vector<std::string>& conditionBlocksToInclude = {});
 
-		bool compileIfFileHasBeenModified();
+		bool compileIfFileHasBeenModified(const std::vector<std::string>& conditionBlocksToInclude = {});
 		void readCompiledShader(std::vector<char>& shaderCode) const;
 
 	private:

@@ -48,7 +48,7 @@ void UniquePass::initializeResources(const InitializationContext& context)
 	createImageInfo.mipLevelCount = 1;
 	createImageInfo.usage = VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
 	m_texture.reset(new Image(createImageInfo));
-	m_texture->copyCPUBuffer(imageFileLoader.getPixels());
+	m_texture->copyCPUBuffer(imageFileLoader.getPixels(), Image::SampledInFragmentShader());
 
 	m_sampler.reset(new Sampler(VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_BORDER, 1.0f, VK_FILTER_LINEAR));
 
