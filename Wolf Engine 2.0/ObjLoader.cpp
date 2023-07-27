@@ -80,7 +80,7 @@ Wolf::ObjLoader::ObjLoader(ModelLoadingInfo& modelLoadingInfo)
 					std::vector<unsigned char> pixels(imageSize);
 					input.read(reinterpret_cast<char*>(pixels.data()), pixels.size());
 
-					m_images[i]->copyCPUBuffer(pixels.data(), mipLevel);
+					m_images[i]->copyCPUBuffer(pixels.data(), Image::SampledInFragmentShader(mipLevel), mipLevel);
 				}
 			}
 
@@ -273,11 +273,11 @@ void Wolf::ObjLoader::setImage(const std::string& filename, uint32_t idx, bool s
 	createImageInfo.mipLevelCount = mipmapGenerator.getMipLevelCount();
 	createImageInfo.usage = VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
 	m_images[idx].reset(new Image(createImageInfo));
-	m_images[idx]->copyCPUBuffer(imageFileLoader.getPixels());
+	m_images[idx]->copyCPUBuffer(imageFileLoader.getPixels(), Image::SampledInFragmentShader());
 
 	for (uint32_t mipLevel = 1; mipLevel < mipmapGenerator.getMipLevelCount(); ++mipLevel)
 	{
-		m_images[idx]->copyCPUBuffer(mipmapGenerator.getMipLevel(mipLevel), mipLevel);
+		m_images[idx]->copyCPUBuffer(mipmapGenerator.getMipLevel(mipLevel), Image::SampledInFragmentShader(mipLevel), mipLevel);
 	}
 
 	if (m_useCache)

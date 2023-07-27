@@ -20,9 +20,15 @@ Wolf::ShaderParser::ShaderParser(const std::string& filename, const std::vector<
     parseAndCompile();
 }
 
-bool Wolf::ShaderParser::compileIfFileHasBeenModified()
+bool Wolf::ShaderParser::compileIfFileHasBeenModified(const std::vector<std::string>& conditionBlocksToInclude)
 {
     bool needToRecompile = false;
+    if(conditionBlocksToInclude != m_conditionBlocksToInclude)
+    {
+        needToRecompile = true;
+        m_conditionBlocksToInclude = conditionBlocksToInclude;
+    }
+
     for(std::map<std::string, std::filesystem::file_time_type>::value_type& file : m_filenamesWithLastModifiedTime)
     {
 	    if(std::filesystem::file_time_type time = std::filesystem::last_write_time(file.first); file.second != time)
@@ -97,6 +103,13 @@ void Wolf::ShaderParser::parseAndCompile()
             currentConditions.pop_back();
             continue;
         }
+        else if (size_t tokenPos = inShaderLine.find("#else"); tokenPos != std::string::npos)
+        {
+            std::string conditionStr = currentConditions.back();
+            currentConditions.pop_back();
+            currentConditions.push_back("!" + conditionStr);
+            continue;
+        }
 
         if (!isRespectingConditions(currentConditions))
             continue;
@@ -127,12 +140,6 @@ void Wolf::ShaderParser::parseAndCompile()
             std::string conditionStr = inShaderLine.substr(tokenPos + 4);
             std::erase(conditionStr, ' ');
             currentConditions.push_back(conditionStr);
-        }
-        else if (size_t tokenPos = inShaderLine.find("#else"); tokenPos != std::string::npos)
-        {
-            std::string conditionStr = currentConditions.back();
-            currentConditions.pop_back();
-            currentConditions.push_back("!" + conditionStr);
         }
         else
         {

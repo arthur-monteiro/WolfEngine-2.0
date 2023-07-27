@@ -35,9 +35,19 @@ namespace Wolf
 
 		~Image();
 
-		void copyCPUBuffer(const unsigned char* pixels, uint32_t mipLevel = 0);
-		void copyGPUBuffer(const Buffer& bufferSrc, const VkBufferImageCopy& copyRegion);
+		struct TransitionLayoutInfo
+		{
+			VkImageLayout dstLayout;
+			VkAccessFlags dstAccessMask;
+			VkPipelineStageFlags dstPipelineStageFlags;
+			uint32_t baseMipLevel = 0;
+			uint32_t levelCount = MAX_MIP_COUNT;
+		};
+
+		void copyCPUBuffer(const unsigned char* pixels, const TransitionLayoutInfo& finalLayout, uint32_t mipLevel = 0);
+		void copyGPUBuffer(const Buffer& bufferSrc, const VkBufferImageCopy& copyRegion, const TransitionLayoutInfo& finalLayout);
 		void copyGPUImage(const Image& imageSrc, const VkImageCopy& imageCopy);
+		void recordCopyGPUImage(const Image& imageSrc, const VkImageCopy& imageCopy, VkCommandBuffer commandBuffer);
 		void copyImagesToCubemap(std::array<Image*, 6> images, std::vector<std::pair<uint8_t, uint8_t>> mipsToCopy, bool generateMipsLevels);
 
 		[[nodiscard]] void* map() const;
@@ -45,8 +55,9 @@ namespace Wolf
 		void getResourceLayout(VkSubresourceLayout& output) const;
 		void exportToFile(const std::string& filename) const;
 
-		void setImageLayout(VkImageLayout dstLayout, VkAccessFlags dstAccessMask, VkPipelineStageFlags dstPipelineStageFlags);
-		void transitionImageLayout(VkCommandBuffer commandBuffer, VkImageLayout dstLayout, VkAccessFlags dstAccessMask, VkPipelineStageFlags dstPipelineStageFlags, uint32_t baseMipLevel = 0, uint32_t levelCount = MAX_MIP_COUNT);
+		static constexpr TransitionLayoutInfo SampledInFragmentShader(uint32_t mipLevel = 0) { return { VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_ACCESS_SHADER_READ_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, mipLevel, 1 }; }
+		void setImageLayout(const TransitionLayoutInfo& transitionLayoutInfo);
+		void transitionImageLayout(VkCommandBuffer commandBuffer, const TransitionLayoutInfo& transitionLayoutInfo);
 		void setImageLayoutWithoutOperation(VkImageLayout newImageLayout, uint32_t baseMipLevel = 0, uint32_t levelCount = MAX_MIP_COUNT);
 
 		[[nodiscard]] VkImage getImage() const { return m_image; }

@@ -18,6 +18,8 @@ namespace Wolf
 
 		[[nodiscard]] const std::vector<DescriptorLayout>& getDescriptorLayouts() const { return m_descriptorLayouts; }
 
+		void reset() { m_descriptorLayouts.clear(); }
+
 	private:
 		std::vector<DescriptorLayout> m_descriptorLayouts;
 	};

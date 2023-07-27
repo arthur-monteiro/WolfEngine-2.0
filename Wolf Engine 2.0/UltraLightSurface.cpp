@@ -21,7 +21,7 @@ void Wolf::UltraLightSurface::Resize(uint32_t width, uint32_t height)
 	createImageInfo.imageTiling = VK_IMAGE_TILING_LINEAR;
 	createImageInfo.memoryProperties = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
 	m_image.reset(new Image(createImageInfo));
-	m_image->setImageLayout(VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_ACCESS_SHADER_READ_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT);
+	m_image->setImageLayout({ VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_ACCESS_SHADER_READ_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT });
 	m_image->getResourceLayout(m_imageResourceLayout);
 
 	m_width = width;
