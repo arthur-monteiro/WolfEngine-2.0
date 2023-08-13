@@ -91,6 +91,6 @@ namespace Wolf
 		uint32_t m_arrayLayerCount;
 		uint32_t m_bbp;
 		VkImageAspectFlags m_aspectFlags;
-		VkMemoryPropertyFlags m_memoryProperties = VK_MEMORY_PROPERTY_FLAG_BITS_MAX_ENUM;
+		VkMemoryPropertyFlags m_memoryProperties = 0x0;
 	};
 }

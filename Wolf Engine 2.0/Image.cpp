@@ -216,7 +216,7 @@ void Wolf::Image::exportToFile(const std::string& filename) const
 	stagingCreateImageInfo.memoryProperties = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
 	stagingCreateImageInfo.imageTiling = VK_IMAGE_TILING_LINEAR;
 	stagingCreateImageInfo.mipLevelCount = 1;
-	Image stagingBuffer(stagingCreateImageInfo);
+	Image stagingImage(stagingCreateImageInfo);
 
 	VkImageCopy copyRegion = {};
 
@@ -236,13 +236,7 @@ void Wolf::Image::exportToFile(const std::string& filename) const
 	copyRegion.extent.height = m_extent.height;
 	copyRegion.extent.depth = m_extent.depth;
 
-	stagingBuffer.copyGPUImage(*this, copyRegion);
-
-	if(m_imageFormat != VK_FORMAT_R32_SFLOAT)
-	{
-		Debug::sendError("Only VK_FORMAT_R32_SFLOAT can be exported for now, code needs to be updated");
-		return;
-	}
+	stagingImage.copyGPUImage(*this, copyRegion);
 
 	struct ImageOutputPixel
 	{
@@ -250,18 +244,40 @@ void Wolf::Image::exportToFile(const std::string& filename) const
 		uint8_t g;
 		uint8_t b;
 	};
-	const float* floatPixels = static_cast<float*>(stagingBuffer.map());
-	std::vector<ImageOutputPixel> outputPixels(m_extent.width * m_extent.height);
-	for(uint32_t i = 0, end = m_extent.width * m_extent.height; i < end; ++i)
+	std::vector<ImageOutputPixel> outputPixels(m_extent.width* m_extent.height);
+
+	switch (m_imageFormat)
 	{
-		outputPixels[i].r = static_cast<uint8_t>(floatPixels[i] * 255);
-		outputPixels[i].g = 0;
-		outputPixels[i].b = 0;
+	case VK_FORMAT_R32_SFLOAT:
+	{
+		const float* floatPixels = static_cast<float*>(stagingImage.map());
+		for (uint32_t i = 0, end = m_extent.width * m_extent.height; i < end; ++i)
+		{
+			outputPixels[i].r = static_cast<uint8_t>(floatPixels[i] * 255);
+			outputPixels[i].g = 0;
+			outputPixels[i].b = 0;
+		}
+		break;
+	}
+	case VK_FORMAT_B8G8R8A8_UNORM:
+	{
+		const uint8_t* pixels = static_cast<uint8_t*>(stagingImage.map());
+		for (uint32_t i = 0, end = m_extent.width * m_extent.height; i < end; ++i)
+		{
+			outputPixels[i].r = pixels[i * 4 + 2];
+			outputPixels[i].g = pixels[i * 4 + 1];
+			outputPixels[i].b = pixels[i * 4 + 0];
+		}
+		break;
+	}
+	default:
+		Debug::sendError("Unsupported image format to export");
+		return;
 	}
 
 	stbi_write_jpg(filename.c_str(), m_extent.width, m_extent.height, 3, outputPixels.data(), 100);
 
-	stagingBuffer.unmap();
+	stagingImage.unmap();
 }
 
 void Wolf::Image::setImageLayout(const TransitionLayoutInfo& transitionLayoutInfo)
