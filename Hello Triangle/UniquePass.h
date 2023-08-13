@@ -21,7 +21,7 @@ public:
 	void record(const Wolf::RecordContext& context) override;
 	void submit(const Wolf::SubmitContext& context) override;
 
-	void saveOutputToFile(const std::string& filename);
+	void saveOutputToFile(const std::string& filename) const;
 
 private:
 	void createDepthImage(const Wolf::InitializationContext& context);
