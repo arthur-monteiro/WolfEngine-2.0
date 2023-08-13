@@ -110,7 +110,7 @@ void Wolf::SwapChain::initialize(GLFWwindow* window)
 	createInfo.imageColorSpace = surfaceFormat.colorSpace;
 	createInfo.imageExtent = extent;
 	createInfo.imageArrayLayers = 1;
-	createInfo.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT;
+	createInfo.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_STORAGE_BIT;
 
 	const QueueFamilyIndices& indices = g_vulkanInstance->getQueueFamilyIndices();
 	const uint32_t queueFamilyIndices[] = { static_cast<uint32_t>(indices.graphicsFamily), static_cast<uint32_t>(indices.presentFamily) };
@@ -163,7 +163,7 @@ void Wolf::SwapChain::initialize(GLFWwindow* window)
 	m_frameFences.resize(g_configuration->getMaxCachedFrames());
 	for (uint32_t i = 0; i < g_configuration->getMaxCachedFrames(); ++i)
 	{
-		m_frameFences[i].reset(new Fence(VK_FENCE_CREATE_SIGNALED_BIT));
+		m_frameFences[i].reset(new Fence(0));
 	}
 }
 

@@ -2,6 +2,7 @@
 
 #include <filesystem>
 #include <fstream>
+#include <stb_image_write.h>
 
 #include <Attachment.h>
 #include <Image.h>
@@ -23,11 +24,32 @@ void UniquePass::initializeResources(const InitializationContext& context)
 
 	m_commandBuffer.reset(new CommandBuffer(QueueType::GRAPHIC, false /* isTransient */));
 
-	m_frameBuffers.resize(context.swapChainImageCount);
-	for (uint32_t i = 0; i < context.swapChainImageCount; ++i)
+	if (m_isGraphicTest)
 	{
-		color.imageView = context.swapChainImages[i]->getDefaultImageView();
-		m_frameBuffers[i].reset(new Framebuffer(m_renderPass->getRenderPass(), { depth, color }));
+		CreateImageInfo createInageInfo{};
+		createInageInfo.extent = { context.swapChainWidth, context.swapChainHeight, 1 };
+		createInageInfo.format = context.swapChainFormat;
+		createInageInfo.arrayLayerCount = 1;
+		createInageInfo.aspect = VK_IMAGE_ASPECT_COLOR_BIT;
+		createInageInfo.sampleCount = VK_SAMPLE_COUNT_1_BIT;
+		createInageInfo.usage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
+		createInageInfo.memoryProperties = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
+		createInageInfo.imageTiling = VK_IMAGE_TILING_LINEAR;
+		createInageInfo.mipLevelCount = 1;
+		m_outputImage.reset(new Image(createInageInfo));
+
+		m_frameBuffers.resize(1);
+		color.imageView = m_outputImage->getDefaultImageView();
+		m_frameBuffers[0].reset(new Framebuffer(m_renderPass->getRenderPass(), { depth, color }));
+	}
+	else
+	{
+		m_frameBuffers.resize(context.swapChainImageCount);
+		for (uint32_t i = 0; i < context.swapChainImageCount; ++i)
+		{
+			color.imageView = context.swapChainImages[i]->getDefaultImageView();
+			m_frameBuffers[i].reset(new Framebuffer(m_renderPass->getRenderPass(), { depth, color }));
+		}
 	}
 
 	m_semaphore.reset(new Semaphore(VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT));
@@ -117,6 +139,30 @@ void UniquePass::submit(const SubmitContext& context)
 		vkDeviceWaitIdle(context.device);
 		createPipeline(m_swapChainWidth, m_swapChainHeight);
 	}
+}
+
+void UniquePass::saveOutputToFile(const std::string& filename)
+{
+	uint8_t* pixels = (uint8_t*)m_outputImage->map();
+
+	struct ImageOutputPixel
+	{
+		uint8_t r;
+		uint8_t g;
+		uint8_t b;
+	};
+	std::vector<ImageOutputPixel> outputPixels(m_outputImage->getExtent().width* m_outputImage->getExtent().height);
+
+	for (uint32_t i = 0, end = m_outputImage->getExtent().width * m_outputImage->getExtent().height; i < end; ++i)
+	{
+		outputPixels[i].r = pixels[i * 4 + 2];
+		outputPixels[i].g = pixels[i * 4 + 1];
+		outputPixels[i].b = pixels[i * 4 + 0];
+	}
+
+	stbi_write_jpg(filename.c_str(), m_outputImage->getExtent().width, m_outputImage->getExtent().height, 3, outputPixels.data(), 100);
+
+	m_outputImage->unmap();
 }
 
 void UniquePass::createDepthImage(const InitializationContext& context)

@@ -14,10 +14,14 @@
 class UniquePass : public Wolf::CommandRecordBase
 {
 public:
+	UniquePass(bool isGraphicTest) : m_isGraphicTest(isGraphicTest) {}
+
 	void initializeResources(const Wolf::InitializationContext& context) override;
 	void resize(const Wolf::InitializationContext& context) override;
 	void record(const Wolf::RecordContext& context) override;
 	void submit(const Wolf::SubmitContext& context) override;
+
+	void saveOutputToFile(const std::string& filename);
 
 private:
 	void createDepthImage(const Wolf::InitializationContext& context);
@@ -37,4 +41,8 @@ private:
 
 	std::unique_ptr<Wolf::ShaderParser> m_vertexShaderParser;
 	std::unique_ptr<Wolf::ShaderParser> m_fragmentShaderParser;
+
+	// to export for graphic tests
+	bool m_isGraphicTest;
+	std::unique_ptr<Wolf::Image> m_outputImage;
 };
