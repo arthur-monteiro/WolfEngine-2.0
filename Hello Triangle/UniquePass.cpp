@@ -14,11 +14,13 @@ using namespace Wolf;
 
 void UniquePass::initializeResources(const InitializationContext& context)
 {
+	const VkFormat outputFormat = m_isGraphicTest ? VK_FORMAT_B8G8R8A8_UNORM : context.swapChainFormat;
+
 	createDepthImage(context);
 
 	Attachment depth({ context.swapChainWidth, context.swapChainHeight }, context.depthFormat, VK_SAMPLE_COUNT_1_BIT, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL, VK_ATTACHMENT_STORE_OP_DONT_CARE, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT,
 		m_depthImage->getDefaultImageView());
-	Attachment color({ context.swapChainWidth, context.swapChainHeight }, context.swapChainFormat, VK_SAMPLE_COUNT_1_BIT, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR, VK_ATTACHMENT_STORE_OP_STORE, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, nullptr);
+	Attachment color({ context.swapChainWidth, context.swapChainHeight }, outputFormat, VK_SAMPLE_COUNT_1_BIT, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR, VK_ATTACHMENT_STORE_OP_STORE, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, nullptr);
 
 	m_renderPass.reset(new RenderPass({ depth, color }));
 
@@ -28,13 +30,13 @@ void UniquePass::initializeResources(const InitializationContext& context)
 	{
 		CreateImageInfo createInageInfo{};
 		createInageInfo.extent = { context.swapChainWidth, context.swapChainHeight, 1 };
-		createInageInfo.format = context.swapChainFormat;
+		createInageInfo.format = outputFormat;
 		createInageInfo.arrayLayerCount = 1;
 		createInageInfo.aspect = VK_IMAGE_ASPECT_COLOR_BIT;
 		createInageInfo.sampleCount = VK_SAMPLE_COUNT_1_BIT;
-		createInageInfo.usage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
-		createInageInfo.memoryProperties = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
-		createInageInfo.imageTiling = VK_IMAGE_TILING_LINEAR;
+		createInageInfo.usage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
+		createInageInfo.memoryProperties = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
+		createInageInfo.imageTiling = VK_IMAGE_TILING_OPTIMAL;
 		createInageInfo.mipLevelCount = 1;
 		m_outputImage.reset(new Image(createInageInfo));
 
@@ -141,28 +143,10 @@ void UniquePass::submit(const SubmitContext& context)
 	}
 }
 
-void UniquePass::saveOutputToFile(const std::string& filename)
+void UniquePass::saveOutputToFile(const std::string& filename) const
 {
-	uint8_t* pixels = (uint8_t*)m_outputImage->map();
-
-	struct ImageOutputPixel
-	{
-		uint8_t r;
-		uint8_t g;
-		uint8_t b;
-	};
-	std::vector<ImageOutputPixel> outputPixels(m_outputImage->getExtent().width* m_outputImage->getExtent().height);
-
-	for (uint32_t i = 0, end = m_outputImage->getExtent().width * m_outputImage->getExtent().height; i < end; ++i)
-	{
-		outputPixels[i].r = pixels[i * 4 + 2];
-		outputPixels[i].g = pixels[i * 4 + 1];
-		outputPixels[i].b = pixels[i * 4 + 0];
-	}
-
-	stbi_write_jpg(filename.c_str(), m_outputImage->getExtent().width, m_outputImage->getExtent().height, 3, outputPixels.data(), 100);
-
-	m_outputImage->unmap();
+	m_outputImage->setImageLayout({ VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, VK_ACCESS_TRANSFER_READ_BIT , VK_PIPELINE_STAGE_TRANSFER_BIT, 0, 1 });
+	m_outputImage->exportToFile(filename);
 }
 
 void UniquePass::createDepthImage(const InitializationContext& context)

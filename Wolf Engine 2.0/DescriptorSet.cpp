@@ -117,5 +117,5 @@ void Wolf::DescriptorSet::createDescriptorSet(uint32_t idx, VkDescriptorSetLayou
 	allocInfo.pSetLayouts = layouts;
 
 	if (vkAllocateDescriptorSets(g_vulkanInstance->getDevice(), &allocInfo, &m_descriptorSets[idx]) != VK_SUCCESS)
-		Debug::sendError("Error : allocate descriptor set");
+		Debug::sendCriticalError("Allocate descriptor set");
 }
