@@ -5,6 +5,8 @@
 #include <fstream>
 #include <string.h>
 
+#include "Debug.h"
+
 void readArguments(bool& isGraphicTest, int argc, char* argv[])
 {
 	for (int i = 0; i < argc; ++i)
@@ -24,6 +26,8 @@ bool checkGraphicTest()
 	struct stat buffer;
 	if (stat(REFERENCE_FILENAME, &buffer) != 0)
 	{
+		Wolf::Debug::sendInfo("GraphicTest: reference doesn't exist");
+
 		std::ifstream current(CURRENT_FILENAME, std::ios::binary);
 		std::ofstream ref(REFERENCE_FILENAME, std::ios::binary);
 
@@ -38,7 +42,8 @@ bool checkGraphicTest()
 
 		if (fileSize != ref.tellg())
 		{
-			return EXIT_FAILURE; // different file size
+			Wolf::Debug::sendInfo("GraphicTest: different image size");
+			return false; // different file size
 		}
 
 		current.seekg(0); // rewind
@@ -51,9 +56,12 @@ bool checkGraphicTest()
 
 		if (!std::equal(beginCurrent, std::istreambuf_iterator<char>(), beginRef))
 		{
-			return EXIT_FAILURE;
+			Wolf::Debug::sendInfo("GraphicTest: reference and test are not the same");
+			return false;
 		}
 	}
 
 	std::filesystem::remove(CURRENT_FILENAME);
+
+	return true;
 }
