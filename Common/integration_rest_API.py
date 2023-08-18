@@ -9,4 +9,6 @@ def runGraphicTest():
     os.chdir('../Hello Triangle')
     result = subprocess.run('"../x64/Debug/Hello Triangle.exe" graphictests')
 
-    return str(result.returncode)
+    strResult = str(result.returncode)
+    print(strResult)
+    return strResult
