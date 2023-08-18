@@ -1,1 +1,0 @@
-"../x64/Debug/Hello Triangle.exe" graphictests

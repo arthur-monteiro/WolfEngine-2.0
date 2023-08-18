@@ -39,6 +39,7 @@ int main()
 		std::vector<Wolf::CommandRecordBase*> passes(1);
 		passes[0] = &pass;
 
+		wolfInstance.updateEvents();
 		wolfInstance.frame(passes, pass.getSemaphore());
 	}
 
