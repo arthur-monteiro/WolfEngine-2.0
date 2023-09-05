@@ -54,17 +54,20 @@ namespace Wolf
 
 #ifndef __ANDROID__
 		void getUserInterfaceJSObject(ultralight::JSObject& outObject) const;
+		void evaluateUserInterfaceScript(const std::string& script) const;
 #endif
 		[[nodiscard]] const HardwareCapabilities& getHardwareCapabilities() const { return m_vulkan->getHardwareCapabilities(); }
 		[[nodiscard]] uint32_t getCurrentFrame() const { return m_currentFrame; }
 
 		void setCameraInterface(CameraInterface* cameraInterface) { m_cameraInterface = cameraInterface; }
 		void setGameContexts(const std::vector<void*>& gameContexts) { m_gameContexts = gameContexts; }
-		void registerInputHandlerInterface(InputHandlerInterface* inputHandlerInterface) const { inputHandlerInterface->initialize(
+		void registerInputHandlerInterface(InputHandlerInterface* inputHandlerInterface) { inputHandlerInterface->initialize(
 #ifndef __ANDROID__
 			m_window->getWindow()
 #endif
-		); }
+		);
+			m_inputHandlerInterface = inputHandlerInterface;
+		}
 
 	private:
 		void fillInitializeContext(InitializationContext& context) const;
@@ -94,6 +97,7 @@ namespace Wolf
 		// Gameplay
 		CameraInterface* m_cameraInterface = nullptr;
 		std::vector<void*> m_gameContexts;
+		InputHandlerInterface* m_inputHandlerInterface = nullptr;
 
 		bool m_resizeIsNeeded = false;
 	};

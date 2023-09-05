@@ -3,12 +3,10 @@
 #include <filesystem>
 #include <fstream>
 
-#include <Attachment.h>
 #include <DescriptorSetGenerator.h>
 #include <DescriptorSetLayoutGenerator.h>
 #include <Image.h>
 #include <ImageFileLoader.h>
-#include <FrameBuffer.h>
 
 using namespace Wolf;
 
@@ -22,15 +20,21 @@ void UniquePass::initializeResources(const InitializationContext& context)
 	m_descriptorSetLayoutGenerator.addStorageImage(VK_SHADER_STAGE_COMPUTE_BIT, 0);
 	m_descriptorSetLayout.reset(new DescriptorSetLayout(m_descriptorSetLayoutGenerator.getDescriptorLayouts()));
 
-	m_descriptorSets.resize(context.swapChainImageCount);
-	createDescriptorSets(context);
+	std::vector<Image*> outputImages;
+	buildOutputImages(context, outputImages);
+
+	m_descriptorSets.resize(outputImages.size());
+	createDescriptorSets(outputImages);
 
 	createPipeline(context.swapChainWidth, context.swapChainHeight);
 }
 
 void UniquePass::resize(const InitializationContext& context)
 {
-	createDescriptorSets(context);
+	std::vector<Image*> outputImages;
+	buildOutputImages(context, outputImages);
+	createDescriptorSets(outputImages);
+
 	m_swapChainWidth = context.swapChainWidth;
 	m_swapChainHeight = context.swapChainHeight;
 }
@@ -38,13 +42,13 @@ void UniquePass::resize(const InitializationContext& context)
 void UniquePass::record(const RecordContext& context)
 {
 	/* Command buffer record */
-	uint32_t frameBufferIdx = context.swapChainImageIdx;
-
 	m_commandBuffer->beginCommandBuffer(context.commandBufferIdx);
+
+	const uint32_t outputImageIdx = context.swapChainImageIdx;
 
 	context.swapchainImage->transitionImageLayout(m_commandBuffer->getCommandBuffer(context.commandBufferIdx), { VK_IMAGE_LAYOUT_GENERAL, VK_ACCESS_SHADER_WRITE_BIT, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT });
 
-	vkCmdBindDescriptorSets(m_commandBuffer->getCommandBuffer(context.commandBufferIdx), VK_PIPELINE_BIND_POINT_COMPUTE, m_pipeline->getPipelineLayout(), 0, 1, m_descriptorSets[context.swapChainImageIdx]->getDescriptorSet(), 0, nullptr);
+	vkCmdBindDescriptorSets(m_commandBuffer->getCommandBuffer(context.commandBufferIdx), VK_PIPELINE_BIND_POINT_COMPUTE, m_pipeline->getPipelineLayout(), 0, 1, m_descriptorSets[outputImageIdx]->getDescriptorSet(), 0, nullptr);
 
 	vkCmdBindPipeline(m_commandBuffer->getCommandBuffer(context.commandBufferIdx), VK_PIPELINE_BIND_POINT_COMPUTE, m_pipeline->getPipeline());
 
@@ -71,6 +75,15 @@ void UniquePass::submit(const SubmitContext& context)
 	}
 }
 
+void UniquePass::buildOutputImages(const InitializationContext& context, std::vector<Wolf::Image*>& outputImages) const
+{
+	outputImages.resize(context.swapChainImageCount);
+	for (uint32_t i = 0; i < outputImages.size(); ++i)
+	{
+		outputImages[i] = context.swapChainImages[i];
+	}
+}
+
 void UniquePass::createPipeline(uint32_t width, uint32_t height)
 {
 	// Compute shader parser
@@ -89,12 +102,12 @@ void UniquePass::createPipeline(uint32_t width, uint32_t height)
 	m_swapChainHeight = height;
 }
 
-void UniquePass::createDescriptorSets(const InitializationContext& context)
+void UniquePass::createDescriptorSets(const std::vector<Image*>& outputImages)
 {
-	for (uint32_t i = 0; i < context.swapChainImageCount; ++i)
+	for (uint32_t i = 0; i < outputImages.size(); ++i)
 	{
 		DescriptorSetGenerator descriptorSetGenerator(m_descriptorSetLayoutGenerator.getDescriptorLayouts());
-		DescriptorSetGenerator::ImageDescription image(VK_IMAGE_LAYOUT_GENERAL, context.swapChainImages[i]->getDefaultImageView());
+		DescriptorSetGenerator::ImageDescription image(VK_IMAGE_LAYOUT_GENERAL, outputImages[i]->getDefaultImageView());
 		descriptorSetGenerator.setImage(0, image);
 
 		if(!m_descriptorSets[i])

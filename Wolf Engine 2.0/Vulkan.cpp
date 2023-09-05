@@ -404,12 +404,12 @@ void Wolf::Vulkan::createDevice()
 	createInfo.enabledExtensionCount = static_cast<uint32_t>(m_deviceExtensions.size());
 	createInfo.ppEnabledExtensionNames = m_deviceExtensions.data();
 
-#ifndef NDEBUG
+//#ifndef NDEBUG
 	createInfo.enabledLayerCount = static_cast<uint32_t>(m_validationLayers.size());
 	createInfo.ppEnabledLayerNames = m_validationLayers.data();
-#else
-	createInfo.enabledLayerCount = 0;
-#endif
+//#else
+//	createInfo.enabledLayerCount = 0;
+//#endif
 
 	if (vkCreateDevice(m_physicalDevice, &createInfo, nullptr, &m_device) != VK_SUCCESS)
 		Debug::sendCriticalError("Error : create device");

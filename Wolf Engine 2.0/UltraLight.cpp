@@ -69,13 +69,18 @@ void Wolf::UltraLight::OnDOMReady(View* caller, uint64_t frame_id, bool is_main_
 
 Wolf::Image* Wolf::UltraLight::getImage() const
 {
-    UltraLightSurface* surface = (UltraLightSurface*)m_view->surface();
+	const UltraLightSurface* surface = dynamic_cast<UltraLightSurface*>(m_view->surface());
     return surface->getImage();
 }
 
 void Wolf::UltraLight::getJSObject(JSObject& outObject)
 {
     outObject = JSGlobalObject();
+}
+
+void Wolf::UltraLight::evaluateScript(const std::string& script) const
+{
+    m_view->EvaluateScript(script.c_str());
 }
 
 void Wolf::UltraLight::update(GLFWwindow* window) const

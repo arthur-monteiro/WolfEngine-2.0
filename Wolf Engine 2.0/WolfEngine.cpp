@@ -98,6 +98,11 @@ void Wolf::WolfEngine::updateEvents() const
 		m_cameraInterface->update();
 #endif
 	}
+
+	if (m_inputHandlerInterface)
+	{
+		m_inputHandlerInterface->moveToNextFrame();
+	}
 }
 
 void Wolf::WolfEngine::frame(const std::span<CommandRecordBase*>& passes, const Semaphore* frameEndedSemaphore)
@@ -178,6 +183,11 @@ void Wolf::WolfEngine::waitIdle() const
 void Wolf::WolfEngine::getUserInterfaceJSObject(ultralight::JSObject& outObject) const
 {
 	m_ultraLight->getJSObject(outObject);
+}
+
+void Wolf::WolfEngine::evaluateUserInterfaceScript(const std::string& script) const
+{
+	m_ultraLight->evaluateScript(script);
 }
 #endif
 

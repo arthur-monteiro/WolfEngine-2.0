@@ -24,7 +24,8 @@ namespace Wolf
         virtual void OnDOMReady(ultralight::View* caller, uint64_t frame_id, bool is_main_frame, const ultralight::String& url) override;
 
         Image* getImage() const;
-        void getJSObject(ultralight::JSObject& outObject);
+        static void getJSObject(ultralight::JSObject& outObject);
+        void evaluateScript(const std::string& script) const;
 
         void update(GLFWwindow* window) const;
         void render() const;
