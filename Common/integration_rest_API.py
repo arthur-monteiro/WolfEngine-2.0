@@ -1,14 +1,67 @@
 from flask import Flask
 import subprocess
 import os
+import win32gui
+import pyautogui
+import threading
+import time
+import psutil
+
+def screenshot(windowTitle):
+    global screenshotComparisonResult
+    if windowTitle:
+        hwnd = win32gui.FindWindow(None, windowTitle)
+        if hwnd:
+            win32gui.SetForegroundWindow(hwnd)
+            time.sleep(0.1)
+            x, y, x1, y1 = win32gui.GetClientRect(hwnd)
+            x, y = win32gui.ClientToScreen(hwnd, (x, y))
+            x1, y1 = win32gui.ClientToScreen(hwnd, (x1 - x, y1 - y))
+            im = pyautogui.screenshot(region=(x, y, x1, y1))
+
+            im.save("graphicTestExecution.jpg")
+
+            screenshotComparisonResult = open("graphicTestExecution.jpg", "rb").read() == open("referenceGraphicTest.jpg", "rb").read()
+            
+            if screenshotComparisonResult == True:
+                os.remove("graphicTestExecution.jpg")
+
+        else:
+            print('Window not found!')
+            screenshotComparisonResult = False
+        
+def runProcess(processName):
+    subprocess.run(processName)
 
 app = Flask(__name__)
 
+def runProcessTest(folder, processFullName, processShortName, windowTitle):
+    print("Starting " + windowTitle)
+
+    os.chdir(folder)
+
+    p0 = threading.Thread(target=runProcess, args=(processFullName,))
+    p0.start()
+    time.sleep(5)
+
+    p1 = threading.Thread(target=screenshot, args=(windowTitle,))
+    p1.start()
+    p1.join()
+
+    for proc in psutil.process_iter():
+        if proc.name() == processShortName:
+            proc.kill()
+
+    p0.join()
+
 @app.route("/graphictests")
 def runGraphicTest():
-    os.chdir('../Hello Triangle')
-    result = subprocess.run('"../x64/Debug/Hello Triangle.exe" graphictests')
+    runProcessTest('../Hello Triangle', '"../x64/Debug/Hello Triangle.exe"', "Hello Triangle.exe", "Hello Triangle")
+    if screenshotComparisonResult == False:
+        return "1"
+    
+    runProcessTest('../Compute Pass', '"../x64/Debug/Compute Pass.exe"', "Compute Pass.exe", "Compute Pass")
+    if screenshotComparisonResult == False:
+        return "1"
 
-    strResult = str(result.returncode)
-    print(strResult)
-    return strResult
+    return "0"

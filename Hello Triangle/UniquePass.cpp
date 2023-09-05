@@ -14,7 +14,7 @@ using namespace Wolf;
 
 void UniquePass::initializeResources(const InitializationContext& context)
 {
-	const VkFormat outputFormat = m_isGraphicTest ? VK_FORMAT_B8G8R8A8_UNORM : context.swapChainFormat;
+	const VkFormat outputFormat = context.swapChainFormat;
 
 	createDepthImage(context);
 
@@ -25,33 +25,12 @@ void UniquePass::initializeResources(const InitializationContext& context)
 	m_renderPass.reset(new RenderPass({ depth, color }));
 
 	m_commandBuffer.reset(new CommandBuffer(QueueType::GRAPHIC, false /* isTransient */));
-
-	if (m_isGraphicTest)
+	
+	m_frameBuffers.resize(context.swapChainImageCount);
+	for (uint32_t i = 0; i < context.swapChainImageCount; ++i)
 	{
-		CreateImageInfo createInageInfo{};
-		createInageInfo.extent = { context.swapChainWidth, context.swapChainHeight, 1 };
-		createInageInfo.format = outputFormat;
-		createInageInfo.arrayLayerCount = 1;
-		createInageInfo.aspect = VK_IMAGE_ASPECT_COLOR_BIT;
-		createInageInfo.sampleCount = VK_SAMPLE_COUNT_1_BIT;
-		createInageInfo.usage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
-		createInageInfo.memoryProperties = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
-		createInageInfo.imageTiling = VK_IMAGE_TILING_OPTIMAL;
-		createInageInfo.mipLevelCount = 1;
-		m_outputImage.reset(new Image(createInageInfo));
-
-		m_frameBuffers.resize(1);
-		color.imageView = m_outputImage->getDefaultImageView();
-		m_frameBuffers[0].reset(new Framebuffer(m_renderPass->getRenderPass(), { depth, color }));
-	}
-	else
-	{
-		m_frameBuffers.resize(context.swapChainImageCount);
-		for (uint32_t i = 0; i < context.swapChainImageCount; ++i)
-		{
-			color.imageView = context.swapChainImages[i]->getDefaultImageView();
-			m_frameBuffers[i].reset(new Framebuffer(m_renderPass->getRenderPass(), { depth, color }));
-		}
+		color.imageView = context.swapChainImages[i]->getDefaultImageView();
+		m_frameBuffers[i].reset(new Framebuffer(m_renderPass->getRenderPass(), { depth, color }));
 	}
 
 	m_semaphore.reset(new Semaphore(VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT));
@@ -141,12 +120,6 @@ void UniquePass::submit(const SubmitContext& context)
 		vkDeviceWaitIdle(context.device);
 		createPipeline(m_swapChainWidth, m_swapChainHeight);
 	}
-}
-
-void UniquePass::saveOutputToFile(const std::string& filename) const
-{
-	m_outputImage->setImageLayout({ VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, VK_ACCESS_TRANSFER_READ_BIT , VK_PIPELINE_STAGE_TRANSFER_BIT, 0, 1 });
-	m_outputImage->exportToFile(filename);
 }
 
 void UniquePass::createDepthImage(const InitializationContext& context)

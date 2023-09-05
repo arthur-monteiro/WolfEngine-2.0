@@ -26,8 +26,10 @@ public:
 	void submit(const Wolf::SubmitContext& context) override;
 
 private:
+	void buildOutputImages(const Wolf::InitializationContext& context, std::vector<Wolf::Image*>& outputImages) const;
+
 	void createPipeline(uint32_t width, uint32_t height);
-	void createDescriptorSets(const Wolf::InitializationContext& context);
+	void createDescriptorSets(const std::vector<Wolf::Image*>& outputImages);
 
 private:
 	/* Pipeline */

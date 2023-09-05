@@ -10,5 +10,7 @@ namespace Wolf
 #else
 		virtual void initialize() = 0;
 #endif
+
+		virtual void moveToNextFrame() = 0;
 	};
 }
