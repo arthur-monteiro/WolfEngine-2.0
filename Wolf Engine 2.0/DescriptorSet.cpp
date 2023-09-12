@@ -1,6 +1,7 @@
 #include "DescriptorSet.h"
 
 #include "Configuration.h"
+#include "Debug.h"
 
 Wolf::DescriptorSet::DescriptorSet(VkDescriptorSetLayout descriptorSetLayout, UpdateRate updateRate)
 {

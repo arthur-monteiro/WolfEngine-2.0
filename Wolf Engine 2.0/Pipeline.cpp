@@ -1,5 +1,7 @@
 #include "Pipeline.h"
 
+#include "Debug.h"
+
 Wolf::Pipeline::Pipeline(const RenderingPipelineCreateInfo& renderingPipelineCreateInfo)
 {
 	/* Pipeline layout */

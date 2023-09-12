@@ -188,9 +188,6 @@
     <ClInclude Include="QueueFamilyIndices.h">
       <Filter>Structures</Filter>
     </ClInclude>
-    <ClInclude Include="HardwareCapabilities.h">
-      <Filter>Structures</Filter>
-    </ClInclude>
     <ClInclude Include="SwapChainSupportDetails.h">
       <Filter>Structures</Filter>
     </ClInclude>

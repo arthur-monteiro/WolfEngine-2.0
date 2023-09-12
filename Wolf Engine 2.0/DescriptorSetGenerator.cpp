@@ -1,5 +1,6 @@
 #include "DescriptorSetGenerator.h"
 
+#include "Debug.h"
 #include "Vulkan.h"
 
 Wolf::DescriptorSetGenerator::DescriptorSetGenerator(const std::span<const DescriptorLayout> descriptorLayouts)

@@ -9,9 +9,7 @@
 #include <vector>
 
 #include "CommandPool.h"
-#include "Debug.h"
 #include "DescriptorPool.h"
-#include "HardwareCapabilities.h"
 #include "QueueFamilyIndices.h"
 
 namespace Wolf
@@ -39,7 +37,6 @@ namespace Wolf
 		[[nodiscard]] VkQueue getComputeQueue() const { return m_computeQueue; }
 		[[nodiscard]] VkDescriptorPool getDescriptorPool() const { return m_descriptorPool->getDescriptorPool(); }
 		[[nodiscard]] const VkPhysicalDeviceRayTracingPipelinePropertiesKHR& getRayTracingProperties() const { return m_raytracingProperties; }
-		[[nodiscard]] const HardwareCapabilities& getHardwareCapabilities() const { return m_hardwareCapabilities; }
 
 	private:
 		/* Main Loading Functions */
@@ -51,8 +48,9 @@ namespace Wolf
 
 		void populateDebugMessengerCreateInfo(VkDebugUtilsMessengerCreateInfoEXT& createInfo);
 
-		bool isDeviceSuitable(VkPhysicalDevice physicalDevice, const std::vector<const char*>& deviceExtensions, HardwareCapabilities& outHardwareCapabilities) const;
-		void getPhysicalDeviceRayTracingProperties(VkPhysicalDeviceRayTracingPipelinePropertiesKHR& raytracingProperties) const;
+		bool isDeviceSuitable(VkPhysicalDevice physicalDevice);
+		void retrievePhysicalDeviceRayTracingProperties();
+		void retrievePhysicalDeviceShadingRateProperties();
 
 	private:
 		VkInstance m_instance;
@@ -80,9 +78,18 @@ namespace Wolf
 		std::vector<const char*> m_meshShaderDeviceExtensions;
 		VkPhysicalDeviceMeshShaderPropertiesNV m_meshShaderProperties = {};
 
+		/* Variable shading rate */
+		std::vector<const char*> m_shadingRateDeviceExtensions;
+		VkPhysicalDeviceFragmentShadingRatePropertiesKHR m_shadingRateProperties = {};
+
 		/* Properties */
 		VkSampleCountFlagBits m_maxMsaaSamples = VK_SAMPLE_COUNT_1_BIT;
-		HardwareCapabilities m_hardwareCapabilities;
+		struct Features
+		{
+			bool rayTracing = false;
+			bool meshShader = false;
+			bool variableShadingRate = false;
+		} m_availableFeatures;
 		VkPhysicalDeviceConservativeRasterizationPropertiesEXT m_conservativeRasterProps{};
 
 		/* VR */

@@ -1,6 +1,7 @@
 #include "SwapChain.h"
 
 #include "Configuration.h"
+#include "Debug.h"
 #include "Image.h"
 #include "Fence.h"
 #include "Semaphore.h"

@@ -1,5 +1,7 @@
 #include "Semaphore.h"
 
+#include "Debug.h"
+
 Wolf::Semaphore::Semaphore(VkPipelineStageFlags pipelineStage)
 {
     VkSemaphoreCreateInfo semaphoreInfo = {};

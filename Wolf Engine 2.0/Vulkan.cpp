@@ -3,6 +3,7 @@
 #include <set>
 
 #include "Configuration.h"
+#include "Debug.h"
 #include "SwapChainSupportDetails.h"
 #include "VulkanHelper.h"
 
@@ -78,6 +79,7 @@ Wolf::Vulkan::Vulkan(GLFWwindow* glfwWindowPtr, bool useOVR)
 		m_raytracingDeviceExtensions = { VK_KHR_ACCELERATION_STRUCTURE_EXTENSION_NAME, VK_KHR_RAY_TRACING_PIPELINE_EXTENSION_NAME, VK_KHR_DEFERRED_HOST_OPERATIONS_EXTENSION_NAME,
 			VK_EXT_DESCRIPTOR_INDEXING_EXTENSION_NAME, VK_KHR_BUFFER_DEVICE_ADDRESS_EXTENSION_NAME, VK_KHR_SPIRV_1_4_EXTENSION_NAME,  };
 	}
+	m_shadingRateDeviceExtensions = { VK_KHR_FRAGMENT_SHADING_RATE_EXTENSION_NAME };
 	if(useRenderDoc)
 	{
 		m_deviceExtensions.push_back(VK_EXT_DEBUG_MARKER_EXTENSION_NAME);
@@ -294,7 +296,6 @@ void Wolf::Vulkan::pickPhysicalDevice()
 		if (!OVR_SUCCESS(result))
 		{
 			Debug::sendCriticalError("Failed to get physical device from OVR");
-			return;
 		}
 		return;
 	}
@@ -311,30 +312,28 @@ void Wolf::Vulkan::pickPhysicalDevice()
 
 	for (const auto& device : devices)
 	{
-		if (isDeviceSuitable(device, m_deviceExtensions, m_hardwareCapabilities))
+		if (isDeviceSuitable(device))
 		{
-			m_hardwareCapabilities.rayTracingAvailable = isDeviceSuitable(device, m_raytracingDeviceExtensions, m_hardwareCapabilities);
-			m_hardwareCapabilities.meshShaderAvailable = isDeviceSuitable(device, m_meshShaderDeviceExtensions, m_hardwareCapabilities);
-
-			if (m_hardwareCapabilities.rayTracingAvailable)
-				for (int i(0); i < m_raytracingDeviceExtensions.size(); ++i)
-					m_deviceExtensions.push_back(m_raytracingDeviceExtensions[i]);
+			if (m_availableFeatures.rayTracing)
+			{
+				for (auto rayTracingDeviceExtension : m_raytracingDeviceExtensions)
+					m_deviceExtensions.push_back(rayTracingDeviceExtension);
+			}
+			if (m_availableFeatures.variableShadingRate)
+			{
+				for (auto shadingRateExtension : m_shadingRateDeviceExtensions)
+					m_deviceExtensions.push_back(shadingRateExtension);
+			}
 
 			m_physicalDevice = device;
 			m_maxMsaaSamples = getMaxUsableSampleCount(m_physicalDevice);
 
-			/*PFN_vkGetPhysicalDeviceProperties2KHR vkGetPhysicalDeviceProperties2KHR =
-				reinterpret_cast<PFN_vkGetPhysicalDeviceProperties2KHR>(vkGetInstanceProcAddr(m_instance, "vkGetPhysicalDeviceProperties2KHR"));
-			VkPhysicalDeviceProperties2KHR deviceProps2{};
-			m_conservativeRasterProps.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_CONSERVATIVE_RASTERIZATION_PROPERTIES_EXT;
-			deviceProps2.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2_KHR;
-			deviceProps2.pNext = &m_conservativeRasterProps;
-			vkGetPhysicalDeviceProperties2KHR(m_physicalDevice, &deviceProps2);*/
-
-			if (m_hardwareCapabilities.rayTracingAvailable)
-				getPhysicalDeviceRayTracingProperties(m_raytracingProperties);
-			//if (m_hardwareCapabilities.meshShaderAvailable)
+			if (m_availableFeatures.rayTracing)
+				retrievePhysicalDeviceRayTracingProperties();
+			//if (m_availableFeatures.meshShader)
 			//	m_meshShaderProperties = getPhysicalDeviceMeshShaderProperties(m_physicalDevice);
+			if (m_availableFeatures.variableShadingRate)
+				retrievePhysicalDeviceShadingRateProperties();
 			break;
 		}
 	}
@@ -453,15 +452,18 @@ void Wolf::Vulkan::populateDebugMessengerCreateInfo(VkDebugUtilsMessengerCreateI
 	createInfo.pfnUserCallback = debugCallback;
 }
 
-bool Wolf::Vulkan::isDeviceSuitable(VkPhysicalDevice physicalDevice, const std::vector<const char*>& deviceExtensions, HardwareCapabilities& outHardwareCapabilities) const
+bool Wolf::Vulkan::isDeviceSuitable(VkPhysicalDevice physicalDevice)
 {
 	QueueFamilyIndices queueFamilyIndices;
 	findQueueFamilies(queueFamilyIndices, physicalDevice, m_surface);
 
-	bool extensionsSupported = checkDeviceExtensionSupport(physicalDevice, deviceExtensions);
+	bool mandatoryExtensionsSupported = checkDeviceExtensionSupport(physicalDevice, m_deviceExtensions);
+	m_availableFeatures.rayTracing = checkDeviceExtensionSupport(physicalDevice, m_raytracingDeviceExtensions);
+	m_availableFeatures.meshShader = checkDeviceExtensionSupport(physicalDevice, m_meshShaderDeviceExtensions);
+	m_availableFeatures.variableShadingRate = checkDeviceExtensionSupport(physicalDevice, m_shadingRateDeviceExtensions);
 
 	bool swapChainAdequate = false;
-	if (extensionsSupported)
+	if (mandatoryExtensionsSupported)
 	{
 		SwapChainSupportDetails swapChainSupport;
 		querySwapChainSupport(swapChainSupport, physicalDevice, m_surface);
@@ -474,33 +476,33 @@ bool Wolf::Vulkan::isDeviceSuitable(VkPhysicalDevice physicalDevice, const std::
 	VkPhysicalDeviceMemoryProperties memoryProperties;
 	vkGetPhysicalDeviceMemoryProperties(physicalDevice, &memoryProperties);
 
-	//for (uint32_t i(0); i < memoryProperties.memoryHeapCount; ++i)
-	//{
-	//	if (memoryProperties.memoryHeaps[i].flags & VK_MEMORY_HEAP_DEVICE_LOCAL_BIT)
-	//	{
-	//		outHardwareCapabilities.VRAMSize = memoryProperties.memoryHeaps[i].size;
-	//		if (memoryProperties.memoryHeaps[i].size < 1073741824)
-	//		{
-	//			std::cout << "Not enough memory : " << memoryProperties.memoryHeaps[i].size << std::endl;
-	//			return false;
-	//		}
-	//	}
-	//}
-
-	return queueFamilyIndices.isComplete() && extensionsSupported && swapChainAdequate /*&& supportedFeatures.samplerAnisotropy*/;
+	return queueFamilyIndices.isComplete() && mandatoryExtensionsSupported && swapChainAdequate /*&& supportedFeatures.samplerAnisotropy*/;
 }
 
-void Wolf::Vulkan::getPhysicalDeviceRayTracingProperties(VkPhysicalDeviceRayTracingPipelinePropertiesKHR& raytracingProperties) const
+void Wolf::Vulkan::retrievePhysicalDeviceRayTracingProperties()
 {
 #ifndef __ANDROID__
 	// Query the values of shaderHeaderSize and maxRecursionDepth in current implementation
-	raytracingProperties.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_PIPELINE_PROPERTIES_KHR;
-	raytracingProperties.pNext = nullptr;
-	raytracingProperties.maxRayRecursionDepth = 0;
-	raytracingProperties.shaderGroupHandleSize = 0;
+	m_raytracingProperties.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_PIPELINE_PROPERTIES_KHR;
+	m_raytracingProperties.pNext = nullptr;
+	m_raytracingProperties.maxRayRecursionDepth = 0;
+	m_raytracingProperties.shaderGroupHandleSize = 0;
 	VkPhysicalDeviceProperties2 props;
 	props.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2;
-	props.pNext = &raytracingProperties;
+	props.pNext = &m_raytracingProperties;
+	props.properties = {};
+	vkGetPhysicalDeviceProperties2(m_physicalDevice, &props);
+#endif
+}
+
+void Wolf::Vulkan::retrievePhysicalDeviceShadingRateProperties()
+{
+#ifndef __ANDROID__
+	m_shadingRateProperties.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FRAGMENT_SHADING_RATE_PROPERTIES_KHR;
+	m_shadingRateProperties.pNext = nullptr;
+	VkPhysicalDeviceProperties2 props;
+	props.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2;
+	props.pNext = &m_shadingRateProperties;
 	props.properties = {};
 	vkGetPhysicalDeviceProperties2(m_physicalDevice, &props);
 #endif

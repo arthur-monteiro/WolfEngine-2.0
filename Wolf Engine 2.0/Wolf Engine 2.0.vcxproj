@@ -213,7 +213,6 @@
     <ClInclude Include="ExportImage.h" />
     <ClInclude Include="Fence.h" />
     <ClInclude Include="FrameBuffer.h" />
-    <ClInclude Include="HardwareCapabilities.h" />
     <ClInclude Include="Image.h" />
     <ClInclude Include="ImageFileLoader.h" />
     <ClInclude Include="InputHandlerInterface.h" />
