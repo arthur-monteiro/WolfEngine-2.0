@@ -4,6 +4,7 @@
 
 #include "Configuration.h"
 #include "Debug.h"
+#include "ShadingRateSymbols.h"
 #include "SwapChainSupportDetails.h"
 #include "VulkanHelper.h"
 
@@ -91,6 +92,8 @@ Wolf::Vulkan::Vulkan(GLFWwindow* glfwWindowPtr, bool useOVR)
 
 	pickPhysicalDevice();
 	createDevice();
+
+	initializeShadingRateFunctions(m_device);
 
 	if(useRenderDoc)
 	{
@@ -374,6 +377,12 @@ void Wolf::Vulkan::createDevice()
 	accelerationStructureFeature.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ACCELERATION_STRUCTURE_FEATURES_KHR;
 	accelerationStructureFeature.accelerationStructure = true;
 	rayTracingPipelineFeatures.pNext = &accelerationStructureFeature;
+
+	VkPhysicalDeviceFragmentShadingRateFeaturesKHR variableShadingRateFeatures{};
+	variableShadingRateFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FRAGMENT_SHADING_RATE_FEATURES_KHR;
+	variableShadingRateFeatures.pipelineFragmentShadingRate = true;
+	variableShadingRateFeatures.attachmentFragmentShadingRate = true;
+	accelerationStructureFeature.pNext = &variableShadingRateFeatures;
 
 	VkPhysicalDeviceFeatures2 supportedFeatures = {};
 	supportedFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;

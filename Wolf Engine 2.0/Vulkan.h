@@ -37,6 +37,7 @@ namespace Wolf
 		[[nodiscard]] VkQueue getComputeQueue() const { return m_computeQueue; }
 		[[nodiscard]] VkDescriptorPool getDescriptorPool() const { return m_descriptorPool->getDescriptorPool(); }
 		[[nodiscard]] const VkPhysicalDeviceRayTracingPipelinePropertiesKHR& getRayTracingProperties() const { return m_raytracingProperties; }
+		[[nodiscard]] const VkPhysicalDeviceFragmentShadingRatePropertiesKHR& getVRSProperties() const { return m_shadingRateProperties; }
 
 	private:
 		/* Main Loading Functions */

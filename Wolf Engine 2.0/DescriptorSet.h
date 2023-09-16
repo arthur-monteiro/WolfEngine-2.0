@@ -7,7 +7,7 @@
 
 namespace Wolf
 {
-	struct DescriptorSetCreateInfo
+	struct DescriptorSetUpdateInfo
 	{
 		struct DescriptorBuffer
 		{
@@ -43,8 +43,8 @@ namespace Wolf
 		DescriptorSet(VkDescriptorSetLayout descriptorSetLayout, UpdateRate updateRate);
 		DescriptorSet(const DescriptorSet&) = delete;
 
-		void update(const DescriptorSetCreateInfo& descriptorSetCreateInfo) const;
-		void update(const DescriptorSetCreateInfo& descriptorSetCreateInfo, uint32_t idx) const;
+		void update(const DescriptorSetUpdateInfo& descriptorSetCreateInfo) const;
+		void update(const DescriptorSetUpdateInfo& descriptorSetCreateInfo, uint32_t idx) const;
 
 		[[nodiscard]] const VkDescriptorSet* getDescriptorSet(uint32_t idx = 0) const { return &m_descriptorSets[idx]; }
 

@@ -50,13 +50,14 @@ void Wolf::DescriptorSetLayoutGenerator::addSampler(VkShaderStageFlags accessibi
 	m_descriptorLayouts.push_back(descriptorLayout);
 }
 
-void Wolf::DescriptorSetLayoutGenerator::addImages(VkDescriptorType descriptorType, VkShaderStageFlags accessibility, uint32_t binding, uint32_t count)
+void Wolf::DescriptorSetLayoutGenerator::addImages(VkDescriptorType descriptorType, VkShaderStageFlags accessibility, uint32_t binding, uint32_t count, VkDescriptorBindingFlags bindingFlags)
 {
 	DescriptorLayout descriptorLayout;
 	descriptorLayout.accessibility = accessibility;
 	descriptorLayout.binding = binding;
 	descriptorLayout.descriptorType = descriptorType;
 	descriptorLayout.count = count;
+	descriptorLayout.bindingFlags = bindingFlags;
 
 	m_descriptorLayouts.push_back(descriptorLayout);
 }

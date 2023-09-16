@@ -179,6 +179,7 @@
     <ClCompile Include="Semaphore.cpp" />
     <ClCompile Include="ShaderBindingTable.cpp" />
     <ClCompile Include="ShaderParser.cpp" />
+    <ClCompile Include="ShadingRateSymbols.cpp" />
     <ClCompile Include="SwapChain.cpp" />
     <ClCompile Include="TextFileReader.cpp" />
     <ClCompile Include="Timer.cpp" />
@@ -229,6 +230,8 @@
     <ClInclude Include="ShaderBindingTable.h" />
     <ClInclude Include="ShaderCommon.h" />
     <ClInclude Include="ShaderParser.h" />
+    <ClInclude Include="ShadingRatePalette.h" />
+    <ClInclude Include="ShadingRateSymbols.h" />
     <ClInclude Include="SwapChain.h" />
     <ClInclude Include="SwapChainSupportDetails.h" />
     <ClInclude Include="TextFileReader.h" />
