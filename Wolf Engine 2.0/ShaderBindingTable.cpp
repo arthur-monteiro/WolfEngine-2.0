@@ -1,5 +1,6 @@
 #include "ShaderBindingTable.h"
 
+#include "Debug.h"
 #include "Vulkan.h"
 
 Wolf::ShaderBindingTable::ShaderBindingTable(uint32_t shaderCount, VkPipeline pipeline)

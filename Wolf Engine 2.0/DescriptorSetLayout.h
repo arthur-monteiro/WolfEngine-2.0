@@ -9,7 +9,7 @@ namespace Wolf
 	class DescriptorSetLayout
 	{
 	public:
-		DescriptorSetLayout(const std::span<const DescriptorLayout> descriptorLayouts);
+		DescriptorSetLayout(const std::span<const DescriptorLayout> descriptorLayouts, VkDescriptorSetLayoutCreateFlags flags = 0);
 		DescriptorSetLayout(const DescriptorSetLayout&) = delete;
 		~DescriptorSetLayout();
 

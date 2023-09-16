@@ -5,6 +5,7 @@
 
 #include "Buffer.h"
 #include "CommandBuffer.h"
+#include "Debug.h"
 #include "Fence.h"
 #include "VulkanHelper.h"
 

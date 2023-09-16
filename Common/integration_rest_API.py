@@ -63,5 +63,9 @@ def runGraphicTest():
     runProcessTest('../Compute Pass', '"../x64/Debug/Compute Pass.exe"', "Compute Pass.exe", "Compute Pass")
     if screenshotComparisonResult == False:
         return "1"
+    
+    runProcessTest('../Variable Rate Shading', '"../x64/Debug/Variable Rate Shading.exe"', "Variable Rate Shading.exe", "Variable Rate Shading")
+    if screenshotComparisonResult == False:
+        return "1"
 
     return "0"

@@ -1,5 +1,6 @@
 #include "DescriptorSetGenerator.h"
 
+#include "Debug.h"
 #include "Vulkan.h"
 
 Wolf::DescriptorSetGenerator::DescriptorSetGenerator(const std::span<const DescriptorLayout> descriptorLayouts)
@@ -8,7 +9,7 @@ Wolf::DescriptorSetGenerator::DescriptorSetGenerator(const std::span<const Descr
 	{
 		if (descriptorLayout.descriptorType == VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER || descriptorLayout.descriptorType == VK_DESCRIPTOR_TYPE_STORAGE_BUFFER)
 		{
-			DescriptorSetCreateInfo::DescriptorBuffer descriptorBuffer;
+			DescriptorSetUpdateInfo::DescriptorBuffer descriptorBuffer;
 			descriptorBuffer.descriptorLayout = descriptorLayout;
 
 			m_descriptorSetCreateInfo.descriptorBuffers.push_back(descriptorBuffer);
@@ -17,7 +18,7 @@ Wolf::DescriptorSetGenerator::DescriptorSetGenerator(const std::span<const Descr
 		else if (descriptorLayout.descriptorType == VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER || descriptorLayout.descriptorType == VK_DESCRIPTOR_TYPE_STORAGE_IMAGE ||
 			descriptorLayout.descriptorType == VK_DESCRIPTOR_TYPE_SAMPLER || descriptorLayout.descriptorType == VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE)
 		{
-			DescriptorSetCreateInfo::DescriptorImage descriptorImage;
+			DescriptorSetUpdateInfo::DescriptorImage descriptorImage;
 			descriptorImage.descriptorLayout = descriptorLayout;
 
 			m_descriptorSetCreateInfo.descriptorImages.push_back(descriptorImage);
@@ -25,7 +26,7 @@ Wolf::DescriptorSetGenerator::DescriptorSetGenerator(const std::span<const Descr
 		}
 		else if (descriptorLayout.descriptorType == VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR)
 		{
-			DescriptorSetCreateInfo::DescriptorAccelerationStructure descriptorAccelerationStructure;
+			DescriptorSetUpdateInfo::DescriptorAccelerationStructure descriptorAccelerationStructure;
 			descriptorAccelerationStructure.descriptorLayout = descriptorLayout;
 
 			m_descriptorSetCreateInfo.descriptorAccelerationStructures.push_back(descriptorAccelerationStructure);
@@ -56,7 +57,7 @@ void Wolf::DescriptorSetGenerator::setCombinedImageSampler(uint32_t binding, VkI
 	if (descriptor.first != DescriptorType::IMAGE)
 		Debug::sendError("Binding provided is not an image");
 
-	DescriptorSetCreateInfo::ImageData imageData;
+	DescriptorSetUpdateInfo::ImageData imageData;
 	imageData.imageLayout = imageLayout;
 	imageData.imageView = imageView;
 	imageData.sampler = sampler.getSampler();
@@ -72,7 +73,7 @@ void Wolf::DescriptorSetGenerator::setImage(uint32_t binding, ImageDescription& 
 	if (descriptor.first != DescriptorType::IMAGE)
 		Debug::sendError("Binding provided is not an image");
 
-	DescriptorSetCreateInfo::ImageData imageData;
+	DescriptorSetUpdateInfo::ImageData imageData;
 	imageData.imageLayout = imageDescription.imageLayout;
 	imageData.imageView = imageDescription.imageView;
 	imageData.sampler = VK_NULL_HANDLE;
@@ -91,7 +92,7 @@ void Wolf::DescriptorSetGenerator::setImages(uint32_t binding, const std::vector
 	m_descriptorSetCreateInfo.descriptorImages[descriptor.second].images.reserve(imageDescriptions.size());
 	for (const ImageDescription& imageDescription : imageDescriptions)
 	{
-		DescriptorSetCreateInfo::ImageData imageData;
+		DescriptorSetUpdateInfo::ImageData imageData;
 		imageData.imageLayout = imageDescription.imageLayout;
 		imageData.imageView = imageDescription.imageView;
 		imageData.sampler = VK_NULL_HANDLE;
@@ -107,7 +108,7 @@ void Wolf::DescriptorSetGenerator::setSampler(uint32_t binding, const Sampler& s
 	if (descriptor.first != DescriptorType::IMAGE)
 		Debug::sendError("Binding provided is not an image");
 
-	DescriptorSetCreateInfo::ImageData imageData;
+	DescriptorSetUpdateInfo::ImageData imageData;
 	imageData.sampler = sampler.getSampler();
 
 	m_descriptorSetCreateInfo.descriptorImages[descriptor.second].images.resize(1);

@@ -159,6 +159,9 @@
     <ClCompile Include="DebugMarker.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="ShadingRateSymbols.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="WolfEngine.h">
@@ -186,9 +189,6 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="QueueFamilyIndices.h">
-      <Filter>Structures</Filter>
-    </ClInclude>
-    <ClInclude Include="HardwareCapabilities.h">
       <Filter>Structures</Filter>
     </ClInclude>
     <ClInclude Include="SwapChainSupportDetails.h">
@@ -313,6 +313,12 @@
     </ClInclude>
     <ClInclude Include="DebugMarker.h">
       <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ShadingRateSymbols.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ShadingRatePalette.h">
+      <Filter>Helpers</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

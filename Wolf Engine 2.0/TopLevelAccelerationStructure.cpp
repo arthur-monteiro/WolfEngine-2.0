@@ -1,6 +1,7 @@
 #include "TopLevelAccelerationStructure.h"
 
 #include "CommandBuffer.h"
+#include "Debug.h"
 #include "Fence.h"
 #include "Vulkan.h"
 #include "VulkanHelper.h"

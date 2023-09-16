@@ -56,7 +56,6 @@ namespace Wolf
 		void getUserInterfaceJSObject(ultralight::JSObject& outObject) const;
 		void evaluateUserInterfaceScript(const std::string& script) const;
 #endif
-		[[nodiscard]] const HardwareCapabilities& getHardwareCapabilities() const { return m_vulkan->getHardwareCapabilities(); }
 		[[nodiscard]] uint32_t getCurrentFrame() const { return m_currentFrame; }
 
 		void setCameraInterface(CameraInterface* cameraInterface) { m_cameraInterface = cameraInterface; }

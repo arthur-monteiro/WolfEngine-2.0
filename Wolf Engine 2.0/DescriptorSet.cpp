@@ -1,6 +1,7 @@
 #include "DescriptorSet.h"
 
 #include "Configuration.h"
+#include "Debug.h"
 
 Wolf::DescriptorSet::DescriptorSet(VkDescriptorSetLayout descriptorSetLayout, UpdateRate updateRate)
 {
@@ -25,20 +26,20 @@ Wolf::DescriptorSet::DescriptorSet(VkDescriptorSetLayout descriptorSetLayout, Up
 		createDescriptorSet(idx, descriptorSetLayout);
 }
 
-void Wolf::DescriptorSet::update(const DescriptorSetCreateInfo& descriptorSetCreateInfo) const
+void Wolf::DescriptorSet::update(const DescriptorSetUpdateInfo& descriptorSetCreateInfo) const
 {
 	for (uint32_t i = 0; i < m_descriptorSets.size(); ++i)
 		update(descriptorSetCreateInfo, i);
 }
 
-void Wolf::DescriptorSet::update(const DescriptorSetCreateInfo& descriptorSetCreateInfo, uint32_t idx) const
+void Wolf::DescriptorSet::update(const DescriptorSetUpdateInfo& descriptorSetCreateInfo, uint32_t idx) const
 {
 	std::vector<VkWriteDescriptorSet> descriptorWrites;
 
 	std::vector<std::vector<VkDescriptorBufferInfo>> descriptorBufferInfos(descriptorSetCreateInfo.descriptorBuffers.size());
 	for (uint32_t i = 0; i < descriptorBufferInfos.size(); ++i)
 	{
-		const DescriptorSetCreateInfo::DescriptorBuffer& descriptorBuffer = descriptorSetCreateInfo.descriptorBuffers[i];
+		const DescriptorSetUpdateInfo::DescriptorBuffer& descriptorBuffer = descriptorSetCreateInfo.descriptorBuffers[i];
 		descriptorBufferInfos[i].resize(descriptorBuffer.buffers.size());
 		for (uint32_t j = 0; j < descriptorBufferInfos[i].size(); ++j)
 		{
@@ -63,7 +64,7 @@ void Wolf::DescriptorSet::update(const DescriptorSetCreateInfo& descriptorSetCre
 	std::vector<std::vector<VkDescriptorImageInfo>> descriptorImageInfos(descriptorSetCreateInfo.descriptorImages.size());
 	for (uint32_t i = 0; i < descriptorImageInfos.size(); ++i)
 	{
-		const DescriptorSetCreateInfo::DescriptorImage& descriptorImage = descriptorSetCreateInfo.descriptorImages[i];
+		const DescriptorSetUpdateInfo::DescriptorImage& descriptorImage = descriptorSetCreateInfo.descriptorImages[i];
 		descriptorImageInfos[i].resize(descriptorImage.images.size());
 		for (uint32_t j = 0; j < descriptorImageInfos[i].size(); ++j)
 		{
@@ -80,7 +81,7 @@ void Wolf::DescriptorSet::update(const DescriptorSetCreateInfo& descriptorSetCre
 		descriptorWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
 		descriptorWrite.dstSet = m_descriptorSets[idx];
 		descriptorWrite.dstBinding = descriptorImage.descriptorLayout.binding;
-		descriptorWrite.dstArrayElement = 0;
+		descriptorWrite.dstArrayElement = descriptorImage.descriptorLayout.arrayIndex;
 		descriptorWrite.descriptorType = descriptorImage.descriptorLayout.descriptorType;
 		descriptorWrite.descriptorCount = static_cast<uint32_t>(descriptorImageInfos[i].size());
 		descriptorWrite.pImageInfo = descriptorImageInfos[i].data();

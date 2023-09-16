@@ -31,10 +31,10 @@ namespace Wolf
 		void setSampler(uint32_t binding, const Sampler& sampler);
 		void setAccelerationStructure(uint32_t binding, const TopLevelAccelerationStructure& accelerationStructure);
 
-		[[nodiscard]] const DescriptorSetCreateInfo& getDescriptorSetCreateInfo() const { return m_descriptorSetCreateInfo; }
+		[[nodiscard]] const DescriptorSetUpdateInfo& getDescriptorSetCreateInfo() const { return m_descriptorSetCreateInfo; }
 
 	private:
-		DescriptorSetCreateInfo m_descriptorSetCreateInfo;
+		DescriptorSetUpdateInfo m_descriptorSetCreateInfo;
 
 		enum class DescriptorType { BUFFER, IMAGE, ACCELERATION_STRUCTURE };
 		std::map<uint32_t /* binding */, std::pair<DescriptorType, uint32_t /* descriptor index */>> m_mapBindingCreateInfo;
