@@ -28,10 +28,12 @@ namespace Wolf
 		std::string configFilename;
 
 		const char* htmlURL = nullptr;
+		std::function<void()> bindUltralightCallbacks;
 
 		bool useOVR = false;
 
 		std::function<void(Debug::Severity, Debug::Type, const std::string&)> debugCallback;
+		std::function<void(uint32_t, uint32_t)> resizeCallback;
 
 #ifdef __ANDROID__
         ANativeWindow* androidWindow;
@@ -57,6 +59,8 @@ namespace Wolf
 		void evaluateUserInterfaceScript(const std::string& script) const;
 #endif
 		[[nodiscard]] uint32_t getCurrentFrame() const { return m_currentFrame; }
+
+		bool isRayTracingAvailable() const { return m_vulkan->isRayTracingAvailable(); }
 
 		void setCameraInterface(CameraInterface* cameraInterface) { m_cameraInterface = cameraInterface; }
 		void setGameContexts(const std::vector<void*>& gameContexts) { m_gameContexts = gameContexts; }
@@ -87,6 +91,7 @@ namespace Wolf
 		std::unique_ptr<SwapChain> m_swapChain;
 #ifndef __ANDROID__
 		std::unique_ptr<UltraLight> m_ultraLight;
+		std::function<void()> m_bindUltralightCallbacks;
 		//std::unique_ptr<OVR> m_ovr;
 #endif
 
@@ -99,5 +104,6 @@ namespace Wolf
 		InputHandlerInterface* m_inputHandlerInterface = nullptr;
 
 		bool m_resizeIsNeeded = false;
+		std::function<void(uint32_t, uint32_t)> m_resizeCallback;
 	};
 }

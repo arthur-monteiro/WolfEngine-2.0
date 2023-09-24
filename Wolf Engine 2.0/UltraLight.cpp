@@ -7,8 +7,10 @@
 
 using namespace ultralight;
 
-Wolf::UltraLight::UltraLight(uint32_t width, uint32_t height, const std::string& absoluteURL)
+Wolf::UltraLight::UltraLight(uint32_t width, uint32_t height, const std::string& absoluteURL, std::string filePath) : m_filePath(std::move(filePath))
 {
+    m_lastUpdated = std::filesystem::last_write_time(m_filePath);
+
     Config config;
     config.device_scale = 1.0;
     config.font_family_standard = "Arial";
@@ -81,6 +83,27 @@ void Wolf::UltraLight::getJSObject(JSObject& outObject)
 void Wolf::UltraLight::evaluateScript(const std::string& script) const
 {
     m_view->EvaluateScript(script.c_str());
+}
+
+bool Wolf::UltraLight::reloadIfModified()
+{
+    if (const std::filesystem::file_time_type time = std::filesystem::last_write_time(m_filePath); m_lastUpdated != time)
+    {
+        m_done = false;
+        m_view->LoadURL(m_view->url());
+        m_lastUpdated = time;
+
+        while (!m_done)
+        {
+            std::this_thread::sleep_for(std::chrono::milliseconds(10));
+            m_renderer->Update();
+            m_renderer->Render();
+        }
+
+        return true;
+    }
+
+    return false;
 }
 
 void Wolf::UltraLight::update(GLFWwindow* window) const

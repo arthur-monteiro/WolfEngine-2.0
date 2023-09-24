@@ -178,6 +178,16 @@ Wolf::Pipeline::Pipeline(const RenderingPipelineCreateInfo& renderingPipelineCre
 		pipelineInfo.pTessellationState = &tessellationStateCreateInfo;
 	}
 
+	if (!renderingPipelineCreateInfo.dynamicStates.empty())
+	{
+		VkPipelineDynamicStateCreateInfo dynamicStateCreateInfo{};
+		dynamicStateCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO;
+		dynamicStateCreateInfo.pDynamicStates = renderingPipelineCreateInfo.dynamicStates.data();
+		dynamicStateCreateInfo.dynamicStateCount = renderingPipelineCreateInfo.dynamicStates.size();
+
+		pipelineInfo.pDynamicState = &dynamicStateCreateInfo;
+	}
+
 	if (vkCreateGraphicsPipelines(g_vulkanInstance->getDevice(), VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &m_pipeline) != VK_SUCCESS)
 		Debug::sendError("Error : graphic pipeline creation");
 
