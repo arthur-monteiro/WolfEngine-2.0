@@ -39,6 +39,8 @@ namespace Wolf
 		[[nodiscard]] const VkPhysicalDeviceRayTracingPipelinePropertiesKHR& getRayTracingProperties() const { return m_raytracingProperties; }
 		[[nodiscard]] const VkPhysicalDeviceFragmentShadingRatePropertiesKHR& getVRSProperties() const { return m_shadingRateProperties; }
 
+		[[nodiscard]] bool isRayTracingAvailable() const { return m_availableFeatures.rayTracing; }
+
 	private:
 		/* Main Loading Functions */
 		void createInstance();

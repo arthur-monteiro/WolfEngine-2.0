@@ -13,6 +13,8 @@ Wolf::WolfEngine::WolfEngine(const WolfInstanceCreateInfo& createInfo)
 #endif
 	Debug::setCallback(createInfo.debugCallback);
 
+	m_resizeCallback = createInfo.resizeCallback;
+
 #ifndef __ANDROID__
 	m_configuration.reset(new Configuration(createInfo.configFilename));
 #else
@@ -60,7 +62,9 @@ Wolf::WolfEngine::WolfEngine(const WolfInstanceCreateInfo& createInfo)
 				escapedCurrentPath += currentPathChar;
 		}
 		const std::string absoluteURL = "file:///" + escapedCurrentPath + "/" + createInfo.htmlURL;
-		m_ultraLight.reset(new UltraLight(m_configuration->getWindowWidth(), m_configuration->getWindowHeight(), absoluteURL));
+		m_ultraLight.reset(new UltraLight(m_configuration->getWindowWidth(), m_configuration->getWindowHeight(), absoluteURL, createInfo.htmlURL));
+
+		m_bindUltralightCallbacks = createInfo.bindUltralightCallbacks;
 	}
 #endif
 
@@ -122,6 +126,11 @@ void Wolf::WolfEngine::frame(const std::span<CommandRecordBase*>& passes, const 
 		InitializationContext initializeContext;
 		fillInitializeContext(initializeContext);
 
+		if(m_resizeCallback)
+		{
+			m_resizeCallback(initializeContext.swapChainWidth, initializeContext.swapChainHeight);
+		}
+
 		for (CommandRecordBase* pass : passes)
 		{
 			pass->resize(initializeContext);
@@ -133,6 +142,11 @@ void Wolf::WolfEngine::frame(const std::span<CommandRecordBase*>& passes, const 
 #ifndef __ANDROID__
 	if (m_ultraLight)
 	{
+		if(m_ultraLight->reloadIfModified())
+		{
+			m_bindUltralightCallbacks();
+		}
+
 		m_ultraLight->update(m_window->getWindow());
 		m_ultraLight->render();
 	}

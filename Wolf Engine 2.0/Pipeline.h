@@ -59,6 +59,9 @@ namespace Wolf
 
 		// Tessellation
 		uint32_t patchControlPoint = 0;
+
+		// Dynamic state
+		std::vector<VkDynamicState> dynamicStates;
 	};
 
 	struct RayTracingPipelineCreateInfo

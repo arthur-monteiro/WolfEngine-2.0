@@ -5,6 +5,7 @@
 #include <AppCore/App.h>
 #include <AppCore/JSHelpers.h>
 #include <AppCore/Platform.h>
+#include <filesystem>
 #include <Ultralight/Ultralight.h>
 #include <Ultralight/platform/Logger.h>
 
@@ -16,7 +17,7 @@ namespace Wolf
     class UltraLight : public ultralight::LoadListener, public ultralight::Logger
     {
     public:
-        UltraLight(uint32_t width, uint32_t height, const std::string& absoluteURL);
+        UltraLight(uint32_t width, uint32_t height, const std::string& absoluteURL, std::string filePath);
         UltraLight(const UltraLight&) = delete;
 
         virtual void OnFinishLoading(ultralight::View* caller, uint64_t frame_id, bool is_main_frame, const ultralight::String& url) override;
@@ -27,6 +28,7 @@ namespace Wolf
         static void getJSObject(ultralight::JSObject& outObject);
         void evaluateScript(const std::string& script) const;
 
+        bool reloadIfModified();
         void update(GLFWwindow* window) const;
         void render() const;
         void resize(uint32_t width, uint32_t height) const;
@@ -37,6 +39,9 @@ namespace Wolf
 
         ultralight::RefPtr<ultralight::Renderer> m_renderer;
         ultralight::RefPtr<ultralight::View> m_view;
+
+        std::string m_filePath;
+        std::filesystem::file_time_type m_lastUpdated;
     };
 }
 

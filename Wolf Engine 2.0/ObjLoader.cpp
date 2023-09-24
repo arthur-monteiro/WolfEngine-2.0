@@ -102,9 +102,9 @@ Wolf::ObjLoader::ObjLoader(ModelLoadingInfo& modelLoadingInfo)
 		Debug::sendCriticalError(err);
 
 	if (!err.empty())
-		Debug::sendInfo("[Loading objet file] Error : " + err + " for " + modelLoadingInfo.filename + " !");
+		Debug::sendInfo("[Loading object file] Error : " + err + " for " + modelLoadingInfo.filename + " !");
 	if (!warn.empty())
-		Debug::sendInfo("[Loading objet file]  Warning : " + warn + " for " + modelLoadingInfo.filename + " !");
+		Debug::sendInfo("[Loading object file] Warning : " + warn + " for " + modelLoadingInfo.filename + " !");
 
 	std::unordered_map<Vertex3D, uint32_t> uniqueVertices = {};
 	std::vector<Vertex3D> vertices;
@@ -126,15 +126,15 @@ Wolf::ObjLoader::ObjLoader(ModelLoadingInfo& modelLoadingInfo)
 
 			vertex.pos =
 			{
-					attrib.vertices[3 * index.vertex_index + 0],
-					attrib.vertices[3 * index.vertex_index + 1],
-					attrib.vertices[3 * index.vertex_index + 2]
+				attrib.vertices[3 * index.vertex_index + 0],
+				attrib.vertices[3 * index.vertex_index + 1],
+				attrib.vertices[3 * index.vertex_index + 2]
 			};
 
 			vertex.texCoord =
 			{
-					attrib.texcoords[2 * index.texcoord_index + 0],
-					1.0f - attrib.texcoords[2 * index.texcoord_index + 1]
+				attrib.texcoords[2 * index.texcoord_index + 0],
+				1.0f - attrib.texcoords[2 * index.texcoord_index + 1]
 			};
 
 			if (attrib.normals.size() <= 3 * index.normal_index + 2)
@@ -143,9 +143,9 @@ Wolf::ObjLoader::ObjLoader(ModelLoadingInfo& modelLoadingInfo)
 			{
 				vertex.normal =
 				{
-						attrib.normals[3 * index.normal_index + 0],
-						attrib.normals[3 * index.normal_index + 1],
-						attrib.normals[3 * index.normal_index + 2]
+					attrib.normals[3 * index.normal_index + 0],
+					attrib.normals[3 * index.normal_index + 1],
+					attrib.normals[3 * index.normal_index + 2]
 				};
 			}
 
@@ -168,8 +168,8 @@ Wolf::ObjLoader::ObjLoader(ModelLoadingInfo& modelLoadingInfo)
 		}
 	}
 
-	for (int i(0); i < lastIndices.size(); ++i)
-		indices.push_back(lastIndices[i]);
+	for (unsigned int index : lastIndices)
+		indices.push_back(index);
 
 	std::array<Vertex3D, 3> tempTriangle{};
 	for (size_t i(0); i <= indices.size(); ++i)
