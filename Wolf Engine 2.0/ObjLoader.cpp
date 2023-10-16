@@ -18,12 +18,12 @@ void Wolf::ModelData::getImages(std::vector<Image*>& outputImages) const
 	}
 }
 
-void Wolf::ObjLoader::loadObject(ModelData& outputModel, const ModelLoadingInfo& modelLoadingInfo)
+void Wolf::ObjLoader::loadObject(ModelData& outputModel, ModelLoadingInfo& modelLoadingInfo)
 {
 	ObjLoader objLoader(outputModel, modelLoadingInfo);
 }
 
-Wolf::ObjLoader::ObjLoader(ModelData& outputModel, const ModelLoadingInfo& modelLoadingInfo) : m_outputModel(outputModel)
+Wolf::ObjLoader::ObjLoader(ModelData& outputModel, ModelLoadingInfo& modelLoadingInfo) : m_outputModel(outputModel)
 {
 #ifdef __ANDROID__
     if(modelLoadingInfo.isInAssets)
