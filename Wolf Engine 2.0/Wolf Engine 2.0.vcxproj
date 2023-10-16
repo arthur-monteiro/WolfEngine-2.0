@@ -119,7 +119,7 @@
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp20</LanguageStandard>
       <ScanSourceForModuleDependencies>true</ScanSourceForModuleDependencies>
-      <AdditionalIncludeDirectories>..\ThirdParty\vulkan\Include;..\ThirdParty\freetype-2.8.1\include\freetype2;..\ThirdParty\stb_image;..\ThirdParty\glm;..\ThirdParty\tiny_obj;..\ThirdParty\GLFW\include;..\ThirdParty\OVR\Include;..\ThirdParty\UltraLight\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\ThirdParty\glm;..\ThirdParty\vulkan\Include;..\ThirdParty\freetype-2.8.1\include\freetype2;..\ThirdParty\stb_image;..\ThirdParty\tiny_obj;..\ThirdParty\GLFW\include;..\ThirdParty\OVR\Include;..\ThirdParty\UltraLight\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -167,6 +167,8 @@
     <ClCompile Include="FrameBuffer.cpp" />
     <ClCompile Include="Image.cpp" />
     <ClCompile Include="ImageFileLoader.cpp" />
+    <ClCompile Include="InputHandler.cpp" />
+    <ClCompile Include="JSONReader.cpp" />
     <ClCompile Include="Mesh.cpp" />
     <ClCompile Include="MipMapGenerator.cpp" />
     <ClCompile Include="ObjLoader.cpp" />
@@ -192,6 +194,7 @@
     <ClCompile Include="WolfEngine.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="AABB.h" />
     <ClInclude Include="AccelerationStructure.h" />
     <ClInclude Include="AndroidCacheHelper.h" />
     <ClInclude Include="Attachment.h" />
@@ -216,7 +219,8 @@
     <ClInclude Include="FrameBuffer.h" />
     <ClInclude Include="Image.h" />
     <ClInclude Include="ImageFileLoader.h" />
-    <ClInclude Include="InputHandlerInterface.h" />
+    <ClInclude Include="InputHandler.h" />
+    <ClInclude Include="JSONReader.h" />
     <ClInclude Include="Mesh.h" />
     <ClInclude Include="MipMapGenerator.h" />
     <ClInclude Include="ObjLoader.h" />

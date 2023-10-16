@@ -14,6 +14,8 @@
 
 namespace Wolf
 {
+    class InputHandler;
+
     class UltraLight : public ultralight::LoadListener, public ultralight::Logger
     {
     public:
@@ -29,7 +31,7 @@ namespace Wolf
         void evaluateScript(const std::string& script) const;
 
         bool reloadIfModified();
-        void update(GLFWwindow* window) const;
+        void update(InputHandler* inputHandler) const;
         void render() const;
         void resize(uint32_t width, uint32_t height) const;
 

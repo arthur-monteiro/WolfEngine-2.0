@@ -4,7 +4,6 @@
 #define GLM_FORCE_DEPTH_ZERO_TO_ONE
 #define GLM_ENABLE_EXPERIMENTAL
 #include <glm/glm.hpp>
-#include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtx/hash.hpp>
 
 #include "Buffer.h"
@@ -31,32 +30,33 @@ namespace Wolf
 
 		static void getAttributeDescriptions(std::vector<VkVertexInputAttributeDescription>& attributeDescriptions, uint32_t binding)
 		{
-			attributeDescriptions.resize(5);
+			const uint32_t attributeDescriptionCountBefore = attributeDescriptions.size();
+			attributeDescriptions.resize(attributeDescriptionCountBefore + 5);
 
-			attributeDescriptions[0].binding = binding;
-			attributeDescriptions[0].location = 0;
-			attributeDescriptions[0].format = VK_FORMAT_R32G32B32_SFLOAT;
-			attributeDescriptions[0].offset = offsetof(Vertex3D, pos);
+			attributeDescriptions[attributeDescriptionCountBefore + 0].binding = binding;
+			attributeDescriptions[attributeDescriptionCountBefore + 0].location = 0;
+			attributeDescriptions[attributeDescriptionCountBefore + 0].format = VK_FORMAT_R32G32B32_SFLOAT;
+			attributeDescriptions[attributeDescriptionCountBefore + 0].offset = offsetof(Vertex3D, pos);
 
-			attributeDescriptions[1].binding = binding;
-			attributeDescriptions[1].location = 1;
-			attributeDescriptions[1].format = VK_FORMAT_R32G32B32_SFLOAT;
-			attributeDescriptions[1].offset = offsetof(Vertex3D, normal);
+			attributeDescriptions[attributeDescriptionCountBefore + 1].binding = binding;
+			attributeDescriptions[attributeDescriptionCountBefore + 1].location = 1;
+			attributeDescriptions[attributeDescriptionCountBefore + 1].format = VK_FORMAT_R32G32B32_SFLOAT;
+			attributeDescriptions[attributeDescriptionCountBefore + 1].offset = offsetof(Vertex3D, normal);
 
-			attributeDescriptions[2].binding = binding;
-			attributeDescriptions[2].location = 2;
-			attributeDescriptions[2].format = VK_FORMAT_R32G32B32_SFLOAT;
-			attributeDescriptions[2].offset = offsetof(Vertex3D, tangent);
+			attributeDescriptions[attributeDescriptionCountBefore + 2].binding = binding;
+			attributeDescriptions[attributeDescriptionCountBefore + 2].location = 2;
+			attributeDescriptions[attributeDescriptionCountBefore + 2].format = VK_FORMAT_R32G32B32_SFLOAT;
+			attributeDescriptions[attributeDescriptionCountBefore + 2].offset = offsetof(Vertex3D, tangent);
 
-			attributeDescriptions[3].binding = binding;
-			attributeDescriptions[3].location = 3;
-			attributeDescriptions[3].format = VK_FORMAT_R32G32_SFLOAT;
-			attributeDescriptions[3].offset = offsetof(Vertex3D, texCoord);
+			attributeDescriptions[attributeDescriptionCountBefore + 3].binding = binding;
+			attributeDescriptions[attributeDescriptionCountBefore + 3].location = 3;
+			attributeDescriptions[attributeDescriptionCountBefore + 3].format = VK_FORMAT_R32G32_SFLOAT;
+			attributeDescriptions[attributeDescriptionCountBefore + 3].offset = offsetof(Vertex3D, texCoord);
 
-			attributeDescriptions[4].binding = binding;
-			attributeDescriptions[4].location = 4;
-			attributeDescriptions[4].format = VK_FORMAT_R32_UINT;
-			attributeDescriptions[4].offset = offsetof(Vertex3D, materialID);
+			attributeDescriptions[attributeDescriptionCountBefore + 4].binding = binding;
+			attributeDescriptions[attributeDescriptionCountBefore + 4].location = 4;
+			attributeDescriptions[attributeDescriptionCountBefore + 4].format = VK_FORMAT_R32_UINT;
+			attributeDescriptions[attributeDescriptionCountBefore + 4].offset = offsetof(Vertex3D, materialID);
 		}
 
 		bool operator==(const Vertex3D& other) const
@@ -108,25 +108,29 @@ namespace Wolf
 		VkBufferUsageFlags additionalIndexBufferUsages = 0;
 	};
 
+	struct ModelData
+	{
+		std::unique_ptr<Mesh> mesh;
+		std::vector<std::unique_ptr<Image>> images;
+
+		void getImages(std::vector<Image*>& outputImages) const;
+	};
+
 	class ObjLoader
 	{
 	public:
-		ObjLoader(ModelLoadingInfo& modelLoadingInfo);
-		ObjLoader(const ObjLoader&) = delete;
-
-		[[nodiscard]] const Mesh* getMesh() const { return m_mesh.get(); }
-		void getImages(std::vector<Image*>& images);
+		static void loadObject(ModelData& outputModel, const ModelLoadingInfo& modelLoadingInfo);
 
 	private:
+		ObjLoader(ModelData& outputModel, const ModelLoadingInfo& modelLoadingInfo);
+
 		static std::string getTexName(const std::string& texName, const std::string& folder);
 		void setImage(const std::string& filename, uint32_t idx, bool sRGB);
 
-	private:
 		std::vector<int> m_toBeLast = { 2, 19, 0 }; // flower contains alpha blending
 		bool m_useCache;
-
-		std::unique_ptr<Mesh> m_mesh;
-		std::vector<std::unique_ptr<Image>> m_images;
 		std::vector<std::vector<unsigned char>> m_imagesData;
+
+		ModelData& m_outputModel;
 	};
 }

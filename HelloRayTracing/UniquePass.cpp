@@ -44,7 +44,7 @@ void UniquePass::initializeResources(const InitializationContext& context)
 	};
 
 	const VkBufferUsageFlags rayTracingFlags = VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT | VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_BUILD_INPUT_READ_ONLY_BIT_KHR | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
-	m_triangle.reset(new Mesh(vertices, indices, rayTracingFlags, rayTracingFlags, VK_FORMAT_R32G32_SFLOAT));
+	m_triangle.reset(new Mesh(vertices, indices, {}, rayTracingFlags, rayTracingFlags, VK_FORMAT_R32G32_SFLOAT));
 
 	BottomLevelAccelerationStructureCreateInfo blasCreateInfo;
 	blasCreateInfo.buildFlags = VK_BUILD_ACCELERATION_STRUCTURE_PREFER_FAST_TRACE_BIT_KHR;

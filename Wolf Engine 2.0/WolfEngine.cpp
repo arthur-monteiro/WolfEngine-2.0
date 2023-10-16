@@ -69,6 +69,10 @@ Wolf::WolfEngine::WolfEngine(const WolfInstanceCreateInfo& createInfo)
 #endif
 
 	m_gameContexts.resize(m_configuration->getMaxCachedFrames());
+
+#ifndef __ANDROID__
+	m_inputHandler.reset(new InputHandler(m_window->getWindow()));
+#endif
 }
 
 void Wolf::WolfEngine::initializePass(CommandRecordBase* pass) const
@@ -103,10 +107,9 @@ void Wolf::WolfEngine::updateEvents() const
 #endif
 	}
 
-	if (m_inputHandlerInterface)
-	{
-		m_inputHandlerInterface->moveToNextFrame();
-	}
+#ifndef __ANDROID__
+	m_inputHandler->moveToNextFrame();
+#endif
 }
 
 void Wolf::WolfEngine::frame(const std::span<CommandRecordBase*>& passes, const Semaphore* frameEndedSemaphore)
@@ -147,7 +150,7 @@ void Wolf::WolfEngine::frame(const std::span<CommandRecordBase*>& passes, const 
 			m_bindUltralightCallbacks();
 		}
 
-		m_ultraLight->update(m_window->getWindow());
+		m_ultraLight->update(m_inputHandler.get());
 		m_ultraLight->render();
 	}
 #endif

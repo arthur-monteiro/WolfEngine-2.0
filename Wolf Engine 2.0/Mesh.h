@@ -1,5 +1,6 @@
 #pragma once
 
+#include "AABB.h"
 #include "Buffer.h"
 #include "CommandBuffer.h"
 #include "Debug.h"
@@ -10,7 +11,7 @@ namespace Wolf
 	{
 	public:
 		template <typename T>
-		Mesh(const std::vector<T>& vertices, const std::vector<uint32_t>& indices, VkBufferUsageFlags additionalVertexBufferUsages = 0, VkBufferUsageFlags additionalIndexBufferUsages = 0, VkFormat vertexFormat = VK_FORMAT_UNDEFINED);
+		Mesh(const std::vector<T>& vertices, const std::vector<uint32_t>& indices, AABB aabb = {}, VkBufferUsageFlags additionalVertexBufferUsages = 0, VkBufferUsageFlags additionalIndexBufferUsages = 0, VkFormat vertexFormat = VK_FORMAT_UNDEFINED);
 		Mesh(const Mesh&) = delete;
 
 		[[nodiscard]] uint32_t getVertexCount() const { return m_vertexCount; }
@@ -28,8 +29,9 @@ namespace Wolf
 		[[nodiscard]] uint32_t getIndexCount() const { return m_indexCount; }
 		[[nodiscard]] const Buffer& getVertexBuffer() const { return *m_vertexBuffer; }
 		[[nodiscard]] const Buffer& getIndexBuffer() const { return *m_indexBuffer; }
+		[[nodiscard]] const AABB& getAABB() const { return m_AABB; }
 
-		void draw(VkCommandBuffer commandBuffer) const;
+		void draw(VkCommandBuffer commandBuffer, uint32_t instanceCount = 1) const;
 
 	private:
 		std::unique_ptr<Buffer> m_vertexBuffer;
@@ -39,10 +41,12 @@ namespace Wolf
 		uint32_t m_vertexSize;
 		VkFormat m_vertexFormat;
 		uint32_t m_indexCount;
+
+		AABB m_AABB;
 	};
 
 	template<typename T>
-	Mesh::Mesh(const std::vector<T>& vertices, const std::vector<uint32_t>& indices, VkBufferUsageFlags additionalVertexBufferUsages, VkBufferUsageFlags additionalIndexBufferUsages, VkFormat vertexFormat)
+	Mesh::Mesh(const std::vector<T>& vertices, const std::vector<uint32_t>& indices, AABB aabb, VkBufferUsageFlags additionalVertexBufferUsages, VkBufferUsageFlags additionalIndexBufferUsages, VkFormat vertexFormat)
 	{
 		m_vertexBuffer.reset(new Buffer(sizeof(T) * vertices.size(), VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | additionalVertexBufferUsages, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, UpdateRate::NEVER));
 		m_vertexBuffer->transferCPUMemoryWithStagingBuffer((void*)vertices.data(), sizeof(T) * vertices.size());
@@ -54,6 +58,8 @@ namespace Wolf
 		m_vertexSize = sizeof(T);
 		m_vertexFormat = vertexFormat;
 		m_indexCount = static_cast<uint32_t>(indices.size());
+
+		m_AABB = aabb;
 	}
 }
 

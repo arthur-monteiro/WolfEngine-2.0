@@ -162,6 +162,12 @@
     <ClCompile Include="ShadingRateSymbols.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="InputHandler.cpp">
+      <Filter>Helpers</Filter>
+    </ClCompile>
+    <ClCompile Include="JSONReader.cpp">
+      <Filter>Helpers</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="WolfEngine.h">
@@ -308,9 +314,6 @@
     <ClInclude Include="ExportImage.h">
       <Filter>Helpers</Filter>
     </ClInclude>
-    <ClInclude Include="InputHandlerInterface.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="DebugMarker.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -318,6 +321,15 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="ShadingRatePalette.h">
+      <Filter>Helpers</Filter>
+    </ClInclude>
+    <ClInclude Include="AABB.h">
+      <Filter>Helpers</Filter>
+    </ClInclude>
+    <ClInclude Include="InputHandler.h">
+      <Filter>Helpers</Filter>
+    </ClInclude>
+    <ClInclude Include="JSONReader.h">
       <Filter>Helpers</Filter>
     </ClInclude>
   </ItemGroup>

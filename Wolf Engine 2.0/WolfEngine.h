@@ -11,7 +11,7 @@
 #include "CommandRecordBase.h"
 #include "Configuration.h"
 #include "Debug.h"
-#include "InputHandlerInterface.h"
+#include "InputHandler.h"
 #include "SwapChain.h"
 #include "UltraLight.h"
 #include "Vulkan.h"
@@ -59,18 +59,14 @@ namespace Wolf
 		void evaluateUserInterfaceScript(const std::string& script) const;
 #endif
 		[[nodiscard]] uint32_t getCurrentFrame() const { return m_currentFrame; }
+#ifndef __ANDROID__
+		[[nodiscard]] const InputHandler& getInputHandler() const { return *m_inputHandler; }
+#endif
 
 		bool isRayTracingAvailable() const { return m_vulkan->isRayTracingAvailable(); }
 
 		void setCameraInterface(CameraInterface* cameraInterface) { m_cameraInterface = cameraInterface; }
 		void setGameContexts(const std::vector<void*>& gameContexts) { m_gameContexts = gameContexts; }
-		void registerInputHandlerInterface(InputHandlerInterface* inputHandlerInterface) { inputHandlerInterface->initialize(
-#ifndef __ANDROID__
-			m_window->getWindow()
-#endif
-		);
-			m_inputHandlerInterface = inputHandlerInterface;
-		}
 
 	private:
 		void fillInitializeContext(InitializationContext& context) const;
@@ -101,7 +97,9 @@ namespace Wolf
 		// Gameplay
 		CameraInterface* m_cameraInterface = nullptr;
 		std::vector<void*> m_gameContexts;
-		InputHandlerInterface* m_inputHandlerInterface = nullptr;
+#ifndef __ANDROID__
+		std::unique_ptr<InputHandler> m_inputHandler;
+#endif
 
 		bool m_resizeIsNeeded = false;
 		std::function<void(uint32_t, uint32_t)> m_resizeCallback;
