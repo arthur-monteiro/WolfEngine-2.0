@@ -136,6 +136,7 @@ Wolf::JSONReader::JSONReader(const std::string& filename)
 		{
 			const size_t endArrayPos = line.find(']');
 			const size_t commaPos = line.find(',');
+			const size_t endObjectPos = line.find('}');
 
 			if (commaPos < endArrayPos)
 			{
@@ -160,6 +161,16 @@ Wolf::JSONReader::JSONReader(const std::string& filename)
 				currentPropertyStack.pop();
 				line = line.substr(endArrayPos + 1);
 				currentLookingFor = LookingFor::NextProperty;
+			}
+			else if (endObjectPos != std::string::npos)
+			{
+				currentObjectStack.pop();
+
+				if (currentObjectStack.empty())
+					break;
+
+				currentLookingFor = LookingFor::Comma;
+				line = line.substr(endObjectPos + 1);
 			}
 		}
 		else if (currentLookingFor == LookingFor::PropertyValue)

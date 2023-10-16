@@ -15,14 +15,14 @@ namespace Wolf
 			return { transform * glm::vec4(m_min, 1.0f), transform * glm::vec4(m_max, 1.0f) };
 		}
 
-		bool isPointInside(const glm::vec3& point) const
+		[[nodiscard]] bool isPointInside(const glm::vec3& point) const
 		{
-			return point.x > m_min.x && point.y > m_min.y && point.z > m_min.z && 
+			return point.x > m_min.x && point.y > m_min.y && point.z > m_min.z &&
 				point.x < m_max.x && point.y < m_max.y && point.z < m_max.z;
 		}
 
 		static constexpr float NO_INTERSECTION = -1.0f;
-		float intersect(const glm::vec3& rayOrigin, const glm::vec3& rayDirection) const
+		[[nodiscard]] float intersect(const glm::vec3& rayOrigin, const glm::vec3& rayDirection) const
 		{
 			const glm::vec3 tMin = (m_min - rayOrigin) / rayDirection;
 			const glm::vec3 tMax = (m_max - rayOrigin) / rayDirection;
@@ -36,6 +36,9 @@ namespace Wolf
 
 			return std::max(tNear, 0.0f);
 		}
+
+		glm::vec3 getSize() const { return m_max - m_min; }
+		glm::vec3 getCenter() const { return (m_min + m_max) / 2.0f; }
 
 	private:
 		glm::vec3 m_min;

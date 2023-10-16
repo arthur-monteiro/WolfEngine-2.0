@@ -301,7 +301,7 @@ void Wolf::ObjLoader::setImage(const std::string& filename, uint32_t idx, bool s
 	const VkFormat format = sRGB ? VK_FORMAT_R8G8B8A8_SRGB : VK_FORMAT_R8G8B8A8_UNORM;
 
 	const ImageFileLoader imageFileLoader(filename);
-	MipMapGenerator mipmapGenerator(imageFileLoader.getPixels(), { (uint32_t)imageFileLoader.getWidth(), (uint32_t)imageFileLoader.getHeight() }, format);
+	const MipMapGenerator mipmapGenerator(imageFileLoader.getPixels(), { (uint32_t)imageFileLoader.getWidth(), (uint32_t)imageFileLoader.getHeight() }, format);
 
 	CreateImageInfo createImageInfo;
 	createImageInfo.extent = { (uint32_t)imageFileLoader.getWidth(), (uint32_t)imageFileLoader.getHeight(), 1 };
