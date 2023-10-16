@@ -4,6 +4,7 @@
 #include <thread>
 
 #include "Debug.h"
+#include "InputHandler.h"
 
 using namespace ultralight;
 
@@ -106,15 +107,15 @@ bool Wolf::UltraLight::reloadIfModified()
     return false;
 }
 
-void Wolf::UltraLight::update(GLFWwindow* window) const
+void Wolf::UltraLight::update(InputHandler* inputHandler) const
 {
     float xscale, yscale;
     glfwGetMonitorContentScale(glfwGetPrimaryMonitor(), &xscale, &yscale);
 
     MouseEvent mouseEvent;
 
-    double currentMousePosX, currentMousePosY;
-    glfwGetCursorPos(window, &currentMousePosX, &currentMousePosY);
+    float currentMousePosX, currentMousePosY;
+    inputHandler->getMousePosition(currentMousePosX, currentMousePosY);
     mouseEvent.x = static_cast<int>(currentMousePosX);
     mouseEvent.y = static_cast<int>(currentMousePosY);
 
@@ -123,20 +124,47 @@ void Wolf::UltraLight::update(GLFWwindow* window) const
 
     m_view->FireMouseEvent(mouseEvent);
 
-    const int state = glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT);
-    if (state == GLFW_PRESS)
+    
+    if (inputHandler->mouseButtonPressedThisFrame(GLFW_MOUSE_BUTTON_LEFT))
     {
         mouseEvent.type = MouseEvent::kType_MouseDown;
         mouseEvent.button = MouseEvent::kButton_Left;
 
         m_view->FireMouseEvent(mouseEvent);
     }
-    else if (state == GLFW_RELEASE)
+    else if (inputHandler->mouseButtonReleasedThisFrame(GLFW_MOUSE_BUTTON_LEFT))
     {
         mouseEvent.type = MouseEvent::kType_MouseUp;
         mouseEvent.button = MouseEvent::kButton_Left;
 
         m_view->FireMouseEvent(mouseEvent);
+    }
+
+    if (inputHandler->keyPressedThisFrame(GLFW_KEY_BACKSPACE))
+    {
+        KeyEvent keyEvent;
+        keyEvent.type = KeyEvent::kType_KeyDown;
+        keyEvent.virtual_key_code = 0x08; // code for backspace
+        keyEvent.is_system_key = false;
+        m_view->FireKeyEvent(keyEvent);
+    }
+    if (inputHandler->keyPressedThisFrame(GLFW_KEY_ENTER) || inputHandler->keyPressedThisFrame(GLFW_KEY_KP_ENTER))
+    {
+        KeyEvent keyEvent;
+        keyEvent.type = KeyEvent::kType_KeyDown;
+        keyEvent.virtual_key_code = 0x0D; // code for return
+        keyEvent.is_system_key = false;
+        m_view->FireKeyEvent(keyEvent);
+    }    
+
+    const std::vector<int>& characterPressed = inputHandler->getCharactersPressedThisFrame();
+    for(const int character : characterPressed)
+    {
+        KeyEvent keyEvent;
+        keyEvent.type = KeyEvent::kType_Char;
+        keyEvent.text = reinterpret_cast<const char*>(&character);
+        keyEvent.is_system_key = false;
+        m_view->FireKeyEvent(keyEvent);
     }
 
     m_renderer->Update();

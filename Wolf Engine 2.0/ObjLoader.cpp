@@ -9,7 +9,21 @@
 #include "ImageFileLoader.h"
 #include "MipMapGenerator.h"
 
-Wolf::ObjLoader::ObjLoader(ModelLoadingInfo& modelLoadingInfo)
+void Wolf::ModelData::getImages(std::vector<Image*>& outputImages) const
+{
+	outputImages.reserve(outputImages.size());
+	for (const std::unique_ptr<Image>& image : images)
+	{
+		outputImages.push_back(image.get());
+	}
+}
+
+void Wolf::ObjLoader::loadObject(ModelData& outputModel, ModelLoadingInfo& modelLoadingInfo)
+{
+	ObjLoader objLoader(outputModel, modelLoadingInfo);
+}
+
+Wolf::ObjLoader::ObjLoader(ModelData& outputModel, ModelLoadingInfo& modelLoadingInfo) : m_outputModel(outputModel)
 {
 #ifdef __ANDROID__
     if(modelLoadingInfo.isInAssets)
@@ -32,16 +46,24 @@ Wolf::ObjLoader::ObjLoader(ModelLoadingInfo& modelLoadingInfo)
 			std::vector<Vertex3D> vertices(verticesCount);
 			input.read(reinterpret_cast<char*>(vertices.data()), verticesCount * sizeof(vertices[0]));
 
+			for (Vertex3D& vertex : vertices)
+			{
+				vertex.materialID += modelLoadingInfo.materialIdOffset;
+			}
+
 			uint32_t indicesCount;
 			input.read(reinterpret_cast<char*>(&indicesCount), sizeof(indicesCount));
 			std::vector<uint32_t> indices(indicesCount);
 			input.read(reinterpret_cast<char*>(indices.data()), indicesCount * sizeof(indices[0]));
 
-			m_mesh.reset(new Mesh(vertices, indices, modelLoadingInfo.additionalVertexBufferUsages, modelLoadingInfo.additionalIndexBufferUsages, VK_FORMAT_R32G32B32_SFLOAT));
+			AABB aabb{};
+			input.read(reinterpret_cast<char*>(&aabb), sizeof(AABB));
+
+			m_outputModel.mesh.reset(new Mesh(vertices, indices, aabb, modelLoadingInfo.additionalVertexBufferUsages, modelLoadingInfo.additionalIndexBufferUsages, VK_FORMAT_R32G32B32_SFLOAT));
 
 			uint32_t textureCount;
 			input.read(reinterpret_cast<char*>(&textureCount), sizeof(textureCount));
-			m_images.resize(textureCount);
+			m_outputModel.images.resize(textureCount);
 
 			if (modelLoadingInfo.vulkanQueueLock)
 				modelLoadingInfo.vulkanQueueLock->lock();
@@ -71,16 +93,16 @@ Wolf::ObjLoader::ObjLoader(ModelLoadingInfo& modelLoadingInfo)
 				createImageInfo.format = i % 5 == 0 ? VK_FORMAT_R8G8B8A8_SRGB : VK_FORMAT_R8G8B8A8_UNORM;
 				createImageInfo.mipLevelCount = MAX_MIP_COUNT;
 				createImageInfo.usage = VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
-				m_images[i].reset(new Image(createImageInfo));
+				m_outputModel.images[i].reset(new Image(createImageInfo));
 
-				for (uint32_t mipLevel = 0; mipLevel < m_images[i]->getMipLevelCount(); ++mipLevel)
+				for (uint32_t mipLevel = 0; mipLevel < m_outputModel.images[i]->getMipLevelCount(); ++mipLevel)
 				{
 					VkDeviceSize imageSize = (extent.width * extent.height * 4) >> mipLevel;
 
 					std::vector<unsigned char> pixels(imageSize);
 					input.read(reinterpret_cast<char*>(pixels.data()), pixels.size());
 
-					m_images[i]->copyCPUBuffer(pixels.data(), Image::SampledInFragmentShader(mipLevel), mipLevel);
+					m_outputModel.images[i]->copyCPUBuffer(pixels.data(), Image::SampledInFragmentShader(mipLevel), mipLevel);
 				}
 			}
 
@@ -112,6 +134,9 @@ Wolf::ObjLoader::ObjLoader(ModelLoadingInfo& modelLoadingInfo)
 
 	std::vector<uint32_t> lastIndices;
 
+	glm::vec3 minPos(1'000'000.f);
+	glm::vec3 maxPos(-1'000'000.f);
+
 	for (const auto& shape : shapes)
 	{
 		int numVertex = 0;
@@ -121,8 +146,8 @@ Wolf::ObjLoader::ObjLoader(ModelLoadingInfo& modelLoadingInfo)
 
 			int materialID = shape.mesh.material_ids[numVertex / 3];
 
-			if (modelLoadingInfo.loadMaterials && materialID < 0)
-				continue;
+			//if (modelLoadingInfo.loadMaterials && materialID < 0)
+			//	continue;
 
 			vertex.pos =
 			{
@@ -130,6 +155,20 @@ Wolf::ObjLoader::ObjLoader(ModelLoadingInfo& modelLoadingInfo)
 				attrib.vertices[3 * index.vertex_index + 1],
 				attrib.vertices[3 * index.vertex_index + 2]
 			};
+
+			if (vertex.pos.x < minPos.x)
+				minPos.x = vertex.pos.x;
+			if (vertex.pos.y < minPos.y)
+				minPos.y = vertex.pos.y;
+			if (vertex.pos.z < minPos.z)
+				minPos.z = vertex.pos.z;
+
+			if (vertex.pos.x > maxPos.x)
+				maxPos.x = vertex.pos.x;
+			if (vertex.pos.y > maxPos.y)
+				maxPos.y = vertex.pos.y;
+			if (vertex.pos.z > maxPos.z)
+				maxPos.z = vertex.pos.z;
 
 			vertex.texCoord =
 			{
@@ -168,6 +207,8 @@ Wolf::ObjLoader::ObjLoader(ModelLoadingInfo& modelLoadingInfo)
 		}
 	}
 
+	AABB aabb(minPos, maxPos);
+
 	for (unsigned int index : lastIndices)
 		indices.push_back(index);
 
@@ -201,7 +242,7 @@ Wolf::ObjLoader::ObjLoader(ModelLoadingInfo& modelLoadingInfo)
 
 	if (modelLoadingInfo.loadMaterials)
 	{
-		m_images.resize(materials.size() * 5);
+		m_outputModel.images.resize(materials.size() * 5);
 		if (m_useCache)
 			m_imagesData.resize(materials.size() * 5);
 		int indexTexture = 0;
@@ -215,7 +256,7 @@ Wolf::ObjLoader::ObjLoader(ModelLoadingInfo& modelLoadingInfo)
 		}
 	}
 
-	m_mesh.reset(new Mesh(vertices, indices, modelLoadingInfo.additionalVertexBufferUsages, modelLoadingInfo.additionalIndexBufferUsages));
+	m_outputModel.mesh.reset(new Mesh(vertices, indices, aabb, modelLoadingInfo.additionalVertexBufferUsages, modelLoadingInfo.additionalIndexBufferUsages));
 
 	Debug::sendInfo("Model loaded with " + std::to_string(indices.size() / 3) + " triangles");
 
@@ -226,31 +267,27 @@ Wolf::ObjLoader::ObjLoader(ModelLoadingInfo& modelLoadingInfo)
 		/* Geometry */
 		uint32_t verticesCount = vertices.size();
 		outCacheFile.write(reinterpret_cast<char*>(&verticesCount), sizeof(uint32_t));
+		for(Vertex3D& vertex : vertices)
+		{
+			vertex.materialID -= modelLoadingInfo.materialIdOffset;
+		}
 		outCacheFile.write(reinterpret_cast<char*>(vertices.data()), verticesCount * sizeof(vertices[0]));
 		uint32_t indicesCount = indices.size();
 		outCacheFile.write(reinterpret_cast<char*>(&indicesCount), sizeof(uint32_t));
 		outCacheFile.write(reinterpret_cast<char*>(indices.data()), indicesCount * sizeof(indices[0]));
+		outCacheFile.write(reinterpret_cast<char*>(&aabb), sizeof(AABB));
 
 		/* Textures*/
-		uint32_t imageCount = m_images.size();
+		uint32_t imageCount = m_outputModel.images.size();
 		outCacheFile.write(reinterpret_cast<char*>(&imageCount), sizeof(uint32_t));
 		for (uint32_t i = 0; i < m_imagesData.size(); ++i)
 		{
-			VkExtent3D extent = m_images[i]->getExtent();
+			VkExtent3D extent = m_outputModel.images[i]->getExtent();
 			outCacheFile.write(reinterpret_cast<char*>(&extent), sizeof(VkExtent3D));
 			outCacheFile.write(reinterpret_cast<char*>(m_imagesData[i].data()), m_imagesData[i].size());
 		}
 
 		outCacheFile.close();
-	}
-}
-
-void Wolf::ObjLoader::getImages(std::vector<Image*>& images)
-{
-	images.reserve(m_images.size());
-	for (std::unique_ptr<Image>& image : m_images)
-	{
-		images.push_back(image.get());
 	}
 }
 
@@ -264,7 +301,7 @@ void Wolf::ObjLoader::setImage(const std::string& filename, uint32_t idx, bool s
 	const VkFormat format = sRGB ? VK_FORMAT_R8G8B8A8_SRGB : VK_FORMAT_R8G8B8A8_UNORM;
 
 	const ImageFileLoader imageFileLoader(filename);
-	MipMapGenerator mipmapGenerator(imageFileLoader.getPixels(), { (uint32_t)imageFileLoader.getWidth(), (uint32_t)imageFileLoader.getHeight() }, format);
+	const MipMapGenerator mipmapGenerator(imageFileLoader.getPixels(), { (uint32_t)imageFileLoader.getWidth(), (uint32_t)imageFileLoader.getHeight() }, format);
 
 	CreateImageInfo createImageInfo;
 	createImageInfo.extent = { (uint32_t)imageFileLoader.getWidth(), (uint32_t)imageFileLoader.getHeight(), 1 };
@@ -272,26 +309,26 @@ void Wolf::ObjLoader::setImage(const std::string& filename, uint32_t idx, bool s
 	createImageInfo.format = format;
 	createImageInfo.mipLevelCount = mipmapGenerator.getMipLevelCount();
 	createImageInfo.usage = VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
-	m_images[idx].reset(new Image(createImageInfo));
-	m_images[idx]->copyCPUBuffer(imageFileLoader.getPixels(), Image::SampledInFragmentShader());
+	m_outputModel.images[idx].reset(new Image(createImageInfo));
+	m_outputModel.images[idx]->copyCPUBuffer(imageFileLoader.getPixels(), Image::SampledInFragmentShader());
 
 	for (uint32_t mipLevel = 1; mipLevel < mipmapGenerator.getMipLevelCount(); ++mipLevel)
 	{
-		m_images[idx]->copyCPUBuffer(mipmapGenerator.getMipLevel(mipLevel), Image::SampledInFragmentShader(mipLevel), mipLevel);
+		m_outputModel.images[idx]->copyCPUBuffer(mipmapGenerator.getMipLevel(mipLevel), Image::SampledInFragmentShader(mipLevel), mipLevel);
 	}
 
 	if (m_useCache)
 	{
 		VkDeviceSize imageSize = 0;
 		for (uint32_t mipLevel = 0; mipLevel < mipmapGenerator.getMipLevelCount(); ++mipLevel)
-			imageSize += (m_images[idx]->getExtent().width * m_images[idx]->getExtent().height * m_images[idx]->getExtent().depth * m_images[idx]->getBBP()) >> mipLevel;
+			imageSize += (m_outputModel.images[idx]->getExtent().width * m_outputModel.images[idx]->getExtent().height * m_outputModel.images[idx]->getExtent().depth * m_outputModel.images[idx]->getBBP()) >> mipLevel;
 
 		m_imagesData[idx].resize(imageSize);
 
 		VkDeviceSize copyOffset = 0;
 		for (uint32_t mipLevel = 0; mipLevel < mipmapGenerator.getMipLevelCount(); ++mipLevel)
 		{
-			const VkDeviceSize copySize = (m_images[idx]->getExtent().width * m_images[idx]->getExtent().height * m_images[idx]->getExtent().depth * m_images[idx]->getBBP()) >> mipLevel;
+			const VkDeviceSize copySize = (m_outputModel.images[idx]->getExtent().width * m_outputModel.images[idx]->getExtent().height * m_outputModel.images[idx]->getExtent().depth * m_outputModel.images[idx]->getBBP()) >> mipLevel;
 			const void* dataPtr = (void*)imageFileLoader.getPixels();
 			if (mipLevel > 0)
 				dataPtr = (void*)mipmapGenerator.getMipLevel(mipLevel);
