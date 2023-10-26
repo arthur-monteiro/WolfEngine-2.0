@@ -157,7 +157,11 @@ void Wolf::WolfEngine::frame(const std::span<CommandRecordBase*>& passes, const 
 	submitContext.currentFrameIdx = m_currentFrame;
 	submitContext.commandBufferIdx = m_currentFrame % g_configuration->getMaxCachedFrames();
 	submitContext.swapChainImageAvailableSemaphore = m_swapChain->getImageAvailableSemaphore(m_currentFrame % m_swapChain->getImageCount()); // we use the semaphore used to acquire image
+#ifdef __ANDROID__
+	submitContext.userInterfaceImageAvailableSemaphore = nullptr;
+#else
 	submitContext.userInterfaceImageAvailableSemaphore = m_ultraLight ? m_ultraLight->getImageCopySemaphore() : nullptr;
+#endif
 	submitContext.frameFence = m_swapChain->getFrameFence(m_currentFrame % g_configuration->getMaxCachedFrames());
 	submitContext.device = m_vulkan->getDevice();
 
