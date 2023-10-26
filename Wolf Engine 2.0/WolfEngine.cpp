@@ -48,30 +48,16 @@ Wolf::WolfEngine::WolfEngine(const WolfInstanceCreateInfo& createInfo)
 	m_swapChain.reset(new SwapChain(createInfo.androidWindow));
 #endif
 
-#ifndef __ANDROID__
-	if(createInfo.htmlURL)
-	{
-		std::string currentPath = std::filesystem::current_path().string();
-		std::ranges::replace(currentPath, '\\', '/');
-		std::string escapedCurrentPath;
-		for (const char currentPathChar : currentPath)
-		{
-			if (currentPathChar == ' ')
-				escapedCurrentPath += "%20";
-			else
-				escapedCurrentPath += currentPathChar;
-		}
-		const std::string absoluteURL = "file:///" + escapedCurrentPath + "/" + createInfo.htmlURL;
-		m_ultraLight.reset(new UltraLight(m_configuration->getWindowWidth(), m_configuration->getWindowHeight(), absoluteURL, createInfo.htmlURL));
-
-		m_bindUltralightCallbacks = createInfo.bindUltralightCallbacks;
-	}
-#endif
-
 	m_gameContexts.resize(m_configuration->getMaxCachedFrames());
 
 #ifndef __ANDROID__
 	m_inputHandler.reset(new InputHandler(m_window->getWindow()));
+
+	if (createInfo.htmlURL)
+	{
+		m_ultraLight.reset(new UltraLight(createInfo.htmlURL, createInfo.bindUltralightCallbacks, m_inputHandler.get()));
+		m_ultraLight->waitInitializationDone();
+	}
 #endif
 }
 
@@ -145,19 +131,13 @@ void Wolf::WolfEngine::frame(const std::span<CommandRecordBase*>& passes, const 
 #ifndef __ANDROID__
 	if (m_ultraLight)
 	{
-		if(m_ultraLight->reloadIfModified())
-		{
-			m_bindUltralightCallbacks();
-		}
-
-		m_ultraLight->update(m_inputHandler.get());
-		m_ultraLight->render();
+		m_ultraLight->processFrameJobs();
 	}
 #endif
 
 	const uint32_t currentSwapChainImageIndex = m_swapChain->getCurrentImage(m_currentFrame);
 
-	RecordContext recordContext;
+	RecordContext recordContext{};
 	recordContext.currentFrameIdx = m_currentFrame;
 	recordContext.commandBufferIdx = m_currentFrame % g_configuration->getMaxCachedFrames();
 	recordContext.swapChainImageIdx = currentSwapChainImageIndex;
@@ -173,10 +153,15 @@ void Wolf::WolfEngine::frame(const std::span<CommandRecordBase*>& passes, const 
 		pass->record(recordContext);
 	}
 
-	SubmitContext submitContext;
+	SubmitContext submitContext{};
 	submitContext.currentFrameIdx = m_currentFrame;
 	submitContext.commandBufferIdx = m_currentFrame % g_configuration->getMaxCachedFrames();
-	submitContext.imageAvailableSemaphore = m_swapChain->getImageAvailableSemaphore(m_currentFrame % m_swapChain->getImageCount()); // we use the semaphore used to acquire image
+	submitContext.swapChainImageAvailableSemaphore = m_swapChain->getImageAvailableSemaphore(m_currentFrame % m_swapChain->getImageCount()); // we use the semaphore used to acquire image
+#ifdef __ANDROID__
+	submitContext.userInterfaceImageAvailableSemaphore = nullptr;
+#else
+	submitContext.userInterfaceImageAvailableSemaphore = m_ultraLight ? m_ultraLight->getImageCopySemaphore() : nullptr;
+#endif
 	submitContext.frameFence = m_swapChain->getFrameFence(m_currentFrame % g_configuration->getMaxCachedFrames());
 	submitContext.device = m_vulkan->getDevice();
 
@@ -204,7 +189,7 @@ void Wolf::WolfEngine::getUserInterfaceJSObject(ultralight::JSObject& outObject)
 
 void Wolf::WolfEngine::evaluateUserInterfaceScript(const std::string& script) const
 {
-	m_ultraLight->evaluateScript(script);
+	m_ultraLight->requestScriptEvaluation(script);
 }
 #endif
 

@@ -183,7 +183,7 @@ Wolf::Pipeline::Pipeline(const RenderingPipelineCreateInfo& renderingPipelineCre
 		VkPipelineDynamicStateCreateInfo dynamicStateCreateInfo{};
 		dynamicStateCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO;
 		dynamicStateCreateInfo.pDynamicStates = renderingPipelineCreateInfo.dynamicStates.data();
-		dynamicStateCreateInfo.dynamicStateCount = renderingPipelineCreateInfo.dynamicStates.size();
+		dynamicStateCreateInfo.dynamicStateCount = static_cast<uint32_t>(renderingPipelineCreateInfo.dynamicStates.size());
 
 		pipelineInfo.pDynamicState = &dynamicStateCreateInfo;
 	}

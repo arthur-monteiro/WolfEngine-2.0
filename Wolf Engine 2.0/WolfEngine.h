@@ -87,7 +87,6 @@ namespace Wolf
 		std::unique_ptr<SwapChain> m_swapChain;
 #ifndef __ANDROID__
 		std::unique_ptr<UltraLight> m_ultraLight;
-		std::function<void()> m_bindUltralightCallbacks;
 		//std::unique_ptr<OVR> m_ovr;
 #endif
 

@@ -62,6 +62,8 @@ Wolf::JSONReader::JSONReader(const std::string& filename)
 
 			return false;
 		}
+
+		return false;
 	};
 
 	std::string line;

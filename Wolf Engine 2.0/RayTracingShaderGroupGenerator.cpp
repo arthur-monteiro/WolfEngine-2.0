@@ -27,7 +27,7 @@ void Wolf::RayTracingShaderGroupGenerator::addMissShaderStage(uint32_t shaderIdx
 	groupInfo.intersectionShader = VK_SHADER_UNUSED_KHR;
 	m_shaderGroups.emplace_back(groupInfo);
 
-	m_missIndices.push_back(m_shaderGroups.size() - 1);
+	m_missIndices.push_back(static_cast<uint32_t>(m_shaderGroups.size()) - 1);
 }
 
 void Wolf::RayTracingShaderGroupGenerator::addHitGroup(HitGroup hitGroup)
@@ -42,5 +42,5 @@ void Wolf::RayTracingShaderGroupGenerator::addHitGroup(HitGroup hitGroup)
 	groupInfo.intersectionShader = hitGroup.intersectionShaderIdx;
 	m_shaderGroups.emplace_back(groupInfo);
 
-	m_hitGroups.push_back(m_shaderGroups.size() - 1);
+	m_hitGroups.push_back(static_cast<uint32_t>(m_shaderGroups.size()) - 1);
 }

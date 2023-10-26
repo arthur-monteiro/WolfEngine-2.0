@@ -1,14 +1,174 @@
 #include "UltraLight.h"
 
 #include <chrono>
+#include <iostream>
 #include <thread>
 
+#include "Configuration.h"
 #include "Debug.h"
 #include "InputHandler.h"
+#include "Timer.h"
 
 using namespace ultralight;
 
-Wolf::UltraLight::UltraLight(uint32_t width, uint32_t height, const std::string& absoluteURL, std::string filePath) : m_filePath(std::move(filePath))
+class ViewListener : public ultralight::ViewListener
+{
+public:
+    virtual void OnAddConsoleMessage(ultralight::View* caller,
+        MessageSource source,
+        MessageLevel level,
+        const String& message,
+        uint32_t line_number,
+        uint32_t column_number,
+        const String& source_id)
+    {
+	    const std::string logMessage = "Ultralight console: " + std::string(message.utf8().data()) + " in " + std::string(source_id.utf8().data()) + " line " + std::to_string(line_number);
+
+	    switch (level)
+	    {
+	    case kMessageLevel_Log:
+	    case kMessageLevel_Debug:
+	    case kMessageLevel_Info:
+            Wolf::Debug::sendInfo(logMessage);
+            break;
+	    case kMessageLevel_Warning:
+            Wolf::Debug::sendWarning(logMessage);
+            break;
+        case kMessageLevel_Error:
+            Wolf::Debug::sendError(logMessage);
+            break;
+	    }
+    }
+};
+static ::ViewListener viewListener;
+
+Wolf::UltraLight::UltraLight(const char* htmlURL, const std::function<void()>& bindCallbacks, InputHandler* inputHandler)
+{
+    m_inputHandler = inputHandler;
+    m_thread = std::thread(&UltraLight::processImplementation, this, htmlURL, bindCallbacks);
+}
+
+Wolf::UltraLight::~UltraLight()
+{
+    {
+        std::lock_guard<std::mutex> lk(m_mutex);
+        m_needUpdate = true;
+        m_stopThreadRequested = true;
+    }
+    m_updateCondition.notify_all();
+    m_thread.join();
+}
+
+void Wolf::UltraLight::waitInitializationDone() const
+{
+    while (!m_ultraLightImplementation)
+		std::this_thread::sleep_for(std::chrono::milliseconds(10));
+}
+
+void Wolf::UltraLight::processFrameJobs()
+{
+    m_inputHandler->lockCache(m_ultraLightImplementation.get());
+    m_inputHandler->pushDataToCache(m_ultraLightImplementation.get());
+    m_inputHandler->unlockCache(m_ultraLightImplementation.get());
+
+    if (m_mutex.try_lock())
+    {
+        m_ultraLightImplementation->submitCopyImageCommandBuffer();
+
+        m_needUpdate = true;
+        m_updateCondition.notify_all();
+
+        m_mutex.unlock();
+        m_copySubmittedThisFrame = true;
+    }
+    else
+    {
+        m_copySubmittedThisFrame = false;
+    }
+}
+
+void Wolf::UltraLight::requestScriptEvaluation(const std::string& script)
+{
+    m_evaluateScriptRequests.push_back(script);
+}
+
+void Wolf::UltraLight::resize(uint32_t width, uint32_t height)
+{
+    m_resizeRequest = { width, height };
+
+    {
+        std::unique_lock<std::mutex> lk(m_mutex);
+        m_needUpdate = true;
+        m_updateCondition.notify_all();
+    }
+
+    while (m_resizeRequest.width != 0)
+        std::this_thread::sleep_for(std::chrono::milliseconds(10));
+}
+
+void Wolf::UltraLight::processImplementation(const char* htmlURL, const std::function<void()>& bindCallbacks)
+{
+    std::string currentPath = std::filesystem::current_path().string();
+    std::ranges::replace(currentPath, '\\', '/');
+    std::string escapedCurrentPath;
+    for (const char currentPathChar : currentPath)
+    {
+        if (currentPathChar == ' ')
+            escapedCurrentPath += "%20";
+        else
+            escapedCurrentPath += currentPathChar;
+    }
+    const std::string absoluteURL = "file:///" + escapedCurrentPath + "/" + htmlURL;
+    m_ultraLightImplementation.reset(new UltraLightImplementation(g_configuration->getWindowWidth(), g_configuration->getWindowHeight(), absoluteURL, htmlURL));
+    m_inputHandler->createCache(m_ultraLightImplementation.get());
+
+    m_bindUltralightCallbacks = bindCallbacks;
+
+    for (;;)
+    {
+        std::unique_lock<std::mutex> lock(m_mutex);
+        m_updateCondition.wait(lock, [&] { return m_needUpdate; });
+
+        if (m_stopThreadRequested)
+        {
+            m_ultraLightImplementation.reset();
+            return;
+        }
+
+        if (m_resizeRequest.width != 0)
+        {
+            m_ultraLightImplementation->resize(m_resizeRequest.width, m_resizeRequest.height);
+            m_ultraLightImplementation->createOutputAndRecordCopyCommandBuffer(m_resizeRequest.width, m_resizeRequest.height);
+            m_resizeRequest = { 0, 0 };
+            m_needUpdate = false;
+            continue;
+        }
+
+        if (m_ultraLightImplementation->reloadIfModified())
+        {
+            bindCallbacks();
+            m_needUpdate = false;
+            continue;
+        }
+
+        if (!m_evaluateScriptRequests.empty())
+        {
+            for(const std::string& script : m_evaluateScriptRequests)
+				m_ultraLightImplementation->evaluateScript(script);
+
+            m_evaluateScriptRequests.clear();
+        }
+
+        m_ultraLightImplementation->waitForCopyFence();
+
+        m_ultraLightImplementation->update(m_inputHandler);
+        m_ultraLightImplementation->render();
+        
+        m_needUpdate = false;
+    }
+}
+
+Wolf::UltraLight::UltraLightImplementation::UltraLightImplementation(uint32_t width, uint32_t height, const std::string& absoluteURL, std::string filePath) : m_filePath(std::move(filePath))
 {
     m_lastUpdated = std::filesystem::last_write_time(m_filePath);
 
@@ -26,6 +186,7 @@ Wolf::UltraLight::UltraLight(uint32_t width, uint32_t height, const std::string&
     m_renderer = Renderer::Create();
     m_view = m_renderer->CreateView(width, height, true, nullptr);
     m_view->set_load_listener(this);
+    m_view->set_view_listener(&viewListener);
     //m_view->LoadHTML(htmlString);
     m_view->LoadURL(absoluteURL.c_str());
 
@@ -35,9 +196,16 @@ Wolf::UltraLight::UltraLight(uint32_t width, uint32_t height, const std::string&
         m_renderer->Update();
         m_renderer->Render();
     }
+
+    m_copyImageCommandBuffer.reset(new CommandBuffer(QueueType::TRANSFER, false));
+
+    createOutputAndRecordCopyCommandBuffer(width, height);
+
+    m_copyImageSemaphore.reset(new Semaphore(VK_PIPELINE_STAGE_TRANSFER_BIT));
+    m_copyImageFence.reset(new Fence(0));
 }
 
-void Wolf::UltraLight::OnFinishLoading(View* caller, uint64_t frame_id, bool is_main_frame, const String& url)
+void Wolf::UltraLight::UltraLightImplementation::OnFinishLoading(View* caller, uint64_t frame_id, bool is_main_frame, const String& url)
 {
     if (is_main_frame)
     {
@@ -45,7 +213,7 @@ void Wolf::UltraLight::OnFinishLoading(View* caller, uint64_t frame_id, bool is_
     }
 }
 
-void Wolf::UltraLight::LogMessage(LogLevel log_level, const String16& message)
+void Wolf::UltraLight::UltraLightImplementation::LogMessage(LogLevel log_level, const String16& message)
 {
     switch (log_level)
     {
@@ -64,29 +232,34 @@ void Wolf::UltraLight::LogMessage(LogLevel log_level, const String16& message)
     }
 }
 
-void Wolf::UltraLight::OnDOMReady(View* caller, uint64_t frame_id, bool is_main_frame, const String& url)
+void Wolf::UltraLight::UltraLightImplementation::OnDOMReady(View* caller, uint64_t frame_id, bool is_main_frame, const String& url)
 {
     Ref<JSContext> context = caller->LockJSContext();
     SetJSContext(context.get());
 }
 
-Wolf::Image* Wolf::UltraLight::getImage() const
+Wolf::Image* Wolf::UltraLight::UltraLightImplementation::getImage() const
 {
-	const UltraLightSurface* surface = dynamic_cast<UltraLightSurface*>(m_view->surface());
-    return surface->getImage();
+    return m_userInterfaceImage.get();
 }
 
-void Wolf::UltraLight::getJSObject(JSObject& outObject)
+void Wolf::UltraLight::UltraLightImplementation::getJSObject(JSObject& outObject)
 {
     outObject = JSGlobalObject();
 }
 
-void Wolf::UltraLight::evaluateScript(const std::string& script) const
+void Wolf::UltraLight::UltraLightImplementation::evaluateScript(const std::string& script) const
 {
     m_view->EvaluateScript(script.c_str());
 }
 
-bool Wolf::UltraLight::reloadIfModified()
+void Wolf::UltraLight::UltraLightImplementation::waitForCopyFence() const
+{
+    m_copyImageFence->waitForFence();
+    m_copyImageFence->resetFence();
+}
+
+bool Wolf::UltraLight::UltraLightImplementation::reloadIfModified()
 {
     if (const std::filesystem::file_time_type time = std::filesystem::last_write_time(m_filePath); m_lastUpdated != time)
     {
@@ -107,10 +280,12 @@ bool Wolf::UltraLight::reloadIfModified()
     return false;
 }
 
-void Wolf::UltraLight::update(InputHandler* inputHandler) const
+void Wolf::UltraLight::UltraLightImplementation::update(InputHandler* inputHandler) const
 {
     float xscale, yscale;
     glfwGetMonitorContentScale(glfwGetPrimaryMonitor(), &xscale, &yscale);
+
+    inputHandler->lockCache(this);
 
     MouseEvent mouseEvent;
 
@@ -125,14 +300,14 @@ void Wolf::UltraLight::update(InputHandler* inputHandler) const
     m_view->FireMouseEvent(mouseEvent);
 
     
-    if (inputHandler->mouseButtonPressedThisFrame(GLFW_MOUSE_BUTTON_LEFT))
+    if (inputHandler->mouseButtonPressedThisFrame(GLFW_MOUSE_BUTTON_LEFT, this))
     {
         mouseEvent.type = MouseEvent::kType_MouseDown;
         mouseEvent.button = MouseEvent::kButton_Left;
 
         m_view->FireMouseEvent(mouseEvent);
     }
-    else if (inputHandler->mouseButtonReleasedThisFrame(GLFW_MOUSE_BUTTON_LEFT))
+    else if (inputHandler->mouseButtonReleasedThisFrame(GLFW_MOUSE_BUTTON_LEFT, this))
     {
         mouseEvent.type = MouseEvent::kType_MouseUp;
         mouseEvent.button = MouseEvent::kButton_Left;
@@ -140,7 +315,7 @@ void Wolf::UltraLight::update(InputHandler* inputHandler) const
         m_view->FireMouseEvent(mouseEvent);
     }
 
-    if (inputHandler->keyPressedThisFrame(GLFW_KEY_BACKSPACE))
+    if (inputHandler->keyPressedThisFrame(GLFW_KEY_BACKSPACE, this))
     {
         KeyEvent keyEvent;
         keyEvent.type = KeyEvent::kType_KeyDown;
@@ -148,7 +323,7 @@ void Wolf::UltraLight::update(InputHandler* inputHandler) const
         keyEvent.is_system_key = false;
         m_view->FireKeyEvent(keyEvent);
     }
-    if (inputHandler->keyPressedThisFrame(GLFW_KEY_ENTER) || inputHandler->keyPressedThisFrame(GLFW_KEY_KP_ENTER))
+    if (inputHandler->keyPressedThisFrame(GLFW_KEY_ENTER, this) || inputHandler->keyPressedThisFrame(GLFW_KEY_KP_ENTER, this))
     {
         KeyEvent keyEvent;
         keyEvent.type = KeyEvent::kType_KeyDown;
@@ -157,7 +332,7 @@ void Wolf::UltraLight::update(InputHandler* inputHandler) const
         m_view->FireKeyEvent(keyEvent);
     }    
 
-    const std::vector<int>& characterPressed = inputHandler->getCharactersPressedThisFrame();
+    const std::vector<int>& characterPressed = inputHandler->getCharactersPressedThisFrame(this);
     for(const int character : characterPressed)
     {
         KeyEvent keyEvent;
@@ -167,17 +342,63 @@ void Wolf::UltraLight::update(InputHandler* inputHandler) const
         m_view->FireKeyEvent(keyEvent);
     }
 
+    inputHandler->clearCache(this);
+    inputHandler->unlockCache(this);
+    
     m_renderer->Update();
 }
 
-void Wolf::UltraLight::render() const
+void Wolf::UltraLight::UltraLightImplementation::render() const
 {
     m_renderer->Render();
 }
 
-void Wolf::UltraLight::resize(uint32_t width, uint32_t height) const
+void Wolf::UltraLight::UltraLightImplementation::resize(uint32_t width, uint32_t height) const
 {
     m_view->Resize(width, height);
     m_renderer->Update();
     m_renderer->Render();
+}
+
+void Wolf::UltraLight::UltraLightImplementation::submitCopyImageCommandBuffer() const
+{
+    const std::vector<const Semaphore*> waitSemaphores{ };
+    const std::vector signalSemaphores{ m_copyImageSemaphore->getSemaphore() };
+    m_copyImageCommandBuffer->submit(0, waitSemaphores, signalSemaphores, m_copyImageFence->getFence());
+}
+
+void Wolf::UltraLight::UltraLightImplementation::createOutputAndRecordCopyCommandBuffer(uint32_t width, uint32_t height)
+{
+    CreateImageInfo createImageInfo;
+    createImageInfo.extent = { width, height, 1 };
+    createImageInfo.aspect = VK_IMAGE_ASPECT_COLOR_BIT;
+    createImageInfo.format = VK_FORMAT_R8G8B8A8_UNORM;
+    createImageInfo.mipLevelCount = 1;
+    createImageInfo.usage = VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT;
+    createImageInfo.imageTiling = VK_IMAGE_TILING_LINEAR;
+    createImageInfo.memoryProperties = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
+    m_userInterfaceImage.reset(new Image(createImageInfo));
+
+    m_copyImageCommandBuffer->beginCommandBuffer(0);
+
+    VkImageCopy copyRegion{};
+
+    copyRegion.srcSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+    copyRegion.srcSubresource.baseArrayLayer = 0;
+    copyRegion.srcSubresource.mipLevel = 0;
+    copyRegion.srcSubresource.layerCount = 1;
+    copyRegion.srcOffset = { 0, 0, 0 };
+
+    copyRegion.dstSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+    copyRegion.dstSubresource.baseArrayLayer = 0;
+    copyRegion.dstSubresource.mipLevel = 0;
+    copyRegion.dstSubresource.layerCount = 1;
+    copyRegion.dstOffset = { 0, 0, 0 };
+
+    copyRegion.extent = { width, height, 1 };
+
+    const UltraLightSurface* surface = dynamic_cast<UltraLightSurface*>(m_view->surface());
+    m_userInterfaceImage->recordCopyGPUImage(surface->getImage(), copyRegion, m_copyImageCommandBuffer->getCommandBuffer(0));
+
+    m_copyImageCommandBuffer->endCommandBuffer(0);
 }

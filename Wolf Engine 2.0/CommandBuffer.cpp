@@ -26,7 +26,7 @@ Wolf::CommandBuffer::CommandBuffer(QueueType queueType, bool oneTimeSubmit)
 
 	allocInfo.commandPool = commandPool;
 	allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-	const uint32_t commandBufferCount = oneTimeSubmit ? 1 : g_configuration->getMaxCachedFrames();;
+	const uint32_t commandBufferCount = oneTimeSubmit ? 1 : g_configuration->getMaxCachedFrames();
 	allocInfo.commandBufferCount = commandBufferCount;
 
 	m_commandBuffers.resize(commandBufferCount);
@@ -40,7 +40,7 @@ Wolf::CommandBuffer::CommandBuffer(QueueType queueType, bool oneTimeSubmit)
 
 Wolf::CommandBuffer::~CommandBuffer()
 {
-	vkFreeCommandBuffers(g_vulkanInstance->getDevice(), m_usedCommandPool, m_commandBuffers.size(), m_commandBuffers.data());
+	vkFreeCommandBuffers(g_vulkanInstance->getDevice(), m_usedCommandPool, static_cast<uint32_t>(m_commandBuffers.size()), m_commandBuffers.data());
 }
 
 void Wolf::CommandBuffer::beginCommandBuffer(uint32_t index) const
@@ -76,14 +76,17 @@ void Wolf::CommandBuffer::submit(uint32_t index, const std::vector<const Semapho
 	submitInfo.pCommandBuffers = &commandBuffer;
 	submitInfo.commandBufferCount = 1;
 
-	submitInfo.waitSemaphoreCount = static_cast<uint32_t>(waitSemaphores.size());
 	std::vector<VkSemaphore> semaphores;
 	std::vector<VkPipelineStageFlags> stages;
-	for (int i(0); i < waitSemaphores.size(); ++i)
+	for (const auto waitSemaphore : waitSemaphores)
 	{
-		semaphores.push_back(waitSemaphores[i]->getSemaphore());
-		stages.push_back(waitSemaphores[i]->getPipelineStage());
+		if (waitSemaphore)
+		{
+			semaphores.push_back(waitSemaphore->getSemaphore());
+			stages.push_back(waitSemaphore->getPipelineStage());
+		}
 	}
+	submitInfo.waitSemaphoreCount = static_cast<uint32_t>(semaphores.size());
 	submitInfo.pWaitSemaphores = semaphores.data();
 	submitInfo.pWaitDstStageMask = stages.data();
 

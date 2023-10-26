@@ -47,13 +47,13 @@ void Wolf::Buffer::transferCPUMemory(const void* data, VkDeviceSize srcSize, VkD
 	unmap(idx);
 }
 
-void Wolf::Buffer::transferCPUMemoryWithStagingBuffer(void* data, VkDeviceSize srcSize, VkDeviceSize srcOffset, uint32_t idx) const
+void Wolf::Buffer::transferCPUMemoryWithStagingBuffer(const void* data, VkDeviceSize srcSize, VkDeviceSize srcOffset, uint32_t idx) const
 {
 	const Buffer stagingBuffer(srcSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, UpdateRate::NEVER);
 
 	void* mappedData;
 	vkMapMemory(g_vulkanInstance->getDevice(), stagingBuffer.getBufferMemory(), 0, srcSize, 0, &mappedData);
-	std::memcpy(mappedData, static_cast<char*>(data) + srcOffset, srcSize);
+	std::memcpy(mappedData, static_cast<const char*>(data) + srcOffset, srcSize);
 	vkUnmapMemory(g_vulkanInstance->getDevice(), stagingBuffer.getBufferMemory());
 
 	VkBufferCopy bufferCopy;

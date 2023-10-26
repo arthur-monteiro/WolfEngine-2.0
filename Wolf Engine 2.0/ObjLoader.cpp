@@ -265,20 +265,20 @@ Wolf::ObjLoader::ObjLoader(ModelData& outputModel, ModelLoadingInfo& modelLoadin
 		std::fstream outCacheFile(modelLoadingInfo.filename + ".bin", std::ios::out | std::ios::binary);
 
 		/* Geometry */
-		uint32_t verticesCount = vertices.size();
+		uint32_t verticesCount = static_cast<uint32_t>(vertices.size());
 		outCacheFile.write(reinterpret_cast<char*>(&verticesCount), sizeof(uint32_t));
 		for(Vertex3D& vertex : vertices)
 		{
 			vertex.materialID -= modelLoadingInfo.materialIdOffset;
 		}
 		outCacheFile.write(reinterpret_cast<char*>(vertices.data()), verticesCount * sizeof(vertices[0]));
-		uint32_t indicesCount = indices.size();
+		uint32_t indicesCount = static_cast<uint32_t>(indices.size());
 		outCacheFile.write(reinterpret_cast<char*>(&indicesCount), sizeof(uint32_t));
 		outCacheFile.write(reinterpret_cast<char*>(indices.data()), indicesCount * sizeof(indices[0]));
 		outCacheFile.write(reinterpret_cast<char*>(&aabb), sizeof(AABB));
 
 		/* Textures*/
-		uint32_t imageCount = m_outputModel.images.size();
+		uint32_t imageCount = static_cast<uint32_t>(m_outputModel.images.size());
 		outCacheFile.write(reinterpret_cast<char*>(&imageCount), sizeof(uint32_t));
 		for (uint32_t i = 0; i < m_imagesData.size(); ++i)
 		{
