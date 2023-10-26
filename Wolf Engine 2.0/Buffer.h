@@ -15,7 +15,7 @@ namespace Wolf
 		~Buffer();
 
 		void transferCPUMemory(const void* data, VkDeviceSize srcSize, VkDeviceSize srcOffset = 0, uint32_t idx = 0) const;
-		void transferCPUMemoryWithStagingBuffer(void* data, VkDeviceSize srcSize, VkDeviceSize srcOffset = 0, uint32_t idx = 0) const;
+		void transferCPUMemoryWithStagingBuffer(const void* data, VkDeviceSize srcSize, VkDeviceSize srcOffset = 0, uint32_t idx = 0) const;
 		void transferGPUMemory(const Buffer& bufferSrc, const VkBufferCopy& copyRegion, uint32_t idx = 0) const;
 
 		void map(void** pData, VkDeviceSize size = 0, uint32_t idx = 0) const;

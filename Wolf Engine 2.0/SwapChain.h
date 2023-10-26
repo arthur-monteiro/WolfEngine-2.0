@@ -37,7 +37,7 @@ namespace Wolf
 
 		// Getters
 		[[nodiscard]] Image* getImage(uint32_t index) const { return m_images[index].get(); }
-		[[nodiscard]] uint32_t getImageCount() const { return m_images.size(); }
+		[[nodiscard]] uint32_t getImageCount() const { return static_cast<uint32_t>(m_images.size()); }
 		[[nodiscard]] const Semaphore* getImageAvailableSemaphore(uint32_t index) const { return m_imageAvailableSemaphores[index].get(); }
 		[[nodiscard]] VkFence getFrameFence(uint32_t index) const { return m_frameFences[index]->getFence(); }
 

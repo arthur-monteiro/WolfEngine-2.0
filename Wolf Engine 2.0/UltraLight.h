@@ -9,6 +9,8 @@
 #include <Ultralight/Ultralight.h>
 #include <Ultralight/platform/Logger.h>
 
+#include "CommandBuffer.h"
+#include "Fence.h"
 #include "UltraLightSurface.h"
 #include "Window.h"
 
@@ -16,34 +18,81 @@ namespace Wolf
 {
     class InputHandler;
 
-    class UltraLight : public ultralight::LoadListener, public ultralight::Logger
+    class UltraLight
     {
     public:
-        UltraLight(uint32_t width, uint32_t height, const std::string& absoluteURL, std::string filePath);
-        UltraLight(const UltraLight&) = delete;
+        UltraLight(const char* htmlURL, const std::function<void()>& bindCallbacks, InputHandler* inputHandler);
+        ~UltraLight();
 
-        virtual void OnFinishLoading(ultralight::View* caller, uint64_t frame_id, bool is_main_frame, const ultralight::String& url) override;
-        virtual void LogMessage(ultralight::LogLevel log_level, const ultralight::String16& message) override;
-        virtual void OnDOMReady(ultralight::View* caller, uint64_t frame_id, bool is_main_frame, const ultralight::String& url) override;
+        void waitInitializationDone() const;
 
-        Image* getImage() const;
-        static void getJSObject(ultralight::JSObject& outObject);
-        void evaluateScript(const std::string& script) const;
+        void processFrameJobs();
+        void requestScriptEvaluation(const std::string& script);
 
-        bool reloadIfModified();
-        void update(InputHandler* inputHandler) const;
-        void render() const;
-        void resize(uint32_t width, uint32_t height) const;
+        void resize(uint32_t width, uint32_t height);
+
+        static void getJSObject(ultralight::JSObject& outObject) { UltraLightImplementation::getJSObject(outObject); }
+        const Semaphore* getImageCopySemaphore() const { return m_copySubmittedThisFrame ? m_ultraLightImplementation->getImageCopySemaphore() : nullptr; }
+        Image* getImage() const { return m_ultraLightImplementation->getImage(); }
 
     private:
-        bool m_done = false;
-        UltraLightSurfaceFactory m_surfaceFactory;
+        void processImplementation(const char* htmlURL, const std::function<void()>& bindCallbacks);
 
-        ultralight::RefPtr<ultralight::Renderer> m_renderer;
-        ultralight::RefPtr<ultralight::View> m_view;
+        std::thread m_thread;
+        std::mutex m_mutex;
+        std::condition_variable m_updateCondition;
+        std::function<void()> m_bindUltralightCallbacks;
+        bool m_copySubmittedThisFrame = false;
+        InputHandler* m_inputHandler;
 
-        std::string m_filePath;
-        std::filesystem::file_time_type m_lastUpdated;
+        bool m_needUpdate = false;
+        bool m_stopThreadRequested = false;
+        std::vector<std::string> m_evaluateScriptRequests;
+        VkExtent2D m_resizeRequest = { 0, 0 };
+
+        class UltraLightImplementation : public ultralight::LoadListener, public ultralight::Logger
+        {
+        public:
+            UltraLightImplementation(uint32_t width, uint32_t height, const std::string& absoluteURL, std::string filePath);
+            UltraLightImplementation(const UltraLightImplementation&) = delete;
+
+            virtual void OnFinishLoading(ultralight::View* caller, uint64_t frame_id, bool is_main_frame, const ultralight::String& url) override;
+            virtual void LogMessage(ultralight::LogLevel log_level, const ultralight::String16& message) override;
+            virtual void OnDOMReady(ultralight::View* caller, uint64_t frame_id, bool is_main_frame, const ultralight::String& url) override;
+
+            Image* getImage() const;
+            static void getJSObject(ultralight::JSObject& outObject);
+            void evaluateScript(const std::string& script) const;
+
+            void waitForCopyFence() const;
+            bool reloadIfModified();
+            void update(InputHandler* inputHandler) const;
+            void render() const;
+            void resize(uint32_t width, uint32_t height) const;
+
+            void createOutputAndRecordCopyCommandBuffer(uint32_t width, uint32_t height);
+
+            void submitCopyImageCommandBuffer() const;
+            const Semaphore* getImageCopySemaphore() const { return m_copyImageSemaphore.get(); }
+
+        private:
+            bool m_done = false;
+            UltraLightSurfaceFactory m_surfaceFactory;
+
+            ultralight::RefPtr<ultralight::Renderer> m_renderer;
+            ultralight::RefPtr<ultralight::View> m_view;
+
+            std::string m_filePath;
+            std::filesystem::file_time_type m_lastUpdated;
+
+            // Copy to used UI image
+            std::unique_ptr<Image> m_userInterfaceImage;
+            std::unique_ptr<CommandBuffer> m_copyImageCommandBuffer;
+            std::unique_ptr<Semaphore> m_copyImageSemaphore;
+            std::unique_ptr<Fence> m_copyImageFence;
+        };
+
+        std::unique_ptr<UltraLightImplementation> m_ultraLightImplementation;
     };
 }
 

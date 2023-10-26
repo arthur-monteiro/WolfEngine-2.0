@@ -105,7 +105,7 @@ void Wolf::DescriptorSet::update(const DescriptorSetUpdateInfo& descriptorSetCre
 		descriptorWrites.push_back(descriptorWrite);
 	}
 
-	vkUpdateDescriptorSets(g_vulkanInstance->getDevice(), descriptorWrites.size(), descriptorWrites.data(), 0, nullptr);
+	vkUpdateDescriptorSets(g_vulkanInstance->getDevice(), static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);
 }
 
 void Wolf::DescriptorSet::createDescriptorSet(uint32_t idx, VkDescriptorSetLayout descriptorSetLayout)

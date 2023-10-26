@@ -22,7 +22,7 @@ namespace Wolf
 
 		void Resize(uint32_t width, uint32_t height) override;
 
-		Image* getImage() const { return m_image.get(); }
+		Image& getImage() const { return *m_image; }
 
 	private:
 		uint32_t m_width;

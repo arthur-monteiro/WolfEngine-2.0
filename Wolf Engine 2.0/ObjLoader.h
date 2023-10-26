@@ -30,7 +30,7 @@ namespace Wolf
 
 		static void getAttributeDescriptions(std::vector<VkVertexInputAttributeDescription>& attributeDescriptions, uint32_t binding)
 		{
-			const uint32_t attributeDescriptionCountBefore = attributeDescriptions.size();
+			const uint32_t attributeDescriptionCountBefore = static_cast<uint32_t>(attributeDescriptions.size());
 			attributeDescriptions.resize(attributeDescriptionCountBefore + 5);
 
 			attributeDescriptions[attributeDescriptionCountBefore + 0].binding = binding;

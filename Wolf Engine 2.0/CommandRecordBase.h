@@ -41,7 +41,8 @@ namespace Wolf
 	{
 		uint32_t currentFrameIdx;
 		uint32_t commandBufferIdx;
-		const Semaphore* imageAvailableSemaphore;
+		const Semaphore* swapChainImageAvailableSemaphore;
+		const Semaphore* userInterfaceImageAvailableSemaphore;
 		VkFence frameFence;
 		VkDevice device;
 	};

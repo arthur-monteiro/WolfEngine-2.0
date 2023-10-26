@@ -107,7 +107,7 @@ void UniquePass::record(const RecordContext& context)
 
 void UniquePass::submit(const SubmitContext& context)
 {
-	const std::vector waitSemaphores{ context.imageAvailableSemaphore };
+	const std::vector waitSemaphores{ context.swapChainImageAvailableSemaphore };
 	const std::vector signalSemaphores{ m_semaphore->getSemaphore() };
 	m_commandBuffer->submit(context.commandBufferIdx, waitSemaphores, signalSemaphores, context.frameFence);
 

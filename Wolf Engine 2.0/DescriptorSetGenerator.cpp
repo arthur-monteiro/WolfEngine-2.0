@@ -13,7 +13,7 @@ Wolf::DescriptorSetGenerator::DescriptorSetGenerator(const std::span<const Descr
 			descriptorBuffer.descriptorLayout = descriptorLayout;
 
 			m_descriptorSetCreateInfo.descriptorBuffers.push_back(descriptorBuffer);
-			m_mapBindingCreateInfo[descriptorLayout.binding] = { DescriptorType::BUFFER, m_descriptorSetCreateInfo.descriptorBuffers.size() - 1 };
+			m_mapBindingCreateInfo[descriptorLayout.binding] = { DescriptorType::BUFFER, static_cast<uint32_t>(m_descriptorSetCreateInfo.descriptorBuffers.size()) - 1 };
 		}
 		else if (descriptorLayout.descriptorType == VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER || descriptorLayout.descriptorType == VK_DESCRIPTOR_TYPE_STORAGE_IMAGE ||
 			descriptorLayout.descriptorType == VK_DESCRIPTOR_TYPE_SAMPLER || descriptorLayout.descriptorType == VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE)
@@ -22,7 +22,7 @@ Wolf::DescriptorSetGenerator::DescriptorSetGenerator(const std::span<const Descr
 			descriptorImage.descriptorLayout = descriptorLayout;
 
 			m_descriptorSetCreateInfo.descriptorImages.push_back(descriptorImage);
-			m_mapBindingCreateInfo[descriptorLayout.binding] = { DescriptorType::IMAGE, m_descriptorSetCreateInfo.descriptorImages.size() - 1 };
+			m_mapBindingCreateInfo[descriptorLayout.binding] = { DescriptorType::IMAGE, static_cast<uint32_t>(m_descriptorSetCreateInfo.descriptorImages.size()) - 1 };
 		}
 		else if (descriptorLayout.descriptorType == VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR)
 		{
@@ -30,7 +30,7 @@ Wolf::DescriptorSetGenerator::DescriptorSetGenerator(const std::span<const Descr
 			descriptorAccelerationStructure.descriptorLayout = descriptorLayout;
 
 			m_descriptorSetCreateInfo.descriptorAccelerationStructures.push_back(descriptorAccelerationStructure);
-			m_mapBindingCreateInfo[descriptorLayout.binding] = { DescriptorType::ACCELERATION_STRUCTURE, m_descriptorSetCreateInfo.descriptorAccelerationStructures.size() - 1 };
+			m_mapBindingCreateInfo[descriptorLayout.binding] = { DescriptorType::ACCELERATION_STRUCTURE, static_cast<uint32_t>(m_descriptorSetCreateInfo.descriptorAccelerationStructures.size()) - 1 };
 		}
 		else
 		{
