@@ -1,22 +1,22 @@
 #pragma once
 
 #include "CommandRecordBase.h"
+#include "Image.h"
+#include "FrameBuffer.h"
+#include "RenderPass.h"
 
 namespace Wolf
 {
 	struct Attachment;
-	class Framebuffer;
-	class Pipeline;
-	class RenderPass;
 
 	class DepthPassBase
 	{
 	public:
-		void initializeResources(const InitializationContext& context);
-		void resize(const InitializationContext& context);
-		void record(const RecordContext& context);
+		virtual void initializeResources(const InitializationContext& context);
+		virtual void resize(const InitializationContext& context);
+		virtual void record(const RecordContext& context);
 
-		[[nodiscard]] Image* getOutput() const { return m_depthImage.get(); }
+		[[nodiscard]] virtual Image* getOutput() const { return m_depthImage.get(); }
 
 	private:
 		void getAttachments(const InitializationContext& context, std::vector<Attachment>& attachments);

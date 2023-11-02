@@ -42,6 +42,7 @@ namespace Wolf
 			VkPipelineStageFlags dstPipelineStageFlags;
 			uint32_t baseMipLevel = 0;
 			uint32_t levelCount = MAX_MIP_COUNT;
+			VkImageLayout oldLayout = VK_IMAGE_LAYOUT_UNDEFINED;
 		};
 
 		void copyCPUBuffer(const unsigned char* pixels, const TransitionLayoutInfo& finalLayout, uint32_t mipLevel = 0);
@@ -55,7 +56,10 @@ namespace Wolf
 		void getResourceLayout(VkSubresourceLayout& output) const;
 		void exportToFile(const std::string& filename) const;
 
-		static constexpr TransitionLayoutInfo SampledInFragmentShader(uint32_t mipLevel = 0) { return { VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_ACCESS_SHADER_READ_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, mipLevel, 1 }; }
+		static constexpr TransitionLayoutInfo SampledInFragmentShader(uint32_t mipLevel = 0, VkImageLayout oldLayout = VK_IMAGE_LAYOUT_UNDEFINED)
+		{
+			return { VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_ACCESS_SHADER_READ_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, mipLevel, 1, oldLayout };
+		}
 		void setImageLayout(const TransitionLayoutInfo& transitionLayoutInfo);
 		void transitionImageLayout(VkCommandBuffer commandBuffer, const TransitionLayoutInfo& transitionLayoutInfo);
 		void setImageLayoutWithoutOperation(VkImageLayout newImageLayout, uint32_t baseMipLevel = 0, uint32_t levelCount = MAX_MIP_COUNT);

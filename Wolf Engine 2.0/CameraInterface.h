@@ -18,9 +18,9 @@ namespace Wolf
         virtual void update() = 0;
 #endif
 
-		[[nodiscard]] virtual glm::mat4 getViewMatrix() const = 0;
-		[[nodiscard]] virtual glm::mat4 getPreviousViewMatrix() const = 0;
-		[[nodiscard]] virtual glm::mat4 getProjectionMatrix() const = 0;
+		[[nodiscard]] virtual const glm::mat4& getViewMatrix() const = 0;
+		[[nodiscard]] virtual const glm::mat4& getPreviousViewMatrix() const = 0;
+		[[nodiscard]] virtual const glm::mat4& getProjectionMatrix() const = 0;
 
 		[[nodiscard]] virtual float getNear() const = 0;
 		[[nodiscard]] virtual float getFar() const = 0;
