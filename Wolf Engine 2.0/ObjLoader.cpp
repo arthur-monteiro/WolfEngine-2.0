@@ -59,7 +59,11 @@ Wolf::ObjLoader::ObjLoader(ModelData& outputModel, ModelLoadingInfo& modelLoadin
 			AABB aabb{};
 			input.read(reinterpret_cast<char*>(&aabb), sizeof(AABB));
 
+			if (modelLoadingInfo.vulkanQueueLock)
+				modelLoadingInfo.vulkanQueueLock->lock();
 			m_outputModel.mesh.reset(new Mesh(vertices, indices, aabb, modelLoadingInfo.additionalVertexBufferUsages, modelLoadingInfo.additionalIndexBufferUsages, VK_FORMAT_R32G32B32_SFLOAT));
+			if (modelLoadingInfo.vulkanQueueLock)
+				modelLoadingInfo.vulkanQueueLock->unlock();
 
 			uint32_t textureCount;
 			input.read(reinterpret_cast<char*>(&textureCount), sizeof(textureCount));

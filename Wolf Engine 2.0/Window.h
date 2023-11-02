@@ -12,9 +12,9 @@ namespace Wolf
 	class Window
 	{
 	public:
-		Window(std::string appName, int width, int height, void* systemManagerInstance, std::function<void(void*, int, int)> resizeCallback);
+		Window(const std::string& appName, uint32_t width, uint32_t height, void* systemManagerInstance, std::function<void(void*, int, int)> resizeCallback);
 
-		void pollEvents();
+		static void pollEvents();
 		bool windowShouldClose() const;
 		bool windowVisible() const;
 

@@ -1,19 +1,21 @@
 #include "Window.h"
 
-Wolf::Window::Window(std::string appName, int width, int height, void* systemManagerInstance, std::function<void(void*, int, int)> resizeCallback)
+#include <utility>
+
+Wolf::Window::Window(const std::string& appName, uint32_t width, uint32_t height, void* systemManagerInstance, std::function<void(void*, int, int)> resizeCallback)
 {
 	glfwInit();
 
 	glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
 
-	m_window = glfwCreateWindow(width, height, appName.c_str(), nullptr, nullptr);
+	m_window = glfwCreateWindow(static_cast<int>(width), static_cast<int>(height), appName.c_str(), nullptr, nullptr);
 
 	glfwSetWindowUserPointer(m_window, this);
 	glfwSetWindowSizeCallback(m_window, onWindowResized);
 	//glfwSetInputMode(m_window, GLFW_CURSOR, GLFW_CURSOR_HIDDEN);
 
 	m_systemManagerInstance = systemManagerInstance;
-	m_resizeCallback = resizeCallback;
+	m_resizeCallback = std::move(resizeCallback);
 }
 
 void Wolf::Window::pollEvents()

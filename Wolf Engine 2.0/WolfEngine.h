@@ -62,6 +62,7 @@ namespace Wolf
 #ifndef __ANDROID__
 		[[nodiscard]] const InputHandler& getInputHandler() const { return *m_inputHandler; }
 #endif
+		VkExtent3D getSwapChainExtent() const { return m_swapChain->getImage(0)->getExtent(); }
 
 		bool isRayTracingAvailable() const { return m_vulkan->isRayTracingAvailable(); }
 

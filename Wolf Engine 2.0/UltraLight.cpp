@@ -106,8 +106,17 @@ void Wolf::UltraLight::resize(uint32_t width, uint32_t height)
         std::this_thread::sleep_for(std::chrono::milliseconds(10));
 }
 
+#ifdef _WIN32
+#define NOMINMAX
+#include <Windows.h>
+#endif
+
 void Wolf::UltraLight::processImplementation(const char* htmlURL, const std::function<void()>& bindCallbacks)
 {
+#ifdef _WIN32
+    SetThreadDescription(GetCurrentThread(), L"UltraLight - Update");
+#endif 
+
     std::string currentPath = std::filesystem::current_path().string();
     std::ranges::replace(currentPath, '\\', '/');
     std::string escapedCurrentPath;

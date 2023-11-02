@@ -373,21 +373,26 @@ void Wolf::Image::transitionImageLayout(VkCommandBuffer commandBuffer, const Tra
 	if (mipLevelCount == MAX_MIP_COUNT)
 		mipLevelCount = m_mipLevelCount;
 
-	// Sanity check
+	// Sanity checks
 	{
 		const VkImageLayout imageLayout = m_imageLayouts[transitionLayoutInfo.baseMipLevel];
 		for (uint32_t mipLevel = transitionLayoutInfo.baseMipLevel; mipLevel < mipLevelCount; mipLevel++)
 		{
 			if (m_imageLayouts[mipLevel] != imageLayout)
-			{
 				Debug::sendError("Image layout must be the same for all mip level asked for transition");
-			}
+		}
+
+		//if (std::this_thread::get_id() != g_mainThreadId)
+		{
+			// TODO: trigger this error for shared between multiple command records resources only
+			//if (transitionLayoutInfo.oldLayout == VK_IMAGE_LAYOUT_UNDEFINED)
+			//	Debug::sendError("Old layout must be specified if not running from main thread (as there's no guarantee that previous transition has been recorded)");
 		}
 	}
 
 	VkImageMemoryBarrier barrier = {};
 	barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
-	barrier.oldLayout = m_imageLayouts[transitionLayoutInfo.baseMipLevel];
+	barrier.oldLayout = transitionLayoutInfo.oldLayout == VK_IMAGE_LAYOUT_UNDEFINED ? m_imageLayouts[transitionLayoutInfo.baseMipLevel] : transitionLayoutInfo.oldLayout;
 	barrier.newLayout = transitionLayoutInfo.dstLayout;
 	barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
 	barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
@@ -412,7 +417,7 @@ void Wolf::Image::transitionImageLayout(VkCommandBuffer commandBuffer, const Tra
 	barrier.srcAccessMask = m_accessFlags;
 	barrier.dstAccessMask = transitionLayoutInfo.dstAccessMask;
 
-	vkCmdPipelineBarrier(commandBuffer, m_pipelineStageFlags, transitionLayoutInfo.dstPipelineStageFlags, 0,	0, nullptr,	0, nullptr,	1, &barrier);
+	vkCmdPipelineBarrier(commandBuffer, m_pipelineStageFlags, transitionLayoutInfo.dstPipelineStageFlags, 0,	0, nullptr, 0, nullptr,	1, &barrier);
 
 	m_accessFlags = transitionLayoutInfo.dstAccessMask;
 	for(uint32_t mipLevel = transitionLayoutInfo.baseMipLevel; mipLevel < mipLevelCount; mipLevel++)
