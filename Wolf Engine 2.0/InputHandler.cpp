@@ -108,8 +108,11 @@ bool Wolf::InputHandler::keyMaintained(int key) const
 	return std::ranges::find(m_data.m_keysCache.inputMaintained, key) != m_data.m_keysCache.inputMaintained.end();
 }
 
-bool Wolf::InputHandler::keyReleasedThisFrame(int key) const
+bool Wolf::InputHandler::keyReleasedThisFrame(int key, const void* instancePtr) const
 {
+	if (instancePtr)
+		return std::ranges::find(m_dataCache.at(instancePtr).first.m_keysCache.inputReleasedThisFrame, key) != m_dataCache.at(instancePtr).first.m_keysCache.inputReleasedThisFrame.end();
+
 	return std::ranges::find(m_data.m_keysCache.inputReleasedThisFrame, key) != m_data.m_keysCache.inputReleasedThisFrame.end();
 }
 

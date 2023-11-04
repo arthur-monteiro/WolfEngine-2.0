@@ -2,6 +2,7 @@
 
 #ifndef __ANDROID__
 
+#include <array>
 #include <functional>
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
@@ -18,6 +19,9 @@ namespace Wolf
 		bool windowShouldClose() const;
 		bool windowVisible() const;
 
+		enum class CursorType { POINTER, HAND, IBEAM, HRESIZE, Count };
+		void setCursor(CursorType cursorType) const;
+
 		[[nodiscard]] GLFWwindow* getWindow() const { return m_window; }
 
 	private:
@@ -33,9 +37,14 @@ namespace Wolf
 	private:
 		GLFWwindow* m_window;
 
+		std::array<GLFWcursor*, 4> m_cursors;
+		static_assert(std::tuple_size<decltype(m_cursors)>{} == static_cast<uint32_t>(CursorType::Count));
+
 		void* m_systemManagerInstance = nullptr;
 		std::function<void(void*, int, int)> m_resizeCallback;
 	};
+
+	extern Window* g_windowInstance;
 }
 
 #endif

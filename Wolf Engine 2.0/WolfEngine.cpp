@@ -33,6 +33,7 @@ Wolf::WolfEngine::WolfEngine(const WolfInstanceCreateInfo& createInfo)
 
 #ifndef __ANDROID__
 	m_window.reset(new Window(createInfo.applicationName, m_configuration->getWindowWidth(), m_configuration->getWindowHeight(), this, windowResizeCallback));
+	g_windowInstance = m_window.get();
 #endif
 
 #ifndef __ANDROID__

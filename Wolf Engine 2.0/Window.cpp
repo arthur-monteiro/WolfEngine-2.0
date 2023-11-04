@@ -2,6 +2,8 @@
 
 #include <utility>
 
+Wolf::Window* Wolf::g_windowInstance = nullptr;
+
 Wolf::Window::Window(const std::string& appName, uint32_t width, uint32_t height, void* systemManagerInstance, std::function<void(void*, int, int)> resizeCallback)
 {
 	glfwInit();
@@ -16,6 +18,11 @@ Wolf::Window::Window(const std::string& appName, uint32_t width, uint32_t height
 
 	m_systemManagerInstance = systemManagerInstance;
 	m_resizeCallback = std::move(resizeCallback);
+
+	m_cursors[0] = glfwCreateStandardCursor(GLFW_ARROW_CURSOR);
+	m_cursors[1] = glfwCreateStandardCursor(GLFW_HAND_CURSOR);
+	m_cursors[2] = glfwCreateStandardCursor(GLFW_IBEAM_CURSOR);
+	m_cursors[3] = glfwCreateStandardCursor(GLFW_HRESIZE_CURSOR);
 }
 
 void Wolf::Window::pollEvents()
@@ -31,4 +38,9 @@ bool Wolf::Window::windowShouldClose() const
 bool Wolf::Window::windowVisible() const
 {
 	return glfwGetWindowAttrib(m_window, GLFW_VISIBLE);
+}
+
+void Wolf::Window::setCursor(CursorType cursorType) const
+{
+	glfwSetCursor(m_window, m_cursors[static_cast<uint32_t>(cursorType)]);
 }
