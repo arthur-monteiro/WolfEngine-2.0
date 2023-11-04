@@ -158,9 +158,9 @@ Wolf::Pipeline::Pipeline(const RenderingPipelineCreateInfo& renderingPipelineCre
 	pipelineInfo.pDepthStencilState = &depthStencil;
 
 	// Conservative rasterization
+	VkPipelineRasterizationConservativeStateCreateInfoEXT conservativeRasterStateCI{};
 	if (renderingPipelineCreateInfo.enableConservativeRasterization)
 	{
-		VkPipelineRasterizationConservativeStateCreateInfoEXT conservativeRasterStateCI{};
 		conservativeRasterStateCI.sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_CONSERVATIVE_STATE_CREATE_INFO_EXT;
 		conservativeRasterStateCI.conservativeRasterizationMode = VK_CONSERVATIVE_RASTERIZATION_MODE_OVERESTIMATE_EXT;
 		conservativeRasterStateCI.extraPrimitiveOverestimationSize = renderingPipelineCreateInfo.maxExtraPrimitiveOverestimationSize;
@@ -169,18 +169,18 @@ Wolf::Pipeline::Pipeline(const RenderingPipelineCreateInfo& renderingPipelineCre
 	}
 
 	// Tessellation
+	VkPipelineTessellationStateCreateInfo tessellationStateCreateInfo{};
 	if (renderingPipelineCreateInfo.patchControlPoint > 0)
 	{
-		VkPipelineTessellationStateCreateInfo tessellationStateCreateInfo{};
 		tessellationStateCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_TESSELLATION_STATE_CREATE_INFO;
 		tessellationStateCreateInfo.patchControlPoints = renderingPipelineCreateInfo.patchControlPoint;
 
 		pipelineInfo.pTessellationState = &tessellationStateCreateInfo;
 	}
 
+	VkPipelineDynamicStateCreateInfo dynamicStateCreateInfo{};
 	if (!renderingPipelineCreateInfo.dynamicStates.empty())
 	{
-		VkPipelineDynamicStateCreateInfo dynamicStateCreateInfo{};
 		dynamicStateCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO;
 		dynamicStateCreateInfo.pDynamicStates = renderingPipelineCreateInfo.dynamicStates.data();
 		dynamicStateCreateInfo.dynamicStateCount = static_cast<uint32_t>(renderingPipelineCreateInfo.dynamicStates.size());
