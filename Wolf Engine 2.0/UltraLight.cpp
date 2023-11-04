@@ -8,6 +8,7 @@
 #include "Debug.h"
 #include "InputHandler.h"
 #include "Timer.h"
+#include "Window.h"
 
 using namespace ultralight;
 
@@ -39,6 +40,39 @@ public:
             break;
 	    }
     }
+
+    virtual void OnChangeCursor(ultralight::View* caller, Cursor cursor)
+    {
+        if (cursor != m_currentCursor)
+        {
+            m_currentCursor = cursor;
+
+            Wolf::Window::CursorType windowCursorType = Wolf::Window::CursorType::POINTER;
+            switch (cursor)
+            {
+				case kCursor_Pointer:
+					windowCursorType = Wolf::Window::CursorType::POINTER;
+                    break;
+				case kCursor_Hand:
+					windowCursorType = Wolf::Window::CursorType::HAND;
+                    break;
+            	case kCursor_IBeam:
+                    windowCursorType = Wolf::Window::CursorType::IBEAM;
+                    break;
+            	case kCursor_ColumnResize:
+                    windowCursorType = Wolf::Window::CursorType::HRESIZE;
+                    break;
+				default:
+                    Wolf::Debug::sendError("Unhandled cursor type");
+                    break;
+            }
+
+            Wolf::g_windowInstance->setCursor(windowCursorType);
+        }
+    }
+
+private:
+    Cursor m_currentCursor = kCursor_Pointer;
 };
 static ::ViewListener viewListener;
 
@@ -198,6 +232,7 @@ Wolf::UltraLight::UltraLightImplementation::UltraLightImplementation(uint32_t wi
     m_view->set_view_listener(&viewListener);
     //m_view->LoadHTML(htmlString);
     m_view->LoadURL(absoluteURL.c_str());
+    m_view->Focus();
 
     while (!m_done)
     {
@@ -335,18 +370,19 @@ void Wolf::UltraLight::UltraLightImplementation::update(InputHandler* inputHandl
     if (inputHandler->keyPressedThisFrame(GLFW_KEY_ENTER, this) || inputHandler->keyPressedThisFrame(GLFW_KEY_KP_ENTER, this))
     {
         KeyEvent keyEvent;
-        keyEvent.type = KeyEvent::kType_KeyDown;
-        keyEvent.virtual_key_code = 0x0D; // code for return
+        keyEvent.type = KeyEvent::kType_Char;
+        constexpr char character = 13;
+        keyEvent.text = &character;
         keyEvent.is_system_key = false;
         m_view->FireKeyEvent(keyEvent);
-    }    
+    }
 
     const std::vector<int>& characterPressed = inputHandler->getCharactersPressedThisFrame(this);
     for(const int character : characterPressed)
     {
         KeyEvent keyEvent;
         keyEvent.type = KeyEvent::kType_Char;
-        keyEvent.text = reinterpret_cast<const char*>(&character);
+        keyEvent.text = std::bit_cast<const char*>(&character);
         keyEvent.is_system_key = false;
         m_view->FireKeyEvent(keyEvent);
     }

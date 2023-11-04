@@ -24,7 +24,7 @@ namespace Wolf
 
 		bool keyPressedThisFrame(int key, const void* instancePtr = nullptr) const;
 		bool keyMaintained(int key) const;
-		bool keyReleasedThisFrame(int key) const;
+		bool keyReleasedThisFrame(int key, const void* instancePtr = nullptr) const;
 
 		const std::vector<int>& getCharactersPressedThisFrame(const void* instancePtr = nullptr) const;
 
