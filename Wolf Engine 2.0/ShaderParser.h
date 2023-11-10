@@ -15,6 +15,9 @@ namespace Wolf
 		bool compileIfFileHasBeenModified(const std::vector<std::string>& conditionBlocksToInclude = {});
 		void readCompiledShader(std::vector<char>& shaderCode) const;
 
+		const std::vector<std::string>& getCurrentConditionsBlocks() const { return m_conditionBlocksToInclude; }
+		bool isSame(const std::string& filename, const std::vector<std::string>& conditionBlocksToInclude) const;
+
 	private:
 		void parseAndCompile();
 		void readFile(std::vector<char>& output, const std::string& filename) const;

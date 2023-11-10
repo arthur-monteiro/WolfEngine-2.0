@@ -51,6 +51,11 @@ void Wolf::ShaderParser::readCompiledShader(std::vector<char>& shaderCode) const
     readFile(shaderCode, m_compileFilename);
 }
 
+bool Wolf::ShaderParser::isSame(const std::string& filename, const std::vector<std::string>& conditionBlocksToInclude) const
+{
+    return filename == m_filename && conditionBlocksToInclude == m_conditionBlocksToInclude;
+}
+
 void Wolf::ShaderParser::parseAndCompile()
 {
 #ifdef __ANDROID__

@@ -48,7 +48,10 @@ Wolf::ObjLoader::ObjLoader(ModelData& outputModel, ModelLoadingInfo& modelLoadin
 
 			for (Vertex3D& vertex : vertices)
 			{
-				vertex.materialID += modelLoadingInfo.materialIdOffset;
+				if (vertex.materialID == static_cast<uint32_t>(-1))
+					vertex.materialID = 0;
+				else
+					vertex.materialID += modelLoadingInfo.materialIdOffset;
 			}
 
 			uint32_t indicesCount;
@@ -141,6 +144,7 @@ Wolf::ObjLoader::ObjLoader(ModelData& outputModel, ModelLoadingInfo& modelLoadin
 	glm::vec3 minPos(1'000'000.f);
 	glm::vec3 maxPos(-1'000'000.f);
 
+	bool hasEncounteredAnInvalidMaterialId = false;
 	for (const auto& shape : shapes)
 	{
 		int numVertex = 0;
@@ -194,7 +198,17 @@ Wolf::ObjLoader::ObjLoader(ModelData& outputModel, ModelLoadingInfo& modelLoadin
 
 			if (!modelLoadingInfo.loadMaterials)
 				vertex.materialID = modelLoadingInfo.materialIdOffset;
-			else vertex.materialID = modelLoadingInfo.materialIdOffset + shape.mesh.material_ids[numVertex / 3];
+			else
+			{
+				int32_t materialId = shape.mesh.material_ids[numVertex / 3];
+				if (materialId < 0)
+				{
+					hasEncounteredAnInvalidMaterialId = true;
+					vertex.materialID = -1;
+				}
+				else
+					vertex.materialID = modelLoadingInfo.materialIdOffset + materialId;
+			}
 
 			if (uniqueVertices.count(vertex) == 0)
 			{
@@ -210,6 +224,9 @@ Wolf::ObjLoader::ObjLoader(ModelData& outputModel, ModelLoadingInfo& modelLoadin
 			numVertex++;
 		}
 	}
+
+	if (hasEncounteredAnInvalidMaterialId)
+		Debug::sendError("Loading model " + modelLoadingInfo.filename + ", invalid material ID found. Switching to default (0)");
 
 	AABB aabb(minPos, maxPos);
 
@@ -273,7 +290,8 @@ Wolf::ObjLoader::ObjLoader(ModelData& outputModel, ModelLoadingInfo& modelLoadin
 		outCacheFile.write(reinterpret_cast<char*>(&verticesCount), sizeof(uint32_t));
 		for(Vertex3D& vertex : vertices)
 		{
-			vertex.materialID -= modelLoadingInfo.materialIdOffset;
+			if (vertex.materialID != static_cast<uint32_t>(-1))
+				vertex.materialID -= modelLoadingInfo.materialIdOffset;
 		}
 		outCacheFile.write(reinterpret_cast<char*>(vertices.data()), verticesCount * sizeof(vertices[0]));
 		uint32_t indicesCount = static_cast<uint32_t>(indices.size());
@@ -305,10 +323,10 @@ void Wolf::ObjLoader::setImage(const std::string& filename, uint32_t idx, bool s
 	const VkFormat format = sRGB ? VK_FORMAT_R8G8B8A8_SRGB : VK_FORMAT_R8G8B8A8_UNORM;
 
 	const ImageFileLoader imageFileLoader(filename);
-	const MipMapGenerator mipmapGenerator(imageFileLoader.getPixels(), { (uint32_t)imageFileLoader.getWidth(), (uint32_t)imageFileLoader.getHeight() }, format);
+	const MipMapGenerator mipmapGenerator(imageFileLoader.getPixels(), { static_cast<uint32_t>(imageFileLoader.getWidth()), static_cast<uint32_t>(imageFileLoader.getHeight()) }, format);
 
 	CreateImageInfo createImageInfo;
-	createImageInfo.extent = { (uint32_t)imageFileLoader.getWidth(), (uint32_t)imageFileLoader.getHeight(), 1 };
+	createImageInfo.extent = { static_cast<uint32_t>(imageFileLoader.getWidth()), static_cast<uint32_t>(imageFileLoader.getHeight()), 1 };
 	createImageInfo.aspect = VK_IMAGE_ASPECT_COLOR_BIT;
 	createImageInfo.format = format;
 	createImageInfo.mipLevelCount = mipmapGenerator.getMipLevelCount();
@@ -333,9 +351,9 @@ void Wolf::ObjLoader::setImage(const std::string& filename, uint32_t idx, bool s
 		for (uint32_t mipLevel = 0; mipLevel < mipmapGenerator.getMipLevelCount(); ++mipLevel)
 		{
 			const VkDeviceSize copySize = (m_outputModel.images[idx]->getExtent().width * m_outputModel.images[idx]->getExtent().height * m_outputModel.images[idx]->getExtent().depth * m_outputModel.images[idx]->getBBP()) >> mipLevel;
-			const void* dataPtr = (void*)imageFileLoader.getPixels();
+			const unsigned char* dataPtr = imageFileLoader.getPixels();
 			if (mipLevel > 0)
-				dataPtr = (void*)mipmapGenerator.getMipLevel(mipLevel);
+				dataPtr = mipmapGenerator.getMipLevel(mipLevel);
 			memcpy(m_imagesData[idx].data() + copyOffset, dataPtr, copySize);
 
 			copyOffset += copySize;

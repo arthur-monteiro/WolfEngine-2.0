@@ -49,10 +49,10 @@ namespace Wolf
 	Mesh::Mesh(const std::vector<T>& vertices, const std::vector<uint32_t>& indices, AABB aabb, VkBufferUsageFlags additionalVertexBufferUsages, VkBufferUsageFlags additionalIndexBufferUsages, VkFormat vertexFormat)
 	{
 		m_vertexBuffer.reset(new Buffer(sizeof(T) * vertices.size(), VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | additionalVertexBufferUsages, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, UpdateRate::NEVER));
-		m_vertexBuffer->transferCPUMemoryWithStagingBuffer((void*)vertices.data(), sizeof(T) * vertices.size());
+		m_vertexBuffer->transferCPUMemoryWithStagingBuffer(static_cast<const void*>(vertices.data()), sizeof(T) * vertices.size());
 
 		m_indexBuffer.reset(new Buffer(sizeof(uint32_t) * indices.size(), VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT | additionalIndexBufferUsages, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, UpdateRate::NEVER));
-		m_indexBuffer->transferCPUMemoryWithStagingBuffer((void*)indices.data(), sizeof(uint32_t) * indices.size());
+		m_indexBuffer->transferCPUMemoryWithStagingBuffer(indices.data(), sizeof(uint32_t) * indices.size());
 
 		m_vertexCount = static_cast<uint32_t>(vertices.size());
 		m_vertexSize = sizeof(T);

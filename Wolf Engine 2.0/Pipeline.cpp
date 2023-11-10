@@ -288,7 +288,7 @@ Wolf::Pipeline::~Pipeline()
 	vkDestroyPipelineLayout(g_vulkanInstance->getDevice(), m_pipelineLayout, nullptr);
 }
 
-VkShaderModule Wolf::Pipeline::createShaderModule(const std::span<char>& code)
+VkShaderModule Wolf::Pipeline::createShaderModule(const std::vector<char>& code)
 {
 	VkShaderModuleCreateInfo createInfo = {};
 	createInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;

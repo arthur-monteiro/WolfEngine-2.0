@@ -125,3 +125,12 @@ void Wolf::RenderPass::endRenderPass(VkCommandBuffer commandBuffer)
 {
 	vkCmdEndRenderPass(commandBuffer);
 }
+
+void Wolf::RenderPass::setExtent(const VkExtent2D& extent)
+{
+	m_extent = extent;
+	for (const auto& callback : m_callbackWhenExtentChanged)
+	{
+		callback(this);
+	}
+}

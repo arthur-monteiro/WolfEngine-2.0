@@ -119,7 +119,7 @@
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp20</LanguageStandard>
       <ScanSourceForModuleDependencies>true</ScanSourceForModuleDependencies>
-      <AdditionalIncludeDirectories>..\ThirdParty\glm;..\ThirdParty\vulkan\Include;..\ThirdParty\freetype-2.8.1\include\freetype2;..\ThirdParty\stb_image;..\ThirdParty\tiny_obj;..\ThirdParty\GLFW\include;..\ThirdParty\OVR\Include;..\ThirdParty\UltraLight\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\ThirdParty\glm;..\ThirdParty\vulkan\Include;..\ThirdParty\stb_image;..\ThirdParty\tiny_obj;..\ThirdParty\GLFW\include;..\ThirdParty\OVR\Include;..\ThirdParty\UltraLight\include;..\ThirdParty\xxh64;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -147,6 +147,7 @@
   <ItemGroup>
     <ClCompile Include="AccelerationStructure.cpp" />
     <ClCompile Include="AndroidCacheHelper.cpp" />
+    <ClCompile Include="BindlessDescriptor.cpp" />
     <ClCompile Include="BottomLevelAccelerationStructure.cpp" />
     <ClCompile Include="Buffer.cpp" />
     <ClCompile Include="CameraInterface.cpp" />
@@ -174,8 +175,11 @@
     <ClCompile Include="ObjLoader.cpp" />
     <ClCompile Include="CommandRecordBase.cpp" />
     <ClCompile Include="Pipeline.cpp" />
+    <ClCompile Include="PipelineSet.cpp" />
     <ClCompile Include="RayTracingShaderGroupGenerator.cpp" />
     <ClCompile Include="RayTracingSymbols.cpp" />
+    <ClCompile Include="RenderMeshList.cpp" />
+    <ClCompile Include="ShaderList.cpp" />
     <ClCompile Include="RenderPass.cpp" />
     <ClCompile Include="Sampler.cpp" />
     <ClCompile Include="Semaphore.cpp" />
@@ -183,7 +187,6 @@
     <ClCompile Include="ShaderParser.cpp" />
     <ClCompile Include="ShadingRateSymbols.cpp" />
     <ClCompile Include="SwapChain.cpp" />
-    <ClCompile Include="TextFileReader.cpp" />
     <ClCompile Include="Timer.cpp" />
     <ClCompile Include="TopLevelAccelerationStructure.cpp" />
     <ClCompile Include="UltraLight.cpp" />
@@ -198,6 +201,7 @@
     <ClInclude Include="AccelerationStructure.h" />
     <ClInclude Include="AndroidCacheHelper.h" />
     <ClInclude Include="Attachment.h" />
+    <ClInclude Include="BindlessDescriptor.h" />
     <ClInclude Include="BottomLevelAccelerationStructure.h" />
     <ClInclude Include="Buffer.h" />
     <ClInclude Include="CameraInterface.h" />
@@ -214,20 +218,23 @@
     <ClInclude Include="DescriptorSetLayout.h" />
     <ClInclude Include="DescriptorSetLayoutGenerator.h" />
     <ClInclude Include="Dump.h" />
-    <ClInclude Include="ExportImage.h" />
     <ClInclude Include="Fence.h" />
     <ClInclude Include="FrameBuffer.h" />
     <ClInclude Include="Image.h" />
     <ClInclude Include="ImageFileLoader.h" />
     <ClInclude Include="InputHandler.h" />
     <ClInclude Include="JSONReader.h" />
+    <ClInclude Include="LazyInitSharedResource.h" />
     <ClInclude Include="Mesh.h" />
     <ClInclude Include="MipMapGenerator.h" />
     <ClInclude Include="ObjLoader.h" />
     <ClInclude Include="CommandRecordBase.h" />
     <ClInclude Include="Pipeline.h" />
+    <ClInclude Include="PipelineSet.h" />
     <ClInclude Include="QueueFamilyIndices.h" />
     <ClInclude Include="RayTracingShaderGroupGenerator.h" />
+    <ClInclude Include="RenderMeshList.h" />
+    <ClInclude Include="ShaderList.h" />
     <ClInclude Include="RenderPass.h" />
     <ClInclude Include="Sampler.h" />
     <ClInclude Include="Semaphore.h" />
@@ -238,7 +245,6 @@
     <ClInclude Include="ShadingRateSymbols.h" />
     <ClInclude Include="SwapChain.h" />
     <ClInclude Include="SwapChainSupportDetails.h" />
-    <ClInclude Include="TextFileReader.h" />
     <ClInclude Include="Timer.h" />
     <ClInclude Include="TopLevelAccelerationStructure.h" />
     <ClInclude Include="UltraLight.h" />
