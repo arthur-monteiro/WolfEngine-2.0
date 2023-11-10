@@ -8,7 +8,7 @@ void registerGlobalDeviceForDebugMarker(VkDevice device)
 }
 
 VKAPI_ATTR void VKAPI_CALL
-vkCmdDebugMarkerInsertEXT(VkCommandBuffer                    commandBuffer,
+vkCmdDebugMarkerInsertEXT(VkCommandBuffer                   commandBuffer,
                           const VkDebugMarkerMarkerInfoEXT* pMarkerInfo)
 {
     static const auto call = reinterpret_cast<PFN_vkCmdDebugMarkerInsertEXT>(

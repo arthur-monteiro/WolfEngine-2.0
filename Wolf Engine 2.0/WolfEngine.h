@@ -7,11 +7,14 @@
 #include <android/asset_manager.h>
 #endif
 
+#include "BindlessDescriptor.h"
 #include "CameraInterface.h"
 #include "CommandRecordBase.h"
 #include "Configuration.h"
 #include "Debug.h"
 #include "InputHandler.h"
+#include "RenderMeshList.h"
+#include "ShaderList.h"
 #include "SwapChain.h"
 #include "UltraLight.h"
 #include "Vulkan.h"
@@ -31,6 +34,7 @@ namespace Wolf
 		std::function<void()> bindUltralightCallbacks;
 
 		bool useOVR = false;
+		bool useBindlessDescriptor = false;
 
 		std::function<void(Debug::Severity, Debug::Type, const std::string&)> debugCallback;
 		std::function<void(uint32_t, uint32_t)> resizeCallback;
@@ -49,7 +53,7 @@ namespace Wolf
 		void initializePass(CommandRecordBase* pass) const;
 
 		bool windowShouldClose() const;
-		void updateEvents() const;
+		void updateEvents();
 		void frame(const std::span<CommandRecordBase*>& passes, const Semaphore* frameEndedSemaphore);
 
 		void waitIdle() const;
@@ -68,6 +72,9 @@ namespace Wolf
 
 		void setCameraInterface(CameraInterface* cameraInterface) { m_cameraInterface = cameraInterface; }
 		void setGameContexts(const std::vector<void*>& gameContexts) { m_gameContexts = gameContexts; }
+
+		RenderMeshList& getRenderMeshList() { return m_renderMeshList; }
+		BindlessDescriptor& getBindlessDescriptor() const { return *m_bindlessDescriptor; }
 
 	private:
 		void fillInitializeContext(InitializationContext& context) const;
@@ -103,5 +110,11 @@ namespace Wolf
 
 		bool m_resizeIsNeeded = false;
 		std::function<void(uint32_t, uint32_t)> m_resizeCallback;
+
+		// Mesh render
+		RenderMeshList m_renderMeshList;
+		ShaderList m_shaderList;
+		std::unique_ptr<BindlessDescriptor> m_bindlessDescriptor;
+		std::array<std::unique_ptr<Image>, 5> m_defaultImages;
 	};
 }

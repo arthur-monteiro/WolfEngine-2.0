@@ -11,7 +11,7 @@ namespace Wolf
 
 	struct ShaderCreateInfo
 	{
-		std::span<char> shaderCode;
+		std::vector<char> shaderCode;
 		const std::string& entryPointName = defaultEntryPointName;
 		VkShaderStageFlagBits stage;
 	};
@@ -21,16 +21,16 @@ namespace Wolf
 		VkRenderPass renderPass;
 
 		// Programming stages
-		std::span<ShaderCreateInfo> shaderCreateInfos;
+		std::vector<ShaderCreateInfo> shaderCreateInfos;
 
 		// IA
-		std::span<VkVertexInputBindingDescription> vertexInputBindingDescriptions;
-		std::span<VkVertexInputAttributeDescription> vertexInputAttributeDescriptions;
+		std::vector<VkVertexInputBindingDescription> vertexInputBindingDescriptions;
+		std::vector<VkVertexInputAttributeDescription> vertexInputAttributeDescriptions;
 		VkPrimitiveTopology topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
 		bool primitiveRestartEnable = false;
 
 		// Resources
-		std::span<VkDescriptorSetLayout> descriptorSetLayouts;
+		std::vector<VkDescriptorSetLayout> descriptorSetLayouts;
 
 		// Viewport
 		VkExtent2D extent = { 0, 0 };
@@ -50,7 +50,7 @@ namespace Wolf
 
 		// Color Blend
 		enum class BLEND_MODE { OPAQUE, TRANS_ADD, TRANS_ALPHA };
-		std::span<BLEND_MODE> blendModes;
+		std::vector<BLEND_MODE> blendModes;
 
 		// Depth testing
 		VkBool32 enableDepthTesting = VK_TRUE;
@@ -90,7 +90,7 @@ namespace Wolf
 
 	public:
 		static std::vector<char> readFile(const std::string& filename);
-		static VkShaderModule createShaderModule(const std::span<char>& code);
+		static VkShaderModule createShaderModule(const std::vector<char>& code);
 	};
 
 

@@ -141,18 +141,11 @@ void UniquePass::createPipeline(uint32_t width, uint32_t height)
 	pipelineCreateInfo.renderPass = m_renderPass->getRenderPass();
 
 	// Programming stages
-	std::vector<char> vertexShaderCode;
-	m_vertexShaderParser->readCompiledShader(vertexShaderCode);
-	std::vector<char> fragmentShaderCode;
-	m_fragmentShaderParser->readCompiledShader(fragmentShaderCode);
-
-	std::vector<ShaderCreateInfo> shaders(2);
-	shaders[0].shaderCode = vertexShaderCode;
-	shaders[0].stage = VK_SHADER_STAGE_VERTEX_BIT;
-	shaders[1].shaderCode = fragmentShaderCode;
-	shaders[1].stage = VK_SHADER_STAGE_FRAGMENT_BIT;
-
-	pipelineCreateInfo.shaderCreateInfos = shaders;
+	pipelineCreateInfo.shaderCreateInfos.resize(2);
+	m_vertexShaderParser->readCompiledShader(pipelineCreateInfo.shaderCreateInfos[0].shaderCode);
+	pipelineCreateInfo.shaderCreateInfos[0].stage = VK_SHADER_STAGE_VERTEX_BIT;
+	m_fragmentShaderParser->readCompiledShader(pipelineCreateInfo.shaderCreateInfos[1].shaderCode);
+	pipelineCreateInfo.shaderCreateInfos[1].stage = VK_SHADER_STAGE_FRAGMENT_BIT;
 
 	// IA
 	std::vector<VkVertexInputAttributeDescription> attributeDescriptions;

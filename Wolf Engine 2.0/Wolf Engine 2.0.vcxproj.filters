@@ -25,6 +25,12 @@
     <Filter Include="Ray Tracing">
       <UniqueIdentifier>{575762f8-77b8-4e7a-b8e4-6550b9cd4bf9}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Rendering Helpers">
+      <UniqueIdentifier>{38806dc3-b210-4ffd-9719-93e8fde1613f}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Render Meshs Info">
+      <UniqueIdentifier>{39a6d4c1-e746-4dd4-8f00-00e42fd31548}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Vulkan.cpp">
@@ -108,9 +114,6 @@
     <ClCompile Include="UltraLightSurface.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="TextFileReader.cpp">
-      <Filter>Helpers</Filter>
-    </ClCompile>
     <ClCompile Include="ShaderParser.cpp">
       <Filter>Helpers</Filter>
     </ClCompile>
@@ -167,6 +170,18 @@
     </ClCompile>
     <ClCompile Include="JSONReader.cpp">
       <Filter>Helpers</Filter>
+    </ClCompile>
+    <ClCompile Include="PipelineSet.cpp">
+      <Filter>Render Meshs Info</Filter>
+    </ClCompile>
+    <ClCompile Include="ShaderList.cpp">
+      <Filter>Render Meshs Info</Filter>
+    </ClCompile>
+    <ClCompile Include="RenderMeshList.cpp">
+      <Filter>Render Meshs Info</Filter>
+    </ClCompile>
+    <ClCompile Include="BindlessDescriptor.cpp">
+      <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -266,9 +281,6 @@
     <ClInclude Include="UltraLightSurface.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="TextFileReader.h">
-      <Filter>Helpers</Filter>
-    </ClInclude>
     <ClInclude Include="ShaderParser.h">
       <Filter>Helpers</Filter>
     </ClInclude>
@@ -311,9 +323,6 @@
     <ClInclude Include="Dump.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="ExportImage.h">
-      <Filter>Helpers</Filter>
-    </ClInclude>
     <ClInclude Include="DebugMarker.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -331,6 +340,21 @@
     </ClInclude>
     <ClInclude Include="JSONReader.h">
       <Filter>Helpers</Filter>
+    </ClInclude>
+    <ClInclude Include="LazyInitSharedResource.h">
+      <Filter>Helpers</Filter>
+    </ClInclude>
+    <ClInclude Include="ShaderList.h">
+      <Filter>Render Meshs Info</Filter>
+    </ClInclude>
+    <ClInclude Include="PipelineSet.h">
+      <Filter>Render Meshs Info</Filter>
+    </ClInclude>
+    <ClInclude Include="RenderMeshList.h">
+      <Filter>Render Meshs Info</Filter>
+    </ClInclude>
+    <ClInclude Include="BindlessDescriptor.h">
+      <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

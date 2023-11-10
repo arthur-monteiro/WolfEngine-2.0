@@ -4,6 +4,8 @@
 
 #include "Configuration.h"
 #include "Dump.h"
+#include "ImageFileLoader.h"
+#include "MipMapGenerator.h"
 #include "VulkanHelper.h"
 
 Wolf::WolfEngine::WolfEngine(const WolfInstanceCreateInfo& createInfo)
@@ -60,6 +62,45 @@ Wolf::WolfEngine::WolfEngine(const WolfInstanceCreateInfo& createInfo)
 		m_ultraLight->waitInitializationDone();
 	}
 #endif
+
+	g_shaderList = &m_shaderList;
+
+	if (createInfo.useBindlessDescriptor)
+	{
+		const std::array defaultImageFilename = {
+			"Textures/no_texture_albedo.png",
+			"Textures/no_texture_normal.png",
+			"Textures/no_texture_roughness.png",
+			"Textures/no_texture_metalness.png",
+			"Textures/no_texture_ao.png",
+		};
+
+		std::vector<DescriptorSetGenerator::ImageDescription> defaultImageDescription(defaultImageFilename.size());
+		for (uint32_t i = 0; i < defaultImageFilename.size(); ++i)
+		{
+			const ImageFileLoader imageFileLoader(defaultImageFilename[i]);
+			const MipMapGenerator mipmapGenerator(imageFileLoader.getPixels(), { static_cast<uint32_t>(imageFileLoader.getWidth()), static_cast<uint32_t>(imageFileLoader.getHeight()) }, VK_FORMAT_R8G8B8A8_SRGB);
+
+			CreateImageInfo createImageInfo;
+			createImageInfo.extent = { static_cast<uint32_t>(imageFileLoader.getWidth()), static_cast<uint32_t>(imageFileLoader.getHeight()), 1 };
+			createImageInfo.aspect = VK_IMAGE_ASPECT_COLOR_BIT;
+			createImageInfo.format = VK_FORMAT_R8G8B8A8_SRGB;
+			createImageInfo.mipLevelCount = mipmapGenerator.getMipLevelCount();
+			createImageInfo.usage = VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
+			m_defaultImages[i].reset(new Image(createImageInfo));
+			m_defaultImages[i]->copyCPUBuffer(imageFileLoader.getPixels(), Image::SampledInFragmentShader());
+
+			for (uint32_t mipLevel = 1; mipLevel < mipmapGenerator.getMipLevelCount(); ++mipLevel)
+			{
+				m_defaultImages[i]->copyCPUBuffer(mipmapGenerator.getMipLevel(mipLevel), Image::SampledInFragmentShader(mipLevel), mipLevel);
+			}
+
+			defaultImageDescription[i].imageView = m_defaultImages[i]->getDefaultImageView();
+			defaultImageDescription[i].imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+		}
+
+		m_bindlessDescriptor.reset(new BindlessDescriptor(defaultImageDescription));
+	}
 }
 
 void Wolf::WolfEngine::initializePass(CommandRecordBase* pass) const
@@ -79,7 +120,7 @@ bool Wolf::WolfEngine::windowShouldClose() const
 #endif
 }
 
-void Wolf::WolfEngine::updateEvents() const
+void Wolf::WolfEngine::updateEvents()
 {
 #ifndef __ANDROID__
 	m_window->pollEvents();
@@ -97,6 +138,9 @@ void Wolf::WolfEngine::updateEvents() const
 #ifndef __ANDROID__
 	m_inputHandler->moveToNextFrame();
 #endif
+
+	m_renderMeshList.moveToNextFrame();
+	m_shaderList.checkForModifiedShader();
 }
 
 void Wolf::WolfEngine::frame(const std::span<CommandRecordBase*>& passes, const Semaphore* frameEndedSemaphore)
@@ -148,6 +192,8 @@ void Wolf::WolfEngine::frame(const std::span<CommandRecordBase*>& passes, const 
 #endif
 	recordContext.camera = m_cameraInterface;
 	recordContext.gameContext = m_gameContexts[recordContext.commandBufferIdx];
+	recordContext.renderMeshList = &m_renderMeshList;
+	recordContext.bindlessDescriptorSet = m_bindlessDescriptor->getDescriptorSet();
 
 	for (CommandRecordBase* pass : passes)
 	{

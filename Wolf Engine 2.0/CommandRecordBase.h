@@ -9,8 +9,10 @@
 
 namespace Wolf
 {
-	class Image;
 	class CameraInterface;
+	class DescriptorSet;
+	class Image;
+	class RenderMeshList;
 
 	struct InitializationContext
 	{
@@ -35,6 +37,8 @@ namespace Wolf
 #endif
 		CameraInterface* camera;
 		const void* gameContext;
+		RenderMeshList* renderMeshList;
+		const DescriptorSet* bindlessDescriptorSet;
 	};
 
 	struct SubmitContext
