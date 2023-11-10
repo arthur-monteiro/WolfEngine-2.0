@@ -9,10 +9,11 @@ namespace Wolf
 	class ShaderList
 	{
 	public:
+		inline static const std::vector<std::string> defaultConditionBlocksToInclude = {};
 		struct AddShaderInfo
 		{
 			const std::string& filename;
-			const std::vector<std::string>& conditionBlocksToInclude = {};
+			const std::vector<std::string>& conditionBlocksToInclude = defaultConditionBlocksToInclude;
 
 			std::vector<std::function<void(const ShaderParser*)>> callbackWhenModified;
 
