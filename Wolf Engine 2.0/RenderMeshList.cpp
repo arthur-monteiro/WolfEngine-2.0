@@ -30,10 +30,10 @@ void Wolf::RenderMeshList::draw(VkCommandBuffer commandBuffer, RenderPass* rende
 	if (m_meshesToRenderByPipelineIdx.empty()) // no mesh added yet
 		return;
 
-	const std::vector<std::unique_ptr<RenderMesh>>& meshesToRender = m_meshesToRenderByPipelineIdx[pipelineIdx];
+	const std::vector<RenderMesh*>& meshesToRender = m_meshesToRenderByPipelineIdx[pipelineIdx];
 
 	const Pipeline* currentPipeline = nullptr;
-	for (const std::unique_ptr<RenderMesh>& mesh : meshesToRender)
+	for (const RenderMesh* mesh : meshesToRender)
 	{
 		if (const Pipeline* meshPipeline = mesh->getPipelineSet()->getOrCreatePipeline(pipelineIdx, renderPass); meshPipeline != currentPipeline)
 		{
@@ -56,20 +56,21 @@ void Wolf::RenderMeshList::moveToNextFrame()
 	m_meshesToRenderByPipelineIdx.clear();
 	m_meshesToRenderByPipelineIdx.resize(m_pipelineIdxCount);
 
+	m_currentFrameMeshesToRender.clear();
+	m_currentFrameMeshesToRender.swap(m_nextFrameMeshesToRender);
+
 	// Append mesh to render in the lists ordered by pipeline
 	for (uint32_t pipelineIdx = 0; pipelineIdx < m_pipelineIdxCount; ++pipelineIdx)
 	{
 		for (const uint64_t pipelineHash : m_uniquePipelinesHash)
 		{
-			for (std::unique_ptr<RenderMesh>& meshToRender : m_nextFrameMeshesToRender)
+			for (std::unique_ptr<RenderMesh>& meshToRender : m_currentFrameMeshesToRender)
 			{
-				if (meshToRender && meshToRender->getPipelineSet()->getPipelineHash(pipelineIdx) == pipelineHash)
-					m_meshesToRenderByPipelineIdx[pipelineIdx].push_back(std::unique_ptr<RenderMesh>(meshToRender.release()));
+				if (meshToRender->getPipelineSet()->getPipelineHash(pipelineIdx) == pipelineHash)
+					m_meshesToRenderByPipelineIdx[pipelineIdx].push_back(meshToRender.get());
 			}
 		}
 	}
-
-	m_nextFrameMeshesToRender.clear();
 }
 
 void Wolf::RenderMeshList::RenderMesh::draw(VkCommandBuffer commandBuffer, const Pipeline* pipeline) const

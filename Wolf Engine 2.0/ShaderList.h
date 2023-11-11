@@ -13,11 +13,11 @@ namespace Wolf
 		struct AddShaderInfo
 		{
 			const std::string& filename;
-			const std::vector<std::string>& conditionBlocksToInclude = defaultConditionBlocksToInclude;
+			const std::vector<std::string>& conditionBlocksToInclude;
 
 			std::vector<std::function<void(const ShaderParser*)>> callbackWhenModified;
 
-			AddShaderInfo(const std::string& filename) : filename(filename) {}
+			AddShaderInfo(const std::string& filename, const std::vector<std::string>& conditionBlocksToInclude = defaultConditionBlocksToInclude) : filename(filename), conditionBlocksToInclude(conditionBlocksToInclude) {}
 		};
 		const ShaderParser* addShader(const AddShaderInfo& addShaderInfo);
 

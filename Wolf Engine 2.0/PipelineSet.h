@@ -24,6 +24,7 @@ namespace Wolf
 			struct ShaderInfo
 			{
 				std::string shaderFilename;
+				std::vector<std::string> conditionBlocksToInclude;
 				std::string entryPointName = defaultEntryPointName;
 				VkShaderStageFlagBits stage;
 			};
@@ -70,6 +71,7 @@ namespace Wolf
 			std::vector<VkDynamicState> dynamicStates;
 		};
 		uint32_t addPipeline(const PipelineInfo& pipelineInfo, int32_t forceIdx = -1);
+		void updatePipeline(const PipelineInfo& pipelineInfo, uint32_t idx);
 
 		std::vector<uint64_t> retrieveAllPipelinesHash() const;
 		const Pipeline* getOrCreatePipeline(uint32_t idx, RenderPass* renderPass) const;
@@ -83,6 +85,7 @@ namespace Wolf
 		{
 		public:
 			InfoForPipeline(PipelineInfo pipelineCreateInfo);
+			InfoForPipeline(PipelineInfo pipelineCreateInfo, uint64_t hash) : m_pipelineInfo(std::move(pipelineCreateInfo)), m_hash(hash) {}
 
 			std::map<const RenderPass*, std::unique_ptr<Pipeline>>& getPipelines() { return m_pipelines; }
 			const PipelineInfo& getPipelineInfo() const { return m_pipelineInfo; }
