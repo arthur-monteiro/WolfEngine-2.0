@@ -65,7 +65,8 @@ namespace Wolf
 			MeshToRenderInfo::InstanceInfos m_instanceInfos;
 		};
 
-		std::vector<std::vector<std::unique_ptr<RenderMesh>>> m_meshesToRenderByPipelineIdx;
+		std::vector<std::vector<RenderMesh*>> m_meshesToRenderByPipelineIdx;
+		std::vector<std::unique_ptr<RenderMesh>> m_currentFrameMeshesToRender;
 		std::vector<std::unique_ptr<RenderMesh>> m_nextFrameMeshesToRender;
 
 		uint32_t m_pipelineIdxCount = 0;

@@ -1,7 +1,7 @@
 from flask import Flask
 import subprocess
 import os
-import win32gui
+import win32gui, win32com.client
 import pyautogui
 import threading
 import time
@@ -12,6 +12,9 @@ def screenshot(windowTitle):
     if windowTitle:
         hwnd = win32gui.FindWindow(None, windowTitle)
         if hwnd:
+            # Idk why but these 2 lines are needed (https://stackoverflow.com/questions/14295337/win32gui-setactivewindow-error-the-specified-procedure-could-not-be-found)
+            shell = win32com.client.Dispatch("WScript.Shell")
+            shell.SendKeys('%')
             win32gui.SetForegroundWindow(hwnd)
             time.sleep(0.1)
             x, y, x1, y1 = win32gui.GetClientRect(hwnd)
