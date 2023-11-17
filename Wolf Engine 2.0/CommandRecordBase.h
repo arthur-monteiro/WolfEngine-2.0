@@ -9,7 +9,7 @@
 
 namespace Wolf
 {
-	class CameraInterface;
+	class CameraList;
 	class DescriptorSet;
 	class Image;
 	class RenderMeshList;
@@ -23,7 +23,6 @@ namespace Wolf
 		uint32_t swapChainImageCount;
 		std::vector<Image*> swapChainImages;
 		Image* userInterfaceImage;
-		CameraInterface* camera;
 	};
 
 	struct RecordContext
@@ -35,7 +34,7 @@ namespace Wolf
 #ifndef __ANDROID__
 		GLFWwindow* glfwWindow;
 #endif
-		CameraInterface* camera;
+		CameraList* cameraList;
 		const void* gameContext;
 		RenderMeshList* renderMeshList;
 		const DescriptorSet* bindlessDescriptorSet;
@@ -54,6 +53,7 @@ namespace Wolf
 	class CommandRecordBase
 	{
 	public:
+		virtual ~CommandRecordBase() = default;
 		virtual void initializeResources(const InitializationContext& context) = 0;
 		virtual void resize(const InitializationContext& context) = 0;
 		virtual void record(const RecordContext& context) = 0;

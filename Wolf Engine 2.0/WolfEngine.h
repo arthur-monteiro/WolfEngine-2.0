@@ -8,7 +8,7 @@
 #endif
 
 #include "BindlessDescriptor.h"
-#include "CameraInterface.h"
+#include "CameraList.h"
 #include "CommandRecordBase.h"
 #include "Configuration.h"
 #include "Debug.h"
@@ -70,9 +70,9 @@ namespace Wolf
 
 		bool isRayTracingAvailable() const { return m_vulkan->isRayTracingAvailable(); }
 
-		void setCameraInterface(CameraInterface* cameraInterface) { m_cameraInterface = cameraInterface; }
 		void setGameContexts(const std::vector<void*>& gameContexts) { m_gameContexts = gameContexts; }
 
+		CameraList& getCameraList() { return m_cameraList; }
 		RenderMeshList& getRenderMeshList() { return m_renderMeshList; }
 		BindlessDescriptor& getBindlessDescriptor() const { return *m_bindlessDescriptor; }
 
@@ -102,7 +102,7 @@ namespace Wolf
 		uint32_t m_currentFrame = 0;
 
 		// Gameplay
-		CameraInterface* m_cameraInterface = nullptr;
+		CameraList m_cameraList;
 		std::vector<void*> m_gameContexts;
 #ifndef __ANDROID__
 		std::unique_ptr<InputHandler> m_inputHandler;

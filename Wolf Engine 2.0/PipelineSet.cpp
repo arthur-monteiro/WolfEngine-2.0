@@ -3,6 +3,7 @@
 #include <xxh64.hpp>
 
 #include "Debug.h"
+#include "GraphicCameraInterface.h"
 #include "RenderPass.h"
 #include "ShaderList.h"
 
@@ -72,6 +73,7 @@ const Wolf::Pipeline* Wolf::PipelineSet::getOrCreatePipeline(uint32_t idx, Rende
 			{
 				shaderCodeChanged(shaderParser);
 			});
+			addShaderInfo.cameraDescriptorSlot = pipelineInfo.cameraDescriptorSlot;
 
 			const ShaderParser* shaderParser = g_shaderList->addShader(addShaderInfo);
 			shaderParser->readCompiledShader(renderingPipelineCreateInfo.shaderCreateInfos[i].shaderCode);
@@ -86,6 +88,10 @@ const Wolf::Pipeline* Wolf::PipelineSet::getOrCreatePipeline(uint32_t idx, Rende
 
 		// Resources layouts
 		renderingPipelineCreateInfo.descriptorSetLayouts = pipelineInfo.descriptorSetLayouts;
+		if (pipelineInfo.cameraDescriptorSlot != static_cast<uint32_t>(-1))
+		{
+			renderingPipelineCreateInfo.descriptorSetLayouts.emplace(renderingPipelineCreateInfo.descriptorSetLayouts.begin() + pipelineInfo.cameraDescriptorSlot, GraphicCameraInterface::getDescriptorSetLayout());
+		}
 
 		// Viewport
 		renderingPipelineCreateInfo.extent = renderPass->getExtent();

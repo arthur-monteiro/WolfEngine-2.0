@@ -108,6 +108,11 @@ bool Wolf::InputHandler::keyMaintained(int key) const
 	return std::ranges::find(m_data.m_keysCache.inputMaintained, key) != m_data.m_keysCache.inputMaintained.end();
 }
 
+bool Wolf::InputHandler::keyPressedThisFrameOrMaintained(int key, const void* instancePtr) const
+{
+	return keyPressedThisFrame(key, instancePtr) || keyMaintained(key);
+}
+
 bool Wolf::InputHandler::keyReleasedThisFrame(int key, const void* instancePtr) const
 {
 	if (instancePtr)

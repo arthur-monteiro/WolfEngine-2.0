@@ -12,7 +12,7 @@ const Wolf::ShaderParser* Wolf::ShaderList::addShader(const AddShaderInfo& addSh
 		}
 	}
 
-	m_shaderInfos.emplace_back(addShaderInfo.filename, addShaderInfo.conditionBlocksToInclude);
+	m_shaderInfos.emplace_back(addShaderInfo.filename, addShaderInfo.conditionBlocksToInclude, addShaderInfo.cameraDescriptorSlot);
 	m_shaderInfos.back().getCallbackWhenModifiedList() = addShaderInfo.callbackWhenModified;
 
 	return m_shaderInfos.back().getShaderParser();
