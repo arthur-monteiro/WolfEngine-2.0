@@ -126,18 +126,18 @@ void Wolf::WolfEngine::updateEvents()
 	m_window->pollEvents();
 #endif
 
-	if (m_cameraInterface)
-	{
-#ifndef __ANDROID__
-		m_cameraInterface->update(m_window->getWindow());
-#else
-		m_cameraInterface->update();
-#endif
-	}
-
 #ifndef __ANDROID__
 	m_inputHandler->moveToNextFrame();
 #endif
+
+	CameraUpdateContext context{};
+	context.gameContext = m_gameContexts[m_currentFrame % g_configuration->getMaxCachedFrames()];
+#ifndef __ANDROID__
+	context.inputHandler = m_inputHandler.get();
+#endif
+	context.frameIdx = m_currentFrame;
+	context.swapChainExtent = m_swapChain->getImage(0)->getExtent();
+	m_cameraList.moveToNextFrame(context);
 
 	m_renderMeshList.moveToNextFrame();
 	m_shaderList.checkForModifiedShader();
@@ -190,10 +190,11 @@ void Wolf::WolfEngine::frame(const std::span<CommandRecordBase*>& passes, const 
 #ifndef __ANDROID__
 	recordContext.glfwWindow = m_window->getWindow();
 #endif
-	recordContext.camera = m_cameraInterface;
+	recordContext.cameraList = &m_cameraList;
 	recordContext.gameContext = m_gameContexts[recordContext.commandBufferIdx];
 	recordContext.renderMeshList = &m_renderMeshList;
-	recordContext.bindlessDescriptorSet = m_bindlessDescriptor->getDescriptorSet();
+	if (m_bindlessDescriptor)
+		recordContext.bindlessDescriptorSet = m_bindlessDescriptor->getDescriptorSet();
 
 	for (CommandRecordBase* pass : passes)
 	{
@@ -253,7 +254,6 @@ void Wolf::WolfEngine::fillInitializeContext(InitializationContext& context) con
 	if(m_ultraLight)
 		context.userInterfaceImage = m_ultraLight->getImage();
 #endif
-	context.camera = m_cameraInterface;
 }
 
 void Wolf::WolfEngine::resize(int width, int height)

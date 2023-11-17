@@ -31,6 +31,9 @@
     <Filter Include="Render Meshs Info">
       <UniqueIdentifier>{39a6d4c1-e746-4dd4-8f00-00e42fd31548}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Camera">
+      <UniqueIdentifier>{79af8656-b1b1-4cf1-9a4d-ee97a4c4d075}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Vulkan.cpp">
@@ -117,9 +120,6 @@
     <ClCompile Include="ShaderParser.cpp">
       <Filter>Helpers</Filter>
     </ClCompile>
-    <ClCompile Include="CameraInterface.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="MipMapGenerator.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -182,6 +182,21 @@
     </ClCompile>
     <ClCompile Include="BindlessDescriptor.cpp">
       <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="CameraInterface.cpp">
+      <Filter>Camera</Filter>
+    </ClCompile>
+    <ClCompile Include="FirstPersonCamera.cpp">
+      <Filter>Camera</Filter>
+    </ClCompile>
+    <ClCompile Include="CameraList.cpp">
+      <Filter>Camera</Filter>
+    </ClCompile>
+    <ClCompile Include="GraphicCameraInterface.cpp">
+      <Filter>Camera</Filter>
+    </ClCompile>
+    <ClCompile Include="OrthographicCamera.cpp">
+      <Filter>Camera</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -284,9 +299,6 @@
     <ClInclude Include="ShaderParser.h">
       <Filter>Helpers</Filter>
     </ClInclude>
-    <ClInclude Include="CameraInterface.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="MipMapGenerator.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -356,8 +368,26 @@
     <ClInclude Include="BindlessDescriptor.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="CameraList.h">
+      <Filter>Camera</Filter>
+    </ClInclude>
+    <ClInclude Include="FirstPersonCamera.h">
+      <Filter>Camera</Filter>
+    </ClInclude>
+    <ClInclude Include="CameraInterface.h">
+      <Filter>Camera</Filter>
+    </ClInclude>
+    <ClInclude Include="GraphicCameraInterface.h">
+      <Filter>Camera</Filter>
+    </ClInclude>
+    <ClInclude Include="OrthographicCamera.h">
+      <Filter>Camera</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="ShaderCommon.glsl" />
+    <None Include="Camera.glsl">
+      <Filter>Camera</Filter>
+    </None>
   </ItemGroup>
 </Project>

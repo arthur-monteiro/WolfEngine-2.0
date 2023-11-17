@@ -104,13 +104,13 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>..\Wolf Engine 2.0;..\ThirdParty\vulkan\Include;..\ThirdParty\freetype-2.8.1\include\freetype2;..\ThirdParty\stb_image;..\ThirdParty\glm;..\ThirdParty\tiny_obj;..\ThirdParty\GLFW\include;..\ThirdParty\OVR\Include;..\ThirdParty\UltraLight\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\Wolf Engine 2.0;..\ThirdParty\vulkan\Include;..\ThirdParty\stb_image;..\ThirdParty\glm;..\ThirdParty\tiny_obj;..\ThirdParty\GLFW\include;..\ThirdParty\OVR\Include;..\ThirdParty\UltraLight\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp20</LanguageStandard>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalLibraryDirectories>..\x64\Debug;..\ThirdParty\OVR\Lib\Windows\x64\Debug\VS2017;..\ThirdParty\freetype-2.8.1\lib\x64;..\ThirdParty\GLFW\lib-vc2019;..\ThirdParty\vulkan\Lib;..\ThirdParty\Wolf Engine\lib;..\ThirdParty\UltraLight\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>..\x64\Debug;..\ThirdParty\OVR\Lib\Windows\x64\Debug\VS2017;..\ThirdParty\GLFW\lib-vc2019;..\ThirdParty\vulkan\Lib;..\ThirdParty\Wolf Engine\lib;..\ThirdParty\UltraLight\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <AdditionalDependencies>vulkan-1.lib;glfw3.lib;LibOVR.lib;UltralightCore.lib;Ultralight.lib;WebCore.lib;AppCore.lib;Engine Core.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalOptions>/NODEFAULTLIB:msvcrt.lib %(AdditionalOptions)</AdditionalOptions>
     </Link>

@@ -40,6 +40,7 @@ namespace Wolf
 
 			// Resources layouts
 			std::vector<VkDescriptorSetLayout> descriptorSetLayouts;
+			uint32_t cameraDescriptorSlot = -1;
 
 			// Viewport
 			std::array<float, 2> viewportScale = { 1.0f, 1.0f };
@@ -76,6 +77,7 @@ namespace Wolf
 		std::vector<uint64_t> retrieveAllPipelinesHash() const;
 		const Pipeline* getOrCreatePipeline(uint32_t idx, RenderPass* renderPass) const;
 		uint64_t getPipelineHash(uint32_t idx) const { return m_infoForPipelines[idx]->getHash(); }
+		uint32_t getCameraDescriptorSlot(uint32_t idx) const { return m_infoForPipelines[idx]->getPipelineInfo().cameraDescriptorSlot; }
 
 	private:
 		void shaderCodeChanged(const ShaderParser* shaderParser) const;

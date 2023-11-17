@@ -11,8 +11,8 @@ namespace Wolf
 	public:
 		LazyInitSharedResource(const std::function<void(std::unique_ptr<T>&)>& initFunction);
 		~LazyInitSharedResource();
-
-		T* getResource() { return m_data.get(); }
+		
+		static T* getResource() { return m_data.get(); }
 
 	private:
 		inline static std::unique_ptr<T> m_data;

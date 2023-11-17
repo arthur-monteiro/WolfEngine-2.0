@@ -11,11 +11,12 @@
 #include "Debug.h"
 #include "ShaderCommon.h"
 
-Wolf::ShaderParser::ShaderParser(const std::string& filename, const std::vector<std::string>& conditionBlocksToInclude)
+Wolf::ShaderParser::ShaderParser(const std::string& filename, const std::vector<std::string>& conditionBlocksToInclude, uint32_t cameraDescriptorSlot)
 {
     m_filename = filename;
     m_filenamesWithLastModifiedTime.insert({ filename, std::filesystem::last_write_time(filename) });
     m_conditionBlocksToInclude = conditionBlocksToInclude;
+    m_cameraDescriptorSlot = cameraDescriptorSlot;
 
     parseAndCompile();
 }
@@ -98,6 +99,9 @@ void Wolf::ShaderParser::parseAndCompile()
     compiledFilename += extensionFound + ".spv";
 
     std::ofstream outFileGLSL(parsedFilename);
+
+    outFileGLSL << "#version 460\n";
+    addCameraCode(outFileGLSL);
 
     std::vector<std::string> currentConditions;
     std::string inShaderLine;
@@ -240,4 +244,22 @@ bool Wolf::ShaderParser::isRespectingConditions(const std::vector<std::string>& 
         Debug::sendError("Permutations are not available on android (std::ranges not supported)");
     }
 #endif
+}
+
+void Wolf::ShaderParser::addCameraCode(std::ofstream& outFileGLSL) const
+{
+    if (m_cameraDescriptorSlot == static_cast<uint32_t>(-1))
+        return;
+
+    std::string cameraCode = 
+		#include "Camera.glsl"
+    ;
+
+    const std::string& descriptorSlotToken = "£CAMERA_DESCRIPTOR_SLOT";
+    if (const size_t descriptorSlotTokenPos = cameraCode.find(descriptorSlotToken); descriptorSlotTokenPos != std::string::npos)
+    {
+        cameraCode.replace(descriptorSlotTokenPos, descriptorSlotToken.length(), std::to_string(m_cameraDescriptorSlot));
+    }
+
+    outFileGLSL << cameraCode;
 }

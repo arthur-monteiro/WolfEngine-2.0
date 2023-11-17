@@ -151,6 +151,7 @@
     <ClCompile Include="BottomLevelAccelerationStructure.cpp" />
     <ClCompile Include="Buffer.cpp" />
     <ClCompile Include="CameraInterface.cpp" />
+    <ClCompile Include="CameraList.cpp" />
     <ClCompile Include="CommandBuffer.cpp" />
     <ClCompile Include="CommandPool.cpp" />
     <ClCompile Include="Configuration.cpp" />
@@ -165,7 +166,9 @@
     <ClCompile Include="DescriptorSetLayoutGenerator.cpp" />
     <ClCompile Include="Dump.cpp" />
     <ClCompile Include="Fence.cpp" />
+    <ClCompile Include="FirstPersonCamera.cpp" />
     <ClCompile Include="FrameBuffer.cpp" />
+    <ClCompile Include="GraphicCameraInterface.cpp" />
     <ClCompile Include="Image.cpp" />
     <ClCompile Include="ImageFileLoader.cpp" />
     <ClCompile Include="InputHandler.cpp" />
@@ -174,6 +177,7 @@
     <ClCompile Include="MipMapGenerator.cpp" />
     <ClCompile Include="ObjLoader.cpp" />
     <ClCompile Include="CommandRecordBase.cpp" />
+    <ClCompile Include="OrthographicCamera.cpp" />
     <ClCompile Include="Pipeline.cpp" />
     <ClCompile Include="PipelineSet.cpp" />
     <ClCompile Include="RayTracingShaderGroupGenerator.cpp" />
@@ -205,6 +209,7 @@
     <ClInclude Include="BottomLevelAccelerationStructure.h" />
     <ClInclude Include="Buffer.h" />
     <ClInclude Include="CameraInterface.h" />
+    <ClInclude Include="CameraList.h" />
     <ClInclude Include="CommandBuffer.h" />
     <ClInclude Include="CommandPool.h" />
     <ClInclude Include="Configuration.h" />
@@ -219,7 +224,9 @@
     <ClInclude Include="DescriptorSetLayoutGenerator.h" />
     <ClInclude Include="Dump.h" />
     <ClInclude Include="Fence.h" />
+    <ClInclude Include="FirstPersonCamera.h" />
     <ClInclude Include="FrameBuffer.h" />
+    <ClInclude Include="GraphicCameraInterface.h" />
     <ClInclude Include="Image.h" />
     <ClInclude Include="ImageFileLoader.h" />
     <ClInclude Include="InputHandler.h" />
@@ -229,6 +236,7 @@
     <ClInclude Include="MipMapGenerator.h" />
     <ClInclude Include="ObjLoader.h" />
     <ClInclude Include="CommandRecordBase.h" />
+    <ClInclude Include="OrthographicCamera.h" />
     <ClInclude Include="Pipeline.h" />
     <ClInclude Include="PipelineSet.h" />
     <ClInclude Include="QueueFamilyIndices.h" />
@@ -256,6 +264,7 @@
     <ClInclude Include="WolfEngine.h" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="Camera.glsl" />
     <None Include="ShaderCommon.glsl" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
