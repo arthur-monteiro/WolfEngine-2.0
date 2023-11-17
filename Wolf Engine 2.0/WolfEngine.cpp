@@ -193,7 +193,8 @@ void Wolf::WolfEngine::frame(const std::span<CommandRecordBase*>& passes, const 
 	recordContext.cameraList = &m_cameraList;
 	recordContext.gameContext = m_gameContexts[recordContext.commandBufferIdx];
 	recordContext.renderMeshList = &m_renderMeshList;
-	recordContext.bindlessDescriptorSet = m_bindlessDescriptor->getDescriptorSet();
+	if (m_bindlessDescriptor)
+		recordContext.bindlessDescriptorSet = m_bindlessDescriptor->getDescriptorSet();
 
 	for (CommandRecordBase* pass : passes)
 	{

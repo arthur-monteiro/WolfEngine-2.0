@@ -1,5 +1,3 @@
-#version 450
-
 layout(binding = 0) uniform UniformBuffer
 {
     float offset;

@@ -1,5 +1,3 @@
-#version 450
-
 layout (binding = 1) uniform sampler2D tex;
 
 layout(location = 0) in vec2 inTexCoords;
