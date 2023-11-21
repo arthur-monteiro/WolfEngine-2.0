@@ -2,6 +2,7 @@
 
 #include <xxh64.hpp>
 
+#include "BindlessDescriptor.h"
 #include "Debug.h"
 #include "GraphicCameraInterface.h"
 #include "RenderPass.h"
@@ -14,7 +15,7 @@ uint32_t Wolf::PipelineSet::addPipeline(const PipelineInfo& pipelineInfo, int32_
 		if (static_cast<uint32_t>(forceIdx) > m_infoForPipelines.size())
 			Debug::sendWarning("A pipeline is inserted far from the previous one. It may cause issues if the gap is not filled before draw");
 		else if (static_cast<uint32_t>(forceIdx) < m_infoForPipelines.size() && m_infoForPipelines[forceIdx])
-			Debug::sendError("Trying to add a pipeline at a location where another pipeline resides. This is wrong and will remove the previous pipeline");
+			Debug::sendError("Trying to add a pipeline at a location where another pipeline resides. This will remove the previous pipeline");
 	}
 
 	const uint32_t insertionIdx = forceIdx >= 0 ? forceIdx : static_cast<uint32_t>(m_infoForPipelines.size());
@@ -22,6 +23,21 @@ uint32_t Wolf::PipelineSet::addPipeline(const PipelineInfo& pipelineInfo, int32_
 		m_infoForPipelines.resize(insertionIdx + 1);
 
 	m_infoForPipelines[insertionIdx].reset(new InfoForPipeline(pipelineInfo));
+
+	return insertionIdx;
+}
+
+uint32_t Wolf::PipelineSet::addEmptyPipeline(int32_t forceIdx)
+{
+	if (forceIdx >= 0)
+	{
+		if (static_cast<uint32_t>(forceIdx) < m_infoForPipelines.size() && m_infoForPipelines[forceIdx])
+			Debug::sendError("Trying to add a pipeline at a location where another pipeline resides. This will remove the previous pipeline");
+	}
+
+	const uint32_t insertionIdx = forceIdx >= 0 ? forceIdx : static_cast<uint32_t>(m_infoForPipelines.size());
+	if (m_infoForPipelines.size() < insertionIdx + 1)
+		m_infoForPipelines.resize(insertionIdx + 1);
 
 	return insertionIdx;
 }
@@ -44,7 +60,10 @@ std::vector<uint64_t> Wolf::PipelineSet::retrieveAllPipelinesHash() const
 	pipelinesHash.reserve(m_infoForPipelines.size());
 
 	for (const std::unique_ptr<InfoForPipeline>& infoForPipeline : m_infoForPipelines)
-		pipelinesHash.push_back(infoForPipeline->getHash());
+	{
+		if (infoForPipeline)
+			pipelinesHash.push_back(infoForPipeline->getHash());
+	}
 
 	return pipelinesHash;
 }
@@ -91,6 +110,10 @@ const Wolf::Pipeline* Wolf::PipelineSet::getOrCreatePipeline(uint32_t idx, Rende
 		if (pipelineInfo.cameraDescriptorSlot != static_cast<uint32_t>(-1))
 		{
 			renderingPipelineCreateInfo.descriptorSetLayouts.emplace(renderingPipelineCreateInfo.descriptorSetLayouts.begin() + pipelineInfo.cameraDescriptorSlot, GraphicCameraInterface::getDescriptorSetLayout());
+		}
+		if (pipelineInfo.bindlessDescriptorSlot != static_cast<uint32_t>(-1))
+		{
+			renderingPipelineCreateInfo.descriptorSetLayouts.emplace(renderingPipelineCreateInfo.descriptorSetLayouts.begin() + pipelineInfo.bindlessDescriptorSlot, BindlessDescriptor::getDescriptorSetLayout() );
 		}
 
 		// Viewport

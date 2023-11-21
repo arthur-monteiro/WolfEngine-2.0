@@ -175,7 +175,8 @@
     <ClCompile Include="JSONReader.cpp" />
     <ClCompile Include="Mesh.cpp" />
     <ClCompile Include="MipMapGenerator.cpp" />
-    <ClCompile Include="ObjLoader.cpp" />
+    <ClCompile Include="ModelBase.cpp" />
+    <ClCompile Include="ModelLoader.cpp" />
     <ClCompile Include="CommandRecordBase.cpp" />
     <ClCompile Include="OrthographicCamera.cpp" />
     <ClCompile Include="Pipeline.cpp" />
@@ -234,7 +235,8 @@
     <ClInclude Include="LazyInitSharedResource.h" />
     <ClInclude Include="Mesh.h" />
     <ClInclude Include="MipMapGenerator.h" />
-    <ClInclude Include="ObjLoader.h" />
+    <ClInclude Include="ModelBase.h" />
+    <ClInclude Include="ModelLoader.h" />
     <ClInclude Include="CommandRecordBase.h" />
     <ClInclude Include="OrthographicCamera.h" />
     <ClInclude Include="Pipeline.h" />

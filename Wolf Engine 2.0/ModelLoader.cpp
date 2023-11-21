@@ -1,4 +1,4 @@
-#include "ObjLoader.h"
+#include "ModelLoader.h"
 
 #include <filesystem>
 #define TINYOBJLOADER_IMPLEMENTATION
@@ -18,12 +18,12 @@ void Wolf::ModelData::getImages(std::vector<Image*>& outputImages) const
 	}
 }
 
-void Wolf::ObjLoader::loadObject(ModelData& outputModel, ModelLoadingInfo& modelLoadingInfo)
+void Wolf::ModelLoader::loadObject(ModelData& outputModel, ModelLoadingInfo& modelLoadingInfo)
 {
-	ObjLoader objLoader(outputModel, modelLoadingInfo);
+	ModelLoader objLoader(outputModel, modelLoadingInfo);
 }
 
-Wolf::ObjLoader::ObjLoader(ModelData& outputModel, ModelLoadingInfo& modelLoadingInfo) : m_outputModel(outputModel)
+Wolf::ModelLoader::ModelLoader(ModelData& outputModel, ModelLoadingInfo& modelLoadingInfo) : m_outputModel(outputModel)
 {
 #ifdef __ANDROID__
     if(modelLoadingInfo.isInAssets)
@@ -313,12 +313,12 @@ Wolf::ObjLoader::ObjLoader(ModelData& outputModel, ModelLoadingInfo& modelLoadin
 	}
 }
 
-inline std::string Wolf::ObjLoader::getTexName(const std::string& texName, const std::string& folder)
+inline std::string Wolf::ModelLoader::getTexName(const std::string& texName, const std::string& folder)
 {
 	return !texName.empty() ? folder + "/" + texName : "Textures/white_pixel.jpg";
 }
 
-void Wolf::ObjLoader::setImage(const std::string& filename, uint32_t idx, bool sRGB)
+void Wolf::ModelLoader::setImage(const std::string& filename, uint32_t idx, bool sRGB)
 {
 	const VkFormat format = sRGB ? VK_FORMAT_R8G8B8A8_SRGB : VK_FORMAT_R8G8B8A8_UNORM;
 

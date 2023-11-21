@@ -41,6 +41,7 @@ namespace Wolf
 			// Resources layouts
 			std::vector<VkDescriptorSetLayout> descriptorSetLayouts;
 			uint32_t cameraDescriptorSlot = -1;
+			uint32_t bindlessDescriptorSlot = -1;
 
 			// Viewport
 			std::array<float, 2> viewportScale = { 1.0f, 1.0f };
@@ -72,12 +73,14 @@ namespace Wolf
 			std::vector<VkDynamicState> dynamicStates;
 		};
 		uint32_t addPipeline(const PipelineInfo& pipelineInfo, int32_t forceIdx = -1);
+		uint32_t addEmptyPipeline(int32_t forceIdx = -1);
 		void updatePipeline(const PipelineInfo& pipelineInfo, uint32_t idx);
 
 		std::vector<uint64_t> retrieveAllPipelinesHash() const;
 		const Pipeline* getOrCreatePipeline(uint32_t idx, RenderPass* renderPass) const;
-		uint64_t getPipelineHash(uint32_t idx) const { return m_infoForPipelines[idx]->getHash(); }
+		uint64_t getPipelineHash(uint32_t idx) const { return m_infoForPipelines[idx] ? m_infoForPipelines[idx]->getHash() : 0; }
 		uint32_t getCameraDescriptorSlot(uint32_t idx) const { return m_infoForPipelines[idx]->getPipelineInfo().cameraDescriptorSlot; }
+		uint32_t getBindlessDescriptorSlot(uint32_t idx) const { return m_infoForPipelines[idx]->getPipelineInfo().bindlessDescriptorSlot; }
 
 	private:
 		void shaderCodeChanged(const ShaderParser* shaderParser) const;

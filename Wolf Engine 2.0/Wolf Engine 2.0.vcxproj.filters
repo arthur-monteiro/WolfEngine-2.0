@@ -34,6 +34,9 @@
     <Filter Include="Camera">
       <UniqueIdentifier>{79af8656-b1b1-4cf1-9a4d-ee97a4c4d075}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Model Management">
+      <UniqueIdentifier>{5c2d2da1-b7b1-41df-95a7-95f3b196ccf4}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Vulkan.cpp">
@@ -123,9 +126,6 @@
     <ClCompile Include="MipMapGenerator.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="ObjLoader.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="Timer.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -197,6 +197,12 @@
     </ClCompile>
     <ClCompile Include="OrthographicCamera.cpp">
       <Filter>Camera</Filter>
+    </ClCompile>
+    <ClCompile Include="ModelLoader.cpp">
+      <Filter>Model Management</Filter>
+    </ClCompile>
+    <ClCompile Include="ModelBase.cpp">
+      <Filter>Model Management</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -302,9 +308,6 @@
     <ClInclude Include="MipMapGenerator.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="ObjLoader.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="ShaderCommon.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -382,6 +385,12 @@
     </ClInclude>
     <ClInclude Include="OrthographicCamera.h">
       <Filter>Camera</Filter>
+    </ClInclude>
+    <ClInclude Include="ModelLoader.h">
+      <Filter>Model Management</Filter>
+    </ClInclude>
+    <ClInclude Include="ModelBase.h">
+      <Filter>Model Management</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

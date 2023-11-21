@@ -116,13 +116,13 @@ namespace Wolf
 		void getImages(std::vector<Image*>& outputImages) const;
 	};
 
-	class ObjLoader
+	class ModelLoader
 	{
 	public:
 		static void loadObject(ModelData& outputModel, ModelLoadingInfo& modelLoadingInfo);
 
 	private:
-		ObjLoader(ModelData& outputModel, ModelLoadingInfo& modelLoadingInfo);
+		ModelLoader(ModelData& outputModel, ModelLoadingInfo& modelLoadingInfo);
 
 		static std::string getTexName(const std::string& texName, const std::string& folder);
 		void setImage(const std::string& filename, uint32_t idx, bool sRGB);
