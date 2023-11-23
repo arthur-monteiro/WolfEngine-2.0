@@ -10,6 +10,7 @@
 #include <ImageFileLoader.h>
 #include <FrameBuffer.h>
 
+#include "RenderMeshList.h"
 #include "Vertex2DTextured.h"
 
 using namespace Wolf;
@@ -124,7 +125,7 @@ void UniquePass::record(const RecordContext& context)
 
 	vkCmdBindDescriptorSets(m_commandBuffer->getCommandBuffer(context.commandBufferIdx), VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipeline->getPipelineLayout(), 0, 1, m_descriptorSet->getDescriptorSet(context.commandBufferIdx), 0, nullptr);
 
-	m_triangle->draw(m_commandBuffer->getCommandBuffer(context.commandBufferIdx));
+	m_triangle->draw(m_commandBuffer->getCommandBuffer(context.commandBufferIdx), RenderMeshList::NO_CAMERA_IDX);
 
 	m_renderPass->endRenderPass(m_commandBuffer->getCommandBuffer(context.commandBufferIdx));
 

@@ -11,6 +11,7 @@
 #include <FrameBuffer.h>
 #include <ShadingRatePalette.h>
 
+#include "RenderMeshList.h"
 #include "Vertex2DTextured.h"
 
 using namespace Wolf;
@@ -159,7 +160,7 @@ void UniquePass::record(const RecordContext& context)
 	combiners[1] = VK_FRAGMENT_SHADING_RATE_COMBINER_OP_MAX_KHR;
 	vkCmdSetFragmentShadingRateKHR(m_commandBuffer->getCommandBuffer(context.commandBufferIdx), &fragmentExtent, combiners);
 
-	m_rectangle->draw(m_commandBuffer->getCommandBuffer(context.commandBufferIdx));
+	m_rectangle->draw(m_commandBuffer->getCommandBuffer(context.commandBufferIdx), RenderMeshList::NO_CAMERA_IDX);
 
 	m_renderPass->endRenderPass(m_commandBuffer->getCommandBuffer(context.commandBufferIdx));
 

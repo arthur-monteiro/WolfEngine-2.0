@@ -23,13 +23,13 @@
 mono_crash.*
 
 # Build results
-#[Dd]ebug/
+[Dd]ebug/
 [Dd]ebugPublic/
-#[Rr]elease/
-#[Rr]eleases/
-#x64/
-#x86/
-#[Ww][Ii][Nn]32/
+[Rr]elease/
+[Rr]eleases/
+x64/
+x86/
+[Ww][Ii][Nn]32/
 [Aa][Rr][Mm]/
 [Aa][Rr][Mm]64/
 bld/
@@ -80,7 +80,7 @@ StyleCopReport.xml
 *_h.h
 *.ilk
 *.meta
-#*.obj
+*.obj
 *.iobj
 *.pch
 *.pdb
@@ -104,6 +104,7 @@ StyleCopReport.xml
 *.scc
 *.o
 *.o.d
+*.idb
 
 # Chutzpah Test files
 _Chutzpah*
