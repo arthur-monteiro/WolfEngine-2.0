@@ -7,6 +7,7 @@
 #include <Image.h>
 #include <FrameBuffer.h>
 
+#include "RenderMeshList.h"
 #include "Vertex2D.h"
 #include "Vertex2DTextured.h"
 
@@ -149,13 +150,13 @@ void UniquePass::record(const RecordContext& context)
 	vkCmdBindPipeline(m_commandBuffer->getCommandBuffer(context.commandBufferIdx), VK_PIPELINE_BIND_POINT_GRAPHICS, m_trianglePipeline->getPipeline());
 	vkCmdBindDescriptorSets(m_commandBuffer->getCommandBuffer(context.commandBufferIdx), VK_PIPELINE_BIND_POINT_GRAPHICS, m_trianglePipeline->getPipelineLayout(), 0, 1,
 		m_triangleDescriptorSet->getDescriptorSet(), 0, nullptr);
-	m_triangle->draw(m_commandBuffer->getCommandBuffer(context.commandBufferIdx));
+	m_triangle->draw(m_commandBuffer->getCommandBuffer(context.commandBufferIdx), RenderMeshList::NO_CAMERA_IDX);
 
 	/* UI */
 	vkCmdBindPipeline(m_commandBuffer->getCommandBuffer(context.commandBufferIdx), VK_PIPELINE_BIND_POINT_GRAPHICS, m_userInterfacePipeline->getPipeline());
 	vkCmdBindDescriptorSets(m_commandBuffer->getCommandBuffer(context.commandBufferIdx), VK_PIPELINE_BIND_POINT_GRAPHICS, m_userInterfacePipeline->getPipelineLayout(), 0, 1, 
 		m_userInterfaceDescriptorSet->getDescriptorSet(), 0, nullptr);
-	m_fullScreenRectangle->draw(m_commandBuffer->getCommandBuffer(context.commandBufferIdx));
+	m_fullScreenRectangle->draw(m_commandBuffer->getCommandBuffer(context.commandBufferIdx), RenderMeshList::NO_CAMERA_IDX);
 
 	m_renderPass->endRenderPass(m_commandBuffer->getCommandBuffer(context.commandBufferIdx));
 

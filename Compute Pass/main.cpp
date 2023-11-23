@@ -40,7 +40,7 @@ int main(int argc, char* argv[])
 		std::vector<Wolf::CommandRecordBase*> passes(1);
 		passes[0] = &pass;
 
-		wolfInstance.updateEvents();
+		wolfInstance.updateBeforeFrame();
 		wolfInstance.frame(passes, pass.getSemaphore());
 	}
 
