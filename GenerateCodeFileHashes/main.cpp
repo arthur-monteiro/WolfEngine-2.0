@@ -45,7 +45,7 @@ int main()
 
         uint64_t hash = xxh64::hash(codeFileString.c_str(), codeFileString.size(), 0);
 
-        outFile << "\tconstexpr uint64_t " << macroName << " = " << hash << "ui64;\n";
+        outFile << "\tconstexpr uint64_t " << macroName << " = " << hash << "ULL;\n";
 
         std::cout << filename << " : " << hash << '\n';
     }
