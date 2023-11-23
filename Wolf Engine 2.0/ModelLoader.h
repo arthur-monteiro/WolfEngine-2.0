@@ -124,6 +124,12 @@ namespace Wolf
 	private:
 		ModelLoader(ModelData& outputModel, ModelLoadingInfo& modelLoadingInfo);
 
+		struct InternalShapeInfo
+		{
+			uint32_t indicesOffset;
+		};
+		bool loadCache(ModelLoadingInfo& modelLoadingInfo) const;
+
 		static std::string getTexName(const std::string& texName, const std::string& folder);
 		void setImage(const std::string& filename, uint32_t idx, bool sRGB);
 		
