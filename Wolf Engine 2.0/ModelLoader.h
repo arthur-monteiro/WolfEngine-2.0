@@ -126,8 +126,7 @@ namespace Wolf
 
 		static std::string getTexName(const std::string& texName, const std::string& folder);
 		void setImage(const std::string& filename, uint32_t idx, bool sRGB);
-
-		std::vector<int> m_toBeLast = { 2, 19, 0 }; // flower contains alpha blending
+		
 		bool m_useCache;
 		std::vector<std::vector<unsigned char>> m_imagesData;
 

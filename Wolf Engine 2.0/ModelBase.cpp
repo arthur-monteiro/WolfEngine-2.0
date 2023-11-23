@@ -48,7 +48,7 @@ Wolf::ModelBase::ModelBase(ModelLoadingInfo& modelLoadingInfo, bool requestAccel
 	}
 }
 
-void Wolf::ModelBase::addMeshesToRenderList(RenderMeshList& renderMeshList, const RenderMeshList::MeshToRenderInfo::InstanceInfos& instanceInfos) const
+void Wolf::ModelBase::addMeshToRenderList(RenderMeshList& renderMeshList, const RenderMeshList::MeshToRenderInfo::InstanceInfos& instanceInfos) const
 {
 	RenderMeshList::MeshToRenderInfo meshToRenderInfo(m_modelData.mesh.get(), m_pipelineSet);
 	meshToRenderInfo.descriptorSets.push_back({ m_descriptorSet.get(), 0 });
@@ -58,10 +58,10 @@ void Wolf::ModelBase::addMeshesToRenderList(RenderMeshList& renderMeshList, cons
 
 void Wolf::ModelBase::updateGraphic() const
 {
-	UniformBufferData mvp;
-	mvp.model = m_transform;
+	UniformBufferData uniformBufferData;
+	uniformBufferData.model = m_transform;
 
-	m_uniformBuffer->transferCPUMemory(&mvp, sizeof(mvp), 0);
+	m_uniformBuffer->transferCPUMemory(&uniformBufferData, sizeof(uniformBufferData), 0);
 }
 
 void Wolf::ModelBase::buildAccelerationStructures()
@@ -69,7 +69,7 @@ void Wolf::ModelBase::buildAccelerationStructures()
 	BottomLevelAccelerationStructureCreateInfo blasCreateInfo;
 	blasCreateInfo.buildFlags = VK_BUILD_ACCELERATION_STRUCTURE_PREFER_FAST_TRACE_BIT_KHR;
 	std::vector<GeometryInfo> geometries(1);
-	geometries[0].mesh = m_modelData.mesh.get();
+	geometries[0].mesh = m_modelData.mesh.get(); // to fix
 	blasCreateInfo.geometryInfos = geometries;
 	m_blas.reset(new BottomLevelAccelerationStructure(blasCreateInfo));
 }

@@ -21,7 +21,7 @@ namespace Wolf
 		ModelBase(const ModelBase&) = delete;
 		virtual ~ModelBase() = default;
 
-		virtual void addMeshesToRenderList(RenderMeshList& renderMeshList, const RenderMeshList::MeshToRenderInfo::InstanceInfos& instanceInfos = { nullptr, 1 }) const;
+		virtual void addMeshToRenderList(RenderMeshList& renderMeshList, const RenderMeshList::MeshToRenderInfo::InstanceInfos& instanceInfos = { nullptr, 1 }) const;
 		void updateGraphic() const;
 
 		const BottomLevelAccelerationStructure* getBLAS() const { return m_blas.get(); }

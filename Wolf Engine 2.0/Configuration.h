@@ -23,7 +23,7 @@ namespace Wolf
 		[[nodiscard]] bool getUseRenderDoc() const { return m_useRenderDoc; }
 
 #ifdef __ANDROID__
-		AAssetManager* getAndroidAssetManager() { return m_androidAssetManager; }
+		AAssetManager* getAndroidAssetManager() const { return m_androidAssetManager; }
 #endif
 
 	private:
@@ -38,6 +38,6 @@ namespace Wolf
 #endif
 	};
 
-	extern Configuration* g_configuration;
+	extern const Configuration* g_configuration;
 }
 

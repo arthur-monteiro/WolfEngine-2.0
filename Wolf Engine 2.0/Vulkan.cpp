@@ -8,7 +8,7 @@
 #include "SwapChainSupportDetails.h"
 #include "VulkanHelper.h"
 
-Wolf::Vulkan* Wolf::g_vulkanInstance = nullptr;
+const Wolf::Vulkan* Wolf::g_vulkanInstance = nullptr;
 
 void registerGlobalDeviceForDebugMarker(VkDevice device);
 

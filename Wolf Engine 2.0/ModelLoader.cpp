@@ -33,6 +33,11 @@ Wolf::ModelLoader::ModelLoader(ModelData& outputModel, ModelLoadingInfo& modelLo
     }
 #endif
 
+	struct InternalShapeInfo
+	{
+		uint32_t indicesOffset;
+	};
+
 	if (modelLoadingInfo.useCache)
 	{
 		std::string binFilename = modelLoadingInfo.filename + ".bin";
@@ -67,6 +72,19 @@ Wolf::ModelLoader::ModelLoader(ModelData& outputModel, ModelLoadingInfo& modelLo
 			m_outputModel.mesh.reset(new Mesh(vertices, indices, aabb, modelLoadingInfo.additionalVertexBufferUsages, modelLoadingInfo.additionalIndexBufferUsages, VK_FORMAT_R32G32B32_SFLOAT));
 			if (modelLoadingInfo.vulkanQueueLock)
 				modelLoadingInfo.vulkanQueueLock->unlock();
+
+			uint32_t shapeCount;
+			input.read(reinterpret_cast<char*>(&shapeCount), sizeof(shapeCount));
+			std::vector<InternalShapeInfo> shapes(shapeCount);
+			input.read(reinterpret_cast<char*>(shapes.data()), shapeCount * sizeof(shapes[0]));
+
+			for (uint32_t shapeIdx = 0; shapeIdx < shapes.size(); ++shapeIdx)
+			{
+				const InternalShapeInfo& shapeInfo = shapes[shapeIdx];
+				const InternalShapeInfo& nextShapeInfo = shapeIdx == shapes.size() - 1 ? InternalShapeInfo{ static_cast<uint32_t>(indices.size()) } : shapes[shapeIdx + 1];
+
+				m_outputModel.mesh->addSubMesh(shapeInfo.indicesOffset, nextShapeInfo.indicesOffset - shapeInfo.indicesOffset);
+			}
 
 			uint32_t textureCount;
 			input.read(reinterpret_cast<char*>(&textureCount), sizeof(textureCount));
@@ -138,24 +156,21 @@ Wolf::ModelLoader::ModelLoader(ModelData& outputModel, ModelLoadingInfo& modelLo
 	std::unordered_map<Vertex3D, uint32_t> uniqueVertices = {};
 	std::vector<Vertex3D> vertices;
 	std::vector<uint32_t> indices;
-
-	std::vector<uint32_t> lastIndices;
+	std::vector<InternalShapeInfo> shapeInfos(shapes.size());
 
 	glm::vec3 minPos(1'000'000.f);
 	glm::vec3 maxPos(-1'000'000.f);
 
 	bool hasEncounteredAnInvalidMaterialId = false;
-	for (const auto& shape : shapes)
+	for(uint32_t shapeIdx = 0; shapeIdx < shapes.size(); ++shapeIdx)
 	{
+		auto& [name, mesh, lines, points] = shapes[shapeIdx];
+		shapeInfos[shapeIdx].indicesOffset = static_cast<uint32_t>(indices.size());
+
 		int numVertex = 0;
-		for (const auto& index : shape.mesh.indices)
+		for (const auto& index : mesh.indices)
 		{
 			Vertex3D vertex = {};
-
-			int materialID = shape.mesh.material_ids[numVertex / 3];
-
-			//if (modelLoadingInfo.loadMaterials && materialID < 0)
-			//	continue;
 
 			vertex.pos =
 			{
@@ -200,27 +215,23 @@ Wolf::ModelLoader::ModelLoader(ModelData& outputModel, ModelLoadingInfo& modelLo
 				vertex.materialID = modelLoadingInfo.materialIdOffset;
 			else
 			{
-				int32_t materialId = shape.mesh.material_ids[numVertex / 3];
+				int32_t materialId = mesh.material_ids[numVertex / 3];
 				if (materialId < 0)
 				{
 					hasEncounteredAnInvalidMaterialId = true;
-					vertex.materialID = -1;
+					vertex.materialID = 0;
 				}
 				else
 					vertex.materialID = modelLoadingInfo.materialIdOffset + materialId;
 			}
 
-			if (uniqueVertices.count(vertex) == 0)
+			if (!uniqueVertices.contains(vertex))
 			{
 				uniqueVertices[vertex] = static_cast<uint32_t>(vertices.size());
 				vertices.push_back(vertex);
 			}
-
-			if (std::find(m_toBeLast.begin(), m_toBeLast.end(), materialID) == m_toBeLast.end())
-				indices.push_back(uniqueVertices[vertex]);
-			else
-				lastIndices.push_back(uniqueVertices[vertex]);
-
+			
+			indices.push_back(uniqueVertices[vertex]);
 			numVertex++;
 		}
 	}
@@ -229,9 +240,6 @@ Wolf::ModelLoader::ModelLoader(ModelData& outputModel, ModelLoadingInfo& modelLo
 		Debug::sendError("Loading model " + modelLoadingInfo.filename + ", invalid material ID found. Switching to default (0)");
 
 	AABB aabb(minPos, maxPos);
-
-	for (unsigned int index : lastIndices)
-		indices.push_back(index);
 
 	std::array<Vertex3D, 3> tempTriangle{};
 	for (size_t i(0); i <= indices.size(); ++i)
@@ -261,6 +269,18 @@ Wolf::ModelLoader::ModelLoader(ModelData& outputModel, ModelLoadingInfo& modelLo
 		tempTriangle[i % 3] = vertices[indices[i]];
 	}
 
+	m_outputModel.mesh.reset(new Mesh(vertices, indices, aabb, modelLoadingInfo.additionalVertexBufferUsages, modelLoadingInfo.additionalIndexBufferUsages));
+
+	for (uint32_t shapeIdx = 0; shapeIdx < shapeInfos.size(); ++shapeIdx)
+	{
+		const InternalShapeInfo& shapeInfo = shapeInfos[shapeIdx];
+		const InternalShapeInfo& nextShapeInfo = shapeIdx == shapeInfos.size() - 1 ? InternalShapeInfo{ static_cast<uint32_t>(indices.size()) } : shapeInfos[shapeIdx + 1];
+
+		m_outputModel.mesh->addSubMesh(shapeInfo.indicesOffset, nextShapeInfo.indicesOffset - shapeInfo.indicesOffset);
+	}
+
+	Debug::sendInfo("Model " + modelLoadingInfo.filename + " loaded with " + std::to_string(indices.size() / 3) + " triangles and " + std::to_string(shapeInfos.size()) + " shapes");
+
 	if (modelLoadingInfo.loadMaterials)
 	{
 		m_outputModel.images.resize(materials.size() * 5);
@@ -277,10 +297,6 @@ Wolf::ModelLoader::ModelLoader(ModelData& outputModel, ModelLoadingInfo& modelLo
 		}
 	}
 
-	m_outputModel.mesh.reset(new Mesh(vertices, indices, aabb, modelLoadingInfo.additionalVertexBufferUsages, modelLoadingInfo.additionalIndexBufferUsages));
-
-	Debug::sendInfo("Model loaded with " + std::to_string(indices.size() / 3) + " triangles");
-
 	if (modelLoadingInfo.useCache)
 	{
 		std::fstream outCacheFile(modelLoadingInfo.filename + ".bin", std::ios::out | std::ios::binary);
@@ -290,7 +306,9 @@ Wolf::ModelLoader::ModelLoader(ModelData& outputModel, ModelLoadingInfo& modelLo
 		outCacheFile.write(reinterpret_cast<char*>(&verticesCount), sizeof(uint32_t));
 		for(Vertex3D& vertex : vertices)
 		{
-			if (vertex.materialID != static_cast<uint32_t>(-1))
+			if (vertex.materialID == 0)
+				vertex.materialID = static_cast<uint32_t>(-1);
+			else
 				vertex.materialID -= modelLoadingInfo.materialIdOffset;
 		}
 		outCacheFile.write(reinterpret_cast<char*>(vertices.data()), verticesCount * sizeof(vertices[0]));
@@ -298,6 +316,13 @@ Wolf::ModelLoader::ModelLoader(ModelData& outputModel, ModelLoadingInfo& modelLo
 		outCacheFile.write(reinterpret_cast<char*>(&indicesCount), sizeof(uint32_t));
 		outCacheFile.write(reinterpret_cast<char*>(indices.data()), indicesCount * sizeof(indices[0]));
 		outCacheFile.write(reinterpret_cast<char*>(&aabb), sizeof(AABB));
+
+		uint32_t shapeCount = static_cast<uint32_t>(shapeInfos.size());
+		outCacheFile.write(reinterpret_cast<char*>(&shapeCount), sizeof(uint32_t));
+		for (const InternalShapeInfo& shapeInfo : shapeInfos)
+		{
+			outCacheFile.write(reinterpret_cast<const char*>(&shapeInfo), sizeof(InternalShapeInfo));
+		}
 
 		/* Textures*/
 		uint32_t imageCount = static_cast<uint32_t>(m_outputModel.images.size());

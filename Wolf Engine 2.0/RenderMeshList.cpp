@@ -37,7 +37,7 @@ void Wolf::RenderMeshList::draw(const RecordContext& context, VkCommandBuffer co
 	const Pipeline* currentPipeline = nullptr;
 	for (const RenderMesh* mesh : meshesToRender)
 	{
-		if (const Pipeline* meshPipeline = mesh->getPipelineSet()->getOrCreatePipeline(pipelineIdx, renderPass); meshPipeline != currentPipeline)
+		if (const Pipeline* meshPipeline = mesh->getPipelineSet()->getOrCreatePipeline(pipelineIdx, renderPass, m_shaderList); meshPipeline != currentPipeline)
 		{
 			vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, meshPipeline->getPipeline());
 			currentPipeline = meshPipeline;
@@ -66,17 +66,19 @@ void Wolf::RenderMeshList::draw(const RecordContext& context, VkCommandBuffer co
 			}
 		}
 
-		mesh->draw(commandBuffer, currentPipeline);
+		mesh->draw(commandBuffer, currentPipeline, cameraIdx);
 	}
 }
 
-void Wolf::RenderMeshList::moveToNextFrame()
+void Wolf::RenderMeshList::moveToNextFrame(const CameraList& cameraList)
 {
 	m_meshesToRenderByPipelineIdx.clear();
 	m_meshesToRenderByPipelineIdx.resize(m_pipelineIdxCount);
 
 	m_currentFrameMeshesToRender.clear();
 	m_currentFrameMeshesToRender.swap(m_nextFrameMeshesToRender);
+
+	std::vector<Mesh*> uniqueRenderMeshes;
 
 	// Append mesh to render in the lists ordered by pipeline
 	for (uint32_t pipelineIdx = 0; pipelineIdx < m_pipelineIdxCount; ++pipelineIdx)
@@ -86,13 +88,31 @@ void Wolf::RenderMeshList::moveToNextFrame()
 			for (std::unique_ptr<RenderMesh>& meshToRender : m_currentFrameMeshesToRender)
 			{
 				if (meshToRender->getPipelineSet()->getPipelineHash(pipelineIdx) == pipelineHash)
-					m_meshesToRenderByPipelineIdx[pipelineIdx].push_back(meshToRender.get());
+				{
+					RenderMesh* renderMeshPtr = meshToRender.get();
+					m_meshesToRenderByPipelineIdx[pipelineIdx].push_back(renderMeshPtr);
+
+					if (std::ranges::find(uniqueRenderMeshes, renderMeshPtr->getMesh()) == uniqueRenderMeshes.end())
+						uniqueRenderMeshes.push_back(renderMeshPtr->getMesh());
+				}
+			}
+		}
+	}
+
+	const std::vector<CameraInterface*>& activeCameras = cameraList.getCurrentCameras();
+	for (Mesh* mesh : uniqueRenderMeshes)
+	{
+		for (uint32_t cameraIdx = 0; cameraIdx < activeCameras.size(); ++cameraIdx)
+		{
+			if (const CameraInterface* camera = activeCameras[cameraIdx])
+			{
+				mesh->cullForCamera(cameraIdx, camera);
 			}
 		}
 	}
 }
 
-void Wolf::RenderMeshList::RenderMesh::draw(VkCommandBuffer commandBuffer, const Pipeline* pipeline) const
+void Wolf::RenderMeshList::RenderMesh::draw(VkCommandBuffer commandBuffer, const Pipeline* pipeline, uint32_t cameraIdx) const
 {
 	for (const MeshToRenderInfo::DescriptorSetBindInfo& descriptorSetBindInfo : m_descriptorSets)
 	{
@@ -107,5 +127,5 @@ void Wolf::RenderMeshList::RenderMesh::draw(VkCommandBuffer commandBuffer, const
 		vkCmdBindVertexBuffers(commandBuffer, 1, 1, &instanceBuffer, offsets);
 	}
 
-	m_mesh->draw(commandBuffer, m_instanceInfos.instanceCount);
+	m_mesh->draw(commandBuffer, cameraIdx, m_instanceInfos.instanceCount);
 }

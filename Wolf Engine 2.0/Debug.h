@@ -2,6 +2,7 @@
 
 #include <functional>
 #include <string>
+#include <vector>
 
 namespace Wolf
 {
@@ -35,6 +36,7 @@ namespace Wolf
 		{
 			m_callback(severity, Type::VULKAN, message);
 		}
+		static void sendMessageOnce(const std::string& message, Severity severity, const void* instancePtr);
 
 		static void setCallback(const std::function<void(Severity, Type, const std::string&)>& callback)
 		{
@@ -46,5 +48,6 @@ namespace Wolf
 		~Debug() = default;
 
 		inline static std::function<void(Severity, Type, const std::string&)> m_callback;
+		inline static std::vector<uint64_t> m_alreadySentHashes;
 	};
 }

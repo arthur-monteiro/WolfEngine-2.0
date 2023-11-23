@@ -53,7 +53,7 @@ namespace Wolf
 		void initializePass(CommandRecordBase* pass) const;
 
 		bool windowShouldClose() const;
-		void updateEvents();
+		void updateBeforeFrame();
 		void frame(const std::span<CommandRecordBase*>& passes, const Semaphore* frameEndedSemaphore);
 
 		void waitIdle() const;

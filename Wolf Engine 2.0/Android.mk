@@ -21,7 +21,8 @@ LOCAL_SRC_FILES := AndroidCacheHelper.cpp \
 	ImageFileLoader.cpp \
 	Mesh.cpp \
 	MipMapGenerator.cpp \
-	ObjLoader.cpp \
+	ModelBase.cpp \
+	ModelLoader.cpp \
 	Pipeline.cpp \
 	RayTracingSymbols.cpp \
 	RenderPass.cpp \

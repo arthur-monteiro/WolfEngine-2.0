@@ -68,7 +68,7 @@ std::vector<uint64_t> Wolf::PipelineSet::retrieveAllPipelinesHash() const
 	return pipelinesHash;
 }
 
-const Wolf::Pipeline* Wolf::PipelineSet::getOrCreatePipeline(uint32_t idx, RenderPass* renderPass) const
+const Wolf::Pipeline* Wolf::PipelineSet::getOrCreatePipeline(uint32_t idx, RenderPass* renderPass, ShaderList& shaderList) const
 {
 	if (!m_infoForPipelines[idx]->getPipelines().contains(renderPass))
 	{
@@ -94,7 +94,7 @@ const Wolf::Pipeline* Wolf::PipelineSet::getOrCreatePipeline(uint32_t idx, Rende
 			});
 			addShaderInfo.cameraDescriptorSlot = pipelineInfo.cameraDescriptorSlot;
 
-			const ShaderParser* shaderParser = g_shaderList->addShader(addShaderInfo);
+			const ShaderParser* shaderParser = shaderList.addShader(addShaderInfo);
 			shaderParser->readCompiledShader(renderingPipelineCreateInfo.shaderCreateInfos[i].shaderCode);
 			renderingPipelineCreateInfo.shaderCreateInfos[i].stage = pipelineInfo.shaderInfos[i].stage;
 		}

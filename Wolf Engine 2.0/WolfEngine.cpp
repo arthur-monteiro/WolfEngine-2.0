@@ -8,7 +8,7 @@
 #include "MipMapGenerator.h"
 #include "VulkanHelper.h"
 
-Wolf::WolfEngine::WolfEngine(const WolfInstanceCreateInfo& createInfo)
+Wolf::WolfEngine::WolfEngine(const WolfInstanceCreateInfo& createInfo) : m_renderMeshList(m_shaderList)
 {
 #ifdef _WIN32
 	SetUnhandledExceptionFilter(unhandledExceptionFilter);
@@ -35,7 +35,6 @@ Wolf::WolfEngine::WolfEngine(const WolfInstanceCreateInfo& createInfo)
 
 #ifndef __ANDROID__
 	m_window.reset(new Window(createInfo.applicationName, m_configuration->getWindowWidth(), m_configuration->getWindowHeight(), this, windowResizeCallback));
-	g_windowInstance = m_window.get();
 #endif
 
 #ifndef __ANDROID__
@@ -54,16 +53,14 @@ Wolf::WolfEngine::WolfEngine(const WolfInstanceCreateInfo& createInfo)
 	m_gameContexts.resize(m_configuration->getMaxCachedFrames());
 
 #ifndef __ANDROID__
-	m_inputHandler.reset(new InputHandler(m_window->getWindow()));
+	m_inputHandler.reset(new InputHandler(*m_window));
 
 	if (createInfo.htmlURL)
 	{
-		m_ultraLight.reset(new UltraLight(createInfo.htmlURL, createInfo.bindUltralightCallbacks, m_inputHandler.get()));
+		m_ultraLight.reset(new UltraLight(createInfo.htmlURL, createInfo.bindUltralightCallbacks, *m_inputHandler));
 		m_ultraLight->waitInitializationDone();
 	}
 #endif
-
-	g_shaderList = &m_shaderList;
 
 	if (createInfo.useBindlessDescriptor)
 	{
@@ -120,7 +117,7 @@ bool Wolf::WolfEngine::windowShouldClose() const
 #endif
 }
 
-void Wolf::WolfEngine::updateEvents()
+void Wolf::WolfEngine::updateBeforeFrame()
 {
 #ifndef __ANDROID__
 	m_window->pollEvents();
@@ -139,7 +136,7 @@ void Wolf::WolfEngine::updateEvents()
 	context.swapChainExtent = m_swapChain->getImage(0)->getExtent();
 	m_cameraList.moveToNextFrame(context);
 
-	m_renderMeshList.moveToNextFrame();
+	m_renderMeshList.moveToNextFrame(m_cameraList);
 	m_shaderList.checkForModifiedShader();
 }
 

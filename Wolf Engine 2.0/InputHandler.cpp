@@ -4,7 +4,7 @@
 
 #ifndef __ANDROID__
 
-static Wolf::InputHandler* inputHandlerInstance;
+inline static Wolf::InputHandler* inputHandlerInstance;
 
 void keyCallback(GLFWwindow* window, int key, int scancode, int action, int mods)
 {
@@ -21,13 +21,13 @@ void mouseButtonCallback(GLFWwindow* window, int button, int action, int mods)
 	inputHandlerInstance->inputHandlerMouseButtonCallback(window, button, action, mods);
 }
 
-Wolf::InputHandler::InputHandler(GLFWwindow* window) : m_window(window)
+Wolf::InputHandler::InputHandler(const Window& window) : m_window(window)
 {
 	inputHandlerInstance = this;
 
-	glfwSetKeyCallback(window, keyCallback);
-	glfwSetCharCallback(window, charCallback);
-	glfwSetMouseButtonCallback(window, mouseButtonCallback);
+	glfwSetKeyCallback(window.getWindow(), keyCallback);
+	glfwSetCharCallback(window.getWindow(), charCallback);
+	glfwSetMouseButtonCallback(window.getWindow(), mouseButtonCallback);
 }
 
 void Wolf::InputHandler::moveToNextFrame()
@@ -62,7 +62,7 @@ void Wolf::InputHandler::moveToNextFrame()
 	moveInputToNextFrame(m_data.m_mouseButtonsCache);
 
 	double currentMousePosX, currentMousePosY;
-	glfwGetCursorPos(m_window, &currentMousePosX, &currentMousePosY);
+	glfwGetCursorPos(m_window.getWindow(), &currentMousePosX, &currentMousePosY);
 	m_data.m_mousePosX = static_cast<float>(currentMousePosX);
 	m_data.m_mousePosY = static_cast<float>(currentMousePosY);
 }
@@ -172,6 +172,11 @@ void Wolf::InputHandler::inputHandlerMouseButtonCallback(GLFWwindow* window, int
 	{
 		m_data.m_mouseButtonsCache.inputReleasedForNextFrame.push_back(button);
 	}
+}
+
+void Wolf::InputHandler::setCursorType(Window::CursorType cursorType) const
+{
+	m_window.setCursorType(cursorType);
 }
 
 void Wolf::InputHandler::getMousePosition(float& outX, float& outY) const

@@ -20,7 +20,7 @@ namespace Wolf
 		bool windowVisible() const;
 
 		enum class CursorType { POINTER, HAND, IBEAM, HRESIZE, Count };
-		void setCursor(CursorType cursorType) const;
+		void setCursorType(CursorType cursorType) const;
 
 		[[nodiscard]] GLFWwindow* getWindow() const { return m_window; }
 
@@ -43,8 +43,6 @@ namespace Wolf
 		void* m_systemManagerInstance = nullptr;
 		std::function<void(void*, int, int)> m_resizeCallback;
 	};
-
-	extern Window* g_windowInstance;
 }
 
 #endif

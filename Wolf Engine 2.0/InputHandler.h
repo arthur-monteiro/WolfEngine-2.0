@@ -13,15 +13,17 @@ namespace Wolf
 	class InputHandler
 	{
 	public:
-		InputHandler(GLFWwindow* window);
+		InputHandler(const Window& window);
 		void moveToNextFrame();
 
+		// Cache management
 		void createCache(const void* instancePtr);
 		void lockCache(const void* instancePtr);
 		void pushDataToCache(const void* instancePtr);
 		void clearCache(const void* instancePtr);
 		void unlockCache(const void* instancePtr);
 
+		// Get infos
 		bool keyPressedThisFrame(int key, const void* instancePtr = nullptr) const;
 		bool keyMaintained(int key) const;
 		bool keyPressedThisFrameOrMaintained(int key, const void* instancePtr = nullptr) const;
@@ -32,11 +34,15 @@ namespace Wolf
 		bool mouseButtonPressedThisFrame(int button, const void* instancePtr = nullptr) const;
 		bool mouseButtonReleasedThisFrame(int button, const void* instancePtr = nullptr) const;
 
+		void getMousePosition(float& outX, float& outY) const;
+
+		// Callbacks
 		void inputHandlerKeyCallback(GLFWwindow* window, int key, int scancode, int action, int mods);
 		void inputHandlerCharCallback(GLFWwindow* window, unsigned int codepoint);
 		void inputHandlerMouseButtonCallback(GLFWwindow* window, int button, int action, int mods);
 
-		void getMousePosition(float& outX, float& outY) const;
+		// Actions
+		void setCursorType(Window::CursorType cursorType) const;
 
 	private:
 		struct InputCache
@@ -102,7 +108,7 @@ namespace Wolf
 
 		std::map<const void*, std::pair<AllInputData, std::mutex>> m_dataCache;
 
-		GLFWwindow* m_window;
+		const Window& m_window;
 	};
 }
 

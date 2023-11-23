@@ -111,5 +111,5 @@ namespace Wolf
 		std::unique_ptr<DescriptorPool> m_descriptorPool;
 	};
 
-	extern Vulkan* g_vulkanInstance;
+	extern const Vulkan* g_vulkanInstance;
 }

@@ -14,6 +14,7 @@
 namespace Wolf
 {
 	class RenderPass;
+	class ShaderList;
 	class ShaderParser;
 
 	class PipelineSet
@@ -77,7 +78,7 @@ namespace Wolf
 		void updatePipeline(const PipelineInfo& pipelineInfo, uint32_t idx);
 
 		std::vector<uint64_t> retrieveAllPipelinesHash() const;
-		const Pipeline* getOrCreatePipeline(uint32_t idx, RenderPass* renderPass) const;
+		const Pipeline* getOrCreatePipeline(uint32_t idx, RenderPass* renderPass, ShaderList& shaderList) const;
 		uint64_t getPipelineHash(uint32_t idx) const { return m_infoForPipelines[idx] ? m_infoForPipelines[idx]->getHash() : 0; }
 		uint32_t getCameraDescriptorSlot(uint32_t idx) const { return m_infoForPipelines[idx]->getPipelineInfo().cameraDescriptorSlot; }
 		uint32_t getBindlessDescriptorSlot(uint32_t idx) const { return m_infoForPipelines[idx]->getPipelineInfo().bindlessDescriptorSlot; }
