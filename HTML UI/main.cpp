@@ -2,7 +2,7 @@
 
 #include "UniquePass.h"
 
-void debugCallback(Wolf::Debug::Severity severity, Wolf::Debug::Type type, std::string message)
+void debugCallback(Wolf::Debug::Severity severity, Wolf::Debug::Type type, const std::string& message)
 {
 	if (severity == Wolf::Debug::Severity::VERBOSE)
 		return;

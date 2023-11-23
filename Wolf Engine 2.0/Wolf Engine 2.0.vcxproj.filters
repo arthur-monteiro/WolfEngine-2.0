@@ -407,6 +407,9 @@
     <ClInclude Include="UltralightViewListener.h">
       <Filter>UI</Filter>
     </ClInclude>
+    <ClInclude Include="CodeFileHashes.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="ShaderCommon.glsl" />

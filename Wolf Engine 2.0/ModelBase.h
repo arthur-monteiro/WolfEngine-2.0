@@ -52,5 +52,3 @@ namespace Wolf
 		std::unique_ptr<BottomLevelAccelerationStructure> m_blas;
 	};
 }
-
-

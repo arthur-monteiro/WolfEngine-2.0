@@ -125,6 +125,9 @@
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
     </Link>
+    <PreBuildEvent>
+      <Command>"../x64/Debug/GenerateCodeFileHashes.exe"</Command>
+    </PreBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <ClCompile>
@@ -213,6 +216,7 @@
     <ClInclude Include="Buffer.h" />
     <ClInclude Include="CameraInterface.h" />
     <ClInclude Include="CameraList.h" />
+    <ClInclude Include="CodeFileHashes.h" />
     <ClInclude Include="CommandBuffer.h" />
     <ClInclude Include="CommandPool.h" />
     <ClInclude Include="Configuration.h" />

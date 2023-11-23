@@ -53,7 +53,7 @@ Wolf::Image::Image(const CreateImageInfo& createImageInfo)
 	m_memoryProperties = createImageInfo.memoryProperties;
 	allocInfo.memoryTypeIndex = findMemoryType(g_vulkanInstance->getPhysicalDevice(), memRequirements.memoryTypeBits, createImageInfo.memoryProperties);
 
-	if (allocInfo.memoryTypeIndex < 0)
+	if (allocInfo.memoryTypeIndex == static_cast<uint32_t>(-1))
 		Debug::sendError("Error : no memory type found");
 
 	if (vkAllocateMemory(g_vulkanInstance->getDevice(), &allocInfo, nullptr, &m_imageMemory) != VK_SUCCESS)

@@ -6,6 +6,7 @@
 #include <thread>
 
 #include "AndroidCacheHelper.h"
+#include "CodeFileHashes.h"
 #include "ImageFileLoader.h"
 #include "MipMapGenerator.h"
 
@@ -33,110 +34,15 @@ Wolf::ModelLoader::ModelLoader(ModelData& outputModel, ModelLoadingInfo& modelLo
     }
 #endif
 
-	struct InternalShapeInfo
-	{
-		uint32_t indicesOffset;
-	};
+	Debug::sendInfo("Start loading " + modelLoadingInfo.filename);
 
 	if (modelLoadingInfo.useCache)
 	{
-		std::string binFilename = modelLoadingInfo.filename + ".bin";
-
-		if (std::filesystem::exists(binFilename))
-		{
-			std::ifstream input(binFilename, std::ios::in | std::ios::binary);
-
-			uint32_t verticesCount;
-			input.read(reinterpret_cast<char*>(&verticesCount), sizeof(verticesCount));
-			std::vector<Vertex3D> vertices(verticesCount);
-			input.read(reinterpret_cast<char*>(vertices.data()), verticesCount * sizeof(vertices[0]));
-
-			for (Vertex3D& vertex : vertices)
-			{
-				if (vertex.materialID == static_cast<uint32_t>(-1))
-					vertex.materialID = 0;
-				else
-					vertex.materialID += modelLoadingInfo.materialIdOffset;
-			}
-
-			uint32_t indicesCount;
-			input.read(reinterpret_cast<char*>(&indicesCount), sizeof(indicesCount));
-			std::vector<uint32_t> indices(indicesCount);
-			input.read(reinterpret_cast<char*>(indices.data()), indicesCount * sizeof(indices[0]));
-
-			AABB aabb{};
-			input.read(reinterpret_cast<char*>(&aabb), sizeof(AABB));
-
-			if (modelLoadingInfo.vulkanQueueLock)
-				modelLoadingInfo.vulkanQueueLock->lock();
-			m_outputModel.mesh.reset(new Mesh(vertices, indices, aabb, modelLoadingInfo.additionalVertexBufferUsages, modelLoadingInfo.additionalIndexBufferUsages, VK_FORMAT_R32G32B32_SFLOAT));
-			if (modelLoadingInfo.vulkanQueueLock)
-				modelLoadingInfo.vulkanQueueLock->unlock();
-
-			uint32_t shapeCount;
-			input.read(reinterpret_cast<char*>(&shapeCount), sizeof(shapeCount));
-			std::vector<InternalShapeInfo> shapes(shapeCount);
-			input.read(reinterpret_cast<char*>(shapes.data()), shapeCount * sizeof(shapes[0]));
-
-			for (uint32_t shapeIdx = 0; shapeIdx < shapes.size(); ++shapeIdx)
-			{
-				const InternalShapeInfo& shapeInfo = shapes[shapeIdx];
-				const InternalShapeInfo& nextShapeInfo = shapeIdx == shapes.size() - 1 ? InternalShapeInfo{ static_cast<uint32_t>(indices.size()) } : shapes[shapeIdx + 1];
-
-				m_outputModel.mesh->addSubMesh(shapeInfo.indicesOffset, nextShapeInfo.indicesOffset - shapeInfo.indicesOffset);
-			}
-
-			uint32_t textureCount;
-			input.read(reinterpret_cast<char*>(&textureCount), sizeof(textureCount));
-			m_outputModel.images.resize(textureCount);
-
-			if (modelLoadingInfo.vulkanQueueLock)
-				modelLoadingInfo.vulkanQueueLock->lock();
-
-			std::chrono::steady_clock::time_point startTimer = std::chrono::steady_clock::now();
-
-			for (uint32_t i(0); i < textureCount; ++i)
-			{
-				std::chrono::steady_clock::time_point currentTimer = std::chrono::steady_clock::now();
-				long long timeDiff = std::chrono::duration_cast<std::chrono::milliseconds>(currentTimer - startTimer).count();
-
-				if (timeDiff > 33 && modelLoadingInfo.vulkanQueueLock)
-				{
-					modelLoadingInfo.vulkanQueueLock->unlock();
-					std::this_thread::sleep_for(std::chrono::milliseconds(1));
-					modelLoadingInfo.vulkanQueueLock->lock();
-
-					startTimer = std::chrono::steady_clock::now();
-				}
-
-				VkExtent3D extent;
-				input.read(reinterpret_cast<char*>(&extent), sizeof(extent));
-
-				CreateImageInfo createImageInfo;
-				createImageInfo.extent = { (extent.width), (extent.height), 1 };
-				createImageInfo.aspect = VK_IMAGE_ASPECT_COLOR_BIT;
-				createImageInfo.format = i % 5 == 0 ? VK_FORMAT_R8G8B8A8_SRGB : VK_FORMAT_R8G8B8A8_UNORM;
-				createImageInfo.mipLevelCount = MAX_MIP_COUNT;
-				createImageInfo.usage = VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
-				m_outputModel.images[i].reset(new Image(createImageInfo));
-
-				for (uint32_t mipLevel = 0; mipLevel < m_outputModel.images[i]->getMipLevelCount(); ++mipLevel)
-				{
-					VkDeviceSize imageSize = (extent.width * extent.height * 4) >> mipLevel;
-
-					std::vector<unsigned char> pixels(imageSize);
-					input.read(reinterpret_cast<char*>(pixels.data()), pixels.size());
-
-					m_outputModel.images[i]->copyCPUBuffer(pixels.data(), Image::SampledInFragmentShader(mipLevel), mipLevel);
-				}
-			}
-
-			if (modelLoadingInfo.vulkanQueueLock)
-				modelLoadingInfo.vulkanQueueLock->unlock();
-
+		if (loadCache(modelLoadingInfo))
 			return;
-		}
 	}
+
+	Debug::sendInfo("Loading without cache");
 
 	m_useCache = modelLoadingInfo.useCache;
 
@@ -299,7 +205,13 @@ Wolf::ModelLoader::ModelLoader(ModelData& outputModel, ModelLoadingInfo& modelLo
 
 	if (modelLoadingInfo.useCache)
 	{
+		Debug::sendInfo("Creating new cache");
+
 		std::fstream outCacheFile(modelLoadingInfo.filename + ".bin", std::ios::out | std::ios::binary);
+
+		/* Hash */
+		uint64_t hash = HASH_MODEL_LOADER_CPP;
+		outCacheFile.write(reinterpret_cast<char*>(&hash), sizeof(hash));
 
 		/* Geometry */
 		uint32_t verticesCount = static_cast<uint32_t>(vertices.size());
@@ -336,6 +248,116 @@ Wolf::ModelLoader::ModelLoader(ModelData& outputModel, ModelLoadingInfo& modelLo
 
 		outCacheFile.close();
 	}
+}
+
+bool Wolf::ModelLoader::loadCache(ModelLoadingInfo& modelLoadingInfo) const
+{
+	std::string binFilename = modelLoadingInfo.filename + ".bin";
+	if (std::filesystem::exists(binFilename))
+	{
+		std::ifstream input(binFilename, std::ios::in | std::ios::binary);
+
+		uint64_t hash;
+		input.read(reinterpret_cast<char*>(&hash), sizeof(hash));
+		if (hash != HASH_MODEL_LOADER_CPP)
+		{
+			Debug::sendInfo("Cache found but hash is incorrect");
+			return false;
+		}
+
+		uint32_t verticesCount;
+		input.read(reinterpret_cast<char*>(&verticesCount), sizeof(verticesCount));
+		std::vector<Vertex3D> vertices(verticesCount);
+		input.read(reinterpret_cast<char*>(vertices.data()), verticesCount * sizeof(vertices[0]));
+
+		for (Vertex3D& vertex : vertices)
+		{
+			if (vertex.materialID == static_cast<uint32_t>(-1))
+				vertex.materialID = 0;
+			else
+				vertex.materialID += modelLoadingInfo.materialIdOffset;
+		}
+
+		uint32_t indicesCount;
+		input.read(reinterpret_cast<char*>(&indicesCount), sizeof(indicesCount));
+		std::vector<uint32_t> indices(indicesCount);
+		input.read(reinterpret_cast<char*>(indices.data()), indicesCount * sizeof(indices[0]));
+
+		AABB aabb{};
+		input.read(reinterpret_cast<char*>(&aabb), sizeof(AABB));
+
+		if (modelLoadingInfo.vulkanQueueLock)
+			modelLoadingInfo.vulkanQueueLock->lock();
+		m_outputModel.mesh.reset(new Mesh(vertices, indices, aabb, modelLoadingInfo.additionalVertexBufferUsages, modelLoadingInfo.additionalIndexBufferUsages, VK_FORMAT_R32G32B32_SFLOAT));
+		if (modelLoadingInfo.vulkanQueueLock)
+			modelLoadingInfo.vulkanQueueLock->unlock();
+
+		uint32_t shapeCount;
+		input.read(reinterpret_cast<char*>(&shapeCount), sizeof(shapeCount));
+		std::vector<InternalShapeInfo> shapes(shapeCount);
+		input.read(reinterpret_cast<char*>(shapes.data()), shapeCount * sizeof(shapes[0]));
+
+		for (uint32_t shapeIdx = 0; shapeIdx < shapes.size(); ++shapeIdx)
+		{
+			const InternalShapeInfo& shapeInfo = shapes[shapeIdx];
+			const InternalShapeInfo& nextShapeInfo = shapeIdx == shapes.size() - 1 ? InternalShapeInfo{ static_cast<uint32_t>(indices.size()) } : shapes[shapeIdx + 1];
+
+			m_outputModel.mesh->addSubMesh(shapeInfo.indicesOffset, nextShapeInfo.indicesOffset - shapeInfo.indicesOffset);
+		}
+
+		uint32_t textureCount;
+		input.read(reinterpret_cast<char*>(&textureCount), sizeof(textureCount));
+		m_outputModel.images.resize(textureCount);
+
+		if (modelLoadingInfo.vulkanQueueLock)
+			modelLoadingInfo.vulkanQueueLock->lock();
+
+		std::chrono::steady_clock::time_point startTimer = std::chrono::steady_clock::now();
+
+		for (uint32_t i(0); i < textureCount; ++i)
+		{
+			std::chrono::steady_clock::time_point currentTimer = std::chrono::steady_clock::now();
+			long long timeDiff = std::chrono::duration_cast<std::chrono::milliseconds>(currentTimer - startTimer).count();
+
+			if (timeDiff > 33 && modelLoadingInfo.vulkanQueueLock)
+			{
+				modelLoadingInfo.vulkanQueueLock->unlock();
+				std::this_thread::sleep_for(std::chrono::milliseconds(1));
+				modelLoadingInfo.vulkanQueueLock->lock();
+
+				startTimer = std::chrono::steady_clock::now();
+			}
+
+			VkExtent3D extent;
+			input.read(reinterpret_cast<char*>(&extent), sizeof(extent));
+
+			CreateImageInfo createImageInfo;
+			createImageInfo.extent = { (extent.width), (extent.height), 1 };
+			createImageInfo.aspect = VK_IMAGE_ASPECT_COLOR_BIT;
+			createImageInfo.format = i % 5 == 0 ? VK_FORMAT_R8G8B8A8_SRGB : VK_FORMAT_R8G8B8A8_UNORM;
+			createImageInfo.mipLevelCount = MAX_MIP_COUNT;
+			createImageInfo.usage = VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
+			m_outputModel.images[i].reset(new Image(createImageInfo));
+
+			for (uint32_t mipLevel = 0; mipLevel < m_outputModel.images[i]->getMipLevelCount(); ++mipLevel)
+			{
+				VkDeviceSize imageSize = (extent.width * extent.height * 4) >> mipLevel;
+
+				std::vector<unsigned char> pixels(imageSize);
+				input.read(reinterpret_cast<char*>(pixels.data()), pixels.size());
+
+				m_outputModel.images[i]->copyCPUBuffer(pixels.data(), Image::SampledInFragmentShader(mipLevel), mipLevel);
+			}
+		}
+
+		if (modelLoadingInfo.vulkanQueueLock)
+			modelLoadingInfo.vulkanQueueLock->unlock();
+
+		return true;
+	}
+
+	Debug::sendInfo("Cache not found");
+	return false;
 }
 
 inline std::string Wolf::ModelLoader::getTexName(const std::string& texName, const std::string& folder)
