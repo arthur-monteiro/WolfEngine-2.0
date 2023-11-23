@@ -34,6 +34,12 @@
     <Filter Include="Camera">
       <UniqueIdentifier>{79af8656-b1b1-4cf1-9a4d-ee97a4c4d075}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Model Management">
+      <UniqueIdentifier>{5c2d2da1-b7b1-41df-95a7-95f3b196ccf4}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="UI">
+      <UniqueIdentifier>{36c06d0a-65c5-45a9-9843-effd293e9b68}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Vulkan.cpp">
@@ -59,9 +65,6 @@
     </ClCompile>
     <ClCompile Include="CommandRecordBase.cpp">
       <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="Mesh.cpp">
-      <Filter>Helpers</Filter>
     </ClCompile>
     <ClCompile Include="ImageFileLoader.cpp">
       <Filter>Helpers</Filter>
@@ -111,19 +114,10 @@
     <ClCompile Include="Semaphore.cpp">
       <Filter>Vulkan Component</Filter>
     </ClCompile>
-    <ClCompile Include="UltraLight.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="UltraLightSurface.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="ShaderParser.cpp">
       <Filter>Helpers</Filter>
     </ClCompile>
     <ClCompile Include="MipMapGenerator.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="ObjLoader.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="Timer.cpp">
@@ -198,6 +192,27 @@
     <ClCompile Include="OrthographicCamera.cpp">
       <Filter>Camera</Filter>
     </ClCompile>
+    <ClCompile Include="ModelLoader.cpp">
+      <Filter>Model Management</Filter>
+    </ClCompile>
+    <ClCompile Include="ModelBase.cpp">
+      <Filter>Model Management</Filter>
+    </ClCompile>
+    <ClCompile Include="Mesh.cpp">
+      <Filter>Model Management</Filter>
+    </ClCompile>
+    <ClCompile Include="SubMesh.cpp">
+      <Filter>Model Management</Filter>
+    </ClCompile>
+    <ClCompile Include="UltraLight.cpp">
+      <Filter>UI</Filter>
+    </ClCompile>
+    <ClCompile Include="UltraLightSurface.cpp">
+      <Filter>UI</Filter>
+    </ClCompile>
+    <ClCompile Include="UltralightViewListener.cpp">
+      <Filter>UI</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="WolfEngine.h">
@@ -232,9 +247,6 @@
     </ClInclude>
     <ClInclude Include="Attachment.h">
       <Filter>Structures</Filter>
-    </ClInclude>
-    <ClInclude Include="Mesh.h">
-      <Filter>Helpers</Filter>
     </ClInclude>
     <ClInclude Include="ImageFileLoader.h">
       <Filter>Helpers</Filter>
@@ -290,19 +302,10 @@
     <ClInclude Include="SwapChain.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="UltraLight.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="UltraLightSurface.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="ShaderParser.h">
       <Filter>Helpers</Filter>
     </ClInclude>
     <ClInclude Include="MipMapGenerator.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="ObjLoader.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="ShaderCommon.h">
@@ -382,6 +385,27 @@
     </ClInclude>
     <ClInclude Include="OrthographicCamera.h">
       <Filter>Camera</Filter>
+    </ClInclude>
+    <ClInclude Include="ModelLoader.h">
+      <Filter>Model Management</Filter>
+    </ClInclude>
+    <ClInclude Include="ModelBase.h">
+      <Filter>Model Management</Filter>
+    </ClInclude>
+    <ClInclude Include="Mesh.h">
+      <Filter>Model Management</Filter>
+    </ClInclude>
+    <ClInclude Include="SubMesh.h">
+      <Filter>Model Management</Filter>
+    </ClInclude>
+    <ClInclude Include="UltraLight.h">
+      <Filter>UI</Filter>
+    </ClInclude>
+    <ClInclude Include="UltraLightSurface.h">
+      <Filter>UI</Filter>
+    </ClInclude>
+    <ClInclude Include="UltralightViewListener.h">
+      <Filter>UI</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

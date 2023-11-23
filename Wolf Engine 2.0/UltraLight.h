@@ -12,7 +12,7 @@
 #include "CommandBuffer.h"
 #include "Fence.h"
 #include "UltraLightSurface.h"
-#include "Window.h"
+#include "UltralightViewListener.h"
 
 namespace Wolf
 {
@@ -21,7 +21,7 @@ namespace Wolf
     class UltraLight
     {
     public:
-        UltraLight(const char* htmlURL, const std::function<void()>& bindCallbacks, InputHandler* inputHandler);
+        UltraLight(const char* htmlURL, const std::function<void()>& bindCallbacks, InputHandler& inputHandler);
         ~UltraLight();
 
         void waitInitializationDone() const;
@@ -43,7 +43,7 @@ namespace Wolf
         std::condition_variable m_updateCondition;
         std::function<void()> m_bindUltralightCallbacks;
         bool m_copySubmittedThisFrame = false;
-        InputHandler* m_inputHandler;
+        InputHandler& m_inputHandler;
 
         bool m_needUpdate = false;
         bool m_stopThreadRequested = false;
@@ -53,7 +53,8 @@ namespace Wolf
         class UltraLightImplementation : public ultralight::LoadListener, public ultralight::Logger
         {
         public:
-            UltraLightImplementation(uint32_t width, uint32_t height, const std::string& absoluteURL, std::string filePath);
+            UltraLightImplementation(uint32_t width, uint32_t height, const std::string& absoluteURL,
+                                     std::string filePath, const InputHandler& inputHandler);
             UltraLightImplementation(const UltraLightImplementation&) = delete;
 
             virtual void OnFinishLoading(ultralight::View* caller, uint64_t frame_id, bool is_main_frame, const ultralight::String& url) override;
@@ -66,7 +67,7 @@ namespace Wolf
 
             void waitForCopyFence() const;
             bool reloadIfModified();
-            void update(InputHandler* inputHandler) const;
+            void update(InputHandler& inputHandler) const;
             void render() const;
             void resize(uint32_t width, uint32_t height) const;
 
@@ -81,6 +82,7 @@ namespace Wolf
 
             ultralight::RefPtr<ultralight::Renderer> m_renderer;
             ultralight::RefPtr<ultralight::View> m_view;
+            std::unique_ptr<UltralightViewListener> m_viewListener;
 
             std::string m_filePath;
             std::filesystem::file_time_type m_lastUpdated;

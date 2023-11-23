@@ -1,10 +1,8 @@
 #include "ShaderList.h"
 
-Wolf::ShaderList* Wolf::g_shaderList;
-
 const Wolf::ShaderParser* Wolf::ShaderList::addShader(const AddShaderInfo& addShaderInfo)
 {
-	for (const ShaderInfo& shaderInfo : m_shaderInfos)
+	for (const ShaderInfo& shaderInfo : m_shadersInfo)
 	{
 		if (shaderInfo.getShaderParser()->isSame(addShaderInfo.filename, addShaderInfo.conditionBlocksToInclude))
 		{
@@ -12,15 +10,15 @@ const Wolf::ShaderParser* Wolf::ShaderList::addShader(const AddShaderInfo& addSh
 		}
 	}
 
-	m_shaderInfos.emplace_back(addShaderInfo.filename, addShaderInfo.conditionBlocksToInclude, addShaderInfo.cameraDescriptorSlot);
-	m_shaderInfos.back().getCallbackWhenModifiedList() = addShaderInfo.callbackWhenModified;
+	m_shadersInfo.emplace_back(addShaderInfo.filename, addShaderInfo.conditionBlocksToInclude, addShaderInfo.cameraDescriptorSlot);
+	m_shadersInfo.back().getCallbackWhenModifiedList() = addShaderInfo.callbackWhenModified;
 
-	return m_shaderInfos.back().getShaderParser();
+	return m_shadersInfo.back().getShaderParser();
 }
 
 void Wolf::ShaderList::checkForModifiedShader() const
 {
-	for (const ShaderInfo& shaderInfo : m_shaderInfos)
+	for (const ShaderInfo& shaderInfo : m_shadersInfo)
 	{
 		if (shaderInfo.getShaderParser()->compileIfFileHasBeenModified(shaderInfo.getShaderParser()->getCurrentConditionsBlocks()))
 		{

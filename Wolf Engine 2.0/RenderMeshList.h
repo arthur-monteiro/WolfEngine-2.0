@@ -7,6 +7,7 @@
 
 namespace Wolf
 {
+	class CameraList;
 	struct RecordContext;
 	class Buffer;
 	class DescriptorSet;
@@ -14,6 +15,7 @@ namespace Wolf
 	class Pipeline;
 	class PipelineSet;
 	class RenderPass;
+	class ShaderList;
 	class WolfEngine;
 
 	class RenderMeshList
@@ -21,7 +23,7 @@ namespace Wolf
 	public:
 		struct MeshToRenderInfo
 		{
-			const Mesh* mesh;
+			Mesh* mesh;
 			PipelineSet* pipelineSet;
 			struct DescriptorSetBindInfo
 			{
@@ -36,7 +38,7 @@ namespace Wolf
 			};
 			InstanceInfos instanceInfos;
 
-			MeshToRenderInfo(const Mesh* mesh, PipelineSet* pipelineSet) : mesh(mesh), pipelineSet(pipelineSet) {}
+			MeshToRenderInfo(Mesh* mesh, PipelineSet* pipelineSet) : mesh(mesh), pipelineSet(pipelineSet) {}
 		};
 		void addMeshToRender(const MeshToRenderInfo& meshToRenderInfo);
 
@@ -46,22 +48,23 @@ namespace Wolf
 	private:
 		friend WolfEngine;
 
-		RenderMeshList() = default;
+		RenderMeshList(ShaderList& shaderList) : m_shaderList(shaderList) {}
 
-		void moveToNextFrame();
+		void moveToNextFrame(const CameraList& cameraList);
 
 		class RenderMesh
 		{
 		public:
-			RenderMesh(const Mesh* mesh, PipelineSet* pipelineSet, std::vector<MeshToRenderInfo::DescriptorSetBindInfo> descriptorSets, const MeshToRenderInfo::InstanceInfos& instanceInfos) :
+			RenderMesh(Mesh* mesh, PipelineSet* pipelineSet, std::vector<MeshToRenderInfo::DescriptorSetBindInfo> descriptorSets, const MeshToRenderInfo::InstanceInfos& instanceInfos) :
 				m_mesh(mesh), m_pipelineSet(pipelineSet), m_descriptorSets(std::move(descriptorSets)), m_instanceInfos(instanceInfos) { }
 
-			void draw(VkCommandBuffer commandBuffer, const Pipeline* pipeline) const;
+			void draw(VkCommandBuffer commandBuffer, const Pipeline* pipeline, uint32_t cameraIdx) const;
 
 			PipelineSet* getPipelineSet() const { return m_pipelineSet; }
+			Mesh* getMesh() const { return m_mesh; }
 
 		private:
-			const Mesh* m_mesh;
+			Mesh* m_mesh;
 			PipelineSet* m_pipelineSet;
 			std::vector<MeshToRenderInfo::DescriptorSetBindInfo> m_descriptorSets;
 			MeshToRenderInfo::InstanceInfos m_instanceInfos;
@@ -73,5 +76,7 @@ namespace Wolf
 
 		uint32_t m_pipelineIdxCount = 0;
 		std::vector<uint64_t> m_uniquePipelinesHash; // list of all pipelines info hash
+
+		ShaderList& m_shaderList;
 	};
 }

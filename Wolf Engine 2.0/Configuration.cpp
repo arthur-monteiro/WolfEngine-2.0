@@ -5,7 +5,7 @@
 
 #include "Debug.h"
 
-Wolf::Configuration* Wolf::g_configuration = nullptr;
+const Wolf::Configuration* Wolf::g_configuration = nullptr;
 
 #ifndef __ANDROID__
 Wolf::Configuration::Configuration(const std::string& filename)
@@ -14,7 +14,7 @@ Wolf::Configuration::Configuration(const std::string& filename, AAssetManager* a
 #endif
 {
 	if (g_configuration)
-		Debug::sendCriticalError("Can't instanciate Configuration twice");
+		Debug::sendCriticalError("Can't instantiate Configuration twice");
 
 	std::ifstream configFile(filename);
 	std::string line;

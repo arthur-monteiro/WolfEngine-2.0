@@ -2,8 +2,6 @@
 
 #include <utility>
 
-Wolf::Window* Wolf::g_windowInstance = nullptr;
-
 Wolf::Window::Window(const std::string& appName, uint32_t width, uint32_t height, void* systemManagerInstance, std::function<void(void*, int, int)> resizeCallback)
 {
 	glfwInit();
@@ -40,7 +38,7 @@ bool Wolf::Window::windowVisible() const
 	return glfwGetWindowAttrib(m_window, GLFW_VISIBLE);
 }
 
-void Wolf::Window::setCursor(CursorType cursorType) const
+void Wolf::Window::setCursorType(CursorType cursorType) const
 {
 	glfwSetCursor(m_window, m_cursors[static_cast<uint32_t>(cursorType)]);
 }

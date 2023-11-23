@@ -1,18 +1,25 @@
 #pragma once
 
+#include <map>
+
 #include "AABB.h"
 #include "Buffer.h"
 #include "CommandBuffer.h"
 #include "Debug.h"
+#include "SubMesh.h"
 
 namespace Wolf
 {
+	class CameraInterface;
+
 	class Mesh
 	{
 	public:
 		template <typename T>
 		Mesh(const std::vector<T>& vertices, const std::vector<uint32_t>& indices, AABB aabb = {}, VkBufferUsageFlags additionalVertexBufferUsages = 0, VkBufferUsageFlags additionalIndexBufferUsages = 0, VkFormat vertexFormat = VK_FORMAT_UNDEFINED);
 		Mesh(const Mesh&) = delete;
+
+		void addSubMesh(uint32_t indicesOffset, uint32_t indexCount, AABB aabb = {});
 
 		[[nodiscard]] uint32_t getVertexCount() const { return m_vertexCount; }
 		[[nodiscard]] uint32_t getVertexSize() const { return m_vertexSize; }
@@ -31,7 +38,8 @@ namespace Wolf
 		[[nodiscard]] const Buffer& getIndexBuffer() const { return *m_indexBuffer; }
 		[[nodiscard]] const AABB& getAABB() const { return m_AABB; }
 
-		void draw(VkCommandBuffer commandBuffer, uint32_t instanceCount = 1) const;
+		void cullForCamera(uint32_t cameraIdx, const CameraInterface* camera);
+		void draw(VkCommandBuffer commandBuffer, uint32_t cameraIdx, uint32_t instanceCount = 1) const;
 
 	private:
 		std::unique_ptr<Buffer> m_vertexBuffer;
@@ -43,6 +51,15 @@ namespace Wolf
 		uint32_t m_indexCount;
 
 		AABB m_AABB;
+
+		std::vector<std::unique_ptr<SubMesh>> m_subMeshes;
+
+		struct SubMeshToDrawInfo
+		{
+			uint32_t indicesOffset;
+			uint32_t indexCount;
+		};
+		std::map<uint32_t, std::vector<std::unique_ptr<SubMeshToDrawInfo>>> m_subMeshesToDrawByCamera;
 	};
 
 	template<typename T>

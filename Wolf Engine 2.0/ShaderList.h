@@ -41,8 +41,6 @@ namespace Wolf
 			std::unique_ptr<ShaderParser> m_shaderParser;
 			std::vector<std::function<void(const ShaderParser*)>> m_callbackWhenModified;
 		};
-		std::vector<ShaderInfo> m_shaderInfos;
+		std::vector<ShaderInfo> m_shadersInfo;
 	};
-
-	extern ShaderList* g_shaderList;
 }

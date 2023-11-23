@@ -14,6 +14,7 @@ namespace Wolf
 		void addCameraForThisFrame(CameraInterface* camera, uint32_t idx);
 
 		const CameraInterface* getCamera(uint32_t idx) const;
+		const std::vector<CameraInterface*>& getCurrentCameras() const { return m_currentCameras; }
 
 	private:
 		friend WolfEngine;

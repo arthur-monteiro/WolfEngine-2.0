@@ -12,73 +12,8 @@
 
 using namespace ultralight;
 
-class ViewListener : public ultralight::ViewListener
+Wolf::UltraLight::UltraLight(const char* htmlURL, const std::function<void()>& bindCallbacks, InputHandler& inputHandler) : m_inputHandler(inputHandler)
 {
-public:
-    virtual void OnAddConsoleMessage(ultralight::View* caller,
-        MessageSource source,
-        MessageLevel level,
-        const String& message,
-        uint32_t line_number,
-        uint32_t column_number,
-        const String& source_id)
-    {
-	    const std::string logMessage = "Ultralight console: " + std::string(message.utf8().data()) + " in " + std::string(source_id.utf8().data()) + " line " + std::to_string(line_number);
-
-	    switch (level)
-	    {
-	    case kMessageLevel_Log:
-	    case kMessageLevel_Debug:
-	    case kMessageLevel_Info:
-            Wolf::Debug::sendInfo(logMessage);
-            break;
-	    case kMessageLevel_Warning:
-            Wolf::Debug::sendWarning(logMessage);
-            break;
-        case kMessageLevel_Error:
-            Wolf::Debug::sendError(logMessage);
-            break;
-	    }
-    }
-
-    virtual void OnChangeCursor(ultralight::View* caller, Cursor cursor)
-    {
-        if (cursor != m_currentCursor)
-        {
-            m_currentCursor = cursor;
-
-            Wolf::Window::CursorType windowCursorType = Wolf::Window::CursorType::POINTER;
-            switch (cursor)
-            {
-				case kCursor_Pointer:
-					windowCursorType = Wolf::Window::CursorType::POINTER;
-                    break;
-				case kCursor_Hand:
-					windowCursorType = Wolf::Window::CursorType::HAND;
-                    break;
-            	case kCursor_IBeam:
-                    windowCursorType = Wolf::Window::CursorType::IBEAM;
-                    break;
-            	case kCursor_ColumnResize:
-                    windowCursorType = Wolf::Window::CursorType::HRESIZE;
-                    break;
-				default:
-                    Wolf::Debug::sendError("Unhandled cursor type");
-                    break;
-            }
-
-            Wolf::g_windowInstance->setCursor(windowCursorType);
-        }
-    }
-
-private:
-    Cursor m_currentCursor = kCursor_Pointer;
-};
-static ::ViewListener viewListener;
-
-Wolf::UltraLight::UltraLight(const char* htmlURL, const std::function<void()>& bindCallbacks, InputHandler* inputHandler)
-{
-    m_inputHandler = inputHandler;
     m_thread = std::thread(&UltraLight::processImplementation, this, htmlURL, bindCallbacks);
 }
 
@@ -101,9 +36,9 @@ void Wolf::UltraLight::waitInitializationDone() const
 
 void Wolf::UltraLight::processFrameJobs()
 {
-    m_inputHandler->lockCache(m_ultraLightImplementation.get());
-    m_inputHandler->pushDataToCache(m_ultraLightImplementation.get());
-    m_inputHandler->unlockCache(m_ultraLightImplementation.get());
+    m_inputHandler.lockCache(m_ultraLightImplementation.get());
+    m_inputHandler.pushDataToCache(m_ultraLightImplementation.get());
+    m_inputHandler.unlockCache(m_ultraLightImplementation.get());
 
     if (m_mutex.try_lock())
     {
@@ -162,8 +97,8 @@ void Wolf::UltraLight::processImplementation(const char* htmlURL, const std::fun
             escapedCurrentPath += currentPathChar;
     }
     const std::string absoluteURL = "file:///" + escapedCurrentPath + "/" + htmlURL;
-    m_ultraLightImplementation.reset(new UltraLightImplementation(g_configuration->getWindowWidth(), g_configuration->getWindowHeight(), absoluteURL, htmlURL));
-    m_inputHandler->createCache(m_ultraLightImplementation.get());
+    m_ultraLightImplementation.reset(new UltraLightImplementation(g_configuration->getWindowWidth(), g_configuration->getWindowHeight(), absoluteURL, htmlURL, m_inputHandler));
+    m_inputHandler.createCache(m_ultraLightImplementation.get());
 
     m_bindUltralightCallbacks = bindCallbacks;
 
@@ -211,9 +146,11 @@ void Wolf::UltraLight::processImplementation(const char* htmlURL, const std::fun
     }
 }
 
-Wolf::UltraLight::UltraLightImplementation::UltraLightImplementation(uint32_t width, uint32_t height, const std::string& absoluteURL, std::string filePath) : m_filePath(std::move(filePath))
+Wolf::UltraLight::UltraLightImplementation::UltraLightImplementation(uint32_t width, uint32_t height, const std::string& absoluteURL, std::string filePath, const InputHandler& inputHandler)
+	: m_filePath(std::move(filePath))
 {
     m_lastUpdated = std::filesystem::last_write_time(m_filePath);
+    m_viewListener.reset(new UltralightViewListener(inputHandler));
 
     Config config;
     config.device_scale = 1.0;
@@ -229,7 +166,7 @@ Wolf::UltraLight::UltraLightImplementation::UltraLightImplementation(uint32_t wi
     m_renderer = Renderer::Create();
     m_view = m_renderer->CreateView(width, height, true, nullptr);
     m_view->set_load_listener(this);
-    m_view->set_view_listener(&viewListener);
+    m_view->set_view_listener(m_viewListener.get());
     //m_view->LoadHTML(htmlString);
     m_view->LoadURL(absoluteURL.c_str());
     m_view->Focus();
@@ -324,17 +261,17 @@ bool Wolf::UltraLight::UltraLightImplementation::reloadIfModified()
     return false;
 }
 
-void Wolf::UltraLight::UltraLightImplementation::update(InputHandler* inputHandler) const
+void Wolf::UltraLight::UltraLightImplementation::update(InputHandler& inputHandler) const
 {
     float xscale, yscale;
     glfwGetMonitorContentScale(glfwGetPrimaryMonitor(), &xscale, &yscale);
 
-    inputHandler->lockCache(this);
+    inputHandler.lockCache(this);
 
     MouseEvent mouseEvent;
 
     float currentMousePosX, currentMousePosY;
-    inputHandler->getMousePosition(currentMousePosX, currentMousePosY);
+    inputHandler.getMousePosition(currentMousePosX, currentMousePosY);
     mouseEvent.x = static_cast<int>(currentMousePosX);
     mouseEvent.y = static_cast<int>(currentMousePosY);
 
@@ -344,14 +281,14 @@ void Wolf::UltraLight::UltraLightImplementation::update(InputHandler* inputHandl
     m_view->FireMouseEvent(mouseEvent);
 
     
-    if (inputHandler->mouseButtonPressedThisFrame(GLFW_MOUSE_BUTTON_LEFT, this))
+    if (inputHandler.mouseButtonPressedThisFrame(GLFW_MOUSE_BUTTON_LEFT, this))
     {
         mouseEvent.type = MouseEvent::kType_MouseDown;
         mouseEvent.button = MouseEvent::kButton_Left;
 
         m_view->FireMouseEvent(mouseEvent);
     }
-    else if (inputHandler->mouseButtonReleasedThisFrame(GLFW_MOUSE_BUTTON_LEFT, this))
+    else if (inputHandler.mouseButtonReleasedThisFrame(GLFW_MOUSE_BUTTON_LEFT, this))
     {
         mouseEvent.type = MouseEvent::kType_MouseUp;
         mouseEvent.button = MouseEvent::kButton_Left;
@@ -359,7 +296,7 @@ void Wolf::UltraLight::UltraLightImplementation::update(InputHandler* inputHandl
         m_view->FireMouseEvent(mouseEvent);
     }
 
-    if (inputHandler->keyPressedThisFrame(GLFW_KEY_BACKSPACE, this))
+    if (inputHandler.keyPressedThisFrame(GLFW_KEY_BACKSPACE, this))
     {
         KeyEvent keyEvent;
         keyEvent.type = KeyEvent::kType_KeyDown;
@@ -367,7 +304,7 @@ void Wolf::UltraLight::UltraLightImplementation::update(InputHandler* inputHandl
         keyEvent.is_system_key = false;
         m_view->FireKeyEvent(keyEvent);
     }
-    if (inputHandler->keyPressedThisFrame(GLFW_KEY_ENTER, this) || inputHandler->keyPressedThisFrame(GLFW_KEY_KP_ENTER, this))
+    if (inputHandler.keyPressedThisFrame(GLFW_KEY_ENTER, this) || inputHandler.keyPressedThisFrame(GLFW_KEY_KP_ENTER, this))
     {
         KeyEvent keyEvent;
         keyEvent.type = KeyEvent::kType_Char;
@@ -377,7 +314,7 @@ void Wolf::UltraLight::UltraLightImplementation::update(InputHandler* inputHandl
         m_view->FireKeyEvent(keyEvent);
     }
 
-    const std::vector<int>& characterPressed = inputHandler->getCharactersPressedThisFrame(this);
+    const std::vector<int>& characterPressed = inputHandler.getCharactersPressedThisFrame(this);
     for(const int character : characterPressed)
     {
         KeyEvent keyEvent;
@@ -387,8 +324,8 @@ void Wolf::UltraLight::UltraLightImplementation::update(InputHandler* inputHandl
         m_view->FireKeyEvent(keyEvent);
     }
 
-    inputHandler->clearCache(this);
-    inputHandler->unlockCache(this);
+    inputHandler.clearCache(this);
+    inputHandler.unlockCache(this);
     
     m_renderer->Update();
 }
