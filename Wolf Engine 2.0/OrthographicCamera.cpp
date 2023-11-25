@@ -36,3 +36,9 @@ glm::vec3 Wolf::OrthographicCamera::getPosition() const
 {
 	return m_center - m_heightFromCenter * normalize(m_direction);
 }
+
+bool Wolf::OrthographicCamera::isAABBVisible(const AABB& aabb) const
+{
+	// TODO
+	return true;
+}

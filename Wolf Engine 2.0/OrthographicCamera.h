@@ -30,6 +30,8 @@ namespace Wolf
 
 		const DescriptorSet* getDescriptorSet() const override { return GraphicCameraInterface::getDescriptorSet(); }
 
+		bool isAABBVisible(const AABB& aabb) const override;
+
 		void setCenter(const glm::vec3& center) { m_center = center; }
 		void setRadius(float radius) { m_radius = radius; }
 		void setDirection(const glm::vec3& direction) { m_direction = direction; }

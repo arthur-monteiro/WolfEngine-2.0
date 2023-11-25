@@ -9,6 +9,7 @@
 
 namespace Wolf
 {
+	class AABB;
 	class DescriptorSet;
 	class InputHandler;
 
@@ -39,6 +40,8 @@ namespace Wolf
 		[[nodiscard]] virtual glm::vec3 getOrientation() const = 0;
 
 		[[nodiscard]] virtual const DescriptorSet* getDescriptorSet() const = 0;
+
+		[[nodiscard]] virtual bool isAABBVisible(const AABB& aabb) const = 0;
 
 		void setEnableJittering(bool value) { m_enableJittering = value; }
 

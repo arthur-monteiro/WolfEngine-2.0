@@ -50,7 +50,7 @@ Wolf::ModelBase::ModelBase(ModelLoadingInfo& modelLoadingInfo, bool requestAccel
 
 void Wolf::ModelBase::addMeshToRenderList(RenderMeshList& renderMeshList, const RenderMeshList::MeshToRenderInfo::InstanceInfos& instanceInfos) const
 {
-	RenderMeshList::MeshToRenderInfo meshToRenderInfo(m_modelData.mesh.get(), m_pipelineSet);
+	RenderMeshList::MeshToRenderInfo meshToRenderInfo(m_modelData.mesh.get(), m_pipelineSet, m_transform);
 	meshToRenderInfo.descriptorSets.push_back({ m_descriptorSet.get(), 0 });
 	meshToRenderInfo.instanceInfos = instanceInfos;
 	renderMeshList.addMeshToRender(meshToRenderInfo);
