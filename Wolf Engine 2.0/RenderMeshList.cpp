@@ -9,7 +9,7 @@
 
 void Wolf::RenderMeshList::addMeshToRender(const MeshToRenderInfo& meshToRenderInfo)
 {
-	m_nextFrameMeshesToRender.push_back(std::make_unique<RenderMesh>(meshToRenderInfo.mesh, meshToRenderInfo.pipelineSet, meshToRenderInfo.descriptorSets, 
+	m_nextFrameMeshesToRender.push_back(std::make_unique<RenderMesh>(meshToRenderInfo.mesh, meshToRenderInfo.transform, meshToRenderInfo.pipelineSet, meshToRenderInfo.descriptorSets, 
 		meshToRenderInfo.instanceInfos));
 
 	const std::vector<uint64_t> pipelinesHash = meshToRenderInfo.pipelineSet->retrieveAllPipelinesHash();
@@ -78,7 +78,7 @@ void Wolf::RenderMeshList::moveToNextFrame(const CameraList& cameraList)
 	m_currentFrameMeshesToRender.clear();
 	m_currentFrameMeshesToRender.swap(m_nextFrameMeshesToRender);
 
-	std::vector<Mesh*> uniqueRenderMeshes;
+	std::vector<RenderMesh*> uniqueRenderMeshes;
 
 	// Append mesh to render in the lists ordered by pipeline
 	for (uint32_t pipelineIdx = 0; pipelineIdx < m_pipelineIdxCount; ++pipelineIdx)
@@ -92,21 +92,21 @@ void Wolf::RenderMeshList::moveToNextFrame(const CameraList& cameraList)
 					RenderMesh* renderMeshPtr = meshToRender.get();
 					m_meshesToRenderByPipelineIdx[pipelineIdx].push_back(renderMeshPtr);
 
-					if (std::ranges::find(uniqueRenderMeshes, renderMeshPtr->getMesh()) == uniqueRenderMeshes.end())
-						uniqueRenderMeshes.push_back(renderMeshPtr->getMesh());
+					if (std::ranges::find(uniqueRenderMeshes, renderMeshPtr) == uniqueRenderMeshes.end())
+						uniqueRenderMeshes.push_back(renderMeshPtr);
 				}
 			}
 		}
 	}
 
 	const std::vector<CameraInterface*>& activeCameras = cameraList.getCurrentCameras();
-	for (Mesh* mesh : uniqueRenderMeshes)
+	for (const RenderMesh* renderMesh : uniqueRenderMeshes)
 	{
 		for (uint32_t cameraIdx = 0; cameraIdx < activeCameras.size(); ++cameraIdx)
 		{
 			if (const CameraInterface* camera = activeCameras[cameraIdx])
 			{
-				mesh->cullForCamera(cameraIdx, camera);
+				renderMesh->getMesh()->cullForCamera(cameraIdx, camera, renderMesh->getTransform());
 			}
 		}
 	}

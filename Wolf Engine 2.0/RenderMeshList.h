@@ -1,5 +1,6 @@
 #pragma once
 
+#include <glm/glm.hpp>
 #include <memory>
 #include <vector>
 
@@ -24,6 +25,7 @@ namespace Wolf
 		struct MeshToRenderInfo
 		{
 			Mesh* mesh;
+			const glm::mat4& transform;
 			PipelineSet* pipelineSet;
 			struct DescriptorSetBindInfo
 			{
@@ -38,7 +40,7 @@ namespace Wolf
 			};
 			InstanceInfos instanceInfos;
 
-			MeshToRenderInfo(Mesh* mesh, PipelineSet* pipelineSet) : mesh(mesh), pipelineSet(pipelineSet) {}
+			MeshToRenderInfo(Mesh* mesh, PipelineSet* pipelineSet, const glm::mat4& transform = glm::mat4(1.0f)) : mesh(mesh), transform(transform), pipelineSet(pipelineSet) {}
 		};
 		void addMeshToRender(const MeshToRenderInfo& meshToRenderInfo);
 
@@ -55,16 +57,18 @@ namespace Wolf
 		class RenderMesh
 		{
 		public:
-			RenderMesh(Mesh* mesh, PipelineSet* pipelineSet, std::vector<MeshToRenderInfo::DescriptorSetBindInfo> descriptorSets, const MeshToRenderInfo::InstanceInfos& instanceInfos) :
-				m_mesh(mesh), m_pipelineSet(pipelineSet), m_descriptorSets(std::move(descriptorSets)), m_instanceInfos(instanceInfos) { }
+			RenderMesh(Mesh* mesh, const glm::mat4& transform, PipelineSet* pipelineSet, std::vector<MeshToRenderInfo::DescriptorSetBindInfo> descriptorSets, const MeshToRenderInfo::InstanceInfos& instanceInfos) :
+				m_mesh(mesh), m_transform(transform), m_pipelineSet(pipelineSet), m_descriptorSets(std::move(descriptorSets)), m_instanceInfos(instanceInfos) { }
 
 			void draw(VkCommandBuffer commandBuffer, const Pipeline* pipeline, uint32_t cameraIdx) const;
 
 			PipelineSet* getPipelineSet() const { return m_pipelineSet; }
 			Mesh* getMesh() const { return m_mesh; }
+			const glm::mat4& getTransform() const { return m_transform; }
 
 		private:
 			Mesh* m_mesh;
+			const glm::mat4& m_transform;
 			PipelineSet* m_pipelineSet;
 			std::vector<MeshToRenderInfo::DescriptorSetBindInfo> m_descriptorSets;
 			MeshToRenderInfo::InstanceInfos m_instanceInfos;

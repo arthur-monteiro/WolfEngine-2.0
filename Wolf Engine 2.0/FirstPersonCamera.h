@@ -33,6 +33,8 @@ namespace Wolf
 
 		const DescriptorSet* getDescriptorSet() const override { return GraphicCameraInterface::getDescriptorSet(); }
 
+		bool isAABBVisible(const AABB& aabb) const override;
+
 		void setLocked(bool value) { m_locked = value; }
 		void setAspect(float aspect) { m_aspect = aspect; }
 

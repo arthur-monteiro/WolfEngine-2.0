@@ -41,6 +41,18 @@ namespace Wolf
 		glm::vec3 getSize() const { return m_max - m_min; }
 		glm::vec3 getCenter() const { return (m_min + m_max) / 2.0f; }
 
+		const glm::vec3& getMin() const { return m_min; }
+		const glm::vec3& getMax() const { return m_max; }
+
+		glm::vec3 getP0() const { return m_min; }
+		glm::vec3 getP1() const { return { m_max.x, m_min.y, m_min.z }; }
+		glm::vec3 getP2() const { return { m_min.x, m_max.y, m_min.z }; }
+		glm::vec3 getP3() const { return { m_min.x, m_min.y, m_max.z }; }
+		glm::vec3 getP4() const { return { m_max.x, m_max.y, m_min.z }; }
+		glm::vec3 getP5() const { return { m_max.x, m_min.y, m_max.z }; }
+		glm::vec3 getP6() const { return { m_min.x, m_max.y, m_max.z }; }
+		glm::vec3 getP7() const { return m_max; }
+
 	private:
 		glm::vec3 m_min;
 		glm::vec3 m_max;

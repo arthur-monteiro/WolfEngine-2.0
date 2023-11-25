@@ -1,7 +1,9 @@
 #include "FirstPersonCamera.h"
 
+#include <FrutumCull.h>
 #include <glm/gtc/matrix_transform.hpp>
 
+#include "AABB.h"
 #include "DescriptorSetGenerator.h"
 #include "InputHandler.h"
 
@@ -95,6 +97,14 @@ const glm::mat4& Wolf::FirstPersonCamera::getProjectionMatrix() const
 glm::vec3 Wolf::FirstPersonCamera::getPosition() const
 {
 	return m_position;
+}
+
+bool Wolf::FirstPersonCamera::isAABBVisible(const AABB& aabb) const
+{
+	const glm::mat4 viewProj = m_projectionMatrix * m_viewMatrix;
+
+	const Frustum frustum(viewProj);
+	return frustum.IsBoxVisible(aabb.getMin(), aabb.getMax());
 }
 
 void Wolf::FirstPersonCamera::overrideMatrices(const glm::mat4& viewMatrix, const glm::mat4& projectionMatrix)
