@@ -65,6 +65,7 @@ namespace Wolf
 			PipelineSet* getPipelineSet() const { return m_pipelineSet; }
 			Mesh* getMesh() const { return m_mesh; }
 			const glm::mat4& getTransform() const { return m_transform; }
+			bool isInstanced() const { return m_instanceInfos.instanceCount > 1; }
 
 		private:
 			Mesh* m_mesh;

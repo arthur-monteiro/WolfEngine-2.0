@@ -11,12 +11,16 @@ void Wolf::Mesh::addSubMesh(uint32_t indicesOffset, uint32_t indexCount, AABB aa
 	m_subMeshes.push_back(std::make_unique<SubMesh>(indicesOffset, indexCount, aabb));
 }
 
-void Wolf::Mesh::cullForCamera(uint32_t cameraIdx, const CameraInterface* camera, const glm::mat4& transform)
+void Wolf::Mesh::cullForCamera(uint32_t cameraIdx, const CameraInterface* camera, const glm::mat4& transform, bool isInstanced)
 {
+	if (m_subMeshes.empty())
+		return;
+
 	std::vector<std::unique_ptr<SubMeshToDrawInfo>>& subMeshes = m_subMeshesToDrawByCamera[cameraIdx];
 	subMeshes.clear();
 
-	if (!camera->isAABBVisible(m_AABB * transform))
+	// TODO: find a way to cull by instance
+	if (!isInstanced && !camera->isAABBVisible(m_AABB * transform))
 		return;
 
 	// TODO : add frustum culling by sub mesh

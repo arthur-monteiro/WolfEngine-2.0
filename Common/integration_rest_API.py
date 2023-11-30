@@ -1,7 +1,7 @@
 from flask import Flask
 import subprocess
 import os
-import win32gui, win32com.client
+import win32gui, win32com.client, win32con
 import pyautogui
 import threading
 import time
@@ -16,6 +16,7 @@ def screenshot(windowTitle):
             shell = win32com.client.Dispatch("WScript.Shell")
             shell.SendKeys('%')
             win32gui.SetForegroundWindow(hwnd)
+            win32gui.SetWindowPos(hwnd, win32con.HWND_TOPMOST, 0, 0, 0, 0, win32con.SWP_NOSIZE)
             time.sleep(0.1)
             x, y, x1, y1 = win32gui.GetClientRect(hwnd)
             x, y = win32gui.ClientToScreen(hwnd, (x, y))
