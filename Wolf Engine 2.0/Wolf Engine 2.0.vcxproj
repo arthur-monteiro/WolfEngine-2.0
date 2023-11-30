@@ -137,7 +137,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>NDEBUG;_CONSOLE;_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>..\ThirdParty\vulkan\Include;..\ThirdParty\freetype-2.8.1\include\freetype2;..\ThirdParty\stb_image;..\ThirdParty\glm;..\ThirdParty\tiny_obj;..\ThirdParty\GLFW\include;..\ThirdParty\OVR\Include;..\ThirdParty\UltraLight\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\ThirdParty\FrustumCull;..\ThirdParty\glm;..\ThirdParty\vulkan\Include;..\ThirdParty\stb_image;..\ThirdParty\tiny_obj;..\ThirdParty\GLFW\include;..\ThirdParty\OVR\Include;..\ThirdParty\UltraLight\include;..\ThirdParty\xxh64;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp20</LanguageStandard>
     </ClCompile>
     <Link>
