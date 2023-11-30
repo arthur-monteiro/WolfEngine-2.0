@@ -38,7 +38,7 @@ namespace Wolf
 		[[nodiscard]] const Buffer& getIndexBuffer() const { return *m_indexBuffer; }
 		[[nodiscard]] const AABB& getAABB() const { return m_AABB; }
 
-		void cullForCamera(uint32_t cameraIdx, const CameraInterface* camera, const glm::mat4& transform);
+		void cullForCamera(uint32_t cameraIdx, const CameraInterface* camera, const glm::mat4& transform, bool isInstanced);
 		void draw(VkCommandBuffer commandBuffer, uint32_t cameraIdx, uint32_t instanceCount = 1) const;
 
 	private:

@@ -15,7 +15,7 @@ namespace Wolf
 	public:
 		BindlessDescriptor(const std::vector<DescriptorSetGenerator::ImageDescription>& firstImages);
 
-		[[nodiscard]] uint32_t addImages(const std::vector<DescriptorSetGenerator::ImageDescription>& images);
+		uint32_t addImages(const std::vector<DescriptorSetGenerator::ImageDescription>& images);
 		[[nodiscard]] uint32_t getCurrentCounter() const { return m_currentCounter; }
 
 		void bind(VkCommandBuffer commandBuffer, VkPipelineLayout pipelineLayout, uint32_t descriptorSlot) const;

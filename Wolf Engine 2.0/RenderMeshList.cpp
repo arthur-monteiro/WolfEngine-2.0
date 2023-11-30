@@ -106,7 +106,7 @@ void Wolf::RenderMeshList::moveToNextFrame(const CameraList& cameraList)
 		{
 			if (const CameraInterface* camera = activeCameras[cameraIdx])
 			{
-				renderMesh->getMesh()->cullForCamera(cameraIdx, camera, renderMesh->getTransform());
+				renderMesh->getMesh()->cullForCamera(cameraIdx, camera, renderMesh->getTransform(), renderMesh->isInstanced());
 			}
 		}
 	}

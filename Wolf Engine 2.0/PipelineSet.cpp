@@ -109,11 +109,13 @@ const Wolf::Pipeline* Wolf::PipelineSet::getOrCreatePipeline(uint32_t idx, Rende
 		renderingPipelineCreateInfo.descriptorSetLayouts = pipelineInfo.descriptorSetLayouts;
 		if (pipelineInfo.cameraDescriptorSlot != static_cast<uint32_t>(-1))
 		{
-			renderingPipelineCreateInfo.descriptorSetLayouts.emplace(renderingPipelineCreateInfo.descriptorSetLayouts.begin() + pipelineInfo.cameraDescriptorSlot, GraphicCameraInterface::getDescriptorSetLayout());
+			const uint32_t pushSlot = std::min(pipelineInfo.cameraDescriptorSlot, static_cast<uint32_t>(renderingPipelineCreateInfo.descriptorSetLayouts.size()));
+			renderingPipelineCreateInfo.descriptorSetLayouts.emplace(renderingPipelineCreateInfo.descriptorSetLayouts.begin() + pushSlot, GraphicCameraInterface::getDescriptorSetLayout());
 		}
 		if (pipelineInfo.bindlessDescriptorSlot != static_cast<uint32_t>(-1))
 		{
-			renderingPipelineCreateInfo.descriptorSetLayouts.emplace(renderingPipelineCreateInfo.descriptorSetLayouts.begin() + pipelineInfo.bindlessDescriptorSlot, BindlessDescriptor::getDescriptorSetLayout() );
+			const uint32_t pushSlot = std::min(pipelineInfo.bindlessDescriptorSlot, static_cast<uint32_t>(renderingPipelineCreateInfo.descriptorSetLayouts.size()));
+			renderingPipelineCreateInfo.descriptorSetLayouts.emplace(renderingPipelineCreateInfo.descriptorSetLayouts.begin() + pushSlot, BindlessDescriptor::getDescriptorSetLayout());
 		}
 
 		// Viewport
