@@ -69,7 +69,7 @@ namespace Wolf
 
 		private:
 			Mesh* m_mesh;
-			const glm::mat4& m_transform;
+			glm::mat4 m_transform;
 			PipelineSet* m_pipelineSet;
 			std::vector<MeshToRenderInfo::DescriptorSetBindInfo> m_descriptorSets;
 			MeshToRenderInfo::InstanceInfos m_instanceInfos;
