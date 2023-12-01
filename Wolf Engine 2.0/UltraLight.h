@@ -11,6 +11,7 @@
 
 #include "CommandBuffer.h"
 #include "Fence.h"
+#include "ResourceNonOwner.h"
 #include "UltraLightSurface.h"
 #include "UltralightViewListener.h"
 
@@ -21,7 +22,7 @@ namespace Wolf
     class UltraLight
     {
     public:
-        UltraLight(const char* htmlURL, const std::function<void()>& bindCallbacks, InputHandler& inputHandler);
+        UltraLight(const char* htmlURL, const std::function<void()>& bindCallbacks, const ResourceNonOwner<InputHandler>& inputHandler);
         ~UltraLight();
 
         void waitInitializationDone() const;
@@ -43,7 +44,7 @@ namespace Wolf
         std::condition_variable m_updateCondition;
         std::function<void()> m_bindUltralightCallbacks;
         bool m_copySubmittedThisFrame = false;
-        InputHandler& m_inputHandler;
+        ResourceNonOwner<InputHandler> m_inputHandler;
 
         bool m_needUpdate = false;
         bool m_stopThreadRequested = false;
@@ -54,7 +55,7 @@ namespace Wolf
         {
         public:
             UltraLightImplementation(uint32_t width, uint32_t height, const std::string& absoluteURL,
-                                     std::string filePath, const InputHandler& inputHandler);
+                                     std::string filePath, const ResourceNonOwner<InputHandler>& inputHandler);
             UltraLightImplementation(const UltraLightImplementation&) = delete;
 
             virtual void OnFinishLoading(ultralight::View* caller, uint64_t frame_id, bool is_main_frame, const ultralight::String& url) override;
@@ -67,7 +68,7 @@ namespace Wolf
 
             void waitForCopyFence() const;
             bool reloadIfModified();
-            void update(InputHandler& inputHandler) const;
+            void update(const ResourceNonOwner<InputHandler>& inputHandler) const;
             void render() const;
             void resize(uint32_t width, uint32_t height) const;
 

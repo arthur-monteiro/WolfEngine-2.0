@@ -6,7 +6,7 @@
 
 using namespace Wolf;
 
-UltralightViewListener::UltralightViewListener(const InputHandler& inputHandler) : m_inputHandler(inputHandler)
+UltralightViewListener::UltralightViewListener(const ResourceNonOwner<InputHandler>& inputHandler) : m_inputHandler(inputHandler)
 {
 }
 
@@ -58,6 +58,6 @@ void UltralightViewListener::OnChangeCursor(ultralight::View* caller, ultralight
             break;
         }
 
-        m_inputHandler.setCursorType(windowCursorType);
+        m_inputHandler->setCursorType(windowCursorType);
     }
 }

@@ -12,7 +12,7 @@
 
 using namespace ultralight;
 
-Wolf::UltraLight::UltraLight(const char* htmlURL, const std::function<void()>& bindCallbacks, InputHandler& inputHandler) : m_inputHandler(inputHandler)
+Wolf::UltraLight::UltraLight(const char* htmlURL, const std::function<void()>& bindCallbacks, const ResourceNonOwner<InputHandler>& inputHandler) : m_inputHandler(inputHandler)
 {
     m_thread = std::thread(&UltraLight::processImplementation, this, htmlURL, bindCallbacks);
 }
@@ -36,9 +36,9 @@ void Wolf::UltraLight::waitInitializationDone() const
 
 void Wolf::UltraLight::processFrameJobs()
 {
-    m_inputHandler.lockCache(m_ultraLightImplementation.get());
-    m_inputHandler.pushDataToCache(m_ultraLightImplementation.get());
-    m_inputHandler.unlockCache(m_ultraLightImplementation.get());
+    m_inputHandler->lockCache(m_ultraLightImplementation.get());
+    m_inputHandler->pushDataToCache(m_ultraLightImplementation.get());
+    m_inputHandler->unlockCache(m_ultraLightImplementation.get());
 
     if (m_mutex.try_lock())
     {
@@ -98,7 +98,7 @@ void Wolf::UltraLight::processImplementation(const char* htmlURL, const std::fun
     }
     const std::string absoluteURL = "file:///" + escapedCurrentPath + "/" + htmlURL;
     m_ultraLightImplementation.reset(new UltraLightImplementation(g_configuration->getWindowWidth(), g_configuration->getWindowHeight(), absoluteURL, htmlURL, m_inputHandler));
-    m_inputHandler.createCache(m_ultraLightImplementation.get());
+    m_inputHandler->createCache(m_ultraLightImplementation.get());
 
     m_bindUltralightCallbacks = bindCallbacks;
 
@@ -146,7 +146,7 @@ void Wolf::UltraLight::processImplementation(const char* htmlURL, const std::fun
     }
 }
 
-Wolf::UltraLight::UltraLightImplementation::UltraLightImplementation(uint32_t width, uint32_t height, const std::string& absoluteURL, std::string filePath, const InputHandler& inputHandler)
+Wolf::UltraLight::UltraLightImplementation::UltraLightImplementation(uint32_t width, uint32_t height, const std::string& absoluteURL, std::string filePath, const ResourceNonOwner<InputHandler>& inputHandler)
 	: m_filePath(std::move(filePath))
 {
     m_lastUpdated = std::filesystem::last_write_time(m_filePath);
@@ -261,17 +261,17 @@ bool Wolf::UltraLight::UltraLightImplementation::reloadIfModified()
     return false;
 }
 
-void Wolf::UltraLight::UltraLightImplementation::update(InputHandler& inputHandler) const
+void Wolf::UltraLight::UltraLightImplementation::update(const ResourceNonOwner<InputHandler>& inputHandler) const
 {
     float xscale, yscale;
     glfwGetMonitorContentScale(glfwGetPrimaryMonitor(), &xscale, &yscale);
 
-    inputHandler.lockCache(this);
+    inputHandler->lockCache(this);
 
     MouseEvent mouseEvent;
 
     float currentMousePosX, currentMousePosY;
-    inputHandler.getMousePosition(currentMousePosX, currentMousePosY);
+    inputHandler->getMousePosition(currentMousePosX, currentMousePosY);
     mouseEvent.x = static_cast<int>(currentMousePosX);
     mouseEvent.y = static_cast<int>(currentMousePosY);
 
@@ -281,14 +281,14 @@ void Wolf::UltraLight::UltraLightImplementation::update(InputHandler& inputHandl
     m_view->FireMouseEvent(mouseEvent);
 
     
-    if (inputHandler.mouseButtonPressedThisFrame(GLFW_MOUSE_BUTTON_LEFT, this))
+    if (inputHandler->mouseButtonPressedThisFrame(GLFW_MOUSE_BUTTON_LEFT, this))
     {
         mouseEvent.type = MouseEvent::kType_MouseDown;
         mouseEvent.button = MouseEvent::kButton_Left;
 
         m_view->FireMouseEvent(mouseEvent);
     }
-    else if (inputHandler.mouseButtonReleasedThisFrame(GLFW_MOUSE_BUTTON_LEFT, this))
+    else if (inputHandler->mouseButtonReleasedThisFrame(GLFW_MOUSE_BUTTON_LEFT, this))
     {
         mouseEvent.type = MouseEvent::kType_MouseUp;
         mouseEvent.button = MouseEvent::kButton_Left;
@@ -296,7 +296,7 @@ void Wolf::UltraLight::UltraLightImplementation::update(InputHandler& inputHandl
         m_view->FireMouseEvent(mouseEvent);
     }
 
-    if (inputHandler.keyPressedThisFrame(GLFW_KEY_BACKSPACE, this))
+    if (inputHandler->keyPressedThisFrame(GLFW_KEY_BACKSPACE, this))
     {
         KeyEvent keyEvent;
         keyEvent.type = KeyEvent::kType_KeyDown;
@@ -304,7 +304,7 @@ void Wolf::UltraLight::UltraLightImplementation::update(InputHandler& inputHandl
         keyEvent.is_system_key = false;
         m_view->FireKeyEvent(keyEvent);
     }
-    if (inputHandler.keyPressedThisFrame(GLFW_KEY_ENTER, this) || inputHandler.keyPressedThisFrame(GLFW_KEY_KP_ENTER, this))
+    if (inputHandler->keyPressedThisFrame(GLFW_KEY_ENTER, this) || inputHandler->keyPressedThisFrame(GLFW_KEY_KP_ENTER, this))
     {
         KeyEvent keyEvent;
         keyEvent.type = KeyEvent::kType_Char;
@@ -314,7 +314,7 @@ void Wolf::UltraLight::UltraLightImplementation::update(InputHandler& inputHandl
         m_view->FireKeyEvent(keyEvent);
     }
 
-    const std::vector<int>& characterPressed = inputHandler.getCharactersPressedThisFrame(this);
+    const std::vector<int>& characterPressed = inputHandler->getCharactersPressedThisFrame(this);
     for(const int character : characterPressed)
     {
         KeyEvent keyEvent;
@@ -324,8 +324,8 @@ void Wolf::UltraLight::UltraLightImplementation::update(InputHandler& inputHandl
         m_view->FireKeyEvent(keyEvent);
     }
 
-    inputHandler.clearCache(this);
-    inputHandler.unlockCache(this);
+    inputHandler->clearCache(this);
+    inputHandler->unlockCache(this);
     
     m_renderer->Update();
 }
