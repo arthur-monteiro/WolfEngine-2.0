@@ -64,7 +64,7 @@ namespace Wolf
 #ifdef RESOURCE_DEBUG
 			const std::function<void(ResourceNonOwner<T>* instance)>& onDelete, const std::function<void(ResourceNonOwner<T>* instance)>& onDuplicate, const std::source_location& sourceLocation)
 #else
-			const std::function<void()>& onDelete, const std::function<void()>& onDuplicate) :
+			const std::function<void()>& onDelete, const std::function<void()>& onDuplicate)
 #endif
 		: m_resource(resource), m_onDelete(onDelete), m_onDuplicate(onDuplicate)
 		{
