@@ -53,11 +53,11 @@ Wolf::WolfEngine::WolfEngine(const WolfInstanceCreateInfo& createInfo) : m_rende
 	m_gameContexts.resize(m_configuration->getMaxCachedFrames());
 
 #ifndef __ANDROID__
-	m_inputHandler.reset(new InputHandler(*m_window));
+	m_inputHandler.reset(new InputHandler(m_window.createConstNonOwnerResource()));
 
 	if (createInfo.htmlURL)
 	{
-		m_ultraLight.reset(new UltraLight(createInfo.htmlURL, createInfo.bindUltralightCallbacks, *m_inputHandler));
+		m_ultraLight.reset(new UltraLight(createInfo.htmlURL, createInfo.bindUltralightCallbacks, m_inputHandler.createNonOwnerResource()));
 		m_ultraLight->waitInitializationDone();
 	}
 #endif
@@ -127,11 +127,13 @@ void Wolf::WolfEngine::updateBeforeFrame()
 	m_inputHandler->moveToNextFrame();
 #endif
 
-	CameraUpdateContext context{};
-	context.gameContext = m_gameContexts[m_currentFrame % g_configuration->getMaxCachedFrames()];
+	CameraUpdateContext context
+	(
 #ifndef __ANDROID__
-	context.inputHandler = m_inputHandler.get();
+		m_inputHandler.createConstNonOwnerResource()
 #endif
+	);
+	context.gameContext = m_gameContexts[m_currentFrame % g_configuration->getMaxCachedFrames()];
 	context.frameIdx = m_currentFrame;
 	context.swapChainExtent = m_swapChain->getImage(0)->getExtent();
 	m_cameraList.moveToNextFrame(context);

@@ -1,0 +1,181 @@
+#pragma once
+
+#include <memory>
+#ifdef RESOURCE_DEBUG
+#include <source_location>
+#endif
+
+#include "Debug.h"
+#include "ResourceNonOwner.h"
+
+namespace Wolf
+{
+	template <typename T>
+	class ResourceUniqueOwner
+	{
+	public:
+		ResourceUniqueOwner(T* resource = nullptr) : m_resource(resource) {}
+		~ResourceUniqueOwner();
+
+		void reset(T* resource);
+		ResourceNonOwner<T> createNonOwnerResource(
+#ifdef RESOURCE_DEBUG
+			const std::source_location& location = std::source_location::current()
+#endif
+		);
+		ResourceNonOwner<const T> createConstNonOwnerResource(
+#ifdef RESOURCE_DEBUG
+			const std::source_location& location = std::source_location::current()
+#endif
+		);
+
+		[[nodiscard]] explicit operator bool() const;
+		[[nodiscard]] T* operator->() const { return m_resource.get(); }
+
+	private:
+		std::unique_ptr<T> m_resource;
+
+		uint32_t m_nonOwnedResourceCount = 0;
+
+		void nonOwnerResourceDeleteCommon();
+#ifdef RESOURCE_DEBUG
+		void nonOwnerResourceDeleteTracked(ResourceNonOwner<T>* instance);
+		void nonOwnerResourceDeleteTracked(ResourceNonOwner<const T>* instance);
+#endif
+
+		void addNonOwnerResourceCommon();
+#ifdef RESOURCE_DEBUG
+		void addNonOwnerResourceTracked(ResourceNonOwner<T>* instance);
+		void addNonOwnerResourceTracked(ResourceNonOwner<const T>* instance);
+#endif
+		void checksBeforeDelete() const;
+
+#ifdef RESOURCE_DEBUG
+		std::vector<ResourceNonOwner<T>*> m_nonOwnerResources;
+		std::vector<ResourceNonOwner<const T>*> m_constNonOwnerResources;
+#endif
+	};
+
+	template <typename T>
+	ResourceUniqueOwner<T>::~ResourceUniqueOwner()
+	{
+		checksBeforeDelete();
+	}
+
+	template <typename T>
+	void ResourceUniqueOwner<T>::reset(T* resource)
+	{
+		if (m_resource)
+		{
+			checksBeforeDelete();
+		}
+		m_resource.reset(resource);
+	}
+
+	template <typename T>
+	ResourceNonOwner<T> ResourceUniqueOwner<T>::createNonOwnerResource(
+#ifdef RESOURCE_DEBUG
+		const std::source_location& location
+#endif
+	)
+	{
+		m_nonOwnedResourceCount++;
+		return ResourceNonOwner<T>(m_resource.get(),
+#ifdef RESOURCE_DEBUG
+			[this] (ResourceNonOwner<T>* instance) { nonOwnerResourceDeleteTracked(instance); }, [this] (ResourceNonOwner<T>* instance) { addNonOwnerResourceTracked(instance); }, location
+#else
+			[this] { nonOwnerResourceDeleteCommon(); }, [this] { addNonOwnerResourceCommon(); }
+#endif
+		);
+	}
+
+	template <typename T>
+	ResourceNonOwner<const T> ResourceUniqueOwner<T>::createConstNonOwnerResource(
+#ifdef RESOURCE_DEBUG
+		const std::source_location& location
+#endif
+	)
+	{
+		m_nonOwnedResourceCount++;
+		return ResourceNonOwner<const T>(m_resource.get(),
+#ifdef RESOURCE_DEBUG
+			[this] (ResourceNonOwner<const T>* instance) { nonOwnerResourceDeleteTracked(instance); }, [this] (ResourceNonOwner<const T>* instance) { addNonOwnerResourceTracked(instance); }, location
+#else
+			[this] { nonOwnerResourceDeleteCommon(); }, [this] { addNonOwnerResourceCommon(); }
+#endif
+		);
+	}
+
+	template <typename T>
+	ResourceUniqueOwner<T>::operator bool() const
+	{
+		return static_cast<bool>(m_resource);
+	}
+
+	template <typename T>
+	void ResourceUniqueOwner<T>::nonOwnerResourceDeleteCommon()
+	{
+		if (m_nonOwnedResourceCount == 0)
+			Debug::sendCriticalError("Wrong resource count");
+		m_nonOwnedResourceCount--;
+	}
+
+#ifdef RESOURCE_DEBUG
+	template <typename T>
+	void ResourceUniqueOwner<T>::nonOwnerResourceDeleteTracked(ResourceNonOwner<T>* instance)
+	{
+		nonOwnerResourceDeleteCommon();
+		for (int32_t i = static_cast<int32_t>(m_nonOwnerResources.size()) - 1; i >= 0; --i)
+		{
+			if (m_nonOwnerResources[i] == instance)
+				m_nonOwnerResources.erase(m_nonOwnerResources.begin() + i);
+		}
+	}
+
+	template <typename T>
+	void ResourceUniqueOwner<T>::nonOwnerResourceDeleteTracked(ResourceNonOwner<const T>* instance)
+	{
+		nonOwnerResourceDeleteCommon();
+		for (int32_t i = static_cast<int32_t>(m_constNonOwnerResources.size()) - 1; i >= 0; --i)
+		{
+			if (m_constNonOwnerResources[i] == instance)
+				m_constNonOwnerResources.erase(m_constNonOwnerResources.begin() + i);
+		}
+	}
+#endif
+
+	template <typename T>
+	void ResourceUniqueOwner<T>::addNonOwnerResourceCommon()
+	{
+		m_nonOwnedResourceCount++;
+	}
+
+#ifdef RESOURCE_DEBUG
+	template <typename T>
+	void ResourceUniqueOwner<T>::addNonOwnerResourceTracked(ResourceNonOwner<T>* instance)
+	{
+		addNonOwnerResourceCommon();
+		m_nonOwnerResources.push_back(instance);
+	}
+
+	template <typename T>
+	void ResourceUniqueOwner<T>::addNonOwnerResourceTracked(ResourceNonOwner<const T>* instance)
+	{
+		addNonOwnerResourceCommon();
+		m_constNonOwnerResources.push_back(instance);
+	}
+#endif
+
+	template <typename T>
+	void ResourceUniqueOwner<T>::checksBeforeDelete() const
+	{
+		if (m_nonOwnedResourceCount > 0)
+		{
+#ifdef RESOURCE_DEBUG
+			__debugbreak();
+#endif
+			Debug::sendError("Deleting a resource currently used by others");
+		}
+	}
+}
+

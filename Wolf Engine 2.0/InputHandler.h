@@ -1,11 +1,11 @@
 #pragma once
 
-#include <mutex>
-
 #ifndef __ANDROID__
 
 #include <map>
+#include <mutex>
 
+#include "ResourceNonOwner.h"
 #include "Window.h"
 
 namespace Wolf
@@ -13,7 +13,8 @@ namespace Wolf
 	class InputHandler
 	{
 	public:
-		InputHandler(const Window& window);
+		InputHandler(const ResourceNonOwner<const Window>& window);
+		~InputHandler();
 		void moveToNextFrame();
 
 		// Cache management
@@ -108,7 +109,7 @@ namespace Wolf
 
 		std::map<const void*, std::pair<AllInputData, std::mutex>> m_dataCache;
 
-		const Window& m_window;
+		ResourceNonOwner<const Window> m_window;
 	};
 }
 

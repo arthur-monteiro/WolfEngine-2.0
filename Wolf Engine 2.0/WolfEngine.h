@@ -14,6 +14,7 @@
 #include "Debug.h"
 #include "InputHandler.h"
 #include "RenderMeshList.h"
+#include "ResourceUniqueOwner.h"
 #include "ShaderList.h"
 #include "SwapChain.h"
 #include "UltraLight.h"
@@ -64,7 +65,7 @@ namespace Wolf
 #endif
 		[[nodiscard]] uint32_t getCurrentFrame() const { return m_currentFrame; }
 #ifndef __ANDROID__
-		[[nodiscard]] const InputHandler& getInputHandler() const { return *m_inputHandler; }
+		[[nodiscard]] ResourceNonOwner<const InputHandler> getInputHandler() { return m_inputHandler.createConstNonOwnerResource(); }
 #endif
 		VkExtent3D getSwapChainExtent() const { return m_swapChain->getImage(0)->getExtent(); }
 
@@ -74,7 +75,7 @@ namespace Wolf
 
 		CameraList& getCameraList() { return m_cameraList; }
 		RenderMeshList& getRenderMeshList() { return m_renderMeshList; }
-		BindlessDescriptor& getBindlessDescriptor() const { return *m_bindlessDescriptor; }
+		ResourceNonOwner<BindlessDescriptor> getBindlessDescriptor() { return m_bindlessDescriptor.createNonOwnerResource(); }
 
 	private:
 		void fillInitializeContext(InitializationContext& context) const;
@@ -86,15 +87,15 @@ namespace Wolf
 		void resize(int width, int height);
 
 	private:
-		// Global instances
 		std::unique_ptr<Configuration> m_configuration;
 		std::unique_ptr<Vulkan> m_vulkan;
 #ifndef __ANDROID__
-		std::unique_ptr<Window> m_window;
+		ResourceUniqueOwner<Window> m_window;
 #endif
-		std::unique_ptr<SwapChain> m_swapChain;
+		ResourceUniqueOwner<SwapChain> m_swapChain;
 #ifndef __ANDROID__
-		std::unique_ptr<UltraLight> m_ultraLight;
+		ResourceUniqueOwner<InputHandler> m_inputHandler;
+		ResourceUniqueOwner<UltraLight> m_ultraLight;
 		//std::unique_ptr<OVR> m_ovr;
 #endif
 
@@ -104,9 +105,6 @@ namespace Wolf
 		// Gameplay
 		CameraList m_cameraList;
 		std::vector<void*> m_gameContexts;
-#ifndef __ANDROID__
-		std::unique_ptr<InputHandler> m_inputHandler;
-#endif
 
 		bool m_resizeIsNeeded = false;
 		std::function<void(uint32_t, uint32_t)> m_resizeCallback;
@@ -114,7 +112,7 @@ namespace Wolf
 		// Mesh render
 		RenderMeshList m_renderMeshList;
 		ShaderList m_shaderList;
-		std::unique_ptr<BindlessDescriptor> m_bindlessDescriptor;
+		ResourceUniqueOwner<BindlessDescriptor> m_bindlessDescriptor;
 		std::array<std::unique_ptr<Image>, 5> m_defaultImages;
 	};
 }

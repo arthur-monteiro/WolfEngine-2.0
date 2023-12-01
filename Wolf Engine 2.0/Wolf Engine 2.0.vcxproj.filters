@@ -40,6 +40,9 @@
     <Filter Include="UI">
       <UniqueIdentifier>{36c06d0a-65c5-45a9-9843-effd293e9b68}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Containers">
+      <UniqueIdentifier>{09ec7edf-b019-4a93-a7ee-cb5400317182}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Vulkan.cpp">
@@ -212,6 +215,12 @@
     </ClCompile>
     <ClCompile Include="UltralightViewListener.cpp">
       <Filter>UI</Filter>
+    </ClCompile>
+    <ClCompile Include="ResourceUniqueOwner.cpp">
+      <Filter>Containers</Filter>
+    </ClCompile>
+    <ClCompile Include="ResourceNonOwner.cpp">
+      <Filter>Containers</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -409,6 +418,12 @@
     </ClInclude>
     <ClInclude Include="CodeFileHashes.h">
       <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ResourceUniqueOwner.h">
+      <Filter>Containers</Filter>
+    </ClInclude>
+    <ClInclude Include="ResourceNonOwner.h">
+      <Filter>Containers</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

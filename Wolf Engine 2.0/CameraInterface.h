@@ -2,6 +2,8 @@
 
 #include <glm/glm.hpp>
 
+#include "ResourceNonOwner.h"
+
 #ifndef __ANDROID__
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
@@ -16,11 +18,20 @@ namespace Wolf
 	struct CameraUpdateContext
 	{
 #ifndef __ANDROID__
-		const InputHandler* inputHandler;
+		const ResourceNonOwner<const InputHandler> inputHandler;
 #endif
-		const void* gameContext;
-		uint32_t frameIdx;
-		VkExtent3D swapChainExtent;
+		const void* gameContext = nullptr;
+		uint32_t frameIdx = 0;
+		VkExtent3D swapChainExtent = {};
+
+		CameraUpdateContext(
+#ifndef  __ANDROID__
+			const ResourceNonOwner<const InputHandler>& inputHandler) : inputHandler(inputHandler)
+#else
+			)
+#endif	
+		{
+		}
 	};
 
 	class CameraInterface

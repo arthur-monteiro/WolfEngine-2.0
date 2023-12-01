@@ -3,6 +3,8 @@
 #include <string>
 #include <Ultralight/Listener.h>
 
+#include "ResourceNonOwner.h"
+
 namespace Wolf
 {
 	class InputHandler;
@@ -10,7 +12,7 @@ namespace Wolf
 	class UltralightViewListener : public ultralight::ViewListener
     {
     public:
-	    explicit UltralightViewListener(const InputHandler& inputHandler);
+	    explicit UltralightViewListener(const ResourceNonOwner<InputHandler>& inputHandler);
 
 	    void OnAddConsoleMessage(ultralight::View* caller,
 	                             ultralight::MessageSource source,
@@ -24,6 +26,6 @@ namespace Wolf
 
     private:
 	    ultralight::Cursor m_currentCursor = ultralight::kCursor_Pointer;
-		const InputHandler& m_inputHandler;
+		ResourceNonOwner<InputHandler> m_inputHandler;
     };
 }

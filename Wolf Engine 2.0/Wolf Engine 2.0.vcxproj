@@ -115,7 +115,7 @@
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>_DEBUG;_CONSOLE;_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>_DEBUG;_CONSOLE;_CRT_SECURE_NO_WARNINGS;RESOURCE_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp20</LanguageStandard>
       <ScanSourceForModuleDependencies>true</ScanSourceForModuleDependencies>
@@ -187,6 +187,8 @@
     <ClCompile Include="RayTracingShaderGroupGenerator.cpp" />
     <ClCompile Include="RayTracingSymbols.cpp" />
     <ClCompile Include="RenderMeshList.cpp" />
+    <ClCompile Include="ResourceNonOwner.cpp" />
+    <ClCompile Include="ResourceUniqueOwner.cpp" />
     <ClCompile Include="ShaderList.cpp" />
     <ClCompile Include="RenderPass.cpp" />
     <ClCompile Include="Sampler.cpp" />
@@ -250,6 +252,8 @@
     <ClInclude Include="QueueFamilyIndices.h" />
     <ClInclude Include="RayTracingShaderGroupGenerator.h" />
     <ClInclude Include="RenderMeshList.h" />
+    <ClInclude Include="ResourceNonOwner.h" />
+    <ClInclude Include="ResourceUniqueOwner.h" />
     <ClInclude Include="ShaderList.h" />
     <ClInclude Include="RenderPass.h" />
     <ClInclude Include="Sampler.h" />
