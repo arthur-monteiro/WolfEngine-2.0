@@ -24,14 +24,9 @@ namespace Wolf
 		uint32_t frameIdx = 0;
 		VkExtent3D swapChainExtent = {};
 
-		CameraUpdateContext(
 #ifndef  __ANDROID__
-			const ResourceNonOwner<const InputHandler>& inputHandler) : inputHandler(inputHandler)
-#else
-			)
+		CameraUpdateContext(const ResourceNonOwner<const InputHandler>& inputHandler) : inputHandler(inputHandler) {}
 #endif	
-		{
-		}
 	};
 
 	class CameraInterface

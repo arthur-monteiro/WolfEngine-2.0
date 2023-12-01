@@ -128,11 +128,11 @@ void Wolf::WolfEngine::updateBeforeFrame()
 #endif
 
 	CameraUpdateContext context
-	(
 #ifndef __ANDROID__
-		m_inputHandler.createConstNonOwnerResource()
+	(m_inputHandler.createConstNonOwnerResource());
+#else
+	{};
 #endif
-	);
 	context.gameContext = m_gameContexts[m_currentFrame % g_configuration->getMaxCachedFrames()];
 	context.frameIdx = m_currentFrame;
 	context.swapChainExtent = m_swapChain->getImage(0)->getExtent();

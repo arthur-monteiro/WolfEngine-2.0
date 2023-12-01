@@ -59,7 +59,8 @@ namespace Wolf
 		std::function<void()> m_onDuplicate;
 #endif
 
-		friend ResourceUniqueOwner;
+		friend ResourceUniqueOwner<T>;
+		friend ResourceUniqueOwner<std::remove_const_t<T>>;
 		ResourceNonOwner(T* resource, 
 #ifdef RESOURCE_DEBUG
 			const std::function<void(ResourceNonOwner<T>* instance)>& onDelete, const std::function<void(ResourceNonOwner<T>* instance)>& onDuplicate, const std::source_location& sourceLocation)
