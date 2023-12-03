@@ -6,22 +6,9 @@
 #include "DescriptorSetGenerator.h"
 #include "RenderMeshList.h"
 
-Wolf::ModelBase::ModelBase(ModelLoadingInfo& modelLoadingInfo, bool requestAccelerationStructuresBuild, BindlessDescriptor* bindlessDescriptor)
+Wolf::ModelBase::ModelBase(ModelLoadingInfo& modelLoadingInfo, bool requestAccelerationStructuresBuild)
 {
 	ModelLoader::loadObject(m_modelData, modelLoadingInfo);
-
-	if (modelLoadingInfo.loadMaterials)
-	{
-		std::vector<DescriptorSetGenerator::ImageDescription> imageDescriptions;
-		for (const std::unique_ptr<Image>& image : m_modelData.images)
-		{
-			imageDescriptions.resize(imageDescriptions.size() + 1);
-			imageDescriptions.back().imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-			imageDescriptions.back().imageView = image->getDefaultImageView();
-		}
-		if (bindlessDescriptor->addImages(imageDescriptions) != 5 * modelLoadingInfo.materialIdOffset)
-			Debug::sendError("Material ID offset seems wrong");
-	}
 
 	m_descriptorSetLayoutGenerator.reset(new LazyInitSharedResource<DescriptorSetLayoutGenerator, ModelBase>([this](std::unique_ptr<DescriptorSetLayoutGenerator>& descriptorSetLayoutGenerator)
 		{
@@ -45,6 +32,24 @@ Wolf::ModelBase::ModelBase(ModelLoadingInfo& modelLoadingInfo, bool requestAccel
 		modelLoadingInfo.vulkanQueueLock->lock();
 		buildAccelerationStructures();
 		modelLoadingInfo.vulkanQueueLock->unlock();
+	}
+}
+
+Wolf::ModelBase::ModelBase(ModelLoadingInfo& modelLoadingInfo, bool requestAccelerationStructuresBuild, const ResourceNonOwner<BindlessDescriptor>& bindlessDescriptor)
+	: ModelBase(modelLoadingInfo, requestAccelerationStructuresBuild)
+{
+
+	if (modelLoadingInfo.loadMaterials)
+	{
+		std::vector<DescriptorSetGenerator::ImageDescription> imageDescriptions;
+		for (const std::unique_ptr<Image>& image : m_modelData.images)
+		{
+			imageDescriptions.resize(imageDescriptions.size() + 1);
+			imageDescriptions.back().imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+			imageDescriptions.back().imageView = image->getDefaultImageView();
+		}
+		if (bindlessDescriptor->addImages(imageDescriptions) != 5 * modelLoadingInfo.materialIdOffset)
+			Debug::sendError("Material ID offset seems wrong");
 	}
 }
 

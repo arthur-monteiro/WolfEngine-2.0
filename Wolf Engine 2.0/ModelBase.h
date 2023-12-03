@@ -7,6 +7,7 @@
 #include "LazyInitSharedResource.h"
 #include "ModelLoader.h"
 #include "RenderMeshList.h"
+#include "ResourceNonOwner.h"
 
 namespace Wolf
 {
@@ -17,7 +18,8 @@ namespace Wolf
 	class ModelBase
 	{
 	public:
-		ModelBase(ModelLoadingInfo& modelLoadingInfo, bool requestAccelerationStructuresBuild, BindlessDescriptor* bindlessDescriptor);
+		ModelBase(ModelLoadingInfo& modelLoadingInfo, bool requestAccelerationStructuresBuild);
+		ModelBase(ModelLoadingInfo& modelLoadingInfo, bool requestAccelerationStructuresBuild, const ResourceNonOwner<BindlessDescriptor>& bindlessDescriptor);
 		ModelBase(const ModelBase&) = delete;
 		virtual ~ModelBase() = default;
 
