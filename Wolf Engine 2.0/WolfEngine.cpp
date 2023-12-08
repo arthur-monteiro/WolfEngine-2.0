@@ -100,7 +100,7 @@ Wolf::WolfEngine::WolfEngine(const WolfInstanceCreateInfo& createInfo) : m_rende
 	}
 }
 
-void Wolf::WolfEngine::initializePass(CommandRecordBase* pass) const
+void Wolf::WolfEngine::initializePass(const ResourceNonOwner<CommandRecordBase>& pass) const
 {
 	InitializationContext context;
 	fillInitializeContext(context);
@@ -142,7 +142,7 @@ void Wolf::WolfEngine::updateBeforeFrame()
 	m_shaderList.checkForModifiedShader();
 }
 
-void Wolf::WolfEngine::frame(const std::span<CommandRecordBase*>& passes, const Semaphore* frameEndedSemaphore)
+void Wolf::WolfEngine::frame(const std::span<ResourceNonOwner<CommandRecordBase>>& passes, const Semaphore* frameEndedSemaphore)
 {
 	if (passes.empty())
 		Debug::sendError("No pass sent to frame");
@@ -152,6 +152,13 @@ void Wolf::WolfEngine::frame(const std::span<CommandRecordBase*>& passes, const 
 		return;
 #endif
 
+#ifndef __ANDROID__
+	if (m_ultraLight)
+	{
+		m_ultraLight->processFrameJobs();
+	}
+#endif
+
 	if (m_resizeIsNeeded)
 	{
 		vkDeviceWaitIdle(m_vulkan->getDevice());
@@ -159,25 +166,18 @@ void Wolf::WolfEngine::frame(const std::span<CommandRecordBase*>& passes, const 
 		InitializationContext initializeContext;
 		fillInitializeContext(initializeContext);
 
-		if(m_resizeCallback)
+		if (m_resizeCallback)
 		{
 			m_resizeCallback(initializeContext.swapChainWidth, initializeContext.swapChainHeight);
 		}
 
-		for (CommandRecordBase* pass : passes)
+		for (const ResourceNonOwner<CommandRecordBase>& pass : passes)
 		{
 			pass->resize(initializeContext);
 		}
 
 		m_resizeIsNeeded = false;
 	}
-
-#ifndef __ANDROID__
-	if (m_ultraLight)
-	{
-		m_ultraLight->processFrameJobs();
-	}
-#endif
 
 	const uint32_t currentSwapChainImageIndex = m_swapChain->getCurrentImage(m_currentFrame);
 
@@ -195,7 +195,7 @@ void Wolf::WolfEngine::frame(const std::span<CommandRecordBase*>& passes, const 
 	if (m_bindlessDescriptor)
 		recordContext.bindlessDescriptorSet = m_bindlessDescriptor->getDescriptorSet();
 
-	for (CommandRecordBase* pass : passes)
+	for (const ResourceNonOwner<CommandRecordBase>& pass : passes)
 	{
 		pass->record(recordContext);
 	}
@@ -212,7 +212,7 @@ void Wolf::WolfEngine::frame(const std::span<CommandRecordBase*>& passes, const 
 	submitContext.frameFence = m_swapChain->getFrameFence(m_currentFrame % g_configuration->getMaxCachedFrames());
 	submitContext.device = m_vulkan->getDevice();
 
-	for (CommandRecordBase* pass : passes)
+	for (const ResourceNonOwner<CommandRecordBase>& pass : passes)
 	{
 		pass->submit(submitContext);
 	}

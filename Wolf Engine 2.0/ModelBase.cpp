@@ -61,12 +61,15 @@ void Wolf::ModelBase::addMeshToRenderList(RenderMeshList& renderMeshList, const 
 	renderMeshList.addMeshToRender(meshToRenderInfo);
 }
 
-void Wolf::ModelBase::updateGraphic() const
+void Wolf::ModelBase::updateGraphic()
 {
 	UniformBufferData uniformBufferData;
 	uniformBufferData.model = m_transform;
+	uniformBufferData.previousModel = m_previousTransform;
 
 	m_uniformBuffer->transferCPUMemory(&uniformBufferData, sizeof(uniformBufferData), 0);
+
+	m_previousTransform = m_transform;
 }
 
 void Wolf::ModelBase::buildAccelerationStructures()

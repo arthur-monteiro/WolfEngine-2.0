@@ -24,7 +24,7 @@ namespace Wolf
 		virtual ~ModelBase() = default;
 
 		virtual void addMeshToRenderList(RenderMeshList& renderMeshList, const RenderMeshList::MeshToRenderInfo::InstanceInfos& instanceInfos = { nullptr, 1 }) const;
-		void updateGraphic() const;
+		void updateGraphic();
 
 		const BottomLevelAccelerationStructure* getBLAS() const { return m_blas.get(); }
 		const glm::mat4& getTransform() const { return m_transform; }
@@ -44,9 +44,11 @@ namespace Wolf
 		std::unique_ptr<LazyInitSharedResource<DescriptorSetLayout, ModelBase>> m_descriptorSetLayout;
 
 		glm::mat4 m_transform;
+		glm::mat4 m_previousTransform;
 		struct UniformBufferData
 		{
 			glm::mat4 model;
+			glm::mat4 previousModel;
 		};
 		std::unique_ptr<DescriptorSet> m_descriptorSet;
 		std::unique_ptr<Buffer> m_uniformBuffer;

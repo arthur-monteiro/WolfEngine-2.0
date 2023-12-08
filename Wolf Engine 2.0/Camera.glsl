@@ -2,14 +2,21 @@ R"(
 layout(binding = 0, set = £CAMERA_DESCRIPTOR_SLOT) uniform UniformBufferCamera
 {
 	mat4 view;
+
 	mat4 projection;
+
 	mat4 invView;
+
 	mat4 invProjection;
+
 	mat4 previousViewMatrix;
+
 	vec2 jitter;
 	vec2 projectionParams;
+
 	float near;
 	float far;
+	
 } ubCamera;
 
 mat4 getViewMatrix()

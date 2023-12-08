@@ -73,8 +73,10 @@ void Wolf::FirstPersonCamera::update(const CameraUpdateContext& context)
 	glm::vec2 pixelJitter(0.0f);
 	if (m_enableJittering)
 	{
-		pixelJitter.x = ((JITTER_OFFSET[context.frameIdx % std::size(JITTER_OFFSET)].x - 0.5f) * 2.0f) / static_cast<float>(context.swapChainExtent.width);
-		pixelJitter.y = ((JITTER_OFFSET[context.frameIdx % std::size(JITTER_OFFSET)].y - 0.5f) * 2.0f) / static_cast<float>(context.swapChainExtent.height);
+		const uint32_t JITTER_OFFSET_COUNT = static_cast<uint32_t>(std::size(JITTER_OFFSET));
+
+		pixelJitter.x = ((JITTER_OFFSET[context.frameIdx % JITTER_OFFSET_COUNT].x - 0.5f) * 2.0f) / static_cast<float>(context.swapChainExtent.width);
+		pixelJitter.y = ((JITTER_OFFSET[context.frameIdx % JITTER_OFFSET_COUNT].y - 0.5f) * 2.0f) / static_cast<float>(context.swapChainExtent.height);
 	}
 	updateGraphic(pixelJitter);
 }
