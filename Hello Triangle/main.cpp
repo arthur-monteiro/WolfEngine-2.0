@@ -35,16 +35,16 @@ int main(int argc, char* argv[])
 
 	Wolf::WolfEngine wolfInstance(wolfInstanceCreateInfo);
 
-	UniquePass pass;
-	wolfInstance.initializePass(&pass);
+	Wolf::ResourceUniqueOwner<UniquePass> pass(new UniquePass);
+	wolfInstance.initializePass(pass.createNonOwnerResource<Wolf::CommandRecordBase>());
 
 	while (!wolfInstance.windowShouldClose())
 	{
-		std::vector<Wolf::CommandRecordBase*> passes(1);
-		passes[0] = &pass;
+		std::vector<Wolf::ResourceNonOwner<Wolf::CommandRecordBase>> passes;
+		passes.push_back(pass.createNonOwnerResource<Wolf::CommandRecordBase>());
 
 		wolfInstance.updateBeforeFrame();
-		wolfInstance.frame(passes, pass.getSemaphore());
+		wolfInstance.frame(passes, pass->getSemaphore());
 	}
 
 	wolfInstance.waitIdle();

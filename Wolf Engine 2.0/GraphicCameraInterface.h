@@ -33,12 +33,18 @@ namespace Wolf
 		struct UniformBufferData
 		{
 			glm::mat4 view;
+
 			glm::mat4 projection;
+
 			glm::mat4 invView;
+
 			glm::mat4 invProjection;
+
 			glm::mat4 previousViewMatrix;
+
 			glm::vec2 jitter;
 			glm::vec2 projectionParams;
+
 			glm::f32  near;
 			glm::f32  far;
 		};

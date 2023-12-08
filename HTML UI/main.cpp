@@ -23,6 +23,14 @@ void debugCallback(Wolf::Debug::Severity severity, Wolf::Debug::Type type, const
 	std::cout << message << std::endl;
 }
 
+Wolf::ResourceUniqueOwner<UniquePass> pass;
+
+void setTriangleColor(const ultralight::JSObject& thisObject, const ultralight::JSArgs& args)
+{
+	const glm::vec3 color(args[0].ToInteger() / 255.0f, args[1].ToInteger() / 255.0f, args[2].ToInteger() / 255.0f);
+	pass->setTriangleColor(color);
+}
+
 int main()
 {
 	Wolf::WolfInstanceCreateInfo wolfInstanceCreateInfo;
@@ -32,23 +40,24 @@ int main()
 
 	Wolf::WolfEngine wolfInstance(wolfInstanceCreateInfo);
 
-	UniquePass pass;
-	wolfInstance.initializePass(&pass);
+	pass.reset(new UniquePass);
+	wolfInstance.initializePass(pass.createNonOwnerResource<Wolf::CommandRecordBase>());
 
 	ultralight::JSObject jsObject;
 	wolfInstance.getUserInterfaceJSObject(jsObject);
-	jsObject["ChangeColor"] = std::bind(&UniquePass::setTriangleColor, &pass, std::placeholders::_1, std::placeholders::_2);
+	jsObject["ChangeColor"] = ultralight::JSCallback(&setTriangleColor);
 
 	while (!wolfInstance.windowShouldClose())
 	{
-		std::vector<Wolf::CommandRecordBase*> passes(1);
-		passes[0] = &pass;
+		std::vector<Wolf::ResourceNonOwner<Wolf::CommandRecordBase>> passes;
+		passes.push_back(pass.createNonOwnerResource<Wolf::CommandRecordBase>());
 
 		wolfInstance.updateBeforeFrame();
-		wolfInstance.frame(passes, pass.getSemaphore());
+		wolfInstance.frame(passes, pass->getSemaphore());
 	}
 
 	wolfInstance.waitIdle();
+	pass.reset(nullptr);
 
 	return 0;
 }

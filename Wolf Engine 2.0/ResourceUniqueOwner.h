@@ -18,7 +18,9 @@ namespace Wolf
 		~ResourceUniqueOwner();
 
 		void reset(T* resource);
-		ResourceNonOwner<T> createNonOwnerResource(
+
+		template <typename U = T>
+		ResourceNonOwner<U> createNonOwnerResource(
 #ifdef RESOURCE_DEBUG
 			const std::source_location& location = std::source_location::current()
 #endif
@@ -37,22 +39,33 @@ namespace Wolf
 
 		uint32_t m_nonOwnedResourceCount = 0;
 
-		void nonOwnerResourceDeleteCommon();
+		void nonOwnerResourceDeleteCommon(
 #ifdef RESOURCE_DEBUG
-		void nonOwnerResourceDeleteTracked(ResourceNonOwner<T>* instance);
-		void nonOwnerResourceDeleteTracked(ResourceNonOwner<const T>* instance);
+			const ResourceNonOwner<const void>* instance
+#endif
+		);
+#ifdef RESOURCE_DEBUG
+		template <typename U = T>
+		void nonOwnerResourceDeleteTracked(ResourceNonOwner<U>* instance);
+		template <typename U = T>
+		void nonOwnerResourceDeleteTracked(ResourceNonOwner<const U>* instance);
 #endif
 
-		void addNonOwnerResourceCommon();
+		void addNonOwnerResourceCommon(
 #ifdef RESOURCE_DEBUG
-		void addNonOwnerResourceTracked(ResourceNonOwner<T>* instance);
-		void addNonOwnerResourceTracked(ResourceNonOwner<const T>* instance);
+			ResourceNonOwner<const void>* instance
+#endif
+		);
+#ifdef RESOURCE_DEBUG
+		template <typename U = T>
+		void addNonOwnerResourceTracked(ResourceNonOwner<U>* instance);
+		template <typename U = T>
+		void addNonOwnerResourceTracked(ResourceNonOwner<const U>* instance);
 #endif
 		void checksBeforeDelete() const;
 
 #ifdef RESOURCE_DEBUG
-		std::vector<ResourceNonOwner<T>*> m_nonOwnerResources;
-		std::vector<ResourceNonOwner<const T>*> m_constNonOwnerResources;
+		std::vector<ResourceNonOwner<const void>*> m_nonOwnerResources;
 #endif
 	};
 
@@ -73,16 +86,16 @@ namespace Wolf
 	}
 
 	template <typename T>
-	ResourceNonOwner<T> ResourceUniqueOwner<T>::createNonOwnerResource(
+	template <typename U>
+	ResourceNonOwner<U> ResourceUniqueOwner<T>::createNonOwnerResource(
 #ifdef RESOURCE_DEBUG
 		const std::source_location& location
 #endif
 	)
 	{
-		m_nonOwnedResourceCount++;
-		return ResourceNonOwner<T>(m_resource.get(),
+		return ResourceNonOwner<U>(static_cast<U*>(m_resource.get()),
 #ifdef RESOURCE_DEBUG
-			[this] (ResourceNonOwner<T>* instance) { nonOwnerResourceDeleteTracked(instance); }, [this] (ResourceNonOwner<T>* instance) { addNonOwnerResourceTracked(instance); }, location
+			[this] (ResourceNonOwner<U>* instance) { nonOwnerResourceDeleteTracked(instance); }, [this] (ResourceNonOwner<U>* instance) { addNonOwnerResourceTracked(instance); }, location
 #else
 			[this] { nonOwnerResourceDeleteCommon(); }, [this] { addNonOwnerResourceCommon(); }
 #endif
@@ -96,7 +109,6 @@ namespace Wolf
 #endif
 	)
 	{
-		m_nonOwnedResourceCount++;
 		return ResourceNonOwner<const T>(m_resource.get(),
 #ifdef RESOURCE_DEBUG
 			[this] (ResourceNonOwner<const T>* instance) { nonOwnerResourceDeleteTracked(instance); }, [this] (ResourceNonOwner<const T>* instance) { addNonOwnerResourceTracked(instance); }, location
@@ -113,56 +125,70 @@ namespace Wolf
 	}
 
 	template <typename T>
-	void ResourceUniqueOwner<T>::nonOwnerResourceDeleteCommon()
+	void ResourceUniqueOwner<T>::nonOwnerResourceDeleteCommon(
+#ifdef RESOURCE_DEBUG
+		const ResourceNonOwner<const void>* instance
+#endif
+	)
 	{
 		if (m_nonOwnedResourceCount == 0)
 			Debug::sendCriticalError("Wrong resource count");
 		m_nonOwnedResourceCount--;
+
+#ifdef RESOURCE_DEBUG
+		for (int32_t i = static_cast<int32_t>(m_nonOwnerResources.size()) - 1; i >= 0; --i)
+		{
+			if (m_nonOwnerResources[i] == instance)
+			{
+				m_nonOwnerResources.erase(m_nonOwnerResources.begin() + i);
+				break;
+			}
+		}
+#endif
 	}
 
 #ifdef RESOURCE_DEBUG
 	template <typename T>
-	void ResourceUniqueOwner<T>::nonOwnerResourceDeleteTracked(ResourceNonOwner<T>* instance)
+	template <typename U>
+	void ResourceUniqueOwner<T>::nonOwnerResourceDeleteTracked(ResourceNonOwner<U>* instance)
 	{
-		nonOwnerResourceDeleteCommon();
-		for (int32_t i = static_cast<int32_t>(m_nonOwnerResources.size()) - 1; i >= 0; --i)
-		{
-			if (m_nonOwnerResources[i] == instance)
-				m_nonOwnerResources.erase(m_nonOwnerResources.begin() + i);
-		}
+		nonOwnerResourceDeleteCommon(reinterpret_cast<ResourceNonOwner<const void>*>(instance));
 	}
 
 	template <typename T>
-	void ResourceUniqueOwner<T>::nonOwnerResourceDeleteTracked(ResourceNonOwner<const T>* instance)
+	template <typename U>
+	void ResourceUniqueOwner<T>::nonOwnerResourceDeleteTracked(ResourceNonOwner<const U>* instance)
 	{
-		nonOwnerResourceDeleteCommon();
-		for (int32_t i = static_cast<int32_t>(m_constNonOwnerResources.size()) - 1; i >= 0; --i)
-		{
-			if (m_constNonOwnerResources[i] == instance)
-				m_constNonOwnerResources.erase(m_constNonOwnerResources.begin() + i);
-		}
+		nonOwnerResourceDeleteCommon(reinterpret_cast<ResourceNonOwner<const void>*>(instance));
 	}
 #endif
 
 	template <typename T>
-	void ResourceUniqueOwner<T>::addNonOwnerResourceCommon()
+	void ResourceUniqueOwner<T>::addNonOwnerResourceCommon(
+#ifdef RESOURCE_DEBUG
+		ResourceNonOwner<const void>* instance
+#endif
+	)
 	{
 		m_nonOwnedResourceCount++;
+#ifdef RESOURCE_DEBUG
+		m_nonOwnerResources.push_back(instance);
+#endif
 	}
 
 #ifdef RESOURCE_DEBUG
 	template <typename T>
-	void ResourceUniqueOwner<T>::addNonOwnerResourceTracked(ResourceNonOwner<T>* instance)
+	template <typename U>
+	void ResourceUniqueOwner<T>::addNonOwnerResourceTracked(ResourceNonOwner<U>* instance)
 	{
-		addNonOwnerResourceCommon();
-		m_nonOwnerResources.push_back(instance);
+		addNonOwnerResourceCommon(reinterpret_cast<ResourceNonOwner<const void>*>(instance));
 	}
 
 	template <typename T>
-	void ResourceUniqueOwner<T>::addNonOwnerResourceTracked(ResourceNonOwner<const T>* instance)
+	template <typename U>
+	void ResourceUniqueOwner<T>::addNonOwnerResourceTracked(ResourceNonOwner<const U>* instance)
 	{
-		addNonOwnerResourceCommon();
-		m_constNonOwnerResources.push_back(instance);
+		addNonOwnerResourceCommon(reinterpret_cast<ResourceNonOwner<const void>*>(instance));
 	}
 #endif
 
@@ -178,4 +204,3 @@ namespace Wolf
 		}
 	}
 }
-

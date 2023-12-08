@@ -51,11 +51,11 @@ namespace Wolf
 	public:
 		WolfEngine(const WolfInstanceCreateInfo& createInfo);
 
-		void initializePass(CommandRecordBase* pass) const;
+		void initializePass(const ResourceNonOwner<CommandRecordBase>& pass) const;
 
 		bool windowShouldClose() const;
 		void updateBeforeFrame();
-		void frame(const std::span<CommandRecordBase*>& passes, const Semaphore* frameEndedSemaphore);
+		void frame(const std::span<ResourceNonOwner<CommandRecordBase>>& passes, const Semaphore* frameEndedSemaphore);
 
 		void waitIdle() const;
 
