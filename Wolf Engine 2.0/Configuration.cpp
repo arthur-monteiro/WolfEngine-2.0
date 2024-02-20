@@ -35,6 +35,8 @@ Wolf::Configuration::Configuration(const std::string& filename, AAssetManager* a
 				m_useVIL = std::stoi(line);
 			if (token == "useRenderDoc")
 				m_useRenderDoc = std::stoi(line);
+			if (token == "saveUICommands")
+				m_saveUICommands = std::stoi(line);
 		}
 	}
 

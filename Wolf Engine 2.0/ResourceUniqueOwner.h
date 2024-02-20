@@ -33,6 +33,7 @@ namespace Wolf
 
 		[[nodiscard]] explicit operator bool() const;
 		[[nodiscard]] T* operator->() const { return m_resource.get(); }
+		[[nodiscard]] const T& operator*() const { return *m_resource; }
 
 	private:
 		std::unique_ptr<T> m_resource;

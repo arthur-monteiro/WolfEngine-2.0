@@ -350,7 +350,7 @@ void Wolf::Vulkan::createDevice()
 	findQueueFamilies(m_queueFamilyIndices, m_physicalDevice, m_surface);
 
 	std::vector<VkDeviceQueueCreateInfo> queueCreateInfos;
-	std::set uniqueQueueFamilies = { m_queueFamilyIndices.graphicsFamily, m_queueFamilyIndices.presentFamily };
+	std::set uniqueQueueFamilies = { m_queueFamilyIndices.graphicsFamily, m_queueFamilyIndices.presentFamily, m_queueFamilyIndices.computeFamily };
 
 	float queuePriority = 1.0f;
 	for (int queueFamily : uniqueQueueFamilies)
@@ -364,29 +364,33 @@ void Wolf::Vulkan::createDevice()
 	}
 
 #ifndef __ANDROID__
+	VkPhysicalDeviceVulkan11Features features11{};
+	features11.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_1_FEATURES;
+
 	VkPhysicalDeviceVulkan12Features features12{};
 	features12.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_2_FEATURES;
 	features12.bufferDeviceAddress = VK_TRUE;
+	features12.pNext = &features11;
 
 	VkPhysicalDeviceRayTracingPipelineFeaturesKHR rayTracingPipelineFeatures{};
 	rayTracingPipelineFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_PIPELINE_FEATURES_KHR;
 	rayTracingPipelineFeatures.rayTracingPipeline = true;
-	features12.pNext = &rayTracingPipelineFeatures;
+	rayTracingPipelineFeatures.pNext = &features12;
 
 	VkPhysicalDeviceAccelerationStructureFeaturesKHR accelerationStructureFeature{};
 	accelerationStructureFeature.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ACCELERATION_STRUCTURE_FEATURES_KHR;
 	accelerationStructureFeature.accelerationStructure = true;
-	rayTracingPipelineFeatures.pNext = &accelerationStructureFeature;
+	accelerationStructureFeature.pNext = &rayTracingPipelineFeatures;
 
 	VkPhysicalDeviceFragmentShadingRateFeaturesKHR variableShadingRateFeatures{};
 	variableShadingRateFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FRAGMENT_SHADING_RATE_FEATURES_KHR;
 	variableShadingRateFeatures.pipelineFragmentShadingRate = true;
 	variableShadingRateFeatures.attachmentFragmentShadingRate = true;
-	accelerationStructureFeature.pNext = &variableShadingRateFeatures;
+	variableShadingRateFeatures.pNext = &accelerationStructureFeature;
 
 	VkPhysicalDeviceFeatures2 supportedFeatures = {};
 	supportedFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
-	supportedFeatures.pNext = &features12;
+	supportedFeatures.pNext = &variableShadingRateFeatures;
 	supportedFeatures.features.shaderStorageImageMultisample = VK_TRUE;
 	vkGetPhysicalDeviceFeatures2(m_physicalDevice, &supportedFeatures);
 

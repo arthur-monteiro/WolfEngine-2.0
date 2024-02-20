@@ -61,7 +61,7 @@ namespace Wolf
 
 #ifndef __ANDROID__
 		void getUserInterfaceJSObject(ultralight::JSObject& outObject) const;
-		void evaluateUserInterfaceScript(const std::string& script) const;
+		void evaluateUserInterfaceScript(const std::string& script);
 #endif
 		[[nodiscard]] uint32_t getCurrentFrame() const { return m_currentFrame; }
 #ifndef __ANDROID__
@@ -76,6 +76,7 @@ namespace Wolf
 		CameraList& getCameraList() { return m_cameraList; }
 		RenderMeshList& getRenderMeshList() { return m_renderMeshList; }
 		ResourceNonOwner<BindlessDescriptor> getBindlessDescriptor() { return m_bindlessDescriptor.createNonOwnerResource(); }
+		const std::vector<std::string>& getSavedUICommands() const { return m_savedUICommands; }
 
 	private:
 		void fillInitializeContext(InitializationContext& context) const;
@@ -114,5 +115,8 @@ namespace Wolf
 		ShaderList m_shaderList;
 		ResourceUniqueOwner<BindlessDescriptor> m_bindlessDescriptor;
 		std::array<std::unique_ptr<Image>, 5> m_defaultImages;
+
+		// Saves
+		std::vector<std::string> m_savedUICommands;
 	};
 }

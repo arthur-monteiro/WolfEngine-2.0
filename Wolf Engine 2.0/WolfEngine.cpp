@@ -234,8 +234,12 @@ void Wolf::WolfEngine::getUserInterfaceJSObject(ultralight::JSObject& outObject)
 	m_ultraLight->getJSObject(outObject);
 }
 
-void Wolf::WolfEngine::evaluateUserInterfaceScript(const std::string& script) const
+void Wolf::WolfEngine::evaluateUserInterfaceScript(const std::string& script)
 {
+	if (m_configuration->getUICommands())
+	{
+		m_savedUICommands.push_back(script);
+	}
 	m_ultraLight->requestScriptEvaluation(script);
 }
 #endif

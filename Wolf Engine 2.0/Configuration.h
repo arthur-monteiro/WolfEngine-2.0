@@ -21,6 +21,7 @@ namespace Wolf
 		[[nodiscard]] uint32_t getMaxCachedFrames() const { return m_maxCachedFrames; }
 		[[nodiscard]] bool getUseVIL() const { return m_useVIL; }
 		[[nodiscard]] bool getUseRenderDoc() const { return m_useRenderDoc; }
+		[[nodiscard]] bool getUICommands() const { return m_saveUICommands; }
 
 #ifdef __ANDROID__
 		AAssetManager* getAndroidAssetManager() const { return m_androidAssetManager; }
@@ -32,6 +33,7 @@ namespace Wolf
 		uint32_t m_maxCachedFrames = 0;
 		bool m_useVIL = false;
 		bool m_useRenderDoc = false;
+		bool m_saveUICommands = false;
 
 #ifdef __ANDROID__
 		AAssetManager* m_androidAssetManager;
