@@ -9,8 +9,14 @@
 
 std::string ws2s(const std::wstring& wstr)
 {
-	std::string str(wstr.begin(), wstr.end());
-	return str;
+	if (wstr.size() > 512)
+		Wolf::Debug::sendCriticalError("Input is too big");
+
+	char str[512];
+	if (std::wcstombs(str, wstr.c_str(), 512) == 0)
+		Wolf::Debug::sendError("Conversion doesn't seem to work");
+
+	return { str };
 }
 
 Wolf::JSONReader::JSONReader(const std::string& filename)
@@ -364,10 +370,10 @@ uint32_t Wolf::JSONReader::JSONObject::getArraySize(const std::string& propertyN
 {
 	if (!properties.contains(propertyName))
 		return 0;
-	return properties[propertyName]->objectArrayValue.size();
+	return static_cast<uint32_t>(properties[propertyName]->objectArrayValue.size());
 }
 
 uint32_t Wolf::JSONReader::JSONObject::getPropertyCount()
 {
-	return properties.size();
+	return static_cast<uint32_t>(properties.size());
 }

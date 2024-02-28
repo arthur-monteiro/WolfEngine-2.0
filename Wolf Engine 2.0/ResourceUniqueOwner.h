@@ -15,7 +15,11 @@ namespace Wolf
 	{
 	public:
 		ResourceUniqueOwner(T* resource = nullptr) : m_resource(resource) {}
-		ResourceUniqueOwner(ResourceUniqueOwner&& other) noexcept : m_resource(std::move(other.m_resource)), m_nonOwnedResourceCount(other.m_nonOwnedResourceCount), m_nonOwnerResources(other.m_nonOwnerResources) {}
+		ResourceUniqueOwner(ResourceUniqueOwner&& other) noexcept : m_resource(std::move(other.m_resource)), m_nonOwnedResourceCount(other.m_nonOwnedResourceCount)
+#ifdef RESOURCE_DEBUG
+		, m_nonOwnerResources(other.m_nonOwnerResources)
+#endif
+		{}
 		~ResourceUniqueOwner();
 
 		void reset(T* resource);
