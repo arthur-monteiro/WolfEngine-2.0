@@ -15,9 +15,15 @@ namespace Wolf
 	{
 	public:
 		ResourceUniqueOwner(T* resource = nullptr) : m_resource(resource) {}
+		ResourceUniqueOwner(ResourceUniqueOwner&& other) noexcept : m_resource(std::move(other.m_resource)), m_nonOwnedResourceCount(other.m_nonOwnedResourceCount)
+#ifdef RESOURCE_DEBUG
+		, m_nonOwnerResources(other.m_nonOwnerResources)
+#endif
+		{}
 		~ResourceUniqueOwner();
 
 		void reset(T* resource);
+		T* release();
 
 		template <typename U = T>
 		ResourceNonOwner<U> createNonOwnerResource(
@@ -73,7 +79,8 @@ namespace Wolf
 	template <typename T>
 	ResourceUniqueOwner<T>::~ResourceUniqueOwner()
 	{
-		checksBeforeDelete();
+		if (m_resource)
+			checksBeforeDelete();
 	}
 
 	template <typename T>
@@ -87,6 +94,13 @@ namespace Wolf
 	}
 
 	template <typename T>
+	T* ResourceUniqueOwner<T>::release()
+	{
+		checksBeforeDelete();
+		return m_resource.release();
+	}
+
+	template <typename T>
 	template <typename U>
 	ResourceNonOwner<U> ResourceUniqueOwner<T>::createNonOwnerResource(
 #ifdef RESOURCE_DEBUG
@@ -94,13 +108,26 @@ namespace Wolf
 #endif
 	)
 	{
-		return ResourceNonOwner<U>(static_cast<U*>(m_resource.get()),
+		if (U* resourceAsNewType = dynamic_cast<U*>(m_resource.get()))
+		{
+			return ResourceNonOwner<U>(resourceAsNewType,
 #ifdef RESOURCE_DEBUG
-			[this] (ResourceNonOwner<U>* instance) { nonOwnerResourceDeleteTracked(instance); }, [this] (ResourceNonOwner<U>* instance) { addNonOwnerResourceTracked(instance); }, location
+				[this](ResourceNonOwner<U>* instance) { nonOwnerResourceDeleteTracked(instance); }, [this](ResourceNonOwner<U>* instance) { addNonOwnerResourceTracked(instance); }, location
 #else
-			[this] { nonOwnerResourceDeleteCommon(); }, [this] { addNonOwnerResourceCommon(); }
+				[this]{ nonOwnerResourceDeleteCommon(); }, [this] { addNonOwnerResourceCommon(); }
 #endif
-		);
+			);
+		}
+		else
+		{
+			return ResourceNonOwner<U>(nullptr,
+#ifdef RESOURCE_DEBUG
+				[this](ResourceNonOwner<U>*) { }, [this](ResourceNonOwner<U>* instance) { }, location
+#else
+				[this]{ nonOwnerResourceDeleteCommon(); }, [this] { addNonOwnerResourceCommon(); }
+#endif
+			);
+		}
 	}
 
 	template <typename T>

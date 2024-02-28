@@ -50,6 +50,7 @@ namespace Wolf
 	{
 	public:
 		WolfEngine(const WolfInstanceCreateInfo& createInfo);
+		~WolfEngine() {}
 
 		void initializePass(const ResourceNonOwner<CommandRecordBase>& pass) const;
 

@@ -9,8 +9,14 @@
 
 std::string ws2s(const std::wstring& wstr)
 {
-	std::string str(wstr.begin(), wstr.end());
-	return str;
+	if (wstr.size() > 512)
+		Wolf::Debug::sendCriticalError("Input is too big");
+
+	char str[512];
+	if (std::wcstombs(str, wstr.c_str(), 512) == 0)
+		Wolf::Debug::sendError("Conversion doesn't seem to work");
+
+	return { str };
 }
 
 Wolf::JSONReader::JSONReader(const std::string& filename)
@@ -170,7 +176,7 @@ Wolf::JSONReader::JSONReader(const std::string& filename)
 
 				currentPropertyStack.pop();
 				line = line.substr(endArrayPos + 1);
-				currentLookingFor = LookingFor::NextProperty;
+				currentLookingFor = LookingFor::Comma;
 			}
 			else if (endObjectPos != std::string::npos)
 			{
@@ -209,7 +215,7 @@ Wolf::JSONReader::JSONReader(const std::string& filename)
 				currentPropertyStack.pop();
 				currentLookingFor = LookingFor::Comma;
 			}
-			else if (isdigit(nextCharacter))
+			else if (isdigit(nextCharacter) || nextCharacter == '-')
 			{
 				float floatValue;
 				size_t lastCharacterPos;
@@ -334,11 +340,25 @@ const std::string& Wolf::JSONReader::JSONObject::getPropertyString(const std::st
 	return properties[propertyName]->stringValue;
 }
 
+const std::string& Wolf::JSONReader::JSONObject::getPropertyString(uint32_t propertyIdx)
+{
+	auto it = properties.begin();
+	std::advance(it, propertyIdx);
+	return it->first;
+}
+
 bool Wolf::JSONReader::JSONObject::getPropertyBool(const std::string& propertyName)
 {
 	if (properties[propertyName]->type != JSONPropertyType::Bool)
 		Debug::sendError("Property is not a bool");
 	return properties[propertyName]->boolValue;
+}
+
+Wolf::JSONReader::JSONObjectInterface* Wolf::JSONReader::JSONObject::getPropertyObject(const std::string& propertyName)
+{
+	if (properties[propertyName]->type != JSONPropertyType::Object)
+		Debug::sendError("Property is not an object");
+	return properties[propertyName]->objectValue;
 }
 
 Wolf::JSONReader::JSONObjectInterface* Wolf::JSONReader::JSONObject::getArrayObjectItem(const std::string& propertyName, uint32_t idx)
@@ -350,5 +370,10 @@ uint32_t Wolf::JSONReader::JSONObject::getArraySize(const std::string& propertyN
 {
 	if (!properties.contains(propertyName))
 		return 0;
-	return properties[propertyName]->objectArrayValue.size();
+	return static_cast<uint32_t>(properties[propertyName]->objectArrayValue.size());
+}
+
+uint32_t Wolf::JSONReader::JSONObject::getPropertyCount()
+{
+	return static_cast<uint32_t>(properties.size());
 }

@@ -101,6 +101,8 @@ namespace Wolf
 			return *this;
 		}
 
+		[[nodiscard]] operator bool() const { return m_resource != nullptr; }
+
 		~ResourceNonOwner();
 
 	private:
