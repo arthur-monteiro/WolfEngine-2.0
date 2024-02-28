@@ -19,14 +19,16 @@ namespace Wolf
 			virtual float getPropertyFloat(const std::string& propertyName) = 0;
 			virtual const std::vector<float>& getPropertyFloatArray(const std::string& propertyName) = 0;
 			virtual const std::string& getPropertyString(const std::string& propertyName) = 0;
+			virtual bool getPropertyBool(const std::string& propertyName) = 0;
 			virtual JSONObjectInterface* getArrayObjectItem(const std::string& propertyName, uint32_t idx) = 0;
+			virtual uint32_t getArraySize(const std::string& propertyName) = 0;
 		};
 		JSONObjectInterface* getRoot() { return m_rootObject; }
 
 	private:
 		class JSONObject;
 
-		enum class JSONPropertyType { String, Object, Float, UnknownArray, ObjectArray, FloatArray, Unknown };
+		enum class JSONPropertyType { String, Object, Float, UnknownArray, ObjectArray, FloatArray, Bool, Unknown };
 		struct JSONPropertyValue
 		{
 			JSONPropertyType type;
@@ -34,6 +36,7 @@ namespace Wolf
 			// Possible values
 			float floatValue = 0;
 			std::string stringValue;
+			bool boolValue = false;;
 			JSONObject* objectValue = nullptr;
 			std::vector<JSONObject*> objectArrayValue;
 			std::vector<float> floatArrayValue;
@@ -49,7 +52,9 @@ namespace Wolf
 			float getPropertyFloat(const std::string& propertyName) override;
 			const std::vector<float>& getPropertyFloatArray(const std::string& propertyName) override;
 			const std::string& getPropertyString(const std::string& propertyName) override;
+			bool getPropertyBool(const std::string& propertyName) override;
 			JSONObjectInterface* getArrayObjectItem(const std::string& propertyName, uint32_t idx) override;
+			uint32_t getArraySize(const std::string& propertyName) override;
 		};
 
 		JSONObject* m_rootObject;

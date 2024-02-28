@@ -63,10 +63,10 @@ void Wolf::DescriptorSetGenerator::setCombinedImageSampler(uint32_t binding, VkI
 	imageData.sampler = sampler.getSampler();
 
 	m_descriptorSetCreateInfo.descriptorImages[descriptor.second].images.resize(1);
-	m_descriptorSetCreateInfo.descriptorImages[descriptor.second].images[0] = std::move(imageData);
+	m_descriptorSetCreateInfo.descriptorImages[descriptor.second].images[0] = imageData;
 }
 
-void Wolf::DescriptorSetGenerator::setImage(uint32_t binding, ImageDescription& imageDescription)
+void Wolf::DescriptorSetGenerator::setImage(uint32_t binding, const ImageDescription& imageDescription)
 {
 	const std::pair<DescriptorType, uint32_t /* descriptor index */>& descriptor = m_mapBindingCreateInfo[binding];
 
@@ -79,7 +79,7 @@ void Wolf::DescriptorSetGenerator::setImage(uint32_t binding, ImageDescription& 
 	imageData.sampler = VK_NULL_HANDLE;
 
 	m_descriptorSetCreateInfo.descriptorImages[descriptor.second].images.resize(1);
-	m_descriptorSetCreateInfo.descriptorImages[descriptor.second].images[0] = std::move(imageData);
+	m_descriptorSetCreateInfo.descriptorImages[descriptor.second].images[0] = imageData;
 }
 
 void Wolf::DescriptorSetGenerator::setImages(uint32_t binding, const std::vector<ImageDescription>& imageDescriptions)

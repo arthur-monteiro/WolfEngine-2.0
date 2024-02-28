@@ -26,7 +26,7 @@ namespace Wolf
 			ImageDescription(VkImageLayout imageLayout, VkImageView imageView) : imageLayout(imageLayout), imageView(imageView) {}
 			ImageDescription() {}
 		};
-		void setImage(uint32_t binding, ImageDescription& imageDescription);
+		void setImage(uint32_t binding, const ImageDescription& imageDescription);
 		void setImages(uint32_t binding, const std::vector<ImageDescription>& imageDescriptions);
 		void setSampler(uint32_t binding, const Sampler& sampler);
 		void setAccelerationStructure(uint32_t binding, const TopLevelAccelerationStructure& accelerationStructure);
