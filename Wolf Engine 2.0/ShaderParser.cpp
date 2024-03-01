@@ -11,12 +11,15 @@
 #include "Debug.h"
 #include "ShaderCommon.h"
 
-Wolf::ShaderParser::ShaderParser(const std::string& filename, const std::vector<std::string>& conditionBlocksToInclude, uint32_t cameraDescriptorSlot)
+Wolf::ShaderParser::ShaderParser(const std::string& filename, const std::vector<std::string>& conditionBlocksToInclude, uint32_t cameraDescriptorSlot, uint32_t bindlessDescriptorSlot, const MaterialFetchProcedure& materialFetchProcedure)
 {
     m_filename = filename;
     m_filenamesWithLastModifiedTime.insert({ filename, std::filesystem::last_write_time(filename) });
     m_conditionBlocksToInclude = conditionBlocksToInclude;
+
     m_cameraDescriptorSlot = cameraDescriptorSlot;
+    m_bindlessDescriptorSlot = bindlessDescriptorSlot;
+    m_materialFetchProcedure = materialFetchProcedure;
 
     parseAndCompile();
 }
@@ -102,6 +105,8 @@ void Wolf::ShaderParser::parseAndCompile()
 
     outFileGLSL << "#version 460\n";
     addCameraCode(outFileGLSL);
+    if (extensionFound == "Frag")
+		addMaterialFetchCode(outFileGLSL);
 
     std::vector<std::string> currentConditions;
     std::string inShaderLine;
@@ -262,4 +267,42 @@ void Wolf::ShaderParser::addCameraCode(std::ofstream& outFileGLSL) const
     }
 
     outFileGLSL << cameraCode;
+}
+
+void Wolf::ShaderParser::addMaterialFetchCode(std::ofstream& outFileGLSL) const
+{
+    if (m_bindlessDescriptorSlot == static_cast<uint32_t>(-1))
+        return;
+
+    outFileGLSL << "\n//------------------\n";
+
+    std::string materialFetchCode;
+    if (m_materialFetchProcedure.filename.empty())
+    {
+        materialFetchCode =
+			#include "DefaultMaterialFetch.glsl"
+        ;
+        outFileGLSL << "// DefaultMaterialFetch.glsl\n";
+    }
+    else
+    {
+        std::ifstream inFile(m_filename);
+        std::string line;
+        while (std::getline(inFile, line))
+            materialFetchCode += line;
+
+        outFileGLSL << "// " << m_filename << '\n';
+    }
+
+    outFileGLSL << "//------------------\n";
+
+    const std::string& descriptorSlotToken = "£BINDLESS_DESCRIPTOR_SLOT";
+    size_t descriptorSlotTokenPos = materialFetchCode.find(descriptorSlotToken);
+    while (descriptorSlotTokenPos != std::string::npos)
+    {
+        materialFetchCode.replace(descriptorSlotTokenPos, descriptorSlotToken.length(), std::to_string(m_bindlessDescriptorSlot));
+        descriptorSlotTokenPos = materialFetchCode.find(descriptorSlotToken);
+    }
+
+    outFileGLSL << materialFetchCode;
 }

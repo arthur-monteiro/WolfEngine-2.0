@@ -431,5 +431,6 @@
     <None Include="Camera.glsl">
       <Filter>Camera</Filter>
     </None>
+    <None Include="DefaultMaterialFetch.glsl" />
   </ItemGroup>
 </Project>
