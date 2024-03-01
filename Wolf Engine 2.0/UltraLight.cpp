@@ -58,7 +58,9 @@ void Wolf::UltraLight::processFrameJobs()
 
 void Wolf::UltraLight::requestScriptEvaluation(const std::string& script)
 {
+    m_evaluateScriptRequestsMutex.lock();
     m_evaluateScriptRequests.push_back(script);
+    m_evaluateScriptRequestsMutex.unlock();
 }
 
 void Wolf::UltraLight::resize(uint32_t width, uint32_t height)
@@ -129,6 +131,7 @@ void Wolf::UltraLight::processImplementation(const char* htmlURL, const std::fun
             continue;
         }
 
+        m_evaluateScriptRequestsMutex.lock();
         if (!m_evaluateScriptRequests.empty())
         {
             for(const std::string& script : m_evaluateScriptRequests)
@@ -136,6 +139,7 @@ void Wolf::UltraLight::processImplementation(const char* htmlURL, const std::fun
 
             m_evaluateScriptRequests.clear();
         }
+        m_evaluateScriptRequestsMutex.unlock();
 
         m_ultraLightImplementation->waitForCopyFence();
 

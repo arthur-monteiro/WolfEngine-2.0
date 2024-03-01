@@ -9,6 +9,9 @@
 
 std::string ws2s(const std::wstring& wstr)
 {
+	if (wstr.empty())
+		return "";
+
 	if (wstr.size() > 512)
 		Wolf::Debug::sendCriticalError("Input is too big");
 
