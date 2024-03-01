@@ -48,6 +48,7 @@ namespace Wolf
 
         bool m_needUpdate = false;
         bool m_stopThreadRequested = false;
+        std::mutex m_evaluateScriptRequestsMutex;
         std::vector<std::string> m_evaluateScriptRequests;
         VkExtent2D m_resizeRequest = { 0, 0 };
 

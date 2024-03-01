@@ -10,12 +10,12 @@
 
 #include "DescriptorSet.h"
 #include "Pipeline.h"
+#include "ShaderParser.h"
 
 namespace Wolf
 {
 	class RenderPass;
 	class ShaderList;
-	class ShaderParser;
 
 	class PipelineSet
 	{
@@ -28,6 +28,8 @@ namespace Wolf
 				std::vector<std::string> conditionBlocksToInclude;
 				std::string entryPointName = defaultEntryPointName;
 				VkShaderStageFlagBits stage;
+
+				ShaderParser::MaterialFetchProcedure materialFetchProcedure;
 			};
 
 			// Programming stages
