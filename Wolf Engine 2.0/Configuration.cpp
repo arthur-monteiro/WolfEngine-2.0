@@ -8,19 +8,19 @@
 const Wolf::Configuration* Wolf::g_configuration = nullptr;
 
 #ifndef __ANDROID__
-Wolf::Configuration::Configuration(const std::string& filename)
+Wolf::Configuration::Configuration(const std::string& filePath)
 #else
-Wolf::Configuration::Configuration(const std::string& filename, AAssetManager* androidAssetManager) : m_androidAssetManager(androidAssetManager)
+Wolf::Configuration::Configuration(const std::string& filePath, AAssetManager* androidAssetManager) : m_androidAssetManager(androidAssetManager)
 #endif
 {
 	if (g_configuration)
 		Debug::sendCriticalError("Can't instantiate Configuration twice");
 
-	std::ifstream configFile(filename);
+	std::ifstream configFile(filePath);
 	std::string line;
 	while (std::getline(configFile, line))
 	{
-		if (const size_t pos = line.find("="); pos != std::string::npos)
+		if (const size_t pos = line.find(' = '); pos != std::string::npos)
 		{
 			std::string token = line.substr(0, pos);
 			line.erase(0, pos + 1);

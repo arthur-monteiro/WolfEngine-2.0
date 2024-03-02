@@ -11,9 +11,9 @@ namespace Wolf
 	{
 	public:
 #ifndef __ANDROID__
-		Configuration(const std::string& filename);
+		Configuration(const std::string& filePath);
 #else
-		Configuration(const std::string& filename, AAssetManager* androidAssetManager);
+		Configuration(const std::string& filePath, AAssetManager* androidAssetManager);
 #endif
 
 		[[nodiscard]] uint32_t getWindowWidth() const { return m_windowWidth; }
