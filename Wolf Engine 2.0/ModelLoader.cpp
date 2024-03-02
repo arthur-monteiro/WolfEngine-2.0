@@ -198,7 +198,7 @@ Wolf::ModelLoader::ModelLoader(ModelData& outputModel, ModelLoadingInfo& modelLo
 			setImage(getTexName(material.diffuse_texname, modelLoadingInfo.mtlFolder), indexTexture++, true);
 			setImage(getTexName(material.bump_texname, modelLoadingInfo.mtlFolder), indexTexture++, false);
 			setImage(getTexName(material.specular_highlight_texname, modelLoadingInfo.mtlFolder), indexTexture++, false);
-			setImage(getTexName(material.ambient_texname, modelLoadingInfo.mtlFolder), indexTexture++, false);
+			setImage(getTexName(material.specular_texname, modelLoadingInfo.mtlFolder), indexTexture++, false);
 			setImage(getTexName(material.ambient_texname, modelLoadingInfo.mtlFolder), indexTexture++, false);
 		}
 	}
