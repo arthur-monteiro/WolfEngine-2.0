@@ -10,7 +10,7 @@ const Wolf::Configuration* Wolf::g_configuration = nullptr;
 #ifndef __ANDROID__
 Wolf::Configuration::Configuration(const std::string& filePath)
 #else
-Wolf::Configuration::Configuration(const std::string& filename, AAssetManager* androidAssetManager) : m_androidAssetManager(androidAssetManager)
+Wolf::Configuration::Configuration(const std::string& filePath, AAssetManager* androidAssetManager) : m_androidAssetManager(androidAssetManager)
 #endif
 {
 	if (g_configuration)
