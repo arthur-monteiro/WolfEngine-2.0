@@ -103,6 +103,8 @@ glm::vec3 Wolf::FirstPersonCamera::getPosition() const
 
 bool Wolf::FirstPersonCamera::isAABBVisible(const AABB& aabb) const
 {
+	return true;
+
 	const glm::mat4 viewProj = m_projectionMatrix * m_viewMatrix;
 
 	const Frustum frustum(viewProj);

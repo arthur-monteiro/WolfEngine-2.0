@@ -102,6 +102,7 @@ namespace Wolf
 		}
 
 		[[nodiscard]] operator bool() const { return m_resource != nullptr; }
+		bool operator==(const ResourceNonOwner& other) const { return m_resource == other.m_resource; }
 
 		~ResourceNonOwner();
 

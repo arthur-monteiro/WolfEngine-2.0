@@ -95,8 +95,8 @@ Wolf::WolfEngine::WolfEngine(const WolfInstanceCreateInfo& createInfo) : m_rende
 			defaultImageDescription[i].imageView = m_defaultImages[i]->getDefaultImageView();
 			defaultImageDescription[i].imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 		}
-
-		m_bindlessDescriptor.reset(new BindlessDescriptor(defaultImageDescription));
+		
+		m_materialsManager.reset(new MaterialsGPUManager(defaultImageDescription));
 	}
 }
 
@@ -140,6 +140,11 @@ void Wolf::WolfEngine::updateBeforeFrame()
 
 	m_renderMeshList.moveToNextFrame(m_cameraList);
 	m_shaderList.checkForModifiedShader();
+
+	if (static_cast<bool>(m_materialsManager))
+	{
+		m_materialsManager->pushMaterialsToGPU();
+	}
 }
 
 void Wolf::WolfEngine::frame(const std::span<ResourceNonOwner<CommandRecordBase>>& passes, const Semaphore* frameEndedSemaphore)
@@ -192,8 +197,8 @@ void Wolf::WolfEngine::frame(const std::span<ResourceNonOwner<CommandRecordBase>
 	recordContext.cameraList = &m_cameraList;
 	recordContext.gameContext = m_gameContexts[recordContext.commandBufferIdx];
 	recordContext.renderMeshList = &m_renderMeshList;
-	if (m_bindlessDescriptor)
-		recordContext.bindlessDescriptorSet = m_bindlessDescriptor->getDescriptorSet();
+	if (m_materialsManager)
+		recordContext.bindlessDescriptorSet = m_materialsManager->getDescriptorSet();
 
 	for (const ResourceNonOwner<CommandRecordBase>& pass : passes)
 	{

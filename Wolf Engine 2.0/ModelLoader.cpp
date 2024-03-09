@@ -370,16 +370,43 @@ void Wolf::ModelLoader::setImage(const std::string& filename, uint32_t idx, bool
 	const VkFormat format = sRGB ? VK_FORMAT_R8G8B8A8_SRGB : VK_FORMAT_R8G8B8A8_UNORM;
 
 	const ImageFileLoader imageFileLoader(filename);
-	const MipMapGenerator mipmapGenerator(imageFileLoader.getPixels(), { static_cast<uint32_t>(imageFileLoader.getWidth()), static_cast<uint32_t>(imageFileLoader.getHeight()) }, format);
+
+	std::vector<ImageCompression::RGBA8> pixels;
+	if (imageFileLoader.getCompression() == ImageCompression::Compression::BC5)
+	{
+		std::vector<ImageCompression::RG8> RG8Pixels;
+		ImageCompression::uncompressImage(imageFileLoader.getCompression(), imageFileLoader.getPixels(), { (imageFileLoader.getWidth()), (imageFileLoader.getHeight()) }, RG8Pixels);
+
+		pixels.resize(RG8Pixels.size());
+		auto computeZ = [](const ImageCompression::RG8& pixel)
+			{
+				auto u8ToFloat = [](uint8_t value) { return 2.0f * static_cast<float>(value) / 255.0f - 1.0f; };
+				return static_cast<uint8_t>(((glm::sqrt(1.0f - u8ToFloat(pixel.r) * u8ToFloat(pixel.r) - u8ToFloat(pixel.g) * u8ToFloat(pixel.g)) + 1.0f) * 0.5f) * 255.0f);
+			};
+		for (uint32_t i = 0; i < pixels.size(); ++i)
+		{
+			pixels[i] = ImageCompression::RGBA8(RG8Pixels[i].r, RG8Pixels[i].g, computeZ(RG8Pixels[i]), 255);
+		}
+	}
+	else if (imageFileLoader.getCompression() != ImageCompression::Compression::NO_COMPRESSION)
+	{
+		ImageCompression::uncompressImage(imageFileLoader.getCompression(), imageFileLoader.getPixels(), { (imageFileLoader.getWidth()), (imageFileLoader.getHeight()) }, pixels);
+	}
+	else
+	{
+		pixels.assign(reinterpret_cast<ImageCompression::RGBA8*>(imageFileLoader.getPixels()), 
+					   reinterpret_cast<ImageCompression::RGBA8*>(imageFileLoader.getPixels()) + static_cast<size_t>(imageFileLoader.getWidth()) * imageFileLoader.getHeight());
+	}
+	const MipMapGenerator mipmapGenerator(reinterpret_cast<const unsigned char*>(pixels.data()), { (imageFileLoader.getWidth()), (imageFileLoader.getHeight()) }, format);
 
 	CreateImageInfo createImageInfo;
-	createImageInfo.extent = { static_cast<uint32_t>(imageFileLoader.getWidth()), static_cast<uint32_t>(imageFileLoader.getHeight()), 1 };
+	createImageInfo.extent = { (imageFileLoader.getWidth()), (imageFileLoader.getHeight()), 1 };
 	createImageInfo.aspect = VK_IMAGE_ASPECT_COLOR_BIT;
 	createImageInfo.format = format;
 	createImageInfo.mipLevelCount = mipmapGenerator.getMipLevelCount();
 	createImageInfo.usage = VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
 	m_outputModel.images[idx].reset(new Image(createImageInfo));
-	m_outputModel.images[idx]->copyCPUBuffer(imageFileLoader.getPixels(), Image::SampledInFragmentShader());
+	m_outputModel.images[idx]->copyCPUBuffer(reinterpret_cast<const unsigned char*>(pixels.data()), Image::SampledInFragmentShader());
 
 	for (uint32_t mipLevel = 1; mipLevel < mipmapGenerator.getMipLevelCount(); ++mipLevel)
 	{
@@ -398,7 +425,7 @@ void Wolf::ModelLoader::setImage(const std::string& filename, uint32_t idx, bool
 		for (uint32_t mipLevel = 0; mipLevel < mipmapGenerator.getMipLevelCount(); ++mipLevel)
 		{
 			const VkDeviceSize copySize = (m_outputModel.images[idx]->getExtent().width * m_outputModel.images[idx]->getExtent().height * m_outputModel.images[idx]->getExtent().depth * m_outputModel.images[idx]->getBBP()) >> mipLevel;
-			const unsigned char* dataPtr = imageFileLoader.getPixels();
+			const unsigned char* dataPtr = reinterpret_cast<const unsigned char*>(pixels.data());
 			if (mipLevel > 0)
 				dataPtr = mipmapGenerator.getMipLevel(mipLevel);
 			memcpy(m_imagesData[idx].data() + copyOffset, dataPtr, copySize);

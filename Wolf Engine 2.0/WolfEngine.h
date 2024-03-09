@@ -13,6 +13,7 @@
 #include "Configuration.h"
 #include "Debug.h"
 #include "InputHandler.h"
+#include "MaterialsGPUManager.h"
 #include "RenderMeshList.h"
 #include "ResourceUniqueOwner.h"
 #include "ShaderList.h"
@@ -50,7 +51,6 @@ namespace Wolf
 	{
 	public:
 		WolfEngine(const WolfInstanceCreateInfo& createInfo);
-		~WolfEngine() {}
 
 		void initializePass(const ResourceNonOwner<CommandRecordBase>& pass) const;
 
@@ -76,7 +76,7 @@ namespace Wolf
 
 		CameraList& getCameraList() { return m_cameraList; }
 		RenderMeshList& getRenderMeshList() { return m_renderMeshList; }
-		ResourceNonOwner<BindlessDescriptor> getBindlessDescriptor() { return m_bindlessDescriptor.createNonOwnerResource(); }
+		ResourceNonOwner<MaterialsGPUManager> getMaterialsManager() { return m_materialsManager.createNonOwnerResource(); }
 		const std::vector<std::string>& getSavedUICommands() const { return m_savedUICommands; }
 
 	private:
@@ -114,8 +114,8 @@ namespace Wolf
 		// Mesh render
 		RenderMeshList m_renderMeshList;
 		ShaderList m_shaderList;
-		ResourceUniqueOwner<BindlessDescriptor> m_bindlessDescriptor;
 		std::array<std::unique_ptr<Image>, 5> m_defaultImages;
+		ResourceUniqueOwner<MaterialsGPUManager> m_materialsManager;
 
 		// Saves
 		std::vector<std::string> m_savedUICommands;

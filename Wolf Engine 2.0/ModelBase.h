@@ -5,6 +5,7 @@
 #include "DescriptorSetLayout.h"
 #include "DescriptorSetLayoutGenerator.h"
 #include "LazyInitSharedResource.h"
+#include "MaterialsGPUManager.h"
 #include "ModelLoader.h"
 #include "RenderMeshList.h"
 #include "ResourceNonOwner.h"
@@ -19,7 +20,7 @@ namespace Wolf
 	{
 	public:
 		ModelBase(ModelLoadingInfo& modelLoadingInfo, bool requestAccelerationStructuresBuild);
-		ModelBase(ModelLoadingInfo& modelLoadingInfo, bool requestAccelerationStructuresBuild, const ResourceNonOwner<BindlessDescriptor>& bindlessDescriptor);
+		ModelBase(ModelLoadingInfo& modelLoadingInfo, bool requestAccelerationStructuresBuild, const ResourceNonOwner<MaterialsGPUManager>& materialsGPUManager);
 		ModelBase(const ModelBase&) = delete;
 		virtual ~ModelBase() = default;
 
