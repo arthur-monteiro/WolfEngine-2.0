@@ -2,7 +2,7 @@
 
 #include <xxh64.hpp>
 
-#include "BindlessDescriptor.h"
+#include "MaterialsGPUManager.h"
 #include "Debug.h"
 #include "GraphicCameraInterface.h"
 #include "RenderPass.h"
@@ -122,7 +122,7 @@ const Wolf::Pipeline* Wolf::PipelineSet::getOrCreatePipeline(uint32_t idx, Rende
 		if (pipelineInfo.bindlessDescriptorSlot != static_cast<uint32_t>(-1))
 		{
 			const uint32_t pushSlot = std::min(pipelineInfo.bindlessDescriptorSlot, static_cast<uint32_t>(renderingPipelineCreateInfo.descriptorSetLayouts.size()));
-			renderingPipelineCreateInfo.descriptorSetLayouts.emplace(renderingPipelineCreateInfo.descriptorSetLayouts.begin() + pushSlot, BindlessDescriptor::getDescriptorSetLayout());
+			renderingPipelineCreateInfo.descriptorSetLayouts.emplace(renderingPipelineCreateInfo.descriptorSetLayouts.begin() + pushSlot, MaterialsGPUManager::getDescriptorSetLayout());
 		}
 
 		// Viewport

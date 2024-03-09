@@ -47,7 +47,7 @@ void Wolf::Buffer::transferCPUMemory(const void* data, VkDeviceSize srcSize, VkD
 	unmap(idx);
 }
 
-void Wolf::Buffer::transferCPUMemoryWithStagingBuffer(const void* data, VkDeviceSize srcSize, VkDeviceSize srcOffset, uint32_t idx) const
+void Wolf::Buffer::transferCPUMemoryWithStagingBuffer(const void* data, VkDeviceSize srcSize, VkDeviceSize srcOffset, VkDeviceSize dstOffset, uint32_t idx) const
 {
 	const Buffer stagingBuffer(srcSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, UpdateRate::NEVER);
 
@@ -59,7 +59,7 @@ void Wolf::Buffer::transferCPUMemoryWithStagingBuffer(const void* data, VkDevice
 	VkBufferCopy bufferCopy;
 	bufferCopy.size = srcSize;
 	bufferCopy.srcOffset = 0;
-	bufferCopy.dstOffset = 0;
+	bufferCopy.dstOffset = dstOffset;
 	transferGPUMemory(stagingBuffer, bufferCopy, idx);
 }
 

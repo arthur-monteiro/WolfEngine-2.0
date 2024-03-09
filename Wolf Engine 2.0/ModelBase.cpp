@@ -35,10 +35,9 @@ Wolf::ModelBase::ModelBase(ModelLoadingInfo& modelLoadingInfo, bool requestAccel
 	}
 }
 
-Wolf::ModelBase::ModelBase(ModelLoadingInfo& modelLoadingInfo, bool requestAccelerationStructuresBuild, const ResourceNonOwner<BindlessDescriptor>& bindlessDescriptor)
+Wolf::ModelBase::ModelBase(ModelLoadingInfo& modelLoadingInfo, bool requestAccelerationStructuresBuild, const ResourceNonOwner<MaterialsGPUManager>& materialsGPUManager)
 	: ModelBase(modelLoadingInfo, requestAccelerationStructuresBuild)
 {
-
 	if (modelLoadingInfo.loadMaterials)
 	{
 		std::vector<DescriptorSetGenerator::ImageDescription> imageDescriptions;
@@ -48,8 +47,7 @@ Wolf::ModelBase::ModelBase(ModelLoadingInfo& modelLoadingInfo, bool requestAccel
 			imageDescriptions.back().imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 			imageDescriptions.back().imageView = image->getDefaultImageView();
 		}
-		if (bindlessDescriptor->addImages(imageDescriptions) != 5 * modelLoadingInfo.materialIdOffset)
-			Debug::sendError("Material ID offset seems wrong");
+		materialsGPUManager->addNewMaterials(imageDescriptions);
 	}
 }
 

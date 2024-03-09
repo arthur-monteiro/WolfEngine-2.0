@@ -177,9 +177,6 @@
     <ClCompile Include="RenderMeshList.cpp">
       <Filter>Render Meshs Info</Filter>
     </ClCompile>
-    <ClCompile Include="BindlessDescriptor.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="CameraInterface.cpp">
       <Filter>Camera</Filter>
     </ClCompile>
@@ -221,6 +218,12 @@
     </ClCompile>
     <ClCompile Include="ResourceNonOwner.cpp">
       <Filter>Containers</Filter>
+    </ClCompile>
+    <ClCompile Include="ImageCompression.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="MaterialsGPUManager.cpp">
+      <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -377,9 +380,6 @@
     <ClInclude Include="RenderMeshList.h">
       <Filter>Render Meshs Info</Filter>
     </ClInclude>
-    <ClInclude Include="BindlessDescriptor.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="CameraList.h">
       <Filter>Camera</Filter>
     </ClInclude>
@@ -424,6 +424,12 @@
     </ClInclude>
     <ClInclude Include="ResourceNonOwner.h">
       <Filter>Containers</Filter>
+    </ClInclude>
+    <ClInclude Include="ImageCompression.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="MaterialsGPUManager.h">
+      <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

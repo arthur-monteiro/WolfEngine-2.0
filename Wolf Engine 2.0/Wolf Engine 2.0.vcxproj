@@ -212,7 +212,6 @@
   <ItemGroup>
     <ClCompile Include="AccelerationStructure.cpp" />
     <ClCompile Include="AndroidCacheHelper.cpp" />
-    <ClCompile Include="BindlessDescriptor.cpp" />
     <ClCompile Include="BottomLevelAccelerationStructure.cpp" />
     <ClCompile Include="Buffer.cpp" />
     <ClCompile Include="CameraInterface.cpp" />
@@ -235,9 +234,11 @@
     <ClCompile Include="FrameBuffer.cpp" />
     <ClCompile Include="GraphicCameraInterface.cpp" />
     <ClCompile Include="Image.cpp" />
+    <ClCompile Include="ImageCompression.cpp" />
     <ClCompile Include="ImageFileLoader.cpp" />
     <ClCompile Include="InputHandler.cpp" />
     <ClCompile Include="JSONReader.cpp" />
+    <ClCompile Include="MaterialsGPUManager.cpp" />
     <ClCompile Include="Mesh.cpp" />
     <ClCompile Include="MipMapGenerator.cpp" />
     <ClCompile Include="ModelBase.cpp" />
@@ -275,7 +276,6 @@
     <ClInclude Include="AccelerationStructure.h" />
     <ClInclude Include="AndroidCacheHelper.h" />
     <ClInclude Include="Attachment.h" />
-    <ClInclude Include="BindlessDescriptor.h" />
     <ClInclude Include="BottomLevelAccelerationStructure.h" />
     <ClInclude Include="Buffer.h" />
     <ClInclude Include="CameraInterface.h" />
@@ -299,10 +299,12 @@
     <ClInclude Include="FrameBuffer.h" />
     <ClInclude Include="GraphicCameraInterface.h" />
     <ClInclude Include="Image.h" />
+    <ClInclude Include="ImageCompression.h" />
     <ClInclude Include="ImageFileLoader.h" />
     <ClInclude Include="InputHandler.h" />
     <ClInclude Include="JSONReader.h" />
     <ClInclude Include="LazyInitSharedResource.h" />
+    <ClInclude Include="MaterialsGPUManager.h" />
     <ClInclude Include="Mesh.h" />
     <ClInclude Include="MipMapGenerator.h" />
     <ClInclude Include="ModelBase.h" />

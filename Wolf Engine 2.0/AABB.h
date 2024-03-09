@@ -9,7 +9,30 @@ namespace Wolf
 	{
 	public:
 		AABB(const glm::vec3& min = glm::vec3(0.0f), const glm::vec3& max = glm::vec3(0.0f)) : m_min(min), m_max(max)
-		{}
+		{
+			for (uint8_t componentIdx = 0; componentIdx < 3; ++componentIdx)
+			{
+				if (m_min[componentIdx] > m_max[componentIdx])
+				{
+					const float cache = m_min[componentIdx];
+					m_min[componentIdx] = m_max[componentIdx];
+					m_max[componentIdx] = cache;
+				}
+			}
+
+			static constexpr float MIN_SIZE = 0.01f;
+			static constexpr float HALF_MIN_SIZE = MIN_SIZE * 0.5f;
+
+			glm::vec3 size = getSize();
+			for (uint8_t componentIdx = 0; componentIdx < 3; ++componentIdx)
+			{
+				if (size[componentIdx] < MIN_SIZE)
+				{
+					m_min[componentIdx] -= HALF_MIN_SIZE;
+					m_max[componentIdx] += HALF_MIN_SIZE;
+				}
+			}			
+		}
 
 		AABB operator* (const glm::mat4& transform) const
 		{

@@ -52,8 +52,3 @@ uint32_t Wolf::BindlessDescriptor::addImages(const std::vector<DescriptorSetGene
 
 	return previousCounter;
 }
-
-void Wolf::BindlessDescriptor::bind(VkCommandBuffer commandBuffer, VkPipelineLayout pipelineLayout, uint32_t descriptorSlot) const
-{
-	vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, descriptorSlot, 1, m_descriptorSet->getDescriptorSet(), 0, nullptr);
-}
