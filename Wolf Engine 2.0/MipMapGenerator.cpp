@@ -7,7 +7,14 @@
 Wolf::MipMapGenerator::MipMapGenerator(const unsigned char* firstMipPixels, VkExtent2D extent, VkFormat format, int mipCount)
 {
 	if(mipCount < 0)
-		mipCount = static_cast<uint32_t>(std::floor(std::log2(std::max(extent.width, extent.height)))) + 1;
+		mipCount = static_cast<uint32_t>(std::floor(std::log2(std::max(extent.width, extent.height)))) - 1; // remove 2 mip levels as min size must be 4x4
+
+	if (mipCount < 0)
+	{
+		Debug::sendWarning("Can't compute mip levels");
+		return;
+	}
+
 	m_mipLevels.resize(mipCount - 1);
 
 	const uint32_t pixelCount = extent.width * extent.height;

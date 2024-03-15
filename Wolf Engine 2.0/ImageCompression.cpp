@@ -12,6 +12,76 @@ uint64_t Wolf::ImageCompression::BC5::BC5Channel::toUInt64() const
     return r;
 }
 
+void Wolf::ImageCompression::compressBC1(const VkExtent3D& extent, const std::vector<RGBA8>& pixels, std::vector<BC1>& outBlocks)
+{
+	const uint32_t blockCountX = extent.width / 4;
+	const uint32_t blockCountY = extent.height / 4;
+
+    outBlocks.resize(static_cast<size_t>(blockCountX) * blockCountY);
+
+    for (uint32_t blockX = 0; blockX < blockCountX; ++blockX)
+    {
+		for (uint32_t blockY = 0; blockY < blockCountY; ++blockY)
+		{
+            RGBA8 min(255, 255, 255, 255), max(0, 0, 0, 255);
+            for (uint32_t pixelX = blockX * 4; pixelX < (blockX + 1) * 4; ++pixelX)
+            {
+                for (uint32_t pixelY = blockY * 4; pixelY < (blockY + 1) * 4; ++pixelY)
+                {
+                    const RGBA8& pixel = pixels[pixelX + pixelY * extent.width];
+                    for (uint32_t channel = 0; channel < 3; ++channel)
+                    {
+                        if (pixel[channel] < min[channel])
+                            min[channel] = pixel[channel];
+
+                        if (pixel[channel] > max[channel])
+                            max[channel] = pixel[channel];
+                    }
+                }
+            }
+
+            BC1& block = outBlocks[blockX + blockY * blockCountX];
+            block = BC1{};
+
+            block.rgb[0] |= (static_cast<uint16_t>(static_cast<float>(min.r) * (31.0f / 255.0f)) & 0x1f) << 11;
+            block.rgb[0] |= (static_cast<uint16_t>(static_cast<float>(min.g) * (63.0f / 255.0f)) & 0x3f) << 5;
+            block.rgb[0] |= (static_cast<uint16_t>(static_cast<float>(min.b) * (31.0f / 255.0f)) & 0x1f) << 0;
+
+            block.rgb[1] |= (static_cast<uint16_t>(static_cast<float>(max.r) * (31.0f / 255.0f)) & 0x1f) << 11;
+            block.rgb[1] |= (static_cast<uint16_t>(static_cast<float>(max.g) * (63.0f / 255.0f)) & 0x3f) << 5;
+            block.rgb[1] |= (static_cast<uint16_t>(static_cast<float>(max.b) * (31.0f / 255.0f)) & 0x1f) << 0;
+
+            RGBA8 refs[4];
+            refs[0] = min;
+            refs[1] = max;
+            refs[2] = RGBA8::mixColors(min, max, 1.0f / 2.0f /* 1.0f / 3.0f */);
+            //refs[3] = RGBA8::mixColors(min, max, 2.0f / 3.0f);
+            refs[3] = RGBA8(0, 0, 0, 255);
+
+            for (uint32_t pixelX = blockX * 4; pixelX < (blockX + 1) * 4; ++pixelX)
+            {
+                for (uint32_t pixelY = blockY * 4; pixelY < (blockY + 1) * 4; ++pixelY)
+                {
+                    const RGBA8& pixel = pixels[pixelX + pixelY * extent.width];
+                    float minDistance = 1'000;
+                    uint8_t minRefIdx = 0;
+                    for (uint32_t refIdx = 0; refIdx < 4; ++refIdx)
+                    {
+	                    const float distance = pixel.computeDistanceWithRef(refs[refIdx]);
+                        if (distance < minDistance)
+                        {
+                            minDistance = distance;
+                            minRefIdx = static_cast<uint8_t>(refIdx);
+                        }
+                    }
+                    
+                    block.bitmap |= (minRefIdx & 3) << (((pixelX - blockX * 4) + (pixelY - blockY * 4) * 4) * 2);
+                }
+            }
+		}
+    }
+}
+
 void Wolf::ImageCompression::uncompressImage(Compression compression, const unsigned char* data, VkExtent2D extent, std::vector<RGBA8>& outPixels)
 {
     if (compression != Compression::BC1 && compression != Compression::BC3)
@@ -88,18 +158,8 @@ void Wolf::ImageCompression::uncompressImage(Compression compression, const unsi
             referenceColors[1] = compressedToColor(static_cast<BC3*>(block)->bc1.rgb[1]);
         }
 
-        auto mixColors = [](const RGBA8& color0, const RGBA8& color1, float ratio)
-            {
-                RGBA8 color;
-                color.r = static_cast<uint8_t>(glm::mix(static_cast<float>(color0.r) / 255.0f, static_cast<float>(color1.r) / 255.0f, ratio) * 255.0f);
-                color.g = static_cast<uint8_t>(glm::mix(static_cast<float>(color0.g) / 255.0f, static_cast<float>(color1.g) / 255.0f, ratio) * 255.0f);
-                color.b = static_cast<uint8_t>(glm::mix(static_cast<float>(color0.b) / 255.0f, static_cast<float>(color1.b) / 255.0f, ratio) * 255.0f);
-
-                return color;
-            };
-
-        referenceColors[2] = mixColors(referenceColors[0], referenceColors[1], 1.0f / 3.0f);
-        referenceColors[3] = mixColors(referenceColors[0], referenceColors[1], 2.0f / 3.0f);
+        referenceColors[2] = RGBA8::mixColors(referenceColors[0], referenceColors[1], 1.0f / 3.0f);
+        referenceColors[3] = RGBA8::mixColors(referenceColors[0], referenceColors[1], 2.0f / 3.0f);
 
         uint32_t dw;
         if (compression == Compression::BC1)

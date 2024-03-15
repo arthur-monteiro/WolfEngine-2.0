@@ -67,9 +67,7 @@ Wolf::WolfEngine::WolfEngine(const WolfInstanceCreateInfo& createInfo) : m_rende
 		const std::array defaultImageFilename = {
 			"Textures/no_texture_albedo.png",
 			"Textures/no_texture_normal.png",
-			"Textures/no_texture_roughness.png",
-			"Textures/no_texture_metalness.png",
-			"Textures/no_texture_ao.png",
+			"Textures/no_texture_roughness_metalness_ao.png"
 		};
 
 		std::vector<DescriptorSetGenerator::ImageDescription> defaultImageDescription(defaultImageFilename.size());
@@ -89,7 +87,7 @@ Wolf::WolfEngine::WolfEngine(const WolfInstanceCreateInfo& createInfo) : m_rende
 
 			for (uint32_t mipLevel = 1; mipLevel < mipmapGenerator.getMipLevelCount(); ++mipLevel)
 			{
-				m_defaultImages[i]->copyCPUBuffer(mipmapGenerator.getMipLevel(mipLevel), Image::SampledInFragmentShader(mipLevel), mipLevel);
+				m_defaultImages[i]->copyCPUBuffer(mipmapGenerator.getMipLevel(mipLevel).data(), Image::SampledInFragmentShader(mipLevel), mipLevel);
 			}
 
 			defaultImageDescription[i].imageView = m_defaultImages[i]->getDefaultImageView();

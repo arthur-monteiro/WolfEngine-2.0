@@ -12,7 +12,7 @@ namespace Wolf
 		MipMapGenerator(const MipMapGenerator&) = delete;
 
 		uint32_t getMipLevelCount() const { return static_cast<uint32_t>(m_mipLevels.size()) + 1; }
-		const unsigned char* getMipLevel(uint32_t mipLevel) const { return m_mipLevels[mipLevel - 1].data(); }
+		const std::vector<unsigned char>& getMipLevel(uint32_t mipLevel) const { return m_mipLevels[mipLevel - 1]; }
 
 	private:
 		static uint8_t mergeColor(uint8_t c00, uint8_t c01, uint8_t c10, uint8_t c11);

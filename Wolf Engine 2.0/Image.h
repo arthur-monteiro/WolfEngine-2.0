@@ -73,7 +73,7 @@ namespace Wolf
 		[[nodiscard]] uint32_t getMipLevelCount() const { return m_mipLevelCount; }
 		VkImageView getImageView(VkFormat format);
 		VkImageView getDefaultImageView();
-		uint32_t getBBP() const { return m_bbp; }
+		float getBBP() const { return m_bbp; }
 
 	private:
 		void createImageView(VkFormat format);
@@ -93,7 +93,7 @@ namespace Wolf
 		VkExtent3D m_extent;
 		VkSampleCountFlagBits m_sampleCount;
 		uint32_t m_arrayLayerCount;
-		uint32_t m_bbp;
+		float m_bbp;
 		VkImageAspectFlags m_aspectFlags;
 		VkMemoryPropertyFlags m_memoryProperties = 0x0;
 	};

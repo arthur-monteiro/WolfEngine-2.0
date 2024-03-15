@@ -5,11 +5,11 @@
 #define GLM_ENABLE_EXPERIMENTAL
 #include <glm/glm.hpp>
 #include <glm/gtx/hash.hpp>
+#include <tiny_obj_loader.h>
 
-#include "Buffer.h"
 #include "Image.h"
+#include "ImageCompression.h"
 #include "Mesh.h"
-#include "Sampler.h"
 
 namespace Wolf
 {
@@ -94,7 +94,12 @@ namespace Wolf
 		glm::vec3 defaultNormal = glm::vec3(0.0f, 1.0f, 0.0f);
 
 		// Material options
-		bool loadMaterials = true;
+		enum class InputMaterialLayout
+		{
+			NO_MATERIAL,
+			EACH_TEXTURE_A_FILE
+		};
+		InputMaterialLayout materialLayout = InputMaterialLayout::EACH_TEXTURE_A_FILE;
 		uint32_t materialIdOffset = 0;
 
 		// Cache options
@@ -130,8 +135,11 @@ namespace Wolf
 		};
 		bool loadCache(ModelLoadingInfo& modelLoadingInfo) const;
 
-		static std::string getTexName(const std::string& texName, const std::string& folder);
-		void setImage(const std::string& filename, uint32_t idx, bool sRGB);
+		// Materials
+		void loadMaterial(const tinyobj::material_t& material, const std::string& mtlFolder, ModelLoadingInfo::InputMaterialLayout materialLayout, uint32_t& indexTexture);
+		static std::string getTexName(const std::string& texName, const std::string& folder, const std::string& defaultTexture = "Textures/white_pixel.jpg");
+		void loadImageFile(const std::string& filename, VkFormat format, std::vector<ImageCompression::RGBA8>& pixels, std::vector<std::vector<ImageCompression::RGBA8>>& mipLevels, VkExtent3D& outExtent) const;
+		void createImageFromData(VkExtent3D extent, VkFormat format, const unsigned char* pixels, const std::vector<const unsigned char*>& mipLevels, uint32_t idx);
 		
 		bool m_useCache;
 		std::vector<std::vector<unsigned char>> m_imagesData;

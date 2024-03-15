@@ -14,6 +14,9 @@ Wolf::MaterialsGPUManager::MaterialsGPUManager(const std::vector<DescriptorSetGe
 
 	m_sampler.reset(new Sampler(VK_SAMPLER_ADDRESS_MODE_REPEAT, 11, VK_FILTER_LINEAR));
 	m_materialsBuffer.reset(new Buffer(MAX_MATERIAL_COUNT * sizeof(MaterialInfo), VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, UpdateRate::NEVER));
+	constexpr MaterialInfo initMaterialInfo{ 0, 1, 2 };
+	m_materialsBuffer->transferCPUMemoryWithStagingBuffer(&initMaterialInfo, sizeof(MaterialInfo), 0, 0);
+	m_currentMaterialCount = 1;
 
 	m_descriptorSetLayout.reset(new LazyInitSharedResource<DescriptorSetLayout, BindlessDescriptor>([&descriptorSetLayoutGenerator](std::unique_ptr<DescriptorSetLayout>& descriptorSetLayout)
 		{
@@ -32,12 +35,12 @@ Wolf::MaterialsGPUManager::MaterialsGPUManager(const std::vector<DescriptorSetGe
 
 void Wolf::MaterialsGPUManager::addNewMaterials(const std::vector<DescriptorSetGenerator::ImageDescription>& images)
 {
-	if (images.size() % 5 != 0)
+	if (images.size() % TEXTURE_COUNT_PER_MATERIAL != 0)
 	{
 		Debug::sendError("Material doesn't have right number of images");
 	}
 
-	const uint32_t materialCountToAdd = static_cast<uint32_t>(images.size()) / 5;
+	const uint32_t materialCountToAdd = static_cast<uint32_t>(images.size()) / TEXTURE_COUNT_PER_MATERIAL;
 	const uint32_t oldNewMaterialsInfoCount = static_cast<uint32_t>(m_newMaterialsInfo.size());
 	m_newMaterialsInfo.resize(m_newMaterialsInfo.size() + materialCountToAdd);
 
@@ -46,11 +49,9 @@ void Wolf::MaterialsGPUManager::addNewMaterials(const std::vector<DescriptorSetG
 	{
 		MaterialInfo& newMaterialInfo = m_newMaterialsInfo[oldNewMaterialsInfoCount + newMaterialIdx];
 
-		newMaterialInfo.albedoIdx = firstBindlessOffset + newMaterialIdx * 5;
+		newMaterialInfo.albedoIdx = firstBindlessOffset + newMaterialIdx * TEXTURE_COUNT_PER_MATERIAL;
 		newMaterialInfo.normalIdx = newMaterialInfo.albedoIdx + 1;
-		newMaterialInfo.roughnessIdx = newMaterialInfo.albedoIdx + 2;
-		newMaterialInfo.metalnessIdx = newMaterialInfo.albedoIdx + 3;
-		newMaterialInfo.aoIdx = newMaterialInfo.albedoIdx + 4;
+		newMaterialInfo.roughnessMetalnessAOIdx = newMaterialInfo.albedoIdx + 2;
 	}
 }
 
