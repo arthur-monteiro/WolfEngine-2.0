@@ -70,6 +70,12 @@ void Wolf::RenderMeshList::draw(const RecordContext& context, VkCommandBuffer co
 	}
 }
 
+void Wolf::RenderMeshList::clear()
+{
+	m_currentFrameMeshesToRender.clear();
+	m_nextFrameMeshesToRender.clear();
+}
+
 void Wolf::RenderMeshList::moveToNextFrame(const CameraList& cameraList)
 {
 	m_meshesToRenderByPipelineIdx.clear();

@@ -68,6 +68,16 @@ std::vector<uint64_t> Wolf::PipelineSet::retrieveAllPipelinesHash() const
 	return pipelinesHash;
 }
 
+std::vector<const Wolf::PipelineSet::PipelineInfo*> Wolf::PipelineSet::retrieveAllPipelinesInfo() const
+{
+	std::vector<const PipelineInfo*> r;
+	for (const std::unique_ptr<InfoForPipeline>& infoForPipeline : m_infoForPipelines)
+	{
+		r.emplace_back(&infoForPipeline->getPipelineInfo());
+	}
+	return r;
+}
+
 const Wolf::Pipeline* Wolf::PipelineSet::getOrCreatePipeline(uint32_t idx, RenderPass* renderPass, ShaderList& shaderList) const
 {
 	if (!m_infoForPipelines[idx]->getPipelines().contains(renderPass))
@@ -95,7 +105,7 @@ const Wolf::Pipeline* Wolf::PipelineSet::getOrCreatePipeline(uint32_t idx, Rende
 			addShaderInfo.cameraDescriptorSlot = pipelineInfo.cameraDescriptorSlot;
 			addShaderInfo.bindlessDescriptorSlot = pipelineInfo.shaderInfos[i].stage == VK_SHADER_STAGE_FRAGMENT_BIT ? pipelineInfo.bindlessDescriptorSlot : -1;
 			addShaderInfo.materialFetchProcedure = pipelineInfo.shaderInfos[i].materialFetchProcedure;
-			if (!addShaderInfo.materialFetchProcedure.filename.empty())
+			if (!addShaderInfo.materialFetchProcedure.codeString.empty())
 			{
 				if (pipelineInfo.shaderInfos[i].stage != VK_SHADER_STAGE_FRAGMENT_BIT)
 					Debug::sendError("Material fetch procedure is only supported for fragment shaders");
@@ -113,16 +123,53 @@ const Wolf::Pipeline* Wolf::PipelineSet::getOrCreatePipeline(uint32_t idx, Rende
 		renderingPipelineCreateInfo.primitiveRestartEnable = pipelineInfo.primitiveRestartEnable;
 
 		// Resources layouts
-		renderingPipelineCreateInfo.descriptorSetLayouts = pipelineInfo.descriptorSetLayouts;
+		uint32_t maxSlot = 0;
+		for (const std::pair<VkDescriptorSetLayout, uint32_t>& descriptorSetLayout : pipelineInfo.descriptorSetLayouts)
+		{
+			if (descriptorSetLayout.second > maxSlot)
+				maxSlot = descriptorSetLayout.second;
+		}
 		if (pipelineInfo.cameraDescriptorSlot != static_cast<uint32_t>(-1))
 		{
-			const uint32_t pushSlot = std::min(pipelineInfo.cameraDescriptorSlot, static_cast<uint32_t>(renderingPipelineCreateInfo.descriptorSetLayouts.size()));
-			renderingPipelineCreateInfo.descriptorSetLayouts.emplace(renderingPipelineCreateInfo.descriptorSetLayouts.begin() + pushSlot, GraphicCameraInterface::getDescriptorSetLayout());
+			if (pipelineInfo.cameraDescriptorSlot > maxSlot)
+				maxSlot = pipelineInfo.cameraDescriptorSlot;
 		}
 		if (pipelineInfo.bindlessDescriptorSlot != static_cast<uint32_t>(-1))
 		{
-			const uint32_t pushSlot = std::min(pipelineInfo.bindlessDescriptorSlot, static_cast<uint32_t>(renderingPipelineCreateInfo.descriptorSetLayouts.size()));
-			renderingPipelineCreateInfo.descriptorSetLayouts.emplace(renderingPipelineCreateInfo.descriptorSetLayouts.begin() + pushSlot, MaterialsGPUManager::getDescriptorSetLayout());
+			if (pipelineInfo.bindlessDescriptorSlot > maxSlot)
+				maxSlot = pipelineInfo.bindlessDescriptorSlot;
+		}
+
+		for (uint32_t slot = 0; slot <= maxSlot; ++slot)
+		{
+			bool slotFound = false;
+			for (const std::pair<VkDescriptorSetLayout, uint32_t>& descriptorSetLayout : pipelineInfo.descriptorSetLayouts)
+			{
+				if (descriptorSetLayout.second == slot)
+				{
+					renderingPipelineCreateInfo.descriptorSetLayouts.push_back(descriptorSetLayout.first);
+					slotFound = true;
+				}
+			}
+
+			if (!slotFound)
+			{
+				if (pipelineInfo.cameraDescriptorSlot == slot)
+				{
+					renderingPipelineCreateInfo.descriptorSetLayouts.push_back( GraphicCameraInterface::getDescriptorSetLayout());
+					slotFound = true;
+				}
+				else if (pipelineInfo.bindlessDescriptorSlot == slot)
+				{
+					renderingPipelineCreateInfo.descriptorSetLayouts.push_back(MaterialsGPUManager::getDescriptorSetLayout());
+					slotFound = true;
+				}
+			}
+
+			if (!slotFound)
+			{
+				Debug::sendCriticalError("An empty slot has been found");
+			}
 		}
 
 		// Viewport

@@ -12,7 +12,7 @@ namespace Wolf
 	public:
 		struct MaterialFetchProcedure
 		{
-			std::string filename;
+			std::string codeString;
 		};
 		ShaderParser(const std::string& filename, const std::vector<std::string>& conditionBlocksToInclude = {}, uint32_t cameraDescriptorSlot = -1, uint32_t bindlessDescriptorSlot = -1, const MaterialFetchProcedure& materialFetchProcedure = MaterialFetchProcedure());
 

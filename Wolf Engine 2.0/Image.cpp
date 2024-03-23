@@ -15,7 +15,15 @@ Wolf::Image::Image(const CreateImageInfo& createImageInfo)
 	m_extent = createImageInfo.extent;
 	m_sampleCount = createImageInfo.sampleCount;
 	if (createImageInfo.mipLevelCount == UINT32_MAX)
-		m_mipLevelCount = static_cast<uint32_t>(std::floor(std::log2(std::max(m_extent.width, m_extent.height)))) + 1;
+	{
+		int32_t mipCount = static_cast<int32_t>(std::floor(std::log2(std::max(m_extent.width, m_extent.height)))) - 1; // remove 2 mip levels as min size must be 4x4
+		if (mipCount <= 0)
+		{
+			Debug::sendWarning("Image is too small to have mips");
+			mipCount = 1;
+		}
+		m_mipLevelCount = mipCount;
+	}
 	else
 		m_mipLevelCount = createImageInfo.mipLevelCount;
 	m_arrayLayerCount = createImageInfo.arrayLayerCount;
@@ -95,7 +103,8 @@ Wolf::Image::~Image()
 
 void Wolf::Image::copyCPUBuffer(const unsigned char* pixels, const TransitionLayoutInfo& finalLayout, uint32_t mipLevel)
 {
-	const VkDeviceSize imageSize = (m_extent.width * m_extent.height * m_extent.depth * m_bbp) >> mipLevel;
+	const VkExtent3D extent = { m_extent.width >> mipLevel, m_extent.height >> mipLevel, m_extent.depth };
+	const VkDeviceSize imageSize = static_cast<VkDeviceSize>(static_cast<float>(extent.width) * static_cast<float>(extent.height) * static_cast<float>(extent.depth) * m_bbp);
 
 	const Buffer stagingBuffer(imageSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, UpdateRate::NEVER);
 	
@@ -115,7 +124,6 @@ void Wolf::Image::copyCPUBuffer(const unsigned char* pixels, const TransitionLay
 	copyRegion.imageSubresource.layerCount = 1;
 
 	copyRegion.imageOffset = { 0, 0, 0 };
-	const VkExtent3D extent = { m_extent.width >> mipLevel, m_extent.height >> mipLevel, m_extent.depth };
 	copyRegion.imageExtent = extent;
 
 	copyGPUBuffer(stagingBuffer, copyRegion, finalLayout);
@@ -164,7 +172,7 @@ void Wolf::Image::recordCopyGPUImage(const Image& imageSrc, const VkImageCopy& i
 
 void* Wolf::Image::map() const
 {
-	const VkDeviceSize imageSize = m_extent.width * m_extent.height * m_extent.depth * m_bbp;
+	const VkDeviceSize imageSize = static_cast<VkDeviceSize>(static_cast<float>(m_extent.width) * static_cast<float>(m_extent.height) * static_cast<float>(m_extent.depth) * m_bbp);
 	void* mappedData;
 	vkMapMemory(g_vulkanInstance->getDevice(), m_imageMemory, 0, imageSize, 0, &mappedData);
 	return mappedData;
@@ -328,24 +336,29 @@ void Wolf::Image::setBBP()
 	switch (m_imageFormat)
 	{
 	case VK_FORMAT_R32G32B32A32_SFLOAT:
-		m_bbp = 16;
+		m_bbp = 16.0f;
 		break;
 	case VK_FORMAT_R32G32_SFLOAT:
-		m_bbp = 8;
+		m_bbp = 8.0f;
 		break;
 	case VK_FORMAT_R8G8B8A8_UNORM:
 	case VK_FORMAT_B8G8R8A8_UNORM:
 	case VK_FORMAT_R8G8B8A8_SRGB:
 	case VK_FORMAT_D32_SFLOAT:
 	case VK_FORMAT_R32_SFLOAT:
-		m_bbp = 4;
+		m_bbp = 4.0f;
+		break;
+	case VK_FORMAT_BC1_RGB_UNORM_BLOCK:
+	case VK_FORMAT_BC1_RGB_SRGB_BLOCK:
+		m_bbp = 0.5f;
 		break;
 	case VK_FORMAT_BC3_UNORM_BLOCK:
-		m_bbp = 1;
+	case VK_FORMAT_R8_UINT:
+		m_bbp = 1.0f;
 		break;
 	default:
-		m_bbp = 1;
-		Debug::sendWarning("Unsupported image format");
+		m_bbp = 1.0f;
+		Debug::sendError("Unsupported image format");
 		break;
 	}
 }

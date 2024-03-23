@@ -42,7 +42,7 @@ namespace Wolf
 			bool primitiveRestartEnable = false;
 
 			// Resources layouts
-			std::vector<VkDescriptorSetLayout> descriptorSetLayouts;
+			std::vector<std::pair<VkDescriptorSetLayout, uint32_t>> descriptorSetLayouts;
 			uint32_t cameraDescriptorSlot = -1;
 			uint32_t bindlessDescriptorSlot = -1;
 
@@ -80,6 +80,7 @@ namespace Wolf
 		void updatePipeline(const PipelineInfo& pipelineInfo, uint32_t idx);
 
 		std::vector<uint64_t> retrieveAllPipelinesHash() const;
+		std::vector<const PipelineInfo*> retrieveAllPipelinesInfo() const;
 		const Pipeline* getOrCreatePipeline(uint32_t idx, RenderPass* renderPass, ShaderList& shaderList) const;
 		uint64_t getPipelineHash(uint32_t idx) const { return m_infoForPipelines[idx] ? m_infoForPipelines[idx]->getHash() : 0; }
 		uint32_t getCameraDescriptorSlot(uint32_t idx) const { return m_infoForPipelines[idx]->getPipelineInfo().cameraDescriptorSlot; }

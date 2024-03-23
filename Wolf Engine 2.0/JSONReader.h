@@ -68,4 +68,3 @@ namespace Wolf
 		JSONObject* m_rootObject;
 	};
 }
-

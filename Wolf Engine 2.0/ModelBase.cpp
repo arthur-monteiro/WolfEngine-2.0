@@ -38,7 +38,7 @@ Wolf::ModelBase::ModelBase(ModelLoadingInfo& modelLoadingInfo, bool requestAccel
 Wolf::ModelBase::ModelBase(ModelLoadingInfo& modelLoadingInfo, bool requestAccelerationStructuresBuild, const ResourceNonOwner<MaterialsGPUManager>& materialsGPUManager)
 	: ModelBase(modelLoadingInfo, requestAccelerationStructuresBuild)
 {
-	if (modelLoadingInfo.loadMaterials)
+	if (modelLoadingInfo.materialLayout != ModelLoadingInfo::InputMaterialLayout::NO_MATERIAL)
 	{
 		std::vector<DescriptorSetGenerator::ImageDescription> imageDescriptions;
 		for (const std::unique_ptr<Image>& image : m_modelData.images)
@@ -51,10 +51,10 @@ Wolf::ModelBase::ModelBase(ModelLoadingInfo& modelLoadingInfo, bool requestAccel
 	}
 }
 
-void Wolf::ModelBase::addMeshToRenderList(RenderMeshList& renderMeshList, const RenderMeshList::MeshToRenderInfo::InstanceInfos& instanceInfos) const
+void Wolf::ModelBase::addMeshToRenderList(RenderMeshList& renderMeshList, const RenderMeshList::MeshToRenderInfo::InstanceInfos& instanceInfos)
 {
 	RenderMeshList::MeshToRenderInfo meshToRenderInfo(m_modelData.mesh.get(), m_pipelineSet, m_transform);
-	meshToRenderInfo.descriptorSets.push_back({ m_descriptorSet.get(), 0 });
+	meshToRenderInfo.descriptorSets.push_back({ m_descriptorSet.createConstNonOwnerResource(), 0 });
 	meshToRenderInfo.instanceInfos = instanceInfos;
 	renderMeshList.addMeshToRender(meshToRenderInfo);
 }

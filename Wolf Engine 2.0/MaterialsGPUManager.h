@@ -9,6 +9,8 @@ namespace Wolf
 	class MaterialsGPUManager
 	{
 	public:
+		static constexpr uint32_t TEXTURE_COUNT_PER_MATERIAL = 3;
+
 		MaterialsGPUManager(const std::vector<DescriptorSetGenerator::ImageDescription>& firstImages);
 
 		void addNewMaterials(const std::vector<DescriptorSetGenerator::ImageDescription>& images);
@@ -35,9 +37,7 @@ namespace Wolf
 		{
 			uint32_t albedoIdx;
 			uint32_t normalIdx;
-			uint32_t roughnessIdx;
-			uint32_t metalnessIdx;
-			uint32_t aoIdx;
+			uint32_t roughnessMetalnessAOIdx;
 		};
 		uint32_t m_currentMaterialCount = 0;
 

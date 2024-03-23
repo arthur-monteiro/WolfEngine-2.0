@@ -24,7 +24,7 @@ namespace Wolf
 		ModelBase(const ModelBase&) = delete;
 		virtual ~ModelBase() = default;
 
-		virtual void addMeshToRenderList(RenderMeshList& renderMeshList, const RenderMeshList::MeshToRenderInfo::InstanceInfos& instanceInfos = { nullptr, 1 }) const;
+		virtual void addMeshToRenderList(RenderMeshList& renderMeshList, const RenderMeshList::MeshToRenderInfo::InstanceInfos& instanceInfos = { nullptr, 1 });
 		void updateGraphic();
 
 		const BottomLevelAccelerationStructure* getBLAS() const { return m_blas.get(); }
@@ -51,7 +51,7 @@ namespace Wolf
 			glm::mat4 model;
 			glm::mat4 previousModel;
 		};
-		std::unique_ptr<DescriptorSet> m_descriptorSet;
+		ResourceUniqueOwner<DescriptorSet> m_descriptorSet;
 		std::unique_ptr<Buffer> m_uniformBuffer;
 
 		std::unique_ptr<BottomLevelAccelerationStructure> m_blas;

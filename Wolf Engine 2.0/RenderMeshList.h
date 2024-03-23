@@ -5,6 +5,7 @@
 #include <vector>
 
 #include "CommandBuffer.h"
+#include "ResourceNonOwner.h"
 
 namespace Wolf
 {
@@ -29,7 +30,7 @@ namespace Wolf
 			PipelineSet* pipelineSet;
 			struct DescriptorSetBindInfo
 			{
-				const DescriptorSet* descriptorSet;
+				ResourceNonOwner<const DescriptorSet> descriptorSet;
 				uint32_t descriptorSetBindingSlot;
 			};
 			std::vector<DescriptorSetBindInfo> descriptorSets;
@@ -46,6 +47,8 @@ namespace Wolf
 
 		static constexpr uint32_t NO_CAMERA_IDX = -1;
 		void draw(const RecordContext& context, VkCommandBuffer commandBuffer, RenderPass* renderPass, uint32_t pipelineIdx, uint32_t cameraIdx, const std::vector<std::pair<uint32_t, const DescriptorSet*>>& descriptorSetsToBind) const;
+
+		void clear();
 
 	private:
 		friend WolfEngine;
