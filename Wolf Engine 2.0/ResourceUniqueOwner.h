@@ -20,6 +20,7 @@ namespace Wolf
 		, m_nonOwnerResources(other.m_nonOwnerResources)
 #endif
 		{}
+		ResourceUniqueOwner(const ResourceUniqueOwner&) { Wolf::Debug::sendCriticalError("This function shouldn't be called"); }
 		~ResourceUniqueOwner();
 
 		void reset(T* resource);

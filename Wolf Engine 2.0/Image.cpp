@@ -172,7 +172,7 @@ void Wolf::Image::recordCopyGPUImage(const Image& imageSrc, const VkImageCopy& i
 
 void* Wolf::Image::map() const
 {
-	const VkDeviceSize imageSize = static_cast<float>(m_extent.width) * static_cast<float>(m_extent.height) * static_cast<float>(m_extent.depth) * m_bbp;
+	const VkDeviceSize imageSize = static_cast<VkDeviceSize>(static_cast<float>(m_extent.width) * static_cast<float>(m_extent.height) * static_cast<float>(m_extent.depth) * m_bbp);
 	void* mappedData;
 	vkMapMemory(g_vulkanInstance->getDevice(), m_imageMemory, 0, imageSize, 0, &mappedData);
 	return mappedData;
@@ -353,6 +353,7 @@ void Wolf::Image::setBBP()
 		m_bbp = 0.5f;
 		break;
 	case VK_FORMAT_BC3_UNORM_BLOCK:
+	case VK_FORMAT_R8_UINT:
 		m_bbp = 1.0f;
 		break;
 	default:

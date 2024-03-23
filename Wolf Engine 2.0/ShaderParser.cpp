@@ -277,7 +277,7 @@ void Wolf::ShaderParser::addMaterialFetchCode(std::ofstream& outFileGLSL) const
     outFileGLSL << "\n//------------------\n";
 
     std::string materialFetchCode;
-    if (m_materialFetchProcedure.filename.empty())
+    if (m_materialFetchProcedure.codeString.empty())
     {
         materialFetchCode =
 			#include "DefaultMaterialFetch.glsl"
@@ -286,12 +286,8 @@ void Wolf::ShaderParser::addMaterialFetchCode(std::ofstream& outFileGLSL) const
     }
     else
     {
-        std::ifstream inFile(m_filename);
-        std::string line;
-        while (std::getline(inFile, line))
-            materialFetchCode += line;
-
-        outFileGLSL << "// " << m_filename << '\n';
+        materialFetchCode = m_materialFetchProcedure.codeString;
+        outFileGLSL << "// Custom" << '\n';
     }
 
     outFileGLSL << "//------------------\n";
