@@ -53,7 +53,7 @@ Wolf::ModelBase::ModelBase(ModelLoadingInfo& modelLoadingInfo, bool requestAccel
 
 void Wolf::ModelBase::addMeshToRenderList(RenderMeshList& renderMeshList, const RenderMeshList::MeshToRenderInfo::InstanceInfos& instanceInfos)
 {
-	RenderMeshList::MeshToRenderInfo meshToRenderInfo(m_modelData.mesh.get(), m_pipelineSet, m_transform);
+	RenderMeshList::MeshToRenderInfo meshToRenderInfo(m_modelData.mesh.createNonOwnerResource(), m_pipelineSet, m_transform);
 	meshToRenderInfo.descriptorSets.push_back({ m_descriptorSet.createConstNonOwnerResource(), 0 });
 	meshToRenderInfo.instanceInfos = instanceInfos;
 	renderMeshList.addMeshToRender(meshToRenderInfo);
@@ -74,8 +74,8 @@ void Wolf::ModelBase::buildAccelerationStructures()
 {
 	BottomLevelAccelerationStructureCreateInfo blasCreateInfo;
 	blasCreateInfo.buildFlags = VK_BUILD_ACCELERATION_STRUCTURE_PREFER_FAST_TRACE_BIT_KHR;
-	std::vector<GeometryInfo> geometries(1);
-	geometries[0].mesh = m_modelData.mesh.get(); // to fix
+	std::vector<GeometryInfo> geometries;
+	geometries.emplace_back(m_modelData.mesh.createConstNonOwnerResource());
 	blasCreateInfo.geometryInfos = geometries;
 	m_blas.reset(new BottomLevelAccelerationStructure(blasCreateInfo));
 }

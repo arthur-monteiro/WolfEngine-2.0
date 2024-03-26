@@ -10,6 +10,7 @@
 #include "Image.h"
 #include "ImageCompression.h"
 #include "Mesh.h"
+#include "ResourceUniqueOwner.h"
 
 namespace Wolf
 {
@@ -115,7 +116,7 @@ namespace Wolf
 
 	struct ModelData
 	{
-		std::unique_ptr<Mesh> mesh;
+		ResourceUniqueOwner<Mesh> mesh;
 		std::vector<std::unique_ptr<Image>> images;
 
 		void getImages(std::vector<Image*>& outputImages) const;
