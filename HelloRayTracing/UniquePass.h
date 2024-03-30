@@ -14,7 +14,7 @@
 #include <Image.h>
 #include <Mesh.h>
 #include <Pipeline.h>
-#include <RenderPass.h>
+#include <ResourceUniqueOwner.h>
 #include <ShaderBindingTable.h>
 #include <ShaderParser.h>
 #include <TopLevelAccelerationStructure.h>
@@ -34,7 +34,7 @@ private:
 private:
 	std::unique_ptr<Wolf::Pipeline> m_pipeline;
 
-	std::unique_ptr<Wolf::Mesh> m_triangle;
+	Wolf::ResourceUniqueOwner<Wolf::Mesh> m_triangle;
 
 	std::unique_ptr<Wolf::ShaderParser> m_rayGenShaderParser;
 	std::unique_ptr<Wolf::ShaderParser> m_rayMissShaderParser;

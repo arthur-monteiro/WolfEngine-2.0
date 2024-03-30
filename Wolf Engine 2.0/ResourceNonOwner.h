@@ -88,6 +88,7 @@ namespace Wolf
 			m_onDelete = other.m_onDelete;
 			m_onDuplicate = other.m_onDuplicate;
 #ifdef RESOURCE_DEBUG
+			m_sourceLocation.clear();
 			m_sourceLocation.insert(m_sourceLocation.end(), other.m_sourceLocation.begin(), other.m_sourceLocation.end());
 			m_sourceLocation.push_back(std::source_location::current());
 #endif

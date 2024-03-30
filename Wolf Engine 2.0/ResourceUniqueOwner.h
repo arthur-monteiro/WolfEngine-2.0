@@ -20,6 +20,16 @@ namespace Wolf
 		, m_nonOwnerResources(other.m_nonOwnerResources)
 #endif
 		{}
+		ResourceUniqueOwner& operator=(ResourceUniqueOwner&& other) noexcept
+		{
+			m_resource = std::move(other.m_resource);
+			m_nonOwnedResourceCount = other.m_nonOwnedResourceCount;
+#ifdef RESOURCE_DEBUG
+			m_nonOwnerResources = std::move(other.m_nonOwnerResources);
+#endif
+
+			return *this;
+		}
 		ResourceUniqueOwner(const ResourceUniqueOwner&) { Wolf::Debug::sendCriticalError("This function shouldn't be called"); }
 		~ResourceUniqueOwner();
 
@@ -41,6 +51,7 @@ namespace Wolf
 		[[nodiscard]] explicit operator bool() const;
 		[[nodiscard]] T* operator->() const { return m_resource.get(); }
 		[[nodiscard]] const T& operator*() const { return *m_resource; }
+		[[nodiscard]] T& operator*() { return *m_resource; }
 
 	private:
 		std::unique_ptr<T> m_resource;
@@ -97,7 +108,6 @@ namespace Wolf
 	template <typename T>
 	T* ResourceUniqueOwner<T>::release()
 	{
-		checksBeforeDelete();
 		return m_resource.release();
 	}
 

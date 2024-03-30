@@ -38,10 +38,10 @@ Wolf::ModelBase::ModelBase(ModelLoadingInfo& modelLoadingInfo, bool requestAccel
 Wolf::ModelBase::ModelBase(ModelLoadingInfo& modelLoadingInfo, bool requestAccelerationStructuresBuild, const ResourceNonOwner<MaterialsGPUManager>& materialsGPUManager)
 	: ModelBase(modelLoadingInfo, requestAccelerationStructuresBuild)
 {
-	if (modelLoadingInfo.materialLayout != ModelLoadingInfo::InputMaterialLayout::NO_MATERIAL)
+	if (modelLoadingInfo.materialLayout != MaterialLoader::InputMaterialLayout::NO_MATERIAL)
 	{
 		std::vector<DescriptorSetGenerator::ImageDescription> imageDescriptions;
-		for (const std::unique_ptr<Image>& image : m_modelData.images)
+		for (const ResourceUniqueOwner<Image>& image : m_modelData.images)
 		{
 			imageDescriptions.resize(imageDescriptions.size() + 1);
 			imageDescriptions.back().imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
@@ -53,7 +53,7 @@ Wolf::ModelBase::ModelBase(ModelLoadingInfo& modelLoadingInfo, bool requestAccel
 
 void Wolf::ModelBase::addMeshToRenderList(RenderMeshList& renderMeshList, const RenderMeshList::MeshToRenderInfo::InstanceInfos& instanceInfos)
 {
-	RenderMeshList::MeshToRenderInfo meshToRenderInfo(m_modelData.mesh.get(), m_pipelineSet, m_transform);
+	RenderMeshList::MeshToRenderInfo meshToRenderInfo(m_modelData.mesh.createNonOwnerResource(), m_pipelineSet, m_transform);
 	meshToRenderInfo.descriptorSets.push_back({ m_descriptorSet.createConstNonOwnerResource(), 0 });
 	meshToRenderInfo.instanceInfos = instanceInfos;
 	renderMeshList.addMeshToRender(meshToRenderInfo);
@@ -74,8 +74,8 @@ void Wolf::ModelBase::buildAccelerationStructures()
 {
 	BottomLevelAccelerationStructureCreateInfo blasCreateInfo;
 	blasCreateInfo.buildFlags = VK_BUILD_ACCELERATION_STRUCTURE_PREFER_FAST_TRACE_BIT_KHR;
-	std::vector<GeometryInfo> geometries(1);
-	geometries[0].mesh = m_modelData.mesh.get(); // to fix
+	std::vector<GeometryInfo> geometries;
+	geometries.emplace_back(m_modelData.mesh.createConstNonOwnerResource());
 	blasCreateInfo.geometryInfos = geometries;
 	m_blas.reset(new BottomLevelAccelerationStructure(blasCreateInfo));
 }

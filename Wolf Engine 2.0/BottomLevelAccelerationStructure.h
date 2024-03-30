@@ -3,17 +3,19 @@
 #include <span>
 
 #include "AccelerationStructure.h"
+#include "Mesh.h"
+#include "ResourceNonOwner.h"
 
 namespace Wolf
 {
-	class Mesh;
-
 	struct GeometryInfo
 	{
-		const Mesh* mesh;
+		ResourceNonOwner<const Mesh> mesh;
 
 		const Buffer* transformBuffer = nullptr;
 		VkDeviceSize transformOffsetInBytes = 0;
+
+		GeometryInfo(const ResourceNonOwner<const Mesh>& mesh) : mesh(mesh) {}
 	};
 
 	struct BottomLevelAccelerationStructureCreateInfo

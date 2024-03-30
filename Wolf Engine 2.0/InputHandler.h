@@ -1,4 +1,5 @@
 #pragma once
+#include "Debug.h"
 
 #ifndef __ANDROID__
 
@@ -37,10 +38,13 @@ namespace Wolf
 
 		void getMousePosition(float& outX, float& outY) const;
 
+		void getScroll(float& outX, float& outY) const;
+
 		// Callbacks
 		void inputHandlerKeyCallback(GLFWwindow* window, int key, int scancode, int action, int mods);
 		void inputHandlerCharCallback(GLFWwindow* window, unsigned int codepoint);
 		void inputHandlerMouseButtonCallback(GLFWwindow* window, int button, int action, int mods);
+		void inputHandlerScrollCallback(GLFWwindow* window, double offsetX, double offsetY);
 
 		// Actions
 		void setCursorType(Window::CursorType cursorType) const;
@@ -84,11 +88,35 @@ namespace Wolf
 			}
 		};
 
+		struct ScrollCache
+		{
+			struct ScrollEvent
+			{
+				float offsetX;
+				float offsetY;
+			};
+			ScrollEvent scrollEventsForNextFrame;
+			ScrollEvent scrollEventsThisFrame;
+
+			void clear()
+			{
+				scrollEventsForNextFrame = { 0.0f, 0.0f };
+				scrollEventsThisFrame = { 0.0f, 0.0f };
+			}
+
+			void concatenate(const ScrollCache& other)
+			{
+				scrollEventsThisFrame.offsetX += other.scrollEventsThisFrame.offsetX;
+				scrollEventsThisFrame.offsetY += other.scrollEventsThisFrame.offsetY;
+			}
+		};
+
 		struct AllInputData
 		{
 			InputCache m_keysCache;
 			InputCache m_charCache;
 			InputCache m_mouseButtonsCache;
+			ScrollCache m_scrollCache;
 
 			float m_mousePosX, m_mousePosY;
 
@@ -97,6 +125,7 @@ namespace Wolf
 				m_keysCache.clear();
 				m_charCache.clear();
 				m_mouseButtonsCache.clear();
+				m_scrollCache.clear();
 			}
 
 			void concatenate(const AllInputData& other)
@@ -104,6 +133,7 @@ namespace Wolf
 				m_keysCache.concatenate(other.m_keysCache);
 				m_charCache.concatenate(other.m_charCache);
 				m_mouseButtonsCache.concatenate(other.m_mouseButtonsCache);
+				m_scrollCache.concatenate(other.m_scrollCache);
 			}
 		} m_data;
 

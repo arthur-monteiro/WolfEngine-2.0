@@ -21,6 +21,11 @@ void mouseButtonCallback(GLFWwindow* window, int button, int action, int mods)
 	inputHandlerInstance->inputHandlerMouseButtonCallback(window, button, action, mods);
 }
 
+void scrollCallback(GLFWwindow* window, double xoffset, double yoffset)
+{
+	inputHandlerInstance->inputHandlerScrollCallback(window, xoffset, yoffset);
+}
+
 Wolf::InputHandler::InputHandler(const ResourceNonOwner<const Window>& window) : m_window(window)
 {
 	inputHandlerInstance = this;
@@ -28,6 +33,7 @@ Wolf::InputHandler::InputHandler(const ResourceNonOwner<const Window>& window) :
 	glfwSetKeyCallback(window->getWindow(), keyCallback);
 	glfwSetCharCallback(window->getWindow(), charCallback);
 	glfwSetMouseButtonCallback(window->getWindow(), mouseButtonCallback);
+	glfwSetScrollCallback(window->getWindow(), scrollCallback);
 }
 
 Wolf::InputHandler::~InputHandler()
@@ -74,6 +80,9 @@ void Wolf::InputHandler::moveToNextFrame()
 	glfwGetCursorPos(m_window->getWindow(), &currentMousePosX, &currentMousePosY);
 	m_data.m_mousePosX = static_cast<float>(currentMousePosX);
 	m_data.m_mousePosY = static_cast<float>(currentMousePosY);
+
+	m_data.m_scrollCache.scrollEventsThisFrame = m_data.m_scrollCache.scrollEventsForNextFrame;
+	m_data.m_scrollCache.scrollEventsForNextFrame = { 0.0f, 0.0f };
 }
 
 void Wolf::InputHandler::createCache(const void* instancePtr)
@@ -183,6 +192,15 @@ void Wolf::InputHandler::inputHandlerMouseButtonCallback(GLFWwindow* window, int
 	}
 }
 
+void Wolf::InputHandler::inputHandlerScrollCallback(GLFWwindow* window, double offsetX, double offsetY)
+{
+	int windowWidth, windowHeight;
+	glfwGetWindowSize(window, &windowWidth, &windowHeight);
+
+	m_data.m_scrollCache.scrollEventsForNextFrame.offsetX += static_cast<float>(offsetX) * static_cast<float>(windowWidth);
+	m_data.m_scrollCache.scrollEventsForNextFrame.offsetY += static_cast<float>(offsetY) * static_cast<float>(windowHeight);
+}
+
 void Wolf::InputHandler::setCursorType(Window::CursorType cursorType) const
 {
 	m_window->setCursorType(cursorType);
@@ -192,6 +210,12 @@ void Wolf::InputHandler::getMousePosition(float& outX, float& outY) const
 {
 	outX = m_data.m_mousePosX;
 	outY = m_data.m_mousePosY;
+}
+
+void Wolf::InputHandler::getScroll(float& outX, float& outY) const
+{
+	outX = m_data.m_scrollCache.scrollEventsThisFrame.offsetX;
+	outY = m_data.m_scrollCache.scrollEventsThisFrame.offsetY;
 }
 
 #endif

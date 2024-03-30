@@ -238,6 +238,7 @@
     <ClCompile Include="ImageFileLoader.cpp" />
     <ClCompile Include="InputHandler.cpp" />
     <ClCompile Include="JSONReader.cpp" />
+    <ClCompile Include="MaterialLoader.cpp" />
     <ClCompile Include="MaterialsGPUManager.cpp" />
     <ClCompile Include="Mesh.cpp" />
     <ClCompile Include="MipMapGenerator.cpp" />
@@ -304,6 +305,7 @@
     <ClInclude Include="InputHandler.h" />
     <ClInclude Include="JSONReader.h" />
     <ClInclude Include="LazyInitSharedResource.h" />
+    <ClInclude Include="MaterialLoader.h" />
     <ClInclude Include="MaterialsGPUManager.h" />
     <ClInclude Include="Mesh.h" />
     <ClInclude Include="MipMapGenerator.h" />

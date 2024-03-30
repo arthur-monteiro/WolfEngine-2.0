@@ -35,9 +35,9 @@ namespace Wolf
 		static constexpr uint32_t MAX_MATERIAL_COUNT = 1024;
 		struct MaterialInfo
 		{
-			uint32_t albedoIdx;
-			uint32_t normalIdx;
-			uint32_t roughnessMetalnessAOIdx;
+			uint32_t albedoIdx = 0;
+			uint32_t normalIdx = 1;
+			uint32_t roughnessMetalnessAOIdx = 2;
 		};
 		uint32_t m_currentMaterialCount = 0;
 

@@ -25,7 +25,7 @@ struct MaterialInfo
     float matAO;
 };
 
-MaterialInfo fetchMaterial(in const vec2 texCoords, in const uint materialId, in const mat3 matrixTBN)
+MaterialInfo fetchMaterial(in const vec2 texCoords, in const uint materialId, in const mat3 matrixTBN, in const vec3 worldPos)
 {
     MaterialInfo materialInfo;
 
