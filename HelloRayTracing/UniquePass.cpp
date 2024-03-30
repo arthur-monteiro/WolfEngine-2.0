@@ -48,8 +48,8 @@ void UniquePass::initializeResources(const InitializationContext& context)
 
 	BottomLevelAccelerationStructureCreateInfo blasCreateInfo;
 	blasCreateInfo.buildFlags = VK_BUILD_ACCELERATION_STRUCTURE_PREFER_FAST_TRACE_BIT_KHR;
-	std::vector<GeometryInfo> geometries(1);
-	geometries[0].mesh = m_triangle.get();
+	std::vector<GeometryInfo> geometries;
+	geometries.emplace_back(m_triangle.createConstNonOwnerResource());
 	blasCreateInfo.geometryInfos = geometries;
 	m_blas.reset(new BottomLevelAccelerationStructure(blasCreateInfo));
 
