@@ -9,6 +9,7 @@
 
 #include "Image.h"
 #include "ImageCompression.h"
+#include "MaterialLoader.h"
 #include "Mesh.h"
 #include "ResourceUniqueOwner.h"
 
@@ -95,12 +96,7 @@ namespace Wolf
 		glm::vec3 defaultNormal = glm::vec3(0.0f, 1.0f, 0.0f);
 
 		// Material options
-		enum class InputMaterialLayout
-		{
-			NO_MATERIAL,
-			EACH_TEXTURE_A_FILE
-		};
-		InputMaterialLayout materialLayout = InputMaterialLayout::EACH_TEXTURE_A_FILE;
+		MaterialLoader::InputMaterialLayout materialLayout = MaterialLoader::InputMaterialLayout::EACH_TEXTURE_A_FILE;
 		uint32_t materialIdOffset = 0;
 
 		// Cache options
@@ -117,9 +113,7 @@ namespace Wolf
 	struct ModelData
 	{
 		ResourceUniqueOwner<Mesh> mesh;
-		std::vector<std::unique_ptr<Image>> images;
-
-		void getImages(std::vector<Image*>& outputImages) const;
+		std::vector<ResourceUniqueOwner<Image>> images;
 	};
 
 	class ModelLoader
@@ -137,10 +131,7 @@ namespace Wolf
 		bool loadCache(ModelLoadingInfo& modelLoadingInfo) const;
 
 		// Materials
-		void loadMaterial(const tinyobj::material_t& material, const std::string& mtlFolder, ModelLoadingInfo::InputMaterialLayout materialLayout, uint32_t& indexTexture);
-		static std::string getTexName(const std::string& texName, const std::string& folder, const std::string& defaultTexture = "Textures/white_pixel.jpg");
-		void loadImageFile(const std::string& filename, VkFormat format, std::vector<ImageCompression::RGBA8>& pixels, std::vector<std::vector<ImageCompression::RGBA8>>& mipLevels, VkExtent3D& outExtent) const;
-		void createImageFromData(VkExtent3D extent, VkFormat format, const unsigned char* pixels, const std::vector<const unsigned char*>& mipLevels, uint32_t idx);
+		void loadMaterial(const tinyobj::material_t& material, const std::string& mtlFolder, MaterialLoader::InputMaterialLayout materialLayout, uint32_t& indexTexture);
 		
 		bool m_useCache;
 		std::vector<std::vector<unsigned char>> m_imagesData;

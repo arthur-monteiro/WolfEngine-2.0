@@ -306,6 +306,7 @@ void Wolf::UltraLight::UltraLightImplementation::update(const ResourceNonOwner<I
         keyEvent.type = KeyEvent::kType_KeyDown;
         keyEvent.virtual_key_code = 0x08; // code for backspace
         keyEvent.is_system_key = false;
+
         m_view->FireKeyEvent(keyEvent);
     }
     if (inputHandler->keyPressedThisFrame(GLFW_KEY_ENTER, this) || inputHandler->keyPressedThisFrame(GLFW_KEY_KP_ENTER, this))
@@ -315,7 +316,21 @@ void Wolf::UltraLight::UltraLightImplementation::update(const ResourceNonOwner<I
         constexpr char character = 13;
         keyEvent.text = &character;
         keyEvent.is_system_key = false;
+
         m_view->FireKeyEvent(keyEvent);
+    }
+
+    float scrollX, scrollY;
+    inputHandler->getScroll(scrollX, scrollY);
+
+    if (scrollX != 0.0f || scrollY != 0.0f)
+    {
+        ScrollEvent scrollEvent{};
+        scrollEvent.type = ScrollEvent::kType_ScrollByPixel;
+        scrollEvent.delta_x = static_cast<int>(scrollX);
+        scrollEvent.delta_y = static_cast<int>(scrollY);
+
+        m_view->FireScrollEvent(scrollEvent);
     }
 
     const std::vector<int>& characterPressed = inputHandler->getCharactersPressedThisFrame(this);

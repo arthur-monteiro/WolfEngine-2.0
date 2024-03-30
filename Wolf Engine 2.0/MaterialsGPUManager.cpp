@@ -44,14 +44,28 @@ void Wolf::MaterialsGPUManager::addNewMaterials(const std::vector<DescriptorSetG
 	const uint32_t oldNewMaterialsInfoCount = static_cast<uint32_t>(m_newMaterialsInfo.size());
 	m_newMaterialsInfo.resize(m_newMaterialsInfo.size() + materialCountToAdd);
 
-	const uint32_t firstBindlessOffset = addImagesToBindless(images);
+	// Clean images to remove nullptr
+	std::vector<DescriptorSetGenerator::ImageDescription> imagesCleaned;
+	imagesCleaned.reserve(images.size());
+	for (const DescriptorSetGenerator::ImageDescription& imageDescription : images)
+	{
+		if (imageDescription.imageView)
+		{
+			imagesCleaned.push_back(imageDescription);
+		}
+	}
+	uint32_t currentBindlessOffset = addImagesToBindless(imagesCleaned);
+
 	for (uint32_t newMaterialIdx = 0; newMaterialIdx < materialCountToAdd; ++newMaterialIdx)
 	{
 		MaterialInfo& newMaterialInfo = m_newMaterialsInfo[oldNewMaterialsInfoCount + newMaterialIdx];
 
-		newMaterialInfo.albedoIdx = firstBindlessOffset + newMaterialIdx * TEXTURE_COUNT_PER_MATERIAL;
-		newMaterialInfo.normalIdx = newMaterialInfo.albedoIdx + 1;
-		newMaterialInfo.roughnessMetalnessAOIdx = newMaterialInfo.albedoIdx + 2;
+		if (images[newMaterialIdx / TEXTURE_COUNT_PER_MATERIAL].imageView)
+			newMaterialInfo.albedoIdx = currentBindlessOffset++;
+		if (images[newMaterialIdx / TEXTURE_COUNT_PER_MATERIAL + 1].imageView)
+			newMaterialInfo.normalIdx = currentBindlessOffset++;
+		if (images[newMaterialIdx / TEXTURE_COUNT_PER_MATERIAL + 2].imageView)
+			newMaterialInfo.roughnessMetalnessAOIdx = currentBindlessOffset++;
 	}
 }
 

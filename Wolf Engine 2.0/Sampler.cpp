@@ -22,10 +22,20 @@ Wolf::Sampler::Sampler(VkSamplerAddressMode addressMode, float mipLevels, VkFilt
 	samplerInfo.compareEnable = VK_FALSE;
 	samplerInfo.compareOp = VK_COMPARE_OP_ALWAYS;
 
-	samplerInfo.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
-	samplerInfo.mipLodBias = mipLodBias;
-	samplerInfo.minLod = minLod;
-	samplerInfo.maxLod = mipLevels;
+	if (mipLevels > 1.0f)
+	{
+		samplerInfo.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
+		samplerInfo.mipLodBias = mipLodBias;
+		samplerInfo.minLod = minLod;
+		samplerInfo.maxLod = mipLevels;
+	}
+	else
+	{
+		samplerInfo.mipmapMode = VK_SAMPLER_MIPMAP_MODE_NEAREST;
+		samplerInfo.mipLodBias = 0;
+		samplerInfo.minLod = 0;
+		samplerInfo.maxLod = 1;
+	}
 
 	samplerInfo.pNext = VK_NULL_HANDLE;
 

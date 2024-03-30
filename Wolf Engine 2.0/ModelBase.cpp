@@ -38,10 +38,10 @@ Wolf::ModelBase::ModelBase(ModelLoadingInfo& modelLoadingInfo, bool requestAccel
 Wolf::ModelBase::ModelBase(ModelLoadingInfo& modelLoadingInfo, bool requestAccelerationStructuresBuild, const ResourceNonOwner<MaterialsGPUManager>& materialsGPUManager)
 	: ModelBase(modelLoadingInfo, requestAccelerationStructuresBuild)
 {
-	if (modelLoadingInfo.materialLayout != ModelLoadingInfo::InputMaterialLayout::NO_MATERIAL)
+	if (modelLoadingInfo.materialLayout != MaterialLoader::InputMaterialLayout::NO_MATERIAL)
 	{
 		std::vector<DescriptorSetGenerator::ImageDescription> imageDescriptions;
-		for (const std::unique_ptr<Image>& image : m_modelData.images)
+		for (const ResourceUniqueOwner<Image>& image : m_modelData.images)
 		{
 			imageDescriptions.resize(imageDescriptions.size() + 1);
 			imageDescriptions.back().imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
