@@ -5,6 +5,7 @@
 #include <GLFW/glfw3.h>
 #include <OVR_CAPI_Vk.h>
 #endif
+#include <memory>
 #include <mutex>
 #include <vector>
 

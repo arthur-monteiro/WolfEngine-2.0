@@ -10,6 +10,18 @@
 
 namespace Wolf
 {
+	template<typename U>
+	concept hasResetFunction = requires(U object)
+	{
+		object.reset(nullptr);
+	};
+
+	template<typename U>
+	concept hasReleaseFunction = requires(U object)
+	{
+		object.release();
+	};
+
 	template <typename T>
 	class ResourceUniqueOwner
 	{
