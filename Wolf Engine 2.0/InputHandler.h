@@ -1,13 +1,11 @@
 #pragma once
-#include <Ultralight/ScrollEvent.h>
-
-#include "Debug.h"
 
 #ifndef __ANDROID__
 
 #include <map>
 #include <mutex>
 
+#include "Debug.h"
 #include "ResourceNonOwner.h"
 #include "Window.h"
 
