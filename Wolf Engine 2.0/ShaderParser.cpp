@@ -7,9 +7,18 @@
 #include <AndroidCacheHelper.h>
 #endif
 
+#include <xxh64.hpp>
+
 #include "Configuration.h"
 #include "Debug.h"
 #include "ShaderCommon.h"
+
+uint64_t Wolf::ShaderParser::MaterialFetchProcedure::computeHash() const
+{
+    if (codeString.empty())
+        return 0;
+    return xxh64::hash(codeString.c_str(), codeString.length(), 0);
+}
 
 Wolf::ShaderParser::ShaderParser(const std::string& filename, const std::vector<std::string>& conditionBlocksToInclude, uint32_t cameraDescriptorSlot, uint32_t bindlessDescriptorSlot, const MaterialFetchProcedure& materialFetchProcedure)
 {
@@ -20,6 +29,7 @@ Wolf::ShaderParser::ShaderParser(const std::string& filename, const std::vector<
     m_cameraDescriptorSlot = cameraDescriptorSlot;
     m_bindlessDescriptorSlot = bindlessDescriptorSlot;
     m_materialFetchProcedure = materialFetchProcedure;
+    m_materialFetchProcedureHash = materialFetchProcedure.computeHash();
 
     parseAndCompile();
 }
@@ -55,9 +65,9 @@ void Wolf::ShaderParser::readCompiledShader(std::vector<char>& shaderCode) const
     readFile(shaderCode, m_compileFilename);
 }
 
-bool Wolf::ShaderParser::isSame(const std::string& filename, const std::vector<std::string>& conditionBlocksToInclude) const
+bool Wolf::ShaderParser::isSame(const std::string& filename, const std::vector<std::string>& conditionBlocksToInclude, uint64_t materialFetchProcedureHash) const
 {
-    return filename == m_filename && conditionBlocksToInclude == m_conditionBlocksToInclude;
+    return filename == m_filename && conditionBlocksToInclude == m_conditionBlocksToInclude && m_materialFetchProcedureHash == materialFetchProcedureHash;
 }
 
 void Wolf::ShaderParser::parseAndCompile()
@@ -92,6 +102,11 @@ void Wolf::ShaderParser::parseAndCompile()
     for (const std::string& condition : m_conditionBlocksToInclude)
     {
         parsedFilename += "_" + condition;
+    }
+
+    if (m_materialFetchProcedureHash != 0)
+    {
+        parsedFilename += "_" + std::to_string(m_materialFetchProcedureHash);
     }
 
     std::string compiledFilename = parsedFilename;

@@ -100,7 +100,6 @@ void Wolf::UltraLight::processImplementation(const char* htmlURL, const std::fun
     }
     const std::string absoluteURL = "file:///" + escapedCurrentPath + "/" + htmlURL;
     m_ultraLightImplementation.reset(new UltraLightImplementation(g_configuration->getWindowWidth(), g_configuration->getWindowHeight(), absoluteURL, htmlURL, m_inputHandler));
-    m_inputHandler->createCache(m_ultraLightImplementation.get());
 
     m_bindUltralightCallbacks = bindCallbacks;
 
@@ -283,7 +282,6 @@ void Wolf::UltraLight::UltraLightImplementation::update(const ResourceNonOwner<I
     mouseEvent.button = MouseEvent::kButton_Left;
 
     m_view->FireMouseEvent(mouseEvent);
-
     
     if (inputHandler->mouseButtonPressedThisFrame(GLFW_MOUSE_BUTTON_LEFT, this))
     {

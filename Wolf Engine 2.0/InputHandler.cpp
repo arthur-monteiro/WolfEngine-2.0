@@ -1,5 +1,7 @@
 #include "InputHandler.h"
 
+#include <glm/detail/func_common.hpp>
+
 #include "Debug.h"
 
 #ifndef __ANDROID__
@@ -26,6 +28,11 @@ void scrollCallback(GLFWwindow* window, double xoffset, double yoffset)
 	inputHandlerInstance->inputHandlerScrollCallback(window, xoffset, yoffset);
 }
 
+void joystickCallback(int jid, int event)
+{
+	inputHandlerInstance->inputHandlerJoystickCallback(jid, event);
+}
+
 Wolf::InputHandler::InputHandler(const ResourceNonOwner<const Window>& window) : m_window(window)
 {
 	inputHandlerInstance = this;
@@ -34,6 +41,13 @@ Wolf::InputHandler::InputHandler(const ResourceNonOwner<const Window>& window) :
 	glfwSetCharCallback(window->getWindow(), charCallback);
 	glfwSetMouseButtonCallback(window->getWindow(), mouseButtonCallback);
 	glfwSetScrollCallback(window->getWindow(), scrollCallback);
+
+	for (uint32_t gamepadIdx = 0; gamepadIdx < MAX_GAMEPAD_COUNT; ++gamepadIdx)
+	{
+		if (glfwJoystickIsGamepad(static_cast<int>(gamepadIdx)))
+			m_data.m_gamepadCaches[gamepadIdx].isActiveNextFrame = true;
+	}
+	glfwSetJoystickCallback(joystickCallback);
 }
 
 Wolf::InputHandler::~InputHandler()
@@ -83,16 +97,47 @@ void Wolf::InputHandler::moveToNextFrame()
 
 	m_data.m_scrollCache.scrollEventsThisFrame = m_data.m_scrollCache.scrollEventsForNextFrame;
 	m_data.m_scrollCache.scrollEventsForNextFrame = { 0.0f, 0.0f };
-}
 
-void Wolf::InputHandler::createCache(const void* instancePtr)
-{
-	m_dataCache[instancePtr];
+	// Gamepad
+	{
+		for (uint8_t gamepadIdx = 0; gamepadIdx < MAX_GAMEPAD_COUNT; ++gamepadIdx)
+		{
+			GamepadCache& gamepadCache = m_data.m_gamepadCaches[gamepadIdx];
+
+			if (gamepadCache.isActiveNextFrame == false && gamepadCache.isActive)
+				gamepadCache.isActive = false;
+			else if(gamepadCache.isActiveNextFrame == true && !gamepadCache.isActive)
+			{
+				gamepadCache.isActive = true;
+				gamepadCache.clear();
+			}
+
+			if (!gamepadCache.isActive)
+				continue;
+
+			GLFWgamepadstate state;
+			if (glfwGetGamepadState(gamepadIdx, &state))
+			{
+				for (uint8_t joystickIdx = 0; joystickIdx < GAMEPAD_JOYSTICK_COUNT; ++joystickIdx)
+				{
+					gamepadCache.joystickEvent[joystickIdx].offsetX = state.axes[static_cast<size_t>(2 * joystickIdx)];
+					gamepadCache.joystickEvent[joystickIdx].offsetY = state.axes[static_cast<size_t>(2 * joystickIdx + 1)];
+
+					if (glm::abs(gamepadCache.joystickEvent[joystickIdx].offsetX) < GAMEPAD_JOYSTICK_DEAD_ZONE_SIZE) gamepadCache.joystickEvent[joystickIdx].offsetX = 0.0f;
+					if (glm::abs(gamepadCache.joystickEvent[joystickIdx].offsetY) < GAMEPAD_JOYSTICK_DEAD_ZONE_SIZE) gamepadCache.joystickEvent[joystickIdx].offsetY = 0.0f;
+				}
+			}
+			else
+			{
+				Debug::sendError("Can't get state for gamepad " + std::to_string(gamepadIdx));
+			}
+		}
+	}
 }
 
 void Wolf::InputHandler::lockCache(const void* instancePtr)
 {
-	m_dataCache.at(instancePtr).second.lock();
+	m_dataCache[instancePtr].second.lock();
 }
 
 void Wolf::InputHandler::pushDataToCache(const void* instancePtr)
@@ -100,7 +145,7 @@ void Wolf::InputHandler::pushDataToCache(const void* instancePtr)
 	if (m_dataCache.contains(instancePtr))
 		m_dataCache[instancePtr].first.concatenate(m_data);
 	else
-		Debug::sendError("No cache found");
+		Debug::sendCriticalError("No cache found");
 }
 
 void Wolf::InputHandler::clearCache(const void* instancePtr)
@@ -201,6 +246,32 @@ void Wolf::InputHandler::inputHandlerScrollCallback(GLFWwindow* window, double o
 	m_data.m_scrollCache.scrollEventsForNextFrame.offsetY += static_cast<float>(offsetY) * static_cast<float>(windowHeight);
 }
 
+void Wolf::InputHandler::inputHandlerJoystickCallback(int jid, int event)
+{
+	if (jid >= MAX_GAMEPAD_COUNT)
+	{
+		Debug::sendError("Too many gamepads");
+		return;
+	}
+
+	if (event == GLFW_CONNECTED)
+	{
+		if (!glfwJoystickIsGamepad(jid))
+		{
+			Debug::sendError("Unrecognised gamepad");
+			return;
+		}
+
+		Debug::sendInfo("Gamepad " + std::to_string(jid) + " connected");
+		m_data.m_gamepadCaches[jid].isActiveNextFrame = true;
+	}
+	else if (event == GLFW_DISCONNECTED)
+	{
+		Debug::sendInfo("Gamepad " + std::to_string(jid) + " disconnected");
+		m_data.m_gamepadCaches[jid].isActiveNextFrame = false;
+	}
+}
+
 void Wolf::InputHandler::setCursorType(Window::CursorType cursorType) const
 {
 	m_window->setCursorType(cursorType);
@@ -216,6 +287,28 @@ void Wolf::InputHandler::getScroll(float& outX, float& outY) const
 {
 	outX = m_data.m_scrollCache.scrollEventsThisFrame.offsetX;
 	outY = m_data.m_scrollCache.scrollEventsThisFrame.offsetY;
+}
+
+void Wolf::InputHandler::getJoystickSpeedForGamepad(uint8_t gamepadIdx, uint8_t joystickIdx, float& outX, float& outY, const void* instancePtr)
+{
+	GamepadCache* gamepadCache = nullptr;
+
+	if (instancePtr)
+		gamepadCache = &m_dataCache.at(instancePtr).first.m_gamepadCaches[gamepadIdx];
+	else
+		gamepadCache = &m_data.m_gamepadCaches[gamepadIdx];
+
+	if (gamepadCache->isActive)
+	{
+		outX = gamepadCache->joystickEvent[joystickIdx].offsetX;
+		outY = gamepadCache->joystickEvent[joystickIdx].offsetY;
+	}
+	else
+	{
+		Debug::sendWarning("Requesting joystick speed for an inactive controller");
+		outX = 0.0f;
+		outY = 0.0f;
+	}
 }
 
 #endif

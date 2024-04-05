@@ -4,7 +4,7 @@ const Wolf::ShaderParser* Wolf::ShaderList::addShader(const AddShaderInfo& addSh
 {
 	for (const ShaderInfo& shaderInfo : m_shadersInfo)
 	{
-		if (shaderInfo.getShaderParser()->isSame(addShaderInfo.filename, addShaderInfo.conditionBlocksToInclude))
+		if (shaderInfo.getShaderParser()->isSame(addShaderInfo.filename, addShaderInfo.conditionBlocksToInclude, addShaderInfo.materialFetchProcedure.computeHash()))
 		{
 			return shaderInfo.getShaderParser();
 		}
