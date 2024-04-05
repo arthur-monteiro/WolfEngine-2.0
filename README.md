@@ -15,7 +15,7 @@ Currently in development.
 
 Create a new solution with your project and the Wolf Engine 2.0 project. \
 Add Wolf Engine 2.0 includes and Third Parties. \
-Add Wolf Engine 2.0 lib and Third Parties, add the folowing libs: "vulkan-1.lib; glfw3.lib; LibOVR.lib; UltralightCore.lib; Ultralight.lib; WebCore.lib; AppCore.lib; Engine Core.lib". \
+Add Wolf Engine 2.0 lib and Third Parties, add the folowing libs: "vulkan-1.lib; glfw3.lib; LibOVR.lib; UltralightCore.lib; Ultralight.lib; WebCore.lib; AppCore.lib; Engine Core.lib".
 
 ### Android
 
