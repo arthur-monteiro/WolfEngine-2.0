@@ -66,18 +66,18 @@ namespace Wolf
 #endif
 		[[nodiscard]] uint32_t getCurrentFrame() const { return m_currentFrame; }
 #ifndef __ANDROID__
-		[[nodiscard]] ResourceNonOwner<const InputHandler> getInputHandler() { return m_inputHandler.createConstNonOwnerResource(); }
+		[[nodiscard]] ResourceNonOwner<InputHandler> getInputHandler() { return m_inputHandler.createNonOwnerResource(); }
 #endif
-		VkExtent3D getSwapChainExtent() const { return m_swapChain->getImage(0)->getExtent(); }
+		[[nodiscard]] VkExtent3D getSwapChainExtent() const { return m_swapChain->getImage(0)->getExtent(); }
 
-		bool isRayTracingAvailable() const { return m_vulkan->isRayTracingAvailable(); }
+		[[nodiscard]] bool isRayTracingAvailable() const { return m_vulkan->isRayTracingAvailable(); }
 
 		void setGameContexts(const std::vector<void*>& gameContexts) { m_gameContexts = gameContexts; }
 
-		CameraList& getCameraList() { return m_cameraList; }
-		RenderMeshList& getRenderMeshList() { return m_renderMeshList; }
-		ResourceNonOwner<MaterialsGPUManager> getMaterialsManager() { return m_materialsManager.createNonOwnerResource(); }
-		const std::vector<std::string>& getSavedUICommands() const { return m_savedUICommands; }
+		[[nodiscard]] CameraList& getCameraList() { return m_cameraList; }
+		[[nodiscard]] RenderMeshList& getRenderMeshList() { return m_renderMeshList; }
+		[[nodiscard]] ResourceNonOwner<MaterialsGPUManager> getMaterialsManager() { return m_materialsManager.createNonOwnerResource(); }
+		[[nodiscard]] const std::vector<std::string>& getSavedUICommands() const { return m_savedUICommands; }
 
 	private:
 		void fillInitializeContext(InitializationContext& context) const;

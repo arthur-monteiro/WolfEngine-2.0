@@ -3,6 +3,7 @@
 #ifdef __ANDROID__
 #include <android/asset_manager.h>
 #endif
+#include <cstdint>
 #include <string>
 
 namespace Wolf
