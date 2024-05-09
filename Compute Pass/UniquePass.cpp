@@ -12,13 +12,13 @@ using namespace Wolf;
 
 void UniquePass::initializeResources(const InitializationContext& context)
 {
-	m_commandBuffer.reset(new CommandBuffer(QueueType::COMPUTE, false /* isTransient */));
-	m_semaphore.reset(new Semaphore(VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT));
+	m_commandBuffer.reset(CommandBuffer::createCommandBuffer(QueueType::COMPUTE, false /* isTransient */));
+	m_semaphore.reset(Semaphore::createSemaphore(VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT));
 
 	m_computeShaderParser.reset(new ShaderParser("Shaders/shader.comp"));
 
 	m_descriptorSetLayoutGenerator.addStorageImage(VK_SHADER_STAGE_COMPUTE_BIT, 0);
-	m_descriptorSetLayout.reset(new DescriptorSetLayout(m_descriptorSetLayoutGenerator.getDescriptorLayouts()));
+	m_descriptorSetLayout.reset(DescriptorSetLayout::createDescriptorSetLayout(m_descriptorSetLayoutGenerator.getDescriptorLayouts()));
 
 	std::vector<Image*> outputImages;
 	buildOutputImages(context, outputImages);
@@ -42,35 +42,34 @@ void UniquePass::resize(const InitializationContext& context)
 void UniquePass::record(const RecordContext& context)
 {
 	/* Command buffer record */
-	m_commandBuffer->beginCommandBuffer(context.commandBufferIdx);
+	m_commandBuffer->beginCommandBuffer();
 
 	const uint32_t outputImageIdx = context.swapChainImageIdx;
 
-	context.swapchainImage->transitionImageLayout(m_commandBuffer->getCommandBuffer(context.commandBufferIdx), { VK_IMAGE_LAYOUT_GENERAL, VK_ACCESS_SHADER_WRITE_BIT, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT });
+	context.swapchainImage->transitionImageLayout(*m_commandBuffer, { VK_IMAGE_LAYOUT_GENERAL, VK_ACCESS_SHADER_WRITE_BIT, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT });
 
-	vkCmdBindDescriptorSets(m_commandBuffer->getCommandBuffer(context.commandBufferIdx), VK_PIPELINE_BIND_POINT_COMPUTE, m_pipeline->getPipelineLayout(), 0, 1, m_descriptorSets[outputImageIdx]->getDescriptorSet(), 0, nullptr);
-
-	vkCmdBindPipeline(m_commandBuffer->getCommandBuffer(context.commandBufferIdx), VK_PIPELINE_BIND_POINT_COMPUTE, m_pipeline->getPipeline());
+	m_commandBuffer->bindDescriptorSet(m_descriptorSets[outputImageIdx].get(), 0, *m_pipeline);
+	m_commandBuffer->bindPipeline(m_pipeline.get());
 
 	const VkExtent3D dispatchGroups = { 16, 16, 1 };
 	const uint32_t groupSizeX = m_swapChainWidth % dispatchGroups.width != 0 ? m_swapChainWidth / dispatchGroups.width + 1 : m_swapChainWidth / dispatchGroups.width;
 	const uint32_t groupSizeY = m_swapChainHeight % dispatchGroups.height != 0 ? m_swapChainHeight / dispatchGroups.height + 1 : m_swapChainHeight / dispatchGroups.height;
-	vkCmdDispatch(m_commandBuffer->getCommandBuffer(context.commandBufferIdx), groupSizeX, groupSizeY, dispatchGroups.depth);
+	m_commandBuffer->dispatch(groupSizeX, groupSizeY, dispatchGroups.depth);
 
-	context.swapchainImage->transitionImageLayout(m_commandBuffer->getCommandBuffer(context.commandBufferIdx), { VK_IMAGE_LAYOUT_PRESENT_SRC_KHR, 0, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT });
+	context.swapchainImage->transitionImageLayout(*m_commandBuffer, { VK_IMAGE_LAYOUT_PRESENT_SRC_KHR, 0, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT });
 
-	m_commandBuffer->endCommandBuffer(context.commandBufferIdx);
+	m_commandBuffer->endCommandBuffer();
 }
 
 void UniquePass::submit(const SubmitContext& context)
 {
 	const std::vector waitSemaphores{ context.swapChainImageAvailableSemaphore };
-	const std::vector signalSemaphores{ m_semaphore->getSemaphore() };
-	m_commandBuffer->submit(context.commandBufferIdx, waitSemaphores, signalSemaphores, context.frameFence);
+	const std::vector<const Semaphore*> signalSemaphores{ m_semaphore.get() };
+	m_commandBuffer->submit(waitSemaphores, signalSemaphores, context.frameFence);
 
 	if (m_computeShaderParser->compileIfFileHasBeenModified())
 	{
-		vkDeviceWaitIdle(context.device);
+		context.graphicAPIManager->waitIdle();
 		createPipeline(m_swapChainWidth, m_swapChainHeight);
 	}
 }
@@ -94,9 +93,9 @@ void UniquePass::createPipeline(uint32_t width, uint32_t height)
 	computeShaderCreateInfo.shaderCode = computeShaderCode;
 	computeShaderCreateInfo.stage = VK_SHADER_STAGE_COMPUTE_BIT;
 
-	std::vector<VkDescriptorSetLayout> descriptorSetLayouts(1);
-	descriptorSetLayouts[0] = m_descriptorSetLayout->getDescriptorSetLayout();
-	m_pipeline.reset(new Pipeline(computeShaderCreateInfo, descriptorSetLayouts));
+	std::vector<ResourceReference<const DescriptorSetLayout>> descriptorSetLayouts;
+	descriptorSetLayouts.emplace_back(m_descriptorSetLayout.get());
+	m_pipeline.reset(Pipeline::createComputePipeline(computeShaderCreateInfo, descriptorSetLayouts));
 
 	m_swapChainWidth = width;
 	m_swapChainHeight = height;
@@ -111,7 +110,7 @@ void UniquePass::createDescriptorSets(const std::vector<Image*>& outputImages)
 		descriptorSetGenerator.setImage(0, image);
 
 		if(!m_descriptorSets[i])
-			m_descriptorSets[i].reset(new DescriptorSet(m_descriptorSetLayout->getDescriptorSetLayout(), UpdateRate::NEVER));
+			m_descriptorSets[i].reset(DescriptorSet::createDescriptorSet(*m_descriptorSetLayout));
 		m_descriptorSets[i]->update(descriptorSetGenerator.getDescriptorSetCreateInfo());
 	}
 }

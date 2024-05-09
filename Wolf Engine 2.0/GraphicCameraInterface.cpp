@@ -1,5 +1,6 @@
 #include "GraphicCameraInterface.h"
 
+#include "Buffer.h"
 #include "DescriptorSetGenerator.h"
 
 Wolf::GraphicCameraInterface::GraphicCameraInterface()
@@ -12,12 +13,12 @@ Wolf::GraphicCameraInterface::GraphicCameraInterface()
 
 	m_descriptorSetLayout.reset(new LazyInitSharedResource<DescriptorSetLayout, GraphicCameraInterface>([this](std::unique_ptr<DescriptorSetLayout>& descriptorSetLayout)
 		{
-			descriptorSetLayout.reset(new DescriptorSetLayout(m_descriptorSetLayoutGenerator->getResource()->getDescriptorLayouts()));
+			descriptorSetLayout.reset(DescriptorSetLayout::createDescriptorSetLayout(m_descriptorSetLayoutGenerator->getResource()->getDescriptorLayouts()));
 		}));
 
-	m_descriptorSet.reset(new DescriptorSet(m_descriptorSetLayout->getResource()->getDescriptorSetLayout(), UpdateRate::NEVER));
+	m_descriptorSet.reset(DescriptorSet::createDescriptorSet(*m_descriptorSetLayout->getResource()));
 	DescriptorSetGenerator descriptorSetGenerator(m_descriptorSetLayoutGenerator->getResource()->getDescriptorLayouts());
-	m_matricesUniformBuffer.reset(new Buffer(sizeof(UniformBufferData), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, UpdateRate::NEVER));
+	m_matricesUniformBuffer.reset(Buffer::createBuffer(sizeof(UniformBufferData), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT));
 	descriptorSetGenerator.setBuffer(0, *m_matricesUniformBuffer);
 	m_descriptorSet->update(descriptorSetGenerator.getDescriptorSetCreateInfo());
 }

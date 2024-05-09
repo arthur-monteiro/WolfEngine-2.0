@@ -1,6 +1,7 @@
 #pragma once
 
 #include <map>
+#include <memory>
 
 #include "AABB.h"
 #include "Buffer.h"
@@ -39,7 +40,7 @@ namespace Wolf
 		[[nodiscard]] const AABB& getAABB() const { return m_AABB; }
 
 		void cullForCamera(uint32_t cameraIdx, const CameraInterface* camera, const glm::mat4& transform, bool isInstanced);
-		void draw(VkCommandBuffer commandBuffer, uint32_t cameraIdx, uint32_t instanceCount = 1) const;
+		void draw(const CommandBuffer& commandBuffer, uint32_t cameraIdx, uint32_t instanceCount = 1) const;
 
 	private:
 		std::unique_ptr<Buffer> m_vertexBuffer;
@@ -65,10 +66,10 @@ namespace Wolf
 	template<typename T>
 	Mesh::Mesh(const std::vector<T>& vertices, const std::vector<uint32_t>& indices, AABB aabb, VkBufferUsageFlags additionalVertexBufferUsages, VkBufferUsageFlags additionalIndexBufferUsages, VkFormat vertexFormat)
 	{
-		m_vertexBuffer.reset(new Buffer(sizeof(T) * vertices.size(), VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | additionalVertexBufferUsages, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, UpdateRate::NEVER));
+		m_vertexBuffer.reset(Buffer::createBuffer(sizeof(T) * vertices.size(), VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | additionalVertexBufferUsages, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT));
 		m_vertexBuffer->transferCPUMemoryWithStagingBuffer(static_cast<const void*>(vertices.data()), sizeof(T) * vertices.size());
 
-		m_indexBuffer.reset(new Buffer(sizeof(uint32_t) * indices.size(), VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT | additionalIndexBufferUsages, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, UpdateRate::NEVER));
+		m_indexBuffer.reset(Buffer::createBuffer(sizeof(uint32_t) * indices.size(), VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT | additionalIndexBufferUsages, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT));
 		m_indexBuffer->transferCPUMemoryWithStagingBuffer(indices.data(), sizeof(uint32_t) * indices.size());
 
 		m_vertexCount = static_cast<uint32_t>(vertices.size());

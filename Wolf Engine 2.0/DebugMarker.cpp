@@ -2,34 +2,26 @@
 
 #include "Configuration.h"
 
-void Wolf::DebugMarker::insert(VkCommandBuffer commandBuffer, const float* color, const std::string& name)
+void Wolf::DebugMarker::insert(const ResourceReference<CommandBuffer>& commandBuffer, const ColorFloat& color, const std::string& name)
 {
-	if (g_configuration->getUseRenderDoc())
+	if (g_configuration->getEnableGPUDebugMarkers())
 	{
-		VkDebugMarkerMarkerInfoEXT markerInfo = {};
-		markerInfo.sType = VK_STRUCTURE_TYPE_DEBUG_MARKER_MARKER_INFO_EXT;
-		memcpy(markerInfo.color, color, sizeof(float) * 4);
-		markerInfo.pMarkerName = name.c_str();
-		vkCmdDebugMarkerInsertEXT(commandBuffer, &markerInfo);
+		commandBuffer->debugMarkerInsert({ name, color });
 	}
 }
 
-void Wolf::DebugMarker::beginRegion(VkCommandBuffer commandBuffer, const float* color, const std::string& name)
+void Wolf::DebugMarker::beginRegion(const ResourceReference<CommandBuffer>& commandBuffer, const ColorFloat& color, const std::string& name)
 {
-	if (g_configuration->getUseRenderDoc())
+	if (g_configuration->getEnableGPUDebugMarkers())
 	{
-		VkDebugMarkerMarkerInfoEXT markerInfo = {};
-		markerInfo.sType = VK_STRUCTURE_TYPE_DEBUG_MARKER_MARKER_INFO_EXT;
-		memcpy(markerInfo.color, &color[0], sizeof(float) * 4);
-		markerInfo.pMarkerName = name.c_str();
-		vkCmdDebugMarkerBeginEXT(commandBuffer, &markerInfo);
+		commandBuffer->debugMarkerBegin({ name, color });
 	}
 }
 
-void Wolf::DebugMarker::endRegion(VkCommandBuffer commandBuffer)
+void Wolf::DebugMarker::endRegion(const ResourceReference<CommandBuffer>& commandBuffer)
 {
-	if (g_configuration->getUseRenderDoc())
+	if (g_configuration->getEnableGPUDebugMarkers())
 	{
-		vkCmdDebugMarkerEndEXT(commandBuffer);
+		commandBuffer->debugMarkerEnd();
 	}
 }

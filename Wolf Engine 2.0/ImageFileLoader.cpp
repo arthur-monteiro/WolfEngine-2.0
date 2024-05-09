@@ -5,7 +5,7 @@
 #include <fstream>
 #include <stb_image.h>
 
-#include "Debug.h"
+#include <Debug.h>
 
 Wolf::ImageFileLoader::ImageFileLoader(const std::string& fullFilePath)
 {

@@ -29,7 +29,7 @@ namespace Wolf
 
 		const BottomLevelAccelerationStructure* getBLAS() const { return m_blas.get(); }
 		const glm::mat4& getTransform() const { return m_transform; }
-		VkDescriptorSetLayout getDescriptorSetLayout() const { return m_descriptorSetLayout->getResource()->getDescriptorSetLayout(); }
+		const DescriptorSetLayout* getDescriptorSetLayout() const { return m_descriptorSetLayout->getResource(); }
 
 		void setTransform(const glm::mat4& transform) { m_transform = transform; }
 		void setPosition(glm::vec3 position) { m_transform[3] = glm::vec4(position, 1.0f); }

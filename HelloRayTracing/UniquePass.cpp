@@ -15,8 +15,8 @@ using namespace Wolf;
 
 void UniquePass::initializeResources(const InitializationContext& context)
 {
-	m_commandBuffer.reset(new CommandBuffer(QueueType::RAY_TRACING, false /* isTransient */));
-	m_semaphore.reset(new Semaphore(VK_PIPELINE_STAGE_RAY_TRACING_SHADER_BIT_KHR));
+	m_commandBuffer.reset(CommandBuffer::createCommandBuffer(QueueType::RAY_TRACING, false /* isTransient */));
+	m_semaphore.reset(Semaphore::createSemaphore(VK_PIPELINE_STAGE_RAY_TRACING_SHADER_BIT_KHR));
 
 	m_rayGenShaderParser.reset(new ShaderParser("Shaders/shader.rgen"));
 	m_rayMissShaderParser.reset(new ShaderParser("Shaders/shader.rmiss"));
@@ -26,7 +26,7 @@ void UniquePass::initializeResources(const InitializationContext& context)
 	m_descriptorSetLayoutGenerator.addStorageImage(VK_SHADER_STAGE_RAYGEN_BIT_KHR,                                                1);
 	m_descriptorSetLayoutGenerator.addStorageBuffer(VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR,                                          2); // vertex buffer
 	m_descriptorSetLayoutGenerator.addStorageBuffer(VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR,                                          3); // index buffer
-	m_descriptorSetLayout.reset(new DescriptorSetLayout(m_descriptorSetLayoutGenerator.getDescriptorLayouts()));
+	m_descriptorSetLayout.reset(DescriptorSetLayout::createDescriptorSetLayout(m_descriptorSetLayoutGenerator.getDescriptorLayouts()));
 
 	createPipeline();
 
@@ -48,10 +48,18 @@ void UniquePass::initializeResources(const InitializationContext& context)
 
 	BottomLevelAccelerationStructureCreateInfo blasCreateInfo;
 	blasCreateInfo.buildFlags = VK_BUILD_ACCELERATION_STRUCTURE_PREFER_FAST_TRACE_BIT_KHR;
-	std::vector<GeometryInfo> geometries;
-	geometries.emplace_back(m_triangle.createConstNonOwnerResource());
+
+	std::vector<GeometryInfo> geometries(1);
+	GeometryInfo& geometryInfo = geometries.back();
+	geometryInfo.mesh.vertexBuffer = &m_triangle->getVertexBuffer();
+	geometryInfo.mesh.vertexCount = m_triangle->getVertexCount();
+	geometryInfo.mesh.vertexSize = m_triangle->getVertexSize();
+	geometryInfo.mesh.vertexFormat = m_triangle->getVertexFormat();
+	geometryInfo.mesh.indexBuffer = &m_triangle->getIndexBuffer();
+	geometryInfo.mesh.indexCount = m_triangle->getIndexCount();
 	blasCreateInfo.geometryInfos = geometries;
-	m_blas.reset(new BottomLevelAccelerationStructure(blasCreateInfo));
+
+	m_blas.reset(BottomLevelAccelerationStructure::createBottomLevelAccelerationStructure(blasCreateInfo));
 
 	BLASInstance blasInstance;
 	blasInstance.bottomLevelAS = m_blas.get();
@@ -59,7 +67,7 @@ void UniquePass::initializeResources(const InitializationContext& context)
 	blasInstance.transform = glm::mat4(1.0f);
 	blasInstance.instanceID = 0;
 	std::vector blasInstances = { blasInstance };
-	m_tlas.reset(new TopLevelAccelerationStructure(blasInstances));
+	m_tlas.reset(TopLevelAccelerationStructure::createTopLevelAccelerationStructure(blasInstances));
 
 	m_descriptorSets.resize(context.swapChainImageCount);
 	createDescriptorSets(context);
@@ -74,45 +82,25 @@ void UniquePass::record(const RecordContext& context)
 {
 	uint32_t frameBufferIdx = context.swapChainImageIdx;
 
-	m_commandBuffer->beginCommandBuffer(context.commandBufferIdx);
+	m_commandBuffer->beginCommandBuffer();
 
-	context.swapchainImage->transitionImageLayout(m_commandBuffer->getCommandBuffer(context.commandBufferIdx), { VK_IMAGE_LAYOUT_GENERAL, VK_ACCESS_SHADER_WRITE_BIT, VK_PIPELINE_STAGE_RAY_TRACING_SHADER_BIT_KHR });
+	context.swapchainImage->transitionImageLayout(*m_commandBuffer, { VK_IMAGE_LAYOUT_GENERAL, VK_ACCESS_SHADER_WRITE_BIT, VK_PIPELINE_STAGE_RAY_TRACING_SHADER_BIT_KHR });
 
-	vkCmdBindPipeline(m_commandBuffer->getCommandBuffer(context.commandBufferIdx), VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR, m_pipeline->getPipeline());
-	vkCmdBindDescriptorSets(m_commandBuffer->getCommandBuffer(context.commandBufferIdx), VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR, m_pipeline->getPipelineLayout(), 0, 1, m_descriptorSets[context.swapChainImageIdx]->getDescriptorSet(), 0, nullptr);
+	m_commandBuffer->bindPipeline(m_pipeline.get());
+	m_commandBuffer->bindDescriptorSet(m_descriptorSets[context.swapChainImageIdx].get(), 0, *m_pipeline);
 
-	VkStridedDeviceAddressRegionKHR rgenRegion;
-	rgenRegion.deviceAddress = m_shaderBindingTable->getBuffer().getBufferDeviceAddress();
-	rgenRegion.stride = m_shaderBindingTable->getBaseAlignment();
-	rgenRegion.size = m_shaderBindingTable->getBaseAlignment();
+	m_commandBuffer->traceRays(m_shaderBindingTable.get(), context.swapchainImage->getExtent());
 
-	VkStridedDeviceAddressRegionKHR rmissRegion;
-	rmissRegion.deviceAddress = m_shaderBindingTable->getBuffer().getBufferDeviceAddress() + rgenRegion.size;
-	rmissRegion.stride = m_shaderBindingTable->getBaseAlignment();
-	rmissRegion.size = m_shaderBindingTable->getBaseAlignment();
+	context.swapchainImage->transitionImageLayout(*m_commandBuffer, { VK_IMAGE_LAYOUT_PRESENT_SRC_KHR, 0, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT });
 
-	VkStridedDeviceAddressRegionKHR rhitRegion;
-	rhitRegion.deviceAddress = m_shaderBindingTable->getBuffer().getBufferDeviceAddress() + rgenRegion.size + rmissRegion.size;
-	rhitRegion.stride = m_shaderBindingTable->getBaseAlignment();
-	rhitRegion.size = m_shaderBindingTable->getBaseAlignment();
-
-	const VkStridedDeviceAddressRegionKHR callRegion{};
-
-	vkCmdTraceRaysKHR(m_commandBuffer->getCommandBuffer(context.commandBufferIdx), &rgenRegion,
-		&rmissRegion,
-		&rhitRegion,
-		&callRegion, context.swapchainImage->getExtent().width, context.swapchainImage->getExtent().height, 1);
-
-	context.swapchainImage->transitionImageLayout(m_commandBuffer->getCommandBuffer(context.commandBufferIdx), { VK_IMAGE_LAYOUT_PRESENT_SRC_KHR, 0, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT });
-
-	m_commandBuffer->endCommandBuffer(context.commandBufferIdx);
+	m_commandBuffer->endCommandBuffer();
 }
 
 void UniquePass::submit(const SubmitContext& context)
 {
 	const std::vector waitSemaphores{ context.swapChainImageAvailableSemaphore };
-	const std::vector signalSemaphores{ m_semaphore->getSemaphore() };
-	m_commandBuffer->submit(context.commandBufferIdx, waitSemaphores, signalSemaphores, context.frameFence);
+	const std::vector<const Semaphore*> signalSemaphores{ m_semaphore.get() };
+	m_commandBuffer->submit(waitSemaphores, signalSemaphores, context.frameFence);
 
 	bool anyShaderModified = m_rayGenShaderParser->compileIfFileHasBeenModified();
 	if (m_rayMissShaderParser->compileIfFileHasBeenModified())
@@ -122,7 +110,7 @@ void UniquePass::submit(const SubmitContext& context)
 
 	if (anyShaderModified)
 	{
-		vkDeviceWaitIdle(context.device);
+		context.graphicAPIManager->waitIdle();
 		createPipeline();
 	}
 }
@@ -156,10 +144,10 @@ void UniquePass::createPipeline()
 
 	pipelineCreateInfo.shaderGroupsCreateInfos = shaderGroupGenerator.getShaderGroups();
 
-	std::vector descriptorSetLayouts = { m_descriptorSetLayout->getDescriptorSetLayout() };
-	m_pipeline.reset(new Pipeline(pipelineCreateInfo, descriptorSetLayouts));
+	std::vector<const DescriptorSetLayout*> descriptorSetLayouts = { m_descriptorSetLayout.get() };
+	m_pipeline.reset(Pipeline::createRayTracingPipeline(pipelineCreateInfo, descriptorSetLayouts));
 
-	m_shaderBindingTable.reset(new ShaderBindingTable(static_cast<uint32_t>(shaders.size()), m_pipeline->getPipeline()));
+	m_shaderBindingTable.reset(new ShaderBindingTable(static_cast<uint32_t>(shaders.size()), *m_pipeline));
 }
 
 void UniquePass::createDescriptorSets(const InitializationContext& context)
@@ -175,7 +163,7 @@ void UniquePass::createDescriptorSets(const InitializationContext& context)
 		descriptorSetGenerator.setBuffer(3, m_triangle->getIndexBuffer());
 
 		if (!m_descriptorSets[i])
-			m_descriptorSets[i].reset(new DescriptorSet(m_descriptorSetLayout->getDescriptorSetLayout(), UpdateRate::NEVER));
+			m_descriptorSets[i].reset(DescriptorSet::createDescriptorSet(*m_descriptorSetLayout));
 		m_descriptorSets[i]->update(descriptorSetGenerator.getDescriptorSetCreateInfo());
 	}
 }

@@ -41,24 +41,22 @@ void Wolf::Mesh::cullForCamera(uint32_t cameraIdx, const CameraInterface* camera
 	}
 }
 
-void Wolf::Mesh::draw(VkCommandBuffer commandBuffer, uint32_t cameraIdx, uint32_t instanceCount) const
+void Wolf::Mesh::draw(const CommandBuffer& commandBuffer, uint32_t cameraIdx, uint32_t instanceCount) const
 {
-	constexpr VkDeviceSize offsets[1] = { 0 };
-	const VkBuffer vertexBuffer = m_vertexBuffer->getBuffer();
-	vkCmdBindVertexBuffers(commandBuffer, 0, 1, &vertexBuffer, offsets);
-	vkCmdBindIndexBuffer(commandBuffer, m_indexBuffer->getBuffer(), 0, VK_INDEX_TYPE_UINT32);
+	commandBuffer.bindVertexBuffer(*m_vertexBuffer);
+	commandBuffer.bindIndexBuffer(*m_indexBuffer, IndexType::U32);
 
 	if(m_subMeshes.empty() || cameraIdx == RenderMeshList::NO_CAMERA_IDX)
 	{
 		if (m_subMeshes.empty())
 			Debug::sendMessageOnce("Drawing a mesh without any submesh. The entire mesh will be drawn", Debug::Severity::WARNING, this);
-		vkCmdDrawIndexed(commandBuffer, m_indexCount, instanceCount, 0, 0, 0);
+		commandBuffer.drawIndexed(m_indexCount, instanceCount, 0, 0, 0);
 	}
 	else
 	{
 		for (const std::unique_ptr<SubMeshToDrawInfo>& subMesh : m_subMeshesToDrawByCamera.at(cameraIdx))
 		{
-			vkCmdDrawIndexed(commandBuffer, subMesh->indexCount, instanceCount, subMesh->indicesOffset, 0, 0);
+			commandBuffer.drawIndexed(subMesh->indexCount, instanceCount, subMesh->indicesOffset, 0, 0);
 		}
 	}
 }

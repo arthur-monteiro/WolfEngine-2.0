@@ -1,7 +1,8 @@
 #pragma once
 
+#include <vector>
+
 #include "DescriptorLayout.h"
-#include "Vulkan.h"
 
 namespace Wolf
 {

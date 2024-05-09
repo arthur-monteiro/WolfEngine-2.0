@@ -22,18 +22,18 @@ void UniquePass::initializeResources(const InitializationContext& context)
 		m_depthImage->getDefaultImageView());
 	Attachment color({ context.swapChainWidth, context.swapChainHeight }, outputFormat, VK_SAMPLE_COUNT_1_BIT, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR, VK_ATTACHMENT_STORE_OP_STORE, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, nullptr);
 
-	m_renderPass.reset(new RenderPass({ depth, color }));
+	m_renderPass.reset(RenderPass::createRenderPass({ depth, color }));
 
-	m_commandBuffer.reset(new CommandBuffer(QueueType::GRAPHIC, false /* isTransient */));
+	m_commandBuffer.reset(CommandBuffer::createCommandBuffer(QueueType::GRAPHIC, false /* isTransient */));
 	
 	m_frameBuffers.resize(context.swapChainImageCount);
 	for (uint32_t i = 0; i < context.swapChainImageCount; ++i)
 	{
 		color.imageView = context.swapChainImages[i]->getDefaultImageView();
-		m_frameBuffers[i].reset(new Framebuffer(m_renderPass->getRenderPass(), { depth, color }));
+		m_frameBuffers[i].reset(FrameBuffer::createFrameBuffer(*m_renderPass, { depth, color }));
 	}
 
-	m_semaphore.reset(new Semaphore(VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT));
+	m_semaphore.reset(Semaphore::createSemaphore(VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT));
 
 	m_vertexShaderParser.reset(new ShaderParser("Shaders/shader.vert"));
 	m_fragmentShaderParser.reset(new ShaderParser("Shaders/shader.frag"));
@@ -53,10 +53,10 @@ void UniquePass::initializeResources(const InitializationContext& context)
 		0, 1, 2
 	};
 
-	m_vertexBuffer.reset(new Buffer(sizeof(Vertex2D) * vertices.size(), VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, UpdateRate::NEVER));
+	m_vertexBuffer.reset(Buffer::createBuffer(sizeof(Vertex2D) * vertices.size(), VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT));
 	m_vertexBuffer->transferCPUMemoryWithStagingBuffer(vertices.data(), sizeof(Vertex2D) * vertices.size());
 
-	m_indexBuffer.reset(new Buffer(sizeof(uint16_t) * indices.size(), VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, UpdateRate::NEVER));
+	m_indexBuffer.reset(Buffer::createBuffer(sizeof(uint16_t) * indices.size(), VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT));
 	m_indexBuffer->transferCPUMemoryWithStagingBuffer(indices.data(), sizeof(uint16_t) * indices.size());
 }
 
@@ -74,7 +74,7 @@ void UniquePass::resize(const InitializationContext& context)
 	for (uint32_t i = 0; i < context.swapChainImageCount; ++i)
 	{
 		color.imageView = context.swapChainImages[i]->getDefaultImageView();
-		m_frameBuffers[i].reset(new Framebuffer(m_renderPass->getRenderPass(), { depth, color }));
+		m_frameBuffers[i].reset(FrameBuffer::createFrameBuffer(*m_renderPass, { depth, color }));
 	}
 
 	createPipeline(context.swapChainWidth, context.swapChainHeight);
@@ -84,32 +84,30 @@ void UniquePass::record(const RecordContext& context)
 {
 	const uint32_t frameBufferIdx = context.swapChainImageIdx;
 
-	m_commandBuffer->beginCommandBuffer(context.commandBufferIdx);
+	m_commandBuffer->beginCommandBuffer();
 
 	std::vector<VkClearValue> clearValues(2);
 	clearValues[0] = {{{1.0f}}};
 	clearValues[1] = {{{0.1f, 0.1f, 0.1f, 1.0f}}};
-	m_renderPass->beginRenderPass(m_frameBuffers[frameBufferIdx]->getFramebuffer(), clearValues, m_commandBuffer->getCommandBuffer(context.commandBufferIdx));
+	m_commandBuffer->beginRenderPass(*m_renderPass, *m_frameBuffers[frameBufferIdx], clearValues);
 
-	vkCmdBindPipeline(m_commandBuffer->getCommandBuffer(context.commandBufferIdx), VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipeline->getPipeline());
+	m_commandBuffer->bindPipeline(m_pipeline.get());
 
-	constexpr VkDeviceSize offsets[1] = { 0 };
-	const VkBuffer vertexBuffer = m_vertexBuffer->getBuffer();
-	vkCmdBindVertexBuffers(m_commandBuffer->getCommandBuffer(context.commandBufferIdx), 0, 1, &vertexBuffer, offsets);
-	vkCmdBindIndexBuffer(m_commandBuffer->getCommandBuffer(context.commandBufferIdx), m_indexBuffer->getBuffer(), 0, VK_INDEX_TYPE_UINT16);
+	m_commandBuffer->bindVertexBuffer(*m_vertexBuffer);
+	m_commandBuffer->bindIndexBuffer(*m_indexBuffer, IndexType::U16);
 
-	vkCmdDrawIndexed(m_commandBuffer->getCommandBuffer(context.commandBufferIdx), 3, 1, 0, 0, 0);
+	m_commandBuffer->drawIndexed(3, 1, 0, 0, 0);
 
-	m_renderPass->endRenderPass(m_commandBuffer->getCommandBuffer(context.commandBufferIdx));
+	m_commandBuffer->endRenderPass();
 
-	m_commandBuffer->endCommandBuffer(context.commandBufferIdx);
+	m_commandBuffer->endCommandBuffer();
 }
 
 void UniquePass::submit(const SubmitContext& context)
 {
-	const std::vector waitSemaphores{ context.swapChainImageAvailableSemaphore };
-	const std::vector signalSemaphores{ m_semaphore->getSemaphore() };
-	m_commandBuffer->submit(context.commandBufferIdx, waitSemaphores, signalSemaphores, context.frameFence);
+	const std::vector<const Semaphore*> waitSemaphores{ context.swapChainImageAvailableSemaphore };
+	const std::vector<const Semaphore*> signalSemaphores{ m_semaphore.get() };
+	m_commandBuffer->submit(waitSemaphores, signalSemaphores, context.frameFence);
 
 	bool anyShaderModified = m_vertexShaderParser->compileIfFileHasBeenModified();
 	if (m_fragmentShaderParser->compileIfFileHasBeenModified())
@@ -117,7 +115,7 @@ void UniquePass::submit(const SubmitContext& context)
 
 	if (anyShaderModified)
 	{
-		vkDeviceWaitIdle(context.device);
+		context.graphicAPIManager->waitIdle();
 		createPipeline(m_swapChainWidth, m_swapChainHeight);
 	}
 }
@@ -132,13 +130,13 @@ void UniquePass::createDepthImage(const InitializationContext& context)
 	depthImageCreateInfo.mipLevelCount = 1;
 	depthImageCreateInfo.aspect = VK_IMAGE_ASPECT_DEPTH_BIT;
 	depthImageCreateInfo.usage = VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
-	m_depthImage.reset(new Image(depthImageCreateInfo));
+	m_depthImage.reset(Image::createImage(depthImageCreateInfo));
 }
 
 void UniquePass::createPipeline(uint32_t width, uint32_t height)
 {
 	RenderingPipelineCreateInfo pipelineCreateInfo;
-	pipelineCreateInfo.renderPass = m_renderPass->getRenderPass();
+	pipelineCreateInfo.renderPass = m_renderPass.get();
 
 	// Programming stages
 	pipelineCreateInfo.shaderCreateInfos.resize(2);
@@ -164,7 +162,7 @@ void UniquePass::createPipeline(uint32_t width, uint32_t height)
 	std::vector blendModes = { RenderingPipelineCreateInfo::BLEND_MODE::OPAQUE };
 	pipelineCreateInfo.blendModes = blendModes;
 
-	m_pipeline.reset(new Pipeline(pipelineCreateInfo));
+	m_pipeline.reset(Pipeline::createRenderingPipeline(pipelineCreateInfo));
 
 	m_swapChainWidth = width;
 	m_swapChainHeight = height;

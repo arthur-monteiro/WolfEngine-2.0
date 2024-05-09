@@ -2,6 +2,9 @@
 
 #ifndef __ANDROID__
 
+#include <mutex>
+#include <thread>
+
 #include <AppCore/App.h>
 #include <AppCore/JSHelpers.h>
 #include <AppCore/Platform.h>

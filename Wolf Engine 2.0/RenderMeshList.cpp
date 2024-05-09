@@ -27,7 +27,7 @@ void Wolf::RenderMeshList::addMeshToRender(const MeshToRenderInfo& meshToRenderI
 	m_pipelineIdxCount = std::max(m_pipelineIdxCount, static_cast<uint32_t>(pipelinesHash.size()));
 }
 
-void Wolf::RenderMeshList::draw(const RecordContext& context, VkCommandBuffer commandBuffer, RenderPass* renderPass, uint32_t pipelineIdx, uint32_t cameraIdx, const std::vector<std::pair<uint32_t, const DescriptorSet*>>& descriptorSetsToBind) const
+void Wolf::RenderMeshList::draw(const RecordContext& context, const CommandBuffer& commandBuffer, RenderPass* renderPass, uint32_t pipelineIdx, uint32_t cameraIdx, const std::vector<std::pair<uint32_t, const DescriptorSet*>>& descriptorSetsToBind) const
 {
 	if (m_meshesToRenderByPipelineIdx.empty()) // no mesh added yet
 		return;
@@ -39,13 +39,12 @@ void Wolf::RenderMeshList::draw(const RecordContext& context, VkCommandBuffer co
 	{
 		if (const Pipeline* meshPipeline = mesh->getPipelineSet()->getOrCreatePipeline(pipelineIdx, renderPass, m_shaderList); meshPipeline != currentPipeline)
 		{
-			vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, meshPipeline->getPipeline());
+			commandBuffer.bindPipeline(meshPipeline);
 			currentPipeline = meshPipeline;
 
 			for (const std::pair<uint32_t, const DescriptorSet*>& descriptorSetToBind : descriptorSetsToBind)
 			{
-				vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, meshPipeline->getPipelineLayout(), descriptorSetToBind.first, 1, descriptorSetToBind.second->getDescriptorSet(),
-					0, nullptr);
+				commandBuffer.bindDescriptorSet(descriptorSetToBind.second, descriptorSetToBind.first, *meshPipeline);
 			}
 
 			if (cameraIdx != NO_CAMERA_IDX)
@@ -54,15 +53,12 @@ void Wolf::RenderMeshList::draw(const RecordContext& context, VkCommandBuffer co
 				if (cameraDescriptorSlot == static_cast<uint32_t>(-1))
 					Debug::sendError("Trying to bind camera descriptor set but slot hasn't been defined");
 
-				vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, meshPipeline->getPipelineLayout(), cameraDescriptorSlot, 1,
-					context.cameraList->getCamera(cameraIdx)->getDescriptorSet()->getDescriptorSet(),
-					0, nullptr);
+				commandBuffer.bindDescriptorSet(context.cameraList->getCamera(cameraIdx)->getDescriptorSet(), cameraDescriptorSlot, *meshPipeline);
 			}
 
 			if (const uint32_t bindlessDescriptorSlot = mesh->getPipelineSet()->getBindlessDescriptorSlot(pipelineIdx); bindlessDescriptorSlot != static_cast<uint32_t>(-1))
 			{
-				vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, meshPipeline->getPipelineLayout(), bindlessDescriptorSlot, 1,
-					context.bindlessDescriptorSet->getDescriptorSet(), 0, nullptr);
+				commandBuffer.bindDescriptorSet(context.bindlessDescriptorSet, bindlessDescriptorSlot, *meshPipeline);
 			}
 		}
 
@@ -118,19 +114,16 @@ void Wolf::RenderMeshList::moveToNextFrame(const CameraList& cameraList)
 	}
 }
 
-void Wolf::RenderMeshList::RenderMesh::draw(VkCommandBuffer commandBuffer, const Pipeline* pipeline, uint32_t cameraIdx) const
+void Wolf::RenderMeshList::RenderMesh::draw(const CommandBuffer& commandBuffer, const Pipeline* pipeline, uint32_t cameraIdx) const
 {
 	for (const MeshToRenderInfo::DescriptorSetBindInfo& descriptorSetBindInfo : m_descriptorSets)
 	{
-		vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline->getPipelineLayout(), descriptorSetBindInfo.descriptorSetBindingSlot, 1, 
-			descriptorSetBindInfo.descriptorSet->getDescriptorSet(), 0, nullptr);
+		commandBuffer.bindDescriptorSet(descriptorSetBindInfo.descriptorSet, descriptorSetBindInfo.descriptorSetBindingSlot, *pipeline);
 	}
 
 	if (m_instanceInfos.instanceBuffer)
 	{
-		constexpr VkDeviceSize offsets[1] = { 0 };
-		const VkBuffer instanceBuffer = m_instanceInfos.instanceBuffer->getBuffer();
-		vkCmdBindVertexBuffers(commandBuffer, 1, 1, &instanceBuffer, offsets);
+		commandBuffer.bindVertexBuffer(*m_instanceInfos.instanceBuffer, 1);
 	}
 
 	m_mesh->draw(commandBuffer, cameraIdx, m_instanceInfos.instanceCount);

@@ -7,11 +7,15 @@
 #include <android/asset_manager.h>
 #endif
 
-#include "BindlessDescriptor.h"
+// Common
+#include <Debug.h>
+
+// API Broker
+#include <GraphicAPIManager.h>
+
 #include "CameraList.h"
 #include "CommandRecordBase.h"
 #include "Configuration.h"
-#include "Debug.h"
 #include "InputHandler.h"
 #include "MaterialsGPUManager.h"
 #include "RenderMeshList.h"
@@ -19,7 +23,6 @@
 #include "ShaderList.h"
 #include "SwapChain.h"
 #include "UltraLight.h"
-#include "Vulkan.h"
 #include "Window.h"
 
 namespace Wolf
@@ -70,7 +73,7 @@ namespace Wolf
 #endif
 		[[nodiscard]] VkExtent3D getSwapChainExtent() const { return m_swapChain->getImage(0)->getExtent(); }
 
-		[[nodiscard]] bool isRayTracingAvailable() const { return m_vulkan->isRayTracingAvailable(); }
+		[[nodiscard]] bool isRayTracingAvailable() const { return m_graphicAPIManager->isRayTracingAvailable(); }
 
 		void setGameContexts(const std::vector<void*>& gameContexts) { m_gameContexts = gameContexts; }
 
@@ -90,7 +93,7 @@ namespace Wolf
 
 	private:
 		std::unique_ptr<Configuration> m_configuration;
-		std::unique_ptr<Vulkan> m_vulkan;
+		std::unique_ptr<GraphicAPIManager> m_graphicAPIManager;
 #ifndef __ANDROID__
 		ResourceUniqueOwner<Window> m_window;
 #endif
@@ -120,4 +123,6 @@ namespace Wolf
 		// Saves
 		std::vector<std::string> m_savedUICommands;
 	};
+
+	extern const GraphicAPIManager* g_graphicAPIManagerInstance;
 }

@@ -324,7 +324,7 @@ bool Wolf::ModelLoader::loadCache(ModelLoadingInfo& modelLoadingInfo) const
 			createImageInfo.format = i % MaterialsGPUManager::TEXTURE_COUNT_PER_MATERIAL == 0 ? VK_FORMAT_BC1_RGB_SRGB_BLOCK : VK_FORMAT_R8G8B8A8_UNORM;
 			createImageInfo.mipLevelCount = MAX_MIP_COUNT;
 			createImageInfo.usage = VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
-			m_outputModel.images[i].reset(new Image(createImageInfo));
+			m_outputModel.images[i].reset(Image::createImage(createImageInfo));
 
 			auto computeImageSize = [](VkExtent3D extent, float bbp, uint32_t mipLevel)
 				{

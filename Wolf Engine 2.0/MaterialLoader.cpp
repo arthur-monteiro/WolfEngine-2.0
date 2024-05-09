@@ -212,7 +212,7 @@ void Wolf::MaterialLoader::createImageFromData(VkExtent3D extent, VkFormat forma
 	createImageInfo.format = format;
 	createImageInfo.mipLevelCount = static_cast<uint32_t>(mipLevels.size()) + 1;
 	createImageInfo.usage = VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
-	m_outputs[idx].reset(new Image(createImageInfo));
+	m_outputs[idx].reset(Image::createImage(createImageInfo));
 	m_outputs[idx]->copyCPUBuffer(pixels, Image::SampledInFragmentShader());
 
 	for (uint32_t mipLevel = 1; mipLevel < mipLevels.size() + 1; ++mipLevel)

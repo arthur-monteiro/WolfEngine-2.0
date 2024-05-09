@@ -32,7 +32,7 @@ void UniquePass::initializeResources(const InitializationContext& context)
 	shadingRateImageInfo.usage = VK_IMAGE_USAGE_FRAGMENT_SHADING_RATE_ATTACHMENT_BIT_KHR | VK_IMAGE_USAGE_TRANSFER_DST_BIT;
 	shadingRateImageInfo.format = VK_FORMAT_R8_UINT;
 	shadingRateImageInfo.mipLevelCount = 1;
-	m_shadingRateImage.reset(new Image(shadingRateImageInfo));
+	m_shadingRateImage.reset(Image::createImage(shadingRateImageInfo));
 
 	std::vector<uint8_t> shadingRatePixels(vrsImageExtent.width * vrsImageExtent.height);
 	for (uint32_t y = 0; y < vrsImageExtent.height; y++)
@@ -60,22 +60,22 @@ void UniquePass::initializeResources(const InitializationContext& context)
 	vrsAttachment.loadOperation = VK_ATTACHMENT_LOAD_OP_LOAD;
 	vrsAttachment.initialLayout = VK_IMAGE_LAYOUT_FRAGMENT_SHADING_RATE_ATTACHMENT_OPTIMAL_KHR;
 
-	m_renderPass.reset(new RenderPass({ depth, color, vrsAttachment }));
+	m_renderPass.reset(RenderPass::createRenderPass({ depth, color, vrsAttachment }));
 
-	m_commandBuffer.reset(new CommandBuffer(QueueType::GRAPHIC, false /* isTransient */));
+	m_commandBuffer.reset(CommandBuffer::createCommandBuffer(QueueType::GRAPHIC, false /* isTransient */));
 
 	m_frameBuffers.resize(context.swapChainImageCount);
 	for (uint32_t i = 0; i < context.swapChainImageCount; ++i)
 	{
 		color.imageView = context.swapChainImages[i]->getDefaultImageView();
-		m_frameBuffers[i].reset(new Framebuffer(m_renderPass->getRenderPass(), { depth, color, vrsAttachment }));
+		m_frameBuffers[i].reset(FrameBuffer::createFrameBuffer(*m_renderPass, { depth, color, vrsAttachment }));
 	}
 
-	m_semaphore.reset(new Semaphore(VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT));
+	m_semaphore.reset(Semaphore::createSemaphore(VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT));
 
 	DescriptorSetLayoutGenerator descriptorSetLayoutGenerator;
 	descriptorSetLayoutGenerator.addCombinedImageSampler(VK_SHADER_STAGE_FRAGMENT_BIT, 0);
-	m_descriptorSetLayout.reset(new DescriptorSetLayout(descriptorSetLayoutGenerator.getDescriptorLayouts()));
+	m_descriptorSetLayout.reset(DescriptorSetLayout::createDescriptorSetLayout(descriptorSetLayoutGenerator.getDescriptorLayouts()));
 
 	ImageFileLoader imageFileLoader("Images/Vincent_Van_Gogh_-_Wheatfield_with_Crows.jpg");
 	CreateImageInfo createImageInfo;
@@ -84,15 +84,15 @@ void UniquePass::initializeResources(const InitializationContext& context)
 	createImageInfo.format = VK_FORMAT_R8G8B8A8_UNORM;
 	createImageInfo.mipLevelCount = 1;
 	createImageInfo.usage = VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
-	m_texture.reset(new Image(createImageInfo));
+	m_texture.reset(Image::createImage(createImageInfo));
 	m_texture->copyCPUBuffer(imageFileLoader.getPixels(), Image::SampledInFragmentShader());
 
-	m_sampler.reset(new Sampler(VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_BORDER, 1.0f, VK_FILTER_LINEAR));
+	m_sampler.reset(Sampler::createSampler(VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_BORDER, 1.0f, VK_FILTER_LINEAR));
 
 	DescriptorSetGenerator descriptorSetGenerator(descriptorSetLayoutGenerator.getDescriptorLayouts());
 	descriptorSetGenerator.setCombinedImageSampler(0, m_texture->getImageLayout(), m_texture->getDefaultImageView(), *m_sampler);
 
-	m_descriptorSet.reset(new DescriptorSet(m_descriptorSetLayout->getDescriptorSetLayout(), UpdateRate::EACH_FRAME));
+	m_descriptorSet.reset(DescriptorSet::createDescriptorSet(*m_descriptorSetLayout));
 	m_descriptorSet->update(descriptorSetGenerator.getDescriptorSetCreateInfo());
 
 	m_vertexShaderParser.reset(new ShaderParser("Shaders/shader.vert"));
@@ -132,7 +132,7 @@ void UniquePass::resize(const InitializationContext& context)
 	for (uint32_t i = 0; i < context.swapChainImageCount; ++i)
 	{
 		color.imageView = context.swapChainImages[i]->getDefaultImageView();
-		m_frameBuffers[i].reset(new Framebuffer(m_renderPass->getRenderPass(), { depth, color }));
+		m_frameBuffers[i].reset(FrameBuffer::createFrameBuffer(*m_renderPass, { depth, color }));
 	}
 
 	createPipeline(context.swapChainWidth, context.swapChainHeight);
@@ -143,35 +143,34 @@ void UniquePass::record(const RecordContext& context)
 	/* Command buffer record */
 	const uint32_t frameBufferIdx = context.swapChainImageIdx;
 
-	m_commandBuffer->beginCommandBuffer(context.commandBufferIdx);
+	m_commandBuffer->beginCommandBuffer();
 
 	std::vector<VkClearValue> clearValues(2);
 	clearValues[0] = { {{1.0f}} };
 	clearValues[1] = { {{0.1f, 0.1f, 0.1f, 1.0f}} };
-	m_renderPass->beginRenderPass(m_frameBuffers[frameBufferIdx]->getFramebuffer(), clearValues, m_commandBuffer->getCommandBuffer(context.commandBufferIdx));
+	m_commandBuffer->beginRenderPass(*m_renderPass, *m_frameBuffers[frameBufferIdx], clearValues);
 
-	vkCmdBindPipeline(m_commandBuffer->getCommandBuffer(context.commandBufferIdx), VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipeline->getPipeline());
+	m_commandBuffer->bindPipeline(m_pipeline.get());
+	m_commandBuffer->bindDescriptorSet(m_descriptorSet.get(), 0, *m_pipeline);
 
-	vkCmdBindDescriptorSets(m_commandBuffer->getCommandBuffer(context.commandBufferIdx), VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipeline->getPipelineLayout(), 0, 1, m_descriptorSet->getDescriptorSet(context.commandBufferIdx), 0, nullptr);
+	const VkExtent2D fragmentExtent{ 1, 1 };
+	FragmentShadingRateCombinerOp combiners[2];
+	combiners[0] = FragmentShadingRateCombinerOp::MAX;
+	combiners[1] = FragmentShadingRateCombinerOp::MAX;
+	m_commandBuffer->setFragmentShadingRate(combiners, fragmentExtent);
 
-	VkExtent2D fragmentExtent{ 1, 1 };
-	VkFragmentShadingRateCombinerOpKHR combiners[2];
-	combiners[0] = VK_FRAGMENT_SHADING_RATE_COMBINER_OP_MAX_KHR;
-	combiners[1] = VK_FRAGMENT_SHADING_RATE_COMBINER_OP_MAX_KHR;
-	vkCmdSetFragmentShadingRateKHR(m_commandBuffer->getCommandBuffer(context.commandBufferIdx), &fragmentExtent, combiners);
+	m_rectangle->draw(*m_commandBuffer, RenderMeshList::NO_CAMERA_IDX);
 
-	m_rectangle->draw(m_commandBuffer->getCommandBuffer(context.commandBufferIdx), RenderMeshList::NO_CAMERA_IDX);
+	m_commandBuffer->endRenderPass();
 
-	m_renderPass->endRenderPass(m_commandBuffer->getCommandBuffer(context.commandBufferIdx));
-
-	m_commandBuffer->endCommandBuffer(context.commandBufferIdx);
+	m_commandBuffer->endCommandBuffer();
 }
 
 void UniquePass::submit(const SubmitContext& context)
 {
 	const std::vector waitSemaphores{ context.swapChainImageAvailableSemaphore };
-	const std::vector signalSemaphores{ m_semaphore->getSemaphore() };
-	m_commandBuffer->submit(context.commandBufferIdx, waitSemaphores, signalSemaphores, context.frameFence);
+	const std::vector<const Semaphore*> signalSemaphores{ m_semaphore.get() };
+	m_commandBuffer->submit(waitSemaphores, signalSemaphores, context.frameFence);
 
 	bool anyShaderModified = m_vertexShaderParser->compileIfFileHasBeenModified();
 	if (m_fragmentShaderParser->compileIfFileHasBeenModified())
@@ -179,7 +178,7 @@ void UniquePass::submit(const SubmitContext& context)
 
 	if (anyShaderModified)
 	{
-		vkDeviceWaitIdle(context.device);
+		context.graphicAPIManager->waitIdle();
 		createPipeline(m_swapChainWidth, m_swapChainHeight);
 	}
 }
@@ -194,13 +193,13 @@ void UniquePass::createDepthImage(const InitializationContext& context)
 	depthImageCreateInfo.mipLevelCount = 1;
 	depthImageCreateInfo.aspect = VK_IMAGE_ASPECT_DEPTH_BIT;
 	depthImageCreateInfo.usage = VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
-	m_depthImage.reset(new Image(depthImageCreateInfo));
+	m_depthImage.reset(Image::createImage(depthImageCreateInfo));
 }
 
 void UniquePass::createPipeline(uint32_t width, uint32_t height)
 {
 	RenderingPipelineCreateInfo pipelineCreateInfo;
-	pipelineCreateInfo.renderPass = m_renderPass->getRenderPass();
+	pipelineCreateInfo.renderPass = m_renderPass.get();
 
 	// Programming stages
 	pipelineCreateInfo.shaderCreateInfos.resize(2);
@@ -220,8 +219,7 @@ void UniquePass::createPipeline(uint32_t width, uint32_t height)
 	pipelineCreateInfo.vertexInputBindingDescriptions = bindingDescriptions;
 
 	// Resources
-	std::vector descriptorSetLayouts = { m_descriptorSetLayout->getDescriptorSetLayout() };
-	pipelineCreateInfo.descriptorSetLayouts = descriptorSetLayouts;
+	pipelineCreateInfo.descriptorSetLayouts = { m_descriptorSetLayout.get() };;
 
 	// Viewport
 	pipelineCreateInfo.extent = { width, height };
@@ -230,7 +228,7 @@ void UniquePass::createPipeline(uint32_t width, uint32_t height)
 	std::vector blendModes = { RenderingPipelineCreateInfo::BLEND_MODE::OPAQUE };
 	pipelineCreateInfo.blendModes = blendModes;
 
-	m_pipeline.reset(new Pipeline(pipelineCreateInfo));
+	m_pipeline.reset(Pipeline::createRenderingPipeline(pipelineCreateInfo));
 
 	m_swapChainWidth = width;
 	m_swapChainHeight = height;

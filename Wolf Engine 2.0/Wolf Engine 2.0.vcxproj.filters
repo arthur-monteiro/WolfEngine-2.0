@@ -19,9 +19,6 @@
     <Filter Include="Helpers">
       <UniqueIdentifier>{12675eee-09f1-4da4-9b73-58037f7cb838}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Vulkan Component">
-      <UniqueIdentifier>{27d6f014-c8e7-402c-aede-d5991106441f}</UniqueIdentifier>
-    </Filter>
     <Filter Include="Ray Tracing">
       <UniqueIdentifier>{575762f8-77b8-4e7a-b8e4-6550b9cd4bf9}</UniqueIdentifier>
     </Filter>
@@ -40,30 +37,12 @@
     <Filter Include="UI">
       <UniqueIdentifier>{36c06d0a-65c5-45a9-9843-effd293e9b68}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Containers">
-      <UniqueIdentifier>{09ec7edf-b019-4a93-a7ee-cb5400317182}</UniqueIdentifier>
-    </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="Vulkan.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="WolfEngine.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="Debug.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="Configuration.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="Window.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="SwapChain.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="VulkanHelper.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="CommandRecordBase.cpp">
@@ -77,45 +56,6 @@
     </ClCompile>
     <ClCompile Include="DescriptorSetLayoutGenerator.cpp">
       <Filter>Helpers</Filter>
-    </ClCompile>
-    <ClCompile Include="Buffer.cpp">
-      <Filter>Vulkan Component</Filter>
-    </ClCompile>
-    <ClCompile Include="CommandBuffer.cpp">
-      <Filter>Vulkan Component</Filter>
-    </ClCompile>
-    <ClCompile Include="CommandPool.cpp">
-      <Filter>Vulkan Component</Filter>
-    </ClCompile>
-    <ClCompile Include="DescriptorPool.cpp">
-      <Filter>Vulkan Component</Filter>
-    </ClCompile>
-    <ClCompile Include="DescriptorSet.cpp">
-      <Filter>Vulkan Component</Filter>
-    </ClCompile>
-    <ClCompile Include="DescriptorSetLayout.cpp">
-      <Filter>Vulkan Component</Filter>
-    </ClCompile>
-    <ClCompile Include="Fence.cpp">
-      <Filter>Vulkan Component</Filter>
-    </ClCompile>
-    <ClCompile Include="FrameBuffer.cpp">
-      <Filter>Vulkan Component</Filter>
-    </ClCompile>
-    <ClCompile Include="Image.cpp">
-      <Filter>Vulkan Component</Filter>
-    </ClCompile>
-    <ClCompile Include="Pipeline.cpp">
-      <Filter>Vulkan Component</Filter>
-    </ClCompile>
-    <ClCompile Include="RenderPass.cpp">
-      <Filter>Vulkan Component</Filter>
-    </ClCompile>
-    <ClCompile Include="Sampler.cpp">
-      <Filter>Vulkan Component</Filter>
-    </ClCompile>
-    <ClCompile Include="Semaphore.cpp">
-      <Filter>Vulkan Component</Filter>
     </ClCompile>
     <ClCompile Include="ShaderParser.cpp">
       <Filter>Helpers</Filter>
@@ -131,21 +71,6 @@
     </ClCompile>
     <ClCompile Include="RayTracingShaderGroupGenerator.cpp">
       <Filter>Ray Tracing</Filter>
-    </ClCompile>
-    <ClCompile Include="RayTracingSymbols.cpp">
-      <Filter>Ray Tracing</Filter>
-    </ClCompile>
-    <ClCompile Include="ShaderBindingTable.cpp">
-      <Filter>Ray Tracing</Filter>
-    </ClCompile>
-    <ClCompile Include="BottomLevelAccelerationStructure.cpp">
-      <Filter>Ray Tracing</Filter>
-    </ClCompile>
-    <ClCompile Include="TopLevelAccelerationStructure.cpp">
-      <Filter>Ray Tracing</Filter>
-    </ClCompile>
-    <ClCompile Include="AccelerationStructure.cpp">
-      <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="AndroidCacheHelper.cpp">
       <Filter>Source Files</Filter>
@@ -213,12 +138,6 @@
     <ClCompile Include="UltralightViewListener.cpp">
       <Filter>UI</Filter>
     </ClCompile>
-    <ClCompile Include="ResourceUniqueOwner.cpp">
-      <Filter>Containers</Filter>
-    </ClCompile>
-    <ClCompile Include="ResourceNonOwner.cpp">
-      <Filter>Containers</Filter>
-    </ClCompile>
     <ClCompile Include="ImageCompression.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -236,34 +155,16 @@
     <ClInclude Include="WolfEngine.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Debug.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="Vulkan.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="Configuration.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="Window.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="VulkanHelper.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="CommandRecordBase.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="UpdateRate.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="QueueFamilyIndices.h">
       <Filter>Structures</Filter>
     </ClInclude>
     <ClInclude Include="SwapChainSupportDetails.h">
-      <Filter>Structures</Filter>
-    </ClInclude>
-    <ClInclude Include="Attachment.h">
       <Filter>Structures</Filter>
     </ClInclude>
     <ClInclude Include="ImageFileLoader.h">
@@ -274,51 +175,6 @@
     </ClInclude>
     <ClInclude Include="DescriptorSetLayoutGenerator.h">
       <Filter>Helpers</Filter>
-    </ClInclude>
-    <ClInclude Include="Buffer.h">
-      <Filter>Vulkan Component</Filter>
-    </ClInclude>
-    <ClInclude Include="CommandBuffer.h">
-      <Filter>Vulkan Component</Filter>
-    </ClInclude>
-    <ClInclude Include="CommandPool.h">
-      <Filter>Vulkan Component</Filter>
-    </ClInclude>
-    <ClInclude Include="DescriptorLayout.h">
-      <Filter>Vulkan Component</Filter>
-    </ClInclude>
-    <ClInclude Include="DescriptorPool.h">
-      <Filter>Vulkan Component</Filter>
-    </ClInclude>
-    <ClInclude Include="DescriptorSet.h">
-      <Filter>Vulkan Component</Filter>
-    </ClInclude>
-    <ClInclude Include="DescriptorSetLayout.h">
-      <Filter>Vulkan Component</Filter>
-    </ClInclude>
-    <ClInclude Include="Fence.h">
-      <Filter>Vulkan Component</Filter>
-    </ClInclude>
-    <ClInclude Include="FrameBuffer.h">
-      <Filter>Vulkan Component</Filter>
-    </ClInclude>
-    <ClInclude Include="Image.h">
-      <Filter>Vulkan Component</Filter>
-    </ClInclude>
-    <ClInclude Include="Pipeline.h">
-      <Filter>Vulkan Component</Filter>
-    </ClInclude>
-    <ClInclude Include="RenderPass.h">
-      <Filter>Vulkan Component</Filter>
-    </ClInclude>
-    <ClInclude Include="Sampler.h">
-      <Filter>Vulkan Component</Filter>
-    </ClInclude>
-    <ClInclude Include="Semaphore.h">
-      <Filter>Vulkan Component</Filter>
-    </ClInclude>
-    <ClInclude Include="SwapChain.h">
-      <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="ShaderParser.h">
       <Filter>Helpers</Filter>
@@ -337,18 +193,6 @@
     </ClInclude>
     <ClInclude Include="RayTracingShaderGroupGenerator.h">
       <Filter>Ray Tracing</Filter>
-    </ClInclude>
-    <ClInclude Include="ShaderBindingTable.h">
-      <Filter>Ray Tracing</Filter>
-    </ClInclude>
-    <ClInclude Include="BottomLevelAccelerationStructure.h">
-      <Filter>Ray Tracing</Filter>
-    </ClInclude>
-    <ClInclude Include="TopLevelAccelerationStructure.h">
-      <Filter>Ray Tracing</Filter>
-    </ClInclude>
-    <ClInclude Include="AccelerationStructure.h">
-      <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="AndroidCacheHelper.h">
       <Filter>Header Files</Filter>
@@ -424,12 +268,6 @@
     </ClInclude>
     <ClInclude Include="CodeFileHashes.h">
       <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="ResourceUniqueOwner.h">
-      <Filter>Containers</Filter>
-    </ClInclude>
-    <ClInclude Include="ResourceNonOwner.h">
-      <Filter>Containers</Filter>
     </ClInclude>
     <ClInclude Include="ImageCompression.h">
       <Filter>Header Files</Filter>

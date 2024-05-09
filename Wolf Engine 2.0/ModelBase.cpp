@@ -1,7 +1,5 @@
 #include "ModelBase.h"
 
-#include <utility>
-
 #include "BindlessDescriptor.h"
 #include "DescriptorSetGenerator.h"
 #include "RenderMeshList.h"
@@ -18,11 +16,11 @@ Wolf::ModelBase::ModelBase(ModelLoadingInfo& modelLoadingInfo, bool requestAccel
 
 	m_descriptorSetLayout.reset(new LazyInitSharedResource<DescriptorSetLayout, ModelBase>([this](std::unique_ptr<DescriptorSetLayout>& descriptorSetLayout)
 		{
-			descriptorSetLayout.reset(new DescriptorSetLayout(m_descriptorSetLayoutGenerator->getResource()->getDescriptorLayouts()));
+			descriptorSetLayout.reset(DescriptorSetLayout::createDescriptorSetLayout(m_descriptorSetLayoutGenerator->getResource()->getDescriptorLayouts()));
 		}));
 
-	m_uniformBuffer.reset(new Buffer(sizeof(UniformBufferData), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, UpdateRate::NEVER));
-	m_descriptorSet.reset(new DescriptorSet(m_descriptorSetLayout->getResource()->getDescriptorSetLayout(), UpdateRate::NEVER));
+	m_uniformBuffer.reset(Buffer::createBuffer(sizeof(UniformBufferData), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT));
+	m_descriptorSet.reset(DescriptorSet::createDescriptorSet(*m_descriptorSetLayout->getResource()));
 	DescriptorSetGenerator descriptorSetGenerator(m_descriptorSetLayoutGenerator->getResource()->getDescriptorLayouts());
 	descriptorSetGenerator.setBuffer(0, *m_uniformBuffer);
 	m_descriptorSet->update(descriptorSetGenerator.getDescriptorSetCreateInfo());
@@ -74,8 +72,17 @@ void Wolf::ModelBase::buildAccelerationStructures()
 {
 	BottomLevelAccelerationStructureCreateInfo blasCreateInfo;
 	blasCreateInfo.buildFlags = VK_BUILD_ACCELERATION_STRUCTURE_PREFER_FAST_TRACE_BIT_KHR;
-	std::vector<GeometryInfo> geometries;
-	geometries.emplace_back(m_modelData.mesh.createConstNonOwnerResource());
+	std::vector<GeometryInfo> geometries(1);
+
+	GeometryInfo& geometryInfo = geometries.back();
+	geometryInfo.mesh.vertexBuffer = &m_modelData.mesh->getVertexBuffer();
+	geometryInfo.mesh.vertexCount = m_modelData.mesh->getVertexCount();
+	geometryInfo.mesh.vertexSize = m_modelData.mesh->getVertexSize();
+	geometryInfo.mesh.vertexFormat = m_modelData.mesh->getVertexFormat();
+
+	geometryInfo.mesh.indexBuffer = &m_modelData.mesh->getIndexBuffer();
+	geometryInfo.mesh.indexCount = m_modelData.mesh->getIndexCount();
+	
 	blasCreateInfo.geometryInfos = geometries;
-	m_blas.reset(new BottomLevelAccelerationStructure(blasCreateInfo));
+	m_blas.reset(BottomLevelAccelerationStructure::createBottomLevelAccelerationStructure(blasCreateInfo));
 }

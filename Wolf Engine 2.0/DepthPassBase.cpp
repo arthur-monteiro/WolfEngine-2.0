@@ -14,8 +14,8 @@ void Wolf::DepthPassBase::initializeResources(const InitializationContext& conte
 	std::vector<Attachment> attachments;
 	getAttachments(context, attachments);
 
-	m_renderPass.reset(new RenderPass(attachments));
-	m_frameBuffer.reset(new Framebuffer(m_renderPass->getRenderPass(), attachments));
+	m_renderPass.reset(RenderPass::createRenderPass(attachments));
+	m_frameBuffer.reset(FrameBuffer::createFrameBuffer(*m_renderPass, attachments));
 }
 
 void Wolf::DepthPassBase::resize(const InitializationContext& context)
@@ -27,20 +27,20 @@ void Wolf::DepthPassBase::resize(const InitializationContext& context)
 	std::vector<Attachment> attachments;
 	getAttachments(context, attachments);
 
-	m_frameBuffer.reset(new Framebuffer(m_renderPass->getRenderPass(), attachments));
+	m_frameBuffer.reset(FrameBuffer::createFrameBuffer(*m_renderPass, attachments));
 }
 
 void Wolf::DepthPassBase::record(const RecordContext& context)
 {
-	const VkCommandBuffer commandBuffer = getCommandBuffer(context);
+	const CommandBuffer& commandBuffer = getCommandBuffer(context);
 
 	std::vector<VkClearValue> clearValues(1);
 	clearValues[0] = {{{1.0f}}};
-	m_renderPass->beginRenderPass(m_frameBuffer->getFramebuffer(), clearValues, commandBuffer);
+	commandBuffer.beginRenderPass(*m_renderPass, *m_frameBuffer, clearValues);
 
 	recordDraws(context);
 
-	m_renderPass->endRenderPass(commandBuffer);
+	commandBuffer.endRenderPass();
 }
 
 void Wolf::DepthPassBase::getAttachments(const InitializationContext& context, std::vector<Attachment>& attachments)
@@ -60,5 +60,5 @@ void Wolf::DepthPassBase::createDepthImage(const InitializationContext& context)
 	depthImageCreateInfo.mipLevelCount = 1;
 	depthImageCreateInfo.aspect = VK_IMAGE_ASPECT_DEPTH_BIT;
 	depthImageCreateInfo.usage = VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | getAdditionalUsages();
-	m_depthImage.reset(new Image(depthImageCreateInfo));
+	m_depthImage.reset(Image::createImage(depthImageCreateInfo));
 }

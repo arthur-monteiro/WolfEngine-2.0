@@ -6,6 +6,8 @@ MinimumVisualStudioVersion = 10.0.40219.1
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Engine Core", "Wolf Engine 2.0\Wolf Engine 2.0.vcxproj", "{192BCBA7-1C5A-42F7-9A5C-4E4C2F09F89F}"
 	ProjectSection(ProjectDependencies) = postProject
 		{46BAAE2C-A25F-4A32-9A5F-2DE307BFFFDA} = {46BAAE2C-A25F-4A32-9A5F-2DE307BFFFDA}
+		{A8D174DE-F302-480C-B9FC-507286640034} = {A8D174DE-F302-480C-B9FC-507286640034}
+		{ECFE9463-62C8-42A3-B685-47C7FABE66FB} = {ECFE9463-62C8-42A3-B685-47C7FABE66FB}
 	EndProjectSection
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Hello Triangle", "Hello Triangle\Hello Triangle.vcxproj", "{55FECA21-2D36-47A0-8DF8-F93D6A6BE7EE}"
@@ -18,6 +20,7 @@ EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Compute Pass", "Compute Pass\Compute Pass.vcxproj", "{355C259D-2ED2-45DC-8E81-42F1AC260551}"
 	ProjectSection(ProjectDependencies) = postProject
 		{192BCBA7-1C5A-42F7-9A5C-4E4C2F09F89F} = {192BCBA7-1C5A-42F7-9A5C-4E4C2F09F89F}
+		{A8D174DE-F302-480C-B9FC-507286640034} = {A8D174DE-F302-480C-B9FC-507286640034}
 	EndProjectSection
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "HTML UI", "HTML UI\HTML UI.vcxproj", "{0E970E83-FED7-4B1D-81B0-14BA53156190}"
@@ -36,6 +39,10 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Variable Rate Shading", "Va
 	EndProjectSection
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "GenerateCodeFileHashes", "GenerateCodeFileHashes\GenerateCodeFileHashes.vcxproj", "{46BAAE2C-A25F-4A32-9A5F-2DE307BFFFDA}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Common", "Common\Common.vcxproj", "{A8D174DE-F302-480C-B9FC-507286640034}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Graphic API Broker", "GraphicAPIBroker\Graphic API Broker.vcxproj", "{ECFE9463-62C8-42A3-B685-47C7FABE66FB}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -109,6 +116,22 @@ Global
 		{46BAAE2C-A25F-4A32-9A5F-2DE307BFFFDA}.Release|x64.Build.0 = Release|x64
 		{46BAAE2C-A25F-4A32-9A5F-2DE307BFFFDA}.Release|x86.ActiveCfg = Release|Win32
 		{46BAAE2C-A25F-4A32-9A5F-2DE307BFFFDA}.Release|x86.Build.0 = Release|Win32
+		{A8D174DE-F302-480C-B9FC-507286640034}.Debug|x64.ActiveCfg = Debug|x64
+		{A8D174DE-F302-480C-B9FC-507286640034}.Debug|x64.Build.0 = Debug|x64
+		{A8D174DE-F302-480C-B9FC-507286640034}.Debug|x86.ActiveCfg = Debug|Win32
+		{A8D174DE-F302-480C-B9FC-507286640034}.Debug|x86.Build.0 = Debug|Win32
+		{A8D174DE-F302-480C-B9FC-507286640034}.Release|x64.ActiveCfg = Release|x64
+		{A8D174DE-F302-480C-B9FC-507286640034}.Release|x64.Build.0 = Release|x64
+		{A8D174DE-F302-480C-B9FC-507286640034}.Release|x86.ActiveCfg = Release|Win32
+		{A8D174DE-F302-480C-B9FC-507286640034}.Release|x86.Build.0 = Release|Win32
+		{ECFE9463-62C8-42A3-B685-47C7FABE66FB}.Debug|x64.ActiveCfg = Debug|x64
+		{ECFE9463-62C8-42A3-B685-47C7FABE66FB}.Debug|x64.Build.0 = Debug|x64
+		{ECFE9463-62C8-42A3-B685-47C7FABE66FB}.Debug|x86.ActiveCfg = Debug|Win32
+		{ECFE9463-62C8-42A3-B685-47C7FABE66FB}.Debug|x86.Build.0 = Debug|Win32
+		{ECFE9463-62C8-42A3-B685-47C7FABE66FB}.Release|x64.ActiveCfg = Release|x64
+		{ECFE9463-62C8-42A3-B685-47C7FABE66FB}.Release|x64.Build.0 = Release|x64
+		{ECFE9463-62C8-42A3-B685-47C7FABE66FB}.Release|x86.ActiveCfg = Release|Win32
+		{ECFE9463-62C8-42A3-B685-47C7FABE66FB}.Release|x86.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

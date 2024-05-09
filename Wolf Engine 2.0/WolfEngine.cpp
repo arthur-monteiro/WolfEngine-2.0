@@ -1,12 +1,29 @@
 #include "WolfEngine.h"
 
 #include <filesystem>
+#include <limits>
+
+#ifdef __ANDROID__
+#include <android/native_window.h>
+#include <android/native_window_jni.h>
+#endif
 
 #include "Configuration.h"
 #include "Dump.h"
 #include "ImageFileLoader.h"
 #include "MipMapGenerator.h"
-#include "VulkanHelper.h"
+
+const Wolf::GraphicAPIManager* Wolf::g_graphicAPIManagerInstance = nullptr;
+
+#ifndef __ANDROID__
+VkExtent2D chooseExtent(GLFWwindow* window)
+{
+	int width, height;
+	glfwGetWindowSize(window, &width, &height);
+
+	return VkExtent2D { static_cast<uint32_t>(width), static_cast<uint32_t>(height) };
+}
+#endif
 
 Wolf::WolfEngine::WolfEngine(const WolfInstanceCreateInfo& createInfo) : m_renderMeshList(m_shaderList)
 {
@@ -38,17 +55,21 @@ Wolf::WolfEngine::WolfEngine(const WolfInstanceCreateInfo& createInfo) : m_rende
 #endif
 
 #ifndef __ANDROID__
-	m_vulkan.reset(new Vulkan(m_window->getWindow(), createInfo.useOVR));
+	m_graphicAPIManager.reset(GraphicAPIManager::instanciateGraphicAPIManager(m_window->getWindow(), createInfo.useOVR));
 #else
-	m_vulkan.reset(new Vulkan(createInfo.androidWindow));
+	m_graphicAPIManager.reset(GraphicAPIManager::instanciateGraphicAPIManager(createInfo.androidWindow));
 #endif
-	g_vulkanInstance = m_vulkan.get();
+	g_graphicAPIManagerInstance = m_graphicAPIManager.get();
 
-#ifndef __ANDROID__
-	m_swapChain.reset(new SwapChain(m_window->getWindow()));
+#ifdef __ANDROID__
+	int32_t width = ANativeWindow_getWidth(createInfo.androidWindow);
+	int32_t height = ANativeWindow_getHeight(createInfo.androidWindow);
+	VkExtent2D extent = { static_cast<uint32_t>(width), static_cast<uint32_t>(height) };
 #else
-	m_swapChain.reset(new SwapChain(createInfo.androidWindow));
+	VkExtent2D extent = chooseExtent(m_window->getWindow());
 #endif
+	
+	m_swapChain.reset(SwapChain::createSwapChain(extent));
 
 	m_gameContexts.resize(m_configuration->getMaxCachedFrames());
 
@@ -82,7 +103,7 @@ Wolf::WolfEngine::WolfEngine(const WolfInstanceCreateInfo& createInfo) : m_rende
 			createImageInfo.format = VK_FORMAT_R8G8B8A8_SRGB;
 			createImageInfo.mipLevelCount = mipmapGenerator.getMipLevelCount();
 			createImageInfo.usage = VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
-			m_defaultImages[i].reset(new Image(createImageInfo));
+			m_defaultImages[i].reset(Image::createImage(createImageInfo));
 			m_defaultImages[i]->copyCPUBuffer(imageFileLoader.getPixels(), Image::SampledInFragmentShader());
 
 			for (uint32_t mipLevel = 1; mipLevel < mipmapGenerator.getMipLevelCount(); ++mipLevel)
@@ -164,7 +185,7 @@ void Wolf::WolfEngine::frame(const std::span<ResourceNonOwner<CommandRecordBase>
 
 	if (m_resizeIsNeeded)
 	{
-		vkDeviceWaitIdle(m_vulkan->getDevice());
+		waitIdle();
 
 		InitializationContext initializeContext;
 		fillInitializeContext(initializeContext);
@@ -213,14 +234,14 @@ void Wolf::WolfEngine::frame(const std::span<ResourceNonOwner<CommandRecordBase>
 	submitContext.userInterfaceImageAvailableSemaphore = m_ultraLight ? m_ultraLight->getImageCopySemaphore() : nullptr;
 #endif
 	submitContext.frameFence = m_swapChain->getFrameFence(m_currentFrame % g_configuration->getMaxCachedFrames());
-	submitContext.device = m_vulkan->getDevice();
+	submitContext.graphicAPIManager = m_graphicAPIManager.get();
 
 	for (const ResourceNonOwner<CommandRecordBase>& pass : passes)
 	{
 		pass->submit(submitContext);
 	}
 
-	m_swapChain->present(frameEndedSemaphore->getSemaphore(), currentSwapChainImageIndex);
+	m_swapChain->present(frameEndedSemaphore, currentSwapChainImageIndex);
 	m_swapChain->synchroniseCPUFromGPU(m_currentFrame); // don't update UBs while a frame is being rendered
 
 	m_currentFrame++;
@@ -228,7 +249,7 @@ void Wolf::WolfEngine::frame(const std::span<ResourceNonOwner<CommandRecordBase>
 
 void Wolf::WolfEngine::waitIdle() const
 {
-	vkDeviceWaitIdle(m_vulkan->getDevice());
+	m_graphicAPIManager->waitIdle();
 }
 
 #ifndef __ANDROID__
@@ -252,7 +273,7 @@ void Wolf::WolfEngine::fillInitializeContext(InitializationContext& context) con
 	context.swapChainWidth = m_swapChain->getImage(0)->getExtent().width;
 	context.swapChainHeight = m_swapChain->getImage(0)->getExtent().height;
 	context.swapChainFormat = m_swapChain->getImage(0)->getFormat();
-	context.depthFormat = findDepthFormat(m_vulkan->getPhysicalDevice());
+	context.depthFormat = m_graphicAPIManager->getDepthFormat();
 	context.swapChainImageCount = m_swapChain->getImageCount();
 	for (uint32_t i = 0; i < context.swapChainImageCount; ++i)
 		context.swapChainImages.push_back(m_swapChain->getImage(i));
@@ -264,14 +285,12 @@ void Wolf::WolfEngine::fillInitializeContext(InitializationContext& context) con
 
 void Wolf::WolfEngine::resize(int width, int height)
 {
-	vkDeviceWaitIdle(m_vulkan->getDevice());
+	waitIdle();
 
 	m_resizeIsNeeded = true;
+	m_swapChain->recreate({ static_cast<uint32_t>(width), static_cast<uint32_t>(height)});
 #ifndef __ANDROID__
-	m_swapChain->recreate(m_window->getWindow());
 	if(m_ultraLight)
 		m_ultraLight->resize(width, height);
-#else
-	m_swapChain->recreate();
 #endif
 }
