@@ -1,5 +1,7 @@
 #include "MaterialsGPUManager.h"
 
+#include "Buffer.h"
+#include "CommandBuffer.h"
 #include "DescriptorSetLayoutGenerator.h"
 
 Wolf::MaterialsGPUManager::MaterialsGPUManager(const std::vector<DescriptorSetGenerator::ImageDescription>& firstImages)
@@ -12,17 +14,17 @@ Wolf::MaterialsGPUManager::MaterialsGPUManager(const std::vector<DescriptorSetGe
 	descriptorSetLayoutGenerator.addSampler(VK_SHADER_STAGE_FRAGMENT_BIT, BINDING_SLOT + 1);
 	descriptorSetLayoutGenerator.addStorageBuffer(VK_SHADER_STAGE_FRAGMENT_BIT, BINDING_SLOT + 2);
 
-	m_sampler.reset(new Sampler(VK_SAMPLER_ADDRESS_MODE_REPEAT, 11, VK_FILTER_LINEAR));
-	m_materialsBuffer.reset(new Buffer(MAX_MATERIAL_COUNT * sizeof(MaterialInfo), VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, UpdateRate::NEVER));
+	m_sampler.reset(Sampler::createSampler(VK_SAMPLER_ADDRESS_MODE_REPEAT, 11, VK_FILTER_LINEAR));
+	m_materialsBuffer.reset(Buffer::createBuffer(MAX_MATERIAL_COUNT * sizeof(MaterialInfo), VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT));
 	constexpr MaterialInfo initMaterialInfo{ 0, 1, 2 };
 	m_materialsBuffer->transferCPUMemoryWithStagingBuffer(&initMaterialInfo, sizeof(MaterialInfo), 0, 0);
 	m_currentMaterialCount = 1;
 
 	m_descriptorSetLayout.reset(new LazyInitSharedResource<DescriptorSetLayout, BindlessDescriptor>([&descriptorSetLayoutGenerator](std::unique_ptr<DescriptorSetLayout>& descriptorSetLayout)
 		{
-			descriptorSetLayout.reset(new DescriptorSetLayout(descriptorSetLayoutGenerator.getDescriptorLayouts(), VK_DESCRIPTOR_SET_LAYOUT_CREATE_UPDATE_AFTER_BIND_POOL_BIT));
+			descriptorSetLayout.reset(DescriptorSetLayout::createDescriptorSetLayout(descriptorSetLayoutGenerator.getDescriptorLayouts(), VK_DESCRIPTOR_SET_LAYOUT_CREATE_UPDATE_AFTER_BIND_POOL_BIT));
 		}));
-	m_descriptorSet.reset(new DescriptorSet(m_descriptorSetLayout->getResource()->getDescriptorSetLayout(), UpdateRate::NEVER));
+	m_descriptorSet.reset(DescriptorSet::createDescriptorSet(*m_descriptorSetLayout->getResource()));
 
 	DescriptorSetGenerator descriptorSetGenerator(descriptorSetLayoutGenerator.getDescriptorLayouts());
 	descriptorSetGenerator.setImages(BINDING_SLOT, firstImages);
@@ -105,7 +107,7 @@ uint32_t Wolf::MaterialsGPUManager::addImagesToBindless(const std::vector<Descri
 	return previousCounter;
 }
 
-void Wolf::MaterialsGPUManager::bind(VkCommandBuffer commandBuffer, VkPipelineLayout pipelineLayout, uint32_t descriptorSlot) const
+void Wolf::MaterialsGPUManager::bind(const CommandBuffer& commandBuffer, const Pipeline& pipeline, uint32_t descriptorSlot) const
 {
-	vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, descriptorSlot, 1, m_descriptorSet->getDescriptorSet(), 0, nullptr);
+	commandBuffer.bindDescriptorSet(m_descriptorSet.get(), descriptorSlot, pipeline);
 }

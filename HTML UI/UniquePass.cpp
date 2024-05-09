@@ -21,18 +21,18 @@ void UniquePass::initializeResources(const InitializationContext& context)
 		m_depthImage->getDefaultImageView());
 	Attachment color({ context.swapChainWidth, context.swapChainHeight }, context.swapChainFormat, VK_SAMPLE_COUNT_1_BIT, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR, VK_ATTACHMENT_STORE_OP_STORE, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, nullptr);
 
-	m_renderPass.reset(new RenderPass({ depth, color }));
+	m_renderPass.reset(RenderPass::createRenderPass({ depth, color }));
 
-	m_commandBuffer.reset(new CommandBuffer(QueueType::GRAPHIC, false /* isTransient */));
+	m_commandBuffer.reset(CommandBuffer::createCommandBuffer(QueueType::GRAPHIC, false /* isTransient */));
 
 	m_frameBuffers.resize(context.swapChainImageCount);
 	for (uint32_t i = 0; i < context.swapChainImageCount; ++i)
 	{
 		color.imageView = context.swapChainImages[i]->getDefaultImageView();
-		m_frameBuffers[i].reset(new Framebuffer(m_renderPass->getRenderPass(), { depth, color }));
+		m_frameBuffers[i].reset(FrameBuffer::createFrameBuffer(*m_renderPass, { depth, color }));
 	}
 
-	m_semaphore.reset(new Semaphore(VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT));
+	m_semaphore.reset(Semaphore::createSemaphore(VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT));
 
 	m_triangleVertexShaderParser.reset(new ShaderParser("Shaders/shader.vert"));
 	m_triangleFragmentShaderParser.reset(new ShaderParser("Shaders/shader.frag"));
@@ -42,32 +42,32 @@ void UniquePass::initializeResources(const InitializationContext& context)
 
 	// Triangle resources
 	{
-		m_triangleUniformBuffer.reset(new Buffer(sizeof(glm::vec3), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, UpdateRate::NEVER));
+		m_triangleUniformBuffer.reset(Buffer::createBuffer(sizeof(glm::vec3), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT));
 		glm::vec3 defaultColor(0.0f, 1.0f, 0.0f);
 		m_triangleUniformBuffer->transferCPUMemory(&defaultColor, sizeof(glm::vec3));
 
 		DescriptorSetLayoutGenerator triangleDescriptorSetLayoutGenerator;
 		triangleDescriptorSetLayoutGenerator.addUniformBuffer(VK_SHADER_STAGE_FRAGMENT_BIT, 0);
-		m_triangleDescriptorSetLayout.reset(new DescriptorSetLayout(triangleDescriptorSetLayoutGenerator.getDescriptorLayouts()));
+		m_triangleDescriptorSetLayout.reset(DescriptorSetLayout::createDescriptorSetLayout(triangleDescriptorSetLayoutGenerator.getDescriptorLayouts()));
 
 		DescriptorSetGenerator descriptorSetGenerator(triangleDescriptorSetLayoutGenerator.getDescriptorLayouts());
 		descriptorSetGenerator.setBuffer(0, *m_triangleUniformBuffer);
 
-		m_triangleDescriptorSet.reset(new DescriptorSet(m_triangleDescriptorSetLayout->getDescriptorSetLayout(), UpdateRate::NEVER));
+		m_triangleDescriptorSet.reset(DescriptorSet::createDescriptorSet(*m_triangleDescriptorSetLayout));
 		m_triangleDescriptorSet->update(descriptorSetGenerator.getDescriptorSetCreateInfo());
 	}
 
 	// UI resources
 	{
-		m_sampler.reset(new Sampler(VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_BORDER, 1.0f, VK_FILTER_LINEAR));
+		m_sampler.reset(Sampler::createSampler(VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_BORDER, 1.0f, VK_FILTER_LINEAR));
 		m_userInterfaceDescriptorSetLayoutGenerator.addCombinedImageSampler(VK_SHADER_STAGE_FRAGMENT_BIT, 0);
-		m_userInterfaceDescriptorSetLayout.reset(new DescriptorSetLayout(m_userInterfaceDescriptorSetLayoutGenerator.getDescriptorLayouts()));
+		m_userInterfaceDescriptorSetLayout.reset(DescriptorSetLayout::createDescriptorSetLayout(m_userInterfaceDescriptorSetLayoutGenerator.getDescriptorLayouts()));
 
 		DescriptorSetGenerator descriptorSetGenerator(m_userInterfaceDescriptorSetLayoutGenerator.getDescriptorLayouts());
 		descriptorSetGenerator.setCombinedImageSampler(0, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, context.userInterfaceImage->getDefaultImageView(), *
 		                                               m_sampler);
 
-		m_userInterfaceDescriptorSet.reset(new DescriptorSet(m_userInterfaceDescriptorSetLayout->getDescriptorSetLayout(), UpdateRate::NEVER));
+		m_userInterfaceDescriptorSet.reset(DescriptorSet::createDescriptorSet(*m_userInterfaceDescriptorSetLayout));
 		m_userInterfaceDescriptorSet->update(descriptorSetGenerator.getDescriptorSetCreateInfo());
 	}
 
@@ -124,7 +124,7 @@ void UniquePass::resize(const InitializationContext& context)
 	for (uint32_t i = 0; i < context.swapChainImageCount; ++i)
 	{
 		color.imageView = context.swapChainImages[i]->getDefaultImageView();
-		m_frameBuffers[i].reset(new Framebuffer(m_renderPass->getRenderPass(), { depth, color }));
+		m_frameBuffers[i].reset(FrameBuffer::createFrameBuffer(*m_renderPass, { depth, color }));
 	}
 
 	createPipelines(context.swapChainWidth, context.swapChainHeight);
@@ -139,35 +139,33 @@ void UniquePass::record(const RecordContext& context)
 {
 	const uint32_t frameBufferIdx = context.swapChainImageIdx;
 
-	m_commandBuffer->beginCommandBuffer(context.commandBufferIdx);
+	m_commandBuffer->beginCommandBuffer();
 
 	std::vector<VkClearValue> clearValues(2);
 	clearValues[0] = {{{1.0f}}};
 	clearValues[1] = {{{0.1f, 0.1f, 0.1f, 1.0f}}};
-	m_renderPass->beginRenderPass(m_frameBuffers[frameBufferIdx]->getFramebuffer(), clearValues, m_commandBuffer->getCommandBuffer(context.commandBufferIdx));
+	m_commandBuffer->beginRenderPass(*m_renderPass, *m_frameBuffers[frameBufferIdx], clearValues);
 
 	/* Triangle */
-	vkCmdBindPipeline(m_commandBuffer->getCommandBuffer(context.commandBufferIdx), VK_PIPELINE_BIND_POINT_GRAPHICS, m_trianglePipeline->getPipeline());
-	vkCmdBindDescriptorSets(m_commandBuffer->getCommandBuffer(context.commandBufferIdx), VK_PIPELINE_BIND_POINT_GRAPHICS, m_trianglePipeline->getPipelineLayout(), 0, 1,
-		m_triangleDescriptorSet->getDescriptorSet(), 0, nullptr);
-	m_triangle->draw(m_commandBuffer->getCommandBuffer(context.commandBufferIdx), RenderMeshList::NO_CAMERA_IDX);
+	m_commandBuffer->bindPipeline(m_trianglePipeline.get());
+	m_commandBuffer->bindDescriptorSet(m_triangleDescriptorSet.get(), 0, *m_trianglePipeline);
+	m_triangle->draw(*m_commandBuffer, RenderMeshList::NO_CAMERA_IDX);
 
 	/* UI */
-	vkCmdBindPipeline(m_commandBuffer->getCommandBuffer(context.commandBufferIdx), VK_PIPELINE_BIND_POINT_GRAPHICS, m_userInterfacePipeline->getPipeline());
-	vkCmdBindDescriptorSets(m_commandBuffer->getCommandBuffer(context.commandBufferIdx), VK_PIPELINE_BIND_POINT_GRAPHICS, m_userInterfacePipeline->getPipelineLayout(), 0, 1, 
-		m_userInterfaceDescriptorSet->getDescriptorSet(), 0, nullptr);
-	m_fullScreenRectangle->draw(m_commandBuffer->getCommandBuffer(context.commandBufferIdx), RenderMeshList::NO_CAMERA_IDX);
+	m_commandBuffer->bindPipeline(m_userInterfacePipeline.get());
+	m_commandBuffer->bindDescriptorSet(m_userInterfaceDescriptorSet.get(), 0, *m_userInterfacePipeline);
+	m_fullScreenRectangle->draw(*m_commandBuffer, RenderMeshList::NO_CAMERA_IDX);
 
-	m_renderPass->endRenderPass(m_commandBuffer->getCommandBuffer(context.commandBufferIdx));
+	m_commandBuffer->endRenderPass();
 
-	m_commandBuffer->endCommandBuffer(context.commandBufferIdx);
+	m_commandBuffer->endCommandBuffer();
 }
 
 void UniquePass::submit(const SubmitContext& context)
 {
 	const std::vector waitSemaphores{ context.swapChainImageAvailableSemaphore, context.userInterfaceImageAvailableSemaphore };
-	const std::vector signalSemaphores{ m_semaphore->getSemaphore() };
-	m_commandBuffer->submit(context.commandBufferIdx, waitSemaphores, signalSemaphores, context.frameFence);
+	const std::vector<const Semaphore*> signalSemaphores{ m_semaphore.get() };
+	m_commandBuffer->submit(waitSemaphores, signalSemaphores, context.frameFence);
 
 	bool anyShaderModified = m_triangleVertexShaderParser->compileIfFileHasBeenModified();
 	if (m_triangleFragmentShaderParser->compileIfFileHasBeenModified())
@@ -175,7 +173,7 @@ void UniquePass::submit(const SubmitContext& context)
 
 	if (anyShaderModified)
 	{
-		vkDeviceWaitIdle(context.device);
+		context.graphicAPIManager->waitIdle();
 		createPipelines(m_swapChainWidth, m_swapChainHeight);
 	}
 }
@@ -195,7 +193,7 @@ void UniquePass::createDepthImage(const InitializationContext& context)
 	depthImageCreateInfo.mipLevelCount = 1;
 	depthImageCreateInfo.aspect = VK_IMAGE_ASPECT_DEPTH_BIT;
 	depthImageCreateInfo.usage = VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
-	m_depthImage.reset(new Image(depthImageCreateInfo));
+	m_depthImage.reset(Image::createImage(depthImageCreateInfo));
 }
 
 void UniquePass::createPipelines(uint32_t width, uint32_t height)
@@ -203,7 +201,7 @@ void UniquePass::createPipelines(uint32_t width, uint32_t height)
 	// Triangle
 	{
 		RenderingPipelineCreateInfo pipelineCreateInfo;
-		pipelineCreateInfo.renderPass = m_renderPass->getRenderPass();
+		pipelineCreateInfo.renderPass = m_renderPass.get();
 
 		// Programming stages
 		pipelineCreateInfo.shaderCreateInfos.resize(2);
@@ -226,20 +224,19 @@ void UniquePass::createPipelines(uint32_t width, uint32_t height)
 		pipelineCreateInfo.extent = { width, height };
 
 		// Resources
-		std::vector descriptorSetLayouts = { m_triangleDescriptorSetLayout->getDescriptorSetLayout() };
-		pipelineCreateInfo.descriptorSetLayouts = descriptorSetLayouts;
+		pipelineCreateInfo.descriptorSetLayouts = { m_triangleDescriptorSetLayout.get() };;
 
 		// Color Blend
 		std::vector blendModes = { RenderingPipelineCreateInfo::BLEND_MODE::OPAQUE };
 		pipelineCreateInfo.blendModes = blendModes;
 
-		m_trianglePipeline.reset(new Pipeline(pipelineCreateInfo));
+		m_trianglePipeline.reset(Pipeline::createRenderingPipeline(pipelineCreateInfo));
 	}
 
 	// UI
 	{
 		RenderingPipelineCreateInfo pipelineCreateInfo;
-		pipelineCreateInfo.renderPass = m_renderPass->getRenderPass();
+		pipelineCreateInfo.renderPass = m_renderPass.get();
 
 		// Programming stages
 		pipelineCreateInfo.shaderCreateInfos.resize(2);
@@ -262,14 +259,13 @@ void UniquePass::createPipelines(uint32_t width, uint32_t height)
 		pipelineCreateInfo.extent = { width, height };
 
 		// Resources
-		std::vector descriptorSetLayouts = { m_userInterfaceDescriptorSetLayout->getDescriptorSetLayout() };
-		pipelineCreateInfo.descriptorSetLayouts = descriptorSetLayouts;
+		pipelineCreateInfo.descriptorSetLayouts = { m_userInterfaceDescriptorSetLayout.get() };
 
 		// Color Blend
 		std::vector blendModes = { RenderingPipelineCreateInfo::BLEND_MODE::TRANS_ALPHA };
 		pipelineCreateInfo.blendModes = blendModes;
 
-		m_userInterfacePipeline.reset(new Pipeline(pipelineCreateInfo));
+		m_userInterfacePipeline.reset(Pipeline::createRenderingPipeline(pipelineCreateInfo));
 	}
 
 	m_swapChainWidth = width;

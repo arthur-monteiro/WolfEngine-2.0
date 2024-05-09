@@ -7,6 +7,7 @@
 #include "Configuration.h"
 #include "Debug.h"
 #include "InputHandler.h"
+#include "Semaphore.h"
 #include "Timer.h"
 #include "Window.h"
 
@@ -181,12 +182,12 @@ Wolf::UltraLight::UltraLightImplementation::UltraLightImplementation(uint32_t wi
         m_renderer->Render();
     }
 
-    m_copyImageCommandBuffer.reset(new CommandBuffer(QueueType::TRANSFER, false));
+    m_copyImageCommandBuffer.reset(CommandBuffer::createCommandBuffer(QueueType::TRANSFER, false));
 
     createOutputAndRecordCopyCommandBuffer(width, height);
 
-    m_copyImageSemaphore.reset(new Semaphore(VK_PIPELINE_STAGE_TRANSFER_BIT));
-    m_copyImageFence.reset(new Fence(0));
+    m_copyImageSemaphore.reset(Semaphore::createSemaphore(VK_PIPELINE_STAGE_TRANSFER_BIT));
+    m_copyImageFence.reset(Fence::createFence(false));
 }
 
 void Wolf::UltraLight::UltraLightImplementation::OnFinishLoading(View* caller, uint64_t frame_id, bool is_main_frame, const String& url)
@@ -362,8 +363,8 @@ void Wolf::UltraLight::UltraLightImplementation::resize(uint32_t width, uint32_t
 void Wolf::UltraLight::UltraLightImplementation::submitCopyImageCommandBuffer() const
 {
     const std::vector<const Semaphore*> waitSemaphores{ };
-    const std::vector signalSemaphores{ m_copyImageSemaphore->getSemaphore() };
-    m_copyImageCommandBuffer->submit(0, waitSemaphores, signalSemaphores, m_copyImageFence->getFence());
+    const std::vector<const Semaphore*> signalSemaphores{ m_copyImageSemaphore.get() };
+    m_copyImageCommandBuffer->submit(waitSemaphores, signalSemaphores, m_copyImageFence.get());
 }
 
 void Wolf::UltraLight::UltraLightImplementation::createOutputAndRecordCopyCommandBuffer(uint32_t width, uint32_t height)
@@ -376,9 +377,9 @@ void Wolf::UltraLight::UltraLightImplementation::createOutputAndRecordCopyComman
     createImageInfo.usage = VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT;
     createImageInfo.imageTiling = VK_IMAGE_TILING_LINEAR;
     createImageInfo.memoryProperties = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
-    m_userInterfaceImage.reset(new Image(createImageInfo));
+    m_userInterfaceImage.reset(Image::createImage(createImageInfo));
 
-    m_copyImageCommandBuffer->beginCommandBuffer(0);
+    m_copyImageCommandBuffer->beginCommandBuffer();
 
     VkImageCopy copyRegion{};
 
@@ -397,7 +398,7 @@ void Wolf::UltraLight::UltraLightImplementation::createOutputAndRecordCopyComman
     copyRegion.extent = { width, height, 1 };
 
     const UltraLightSurface* surface = dynamic_cast<UltraLightSurface*>(m_view->surface());
-    m_userInterfaceImage->recordCopyGPUImage(surface->getImage(), copyRegion, m_copyImageCommandBuffer->getCommandBuffer(0));
+    m_userInterfaceImage->recordCopyGPUImage(surface->getImage(), copyRegion, *m_copyImageCommandBuffer);
 
-    m_copyImageCommandBuffer->endCommandBuffer(0);
+    m_copyImageCommandBuffer->endCommandBuffer();
 }

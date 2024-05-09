@@ -5,6 +5,7 @@
 
 #include "DescriptorSet.h"
 #include "Image.h"
+#include "ImageView.h"
 #include "Sampler.h"
 #include "TopLevelAccelerationStructure.h"
 
@@ -17,13 +18,13 @@ namespace Wolf
 		DescriptorSetGenerator(const DescriptorSetGenerator&) = delete;
 
 		void setBuffer(uint32_t binding, const Buffer& buffer);
-		void setCombinedImageSampler(uint32_t binding, VkImageLayout imageLayout, VkImageView imageView, const Sampler& sampler);
+		void setCombinedImageSampler(uint32_t binding, VkImageLayout imageLayout, ImageView imageView, const Sampler& sampler);
 		struct ImageDescription
 		{
 			VkImageLayout imageLayout;
-			VkImageView imageView;
+			ImageView imageView;
 
-			ImageDescription(VkImageLayout imageLayout, VkImageView imageView) : imageLayout(imageLayout), imageView(imageView) {}
+			ImageDescription(VkImageLayout imageLayout, ImageView imageView) : imageLayout(imageLayout), imageView(imageView) {}
 			ImageDescription() {}
 		};
 		void setImage(uint32_t binding, const ImageDescription& imageDescription);

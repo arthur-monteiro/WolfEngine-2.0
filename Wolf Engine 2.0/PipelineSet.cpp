@@ -91,7 +91,7 @@ const Wolf::Pipeline* Wolf::PipelineSet::getOrCreatePipeline(uint32_t idx, Rende
 
 		const PipelineInfo& pipelineInfo = m_infoForPipelines[idx]->getPipelineInfo();
 
-		renderingPipelineCreateInfo.renderPass = renderPass->getRenderPass();
+		renderingPipelineCreateInfo.renderPass = renderPass;
 
 		// Programming stages
 		renderingPipelineCreateInfo.shaderCreateInfos.resize(pipelineInfo.shaderInfos.size());
@@ -124,7 +124,7 @@ const Wolf::Pipeline* Wolf::PipelineSet::getOrCreatePipeline(uint32_t idx, Rende
 
 		// Resources layouts
 		uint32_t maxSlot = 0;
-		for (const std::pair<VkDescriptorSetLayout, uint32_t>& descriptorSetLayout : pipelineInfo.descriptorSetLayouts)
+		for (const std::pair<ResourceReference<const DescriptorSetLayout>, uint32_t>& descriptorSetLayout : pipelineInfo.descriptorSetLayouts)
 		{
 			if (descriptorSetLayout.second > maxSlot)
 				maxSlot = descriptorSetLayout.second;
@@ -143,11 +143,11 @@ const Wolf::Pipeline* Wolf::PipelineSet::getOrCreatePipeline(uint32_t idx, Rende
 		for (uint32_t slot = 0; slot <= maxSlot; ++slot)
 		{
 			bool slotFound = false;
-			for (const std::pair<VkDescriptorSetLayout, uint32_t>& descriptorSetLayout : pipelineInfo.descriptorSetLayouts)
+			for (const std::pair<ResourceReference<const DescriptorSetLayout>, uint32_t>& descriptorSetLayout : pipelineInfo.descriptorSetLayouts)
 			{
 				if (descriptorSetLayout.second == slot)
 				{
-					renderingPipelineCreateInfo.descriptorSetLayouts.push_back(descriptorSetLayout.first);
+					renderingPipelineCreateInfo.descriptorSetLayouts.emplace_back(descriptorSetLayout.first);
 					slotFound = true;
 				}
 			}
@@ -156,12 +156,12 @@ const Wolf::Pipeline* Wolf::PipelineSet::getOrCreatePipeline(uint32_t idx, Rende
 			{
 				if (pipelineInfo.cameraDescriptorSlot == slot)
 				{
-					renderingPipelineCreateInfo.descriptorSetLayouts.push_back( GraphicCameraInterface::getDescriptorSetLayout());
+					renderingPipelineCreateInfo.descriptorSetLayouts.emplace_back( GraphicCameraInterface::getDescriptorSetLayout());
 					slotFound = true;
 				}
 				else if (pipelineInfo.bindlessDescriptorSlot == slot)
 				{
-					renderingPipelineCreateInfo.descriptorSetLayouts.push_back(MaterialsGPUManager::getDescriptorSetLayout());
+					renderingPipelineCreateInfo.descriptorSetLayouts.emplace_back(MaterialsGPUManager::getDescriptorSetLayout());
 					slotFound = true;
 				}
 			}
@@ -202,7 +202,7 @@ const Wolf::Pipeline* Wolf::PipelineSet::getOrCreatePipeline(uint32_t idx, Rende
 		// Dynamic states
 		renderingPipelineCreateInfo.dynamicStates = pipelineInfo.dynamicStates;
 
-		m_infoForPipelines[idx]->getPipelines()[renderPass].reset(new Pipeline(renderingPipelineCreateInfo));
+		m_infoForPipelines[idx]->getPipelines()[renderPass].reset(Pipeline::createRenderingPipeline(renderingPipelineCreateInfo));
 	}
 
 	return m_infoForPipelines[idx]->getPipelines()[renderPass].get();

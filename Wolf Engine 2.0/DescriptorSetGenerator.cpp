@@ -1,7 +1,6 @@
 #include "DescriptorSetGenerator.h"
 
-#include "Debug.h"
-#include "Vulkan.h"
+#include <Debug.h>
 
 Wolf::DescriptorSetGenerator::DescriptorSetGenerator(const std::span<const DescriptorLayout> descriptorLayouts)
 {
@@ -50,7 +49,7 @@ void Wolf::DescriptorSetGenerator::setBuffer(uint32_t binding, const Buffer& buf
 	m_descriptorSetCreateInfo.descriptorBuffers[descriptor.second].buffers[0] = &buffer;
 }
 
-void Wolf::DescriptorSetGenerator::setCombinedImageSampler(uint32_t binding, VkImageLayout imageLayout, VkImageView imageView, const Sampler& sampler)
+void Wolf::DescriptorSetGenerator::setCombinedImageSampler(uint32_t binding, VkImageLayout imageLayout, ImageView imageView, const Sampler& sampler)
 {
 	const std::pair<DescriptorType, uint32_t /* descriptor index */>& descriptor = m_mapBindingCreateInfo[binding];
 
@@ -60,7 +59,7 @@ void Wolf::DescriptorSetGenerator::setCombinedImageSampler(uint32_t binding, VkI
 	DescriptorSetUpdateInfo::ImageData imageData;
 	imageData.imageLayout = imageLayout;
 	imageData.imageView = imageView;
-	imageData.sampler = sampler.getSampler();
+	imageData.sampler = &sampler;
 
 	m_descriptorSetCreateInfo.descriptorImages[descriptor.second].images.resize(1);
 	m_descriptorSetCreateInfo.descriptorImages[descriptor.second].images[0] = imageData;
@@ -109,10 +108,10 @@ void Wolf::DescriptorSetGenerator::setSampler(uint32_t binding, const Sampler& s
 		Debug::sendError("Binding provided is not an image");
 
 	DescriptorSetUpdateInfo::ImageData imageData;
-	imageData.sampler = sampler.getSampler();
+	imageData.sampler = &sampler;
 
 	m_descriptorSetCreateInfo.descriptorImages[descriptor.second].images.resize(1);
-	m_descriptorSetCreateInfo.descriptorImages[descriptor.second].images[0] = std::move(imageData);
+	m_descriptorSetCreateInfo.descriptorImages[descriptor.second].images[0] = imageData;
 }
 
 void Wolf::DescriptorSetGenerator::setAccelerationStructure(uint32_t binding, const TopLevelAccelerationStructure& accelerationStructure)
@@ -122,10 +121,5 @@ void Wolf::DescriptorSetGenerator::setAccelerationStructure(uint32_t binding, co
 	if (descriptor.first != DescriptorType::ACCELERATION_STRUCTURE)
 		Debug::sendError("Binding provided is not an acceleration structure");
 
-	VkWriteDescriptorSetAccelerationStructureKHR descriptorSetInfo{ };
-	descriptorSetInfo.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET_ACCELERATION_STRUCTURE_KHR;
-	descriptorSetInfo.accelerationStructureCount = 1;
-	descriptorSetInfo.pAccelerationStructures = accelerationStructure.getStructure();
-
-	m_descriptorSetCreateInfo.descriptorAccelerationStructures[descriptor.second].accelerationStructure = descriptorSetInfo;
+	m_descriptorSetCreateInfo.descriptorAccelerationStructures[descriptor.second].accelerationStructure = &accelerationStructure;
 }

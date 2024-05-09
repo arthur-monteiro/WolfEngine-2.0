@@ -6,7 +6,7 @@
 #include <vector>
 #include <vulkan/vulkan_core.h>
 
-#include "Debug.h"
+#include <Debug.h>
 
 namespace Wolf
 {

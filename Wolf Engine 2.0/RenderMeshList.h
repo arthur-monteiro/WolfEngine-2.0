@@ -46,7 +46,7 @@ namespace Wolf
 		void addMeshToRender(const MeshToRenderInfo& meshToRenderInfo);
 
 		static constexpr uint32_t NO_CAMERA_IDX = -1;
-		void draw(const RecordContext& context, VkCommandBuffer commandBuffer, RenderPass* renderPass, uint32_t pipelineIdx, uint32_t cameraIdx, const std::vector<std::pair<uint32_t, const DescriptorSet*>>& descriptorSetsToBind) const;
+		void draw(const RecordContext& context, const CommandBuffer& commandBuffer, RenderPass* renderPass, uint32_t pipelineIdx, uint32_t cameraIdx, const std::vector<std::pair<uint32_t, const DescriptorSet*>>& descriptorSetsToBind) const;
 
 		void clear();
 
@@ -63,7 +63,7 @@ namespace Wolf
 			RenderMesh(ResourceNonOwner<Mesh> mesh, const glm::mat4& transform, PipelineSet* pipelineSet, std::vector<MeshToRenderInfo::DescriptorSetBindInfo> descriptorSets, const MeshToRenderInfo::InstanceInfos& instanceInfos) :
 				m_mesh(mesh), m_transform(transform), m_pipelineSet(pipelineSet), m_descriptorSets(std::move(descriptorSets)), m_instanceInfos(instanceInfos) { }
 
-			void draw(VkCommandBuffer commandBuffer, const Pipeline* pipeline, uint32_t cameraIdx) const;
+			void draw(const CommandBuffer& commandBuffer, const Pipeline* pipeline, uint32_t cameraIdx) const;
 
 			PipelineSet* getPipelineSet() const { return m_pipelineSet; }
 			ResourceNonOwner<Mesh> getMesh() const { return m_mesh; }

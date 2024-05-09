@@ -1,11 +1,12 @@
 #pragma once
 
 #include "BindlessDescriptor.h"
-#include "ResourceNonOwner.h"
 #include "ResourceUniqueOwner.h"
 
 namespace Wolf
 {
+	class Pipeline;
+
 	class MaterialsGPUManager
 	{
 	public:
@@ -16,8 +17,8 @@ namespace Wolf
 		void addNewMaterials(const std::vector<DescriptorSetGenerator::ImageDescription>& images);
 		void pushMaterialsToGPU();
 
-		void bind(VkCommandBuffer commandBuffer, VkPipelineLayout pipelineLayout, uint32_t descriptorSlot) const;
-		[[nodiscard]] static VkDescriptorSetLayout getDescriptorSetLayout() { return LazyInitSharedResource<DescriptorSetLayout, BindlessDescriptor>::getResource()->getDescriptorSetLayout(); }
+		void bind(const CommandBuffer& commandBuffer, const Pipeline& pipeline, uint32_t descriptorSlot) const;
+		[[nodiscard]] static const DescriptorSetLayout* getDescriptorSetLayout() { return LazyInitSharedResource<DescriptorSetLayout, BindlessDescriptor>::getResource(); }
 		[[nodiscard]] const DescriptorSet* getDescriptorSet() const { return m_descriptorSet.get(); }
 
 		uint32_t getCurrentMaterialCount() const { return m_currentMaterialCount + static_cast<uint32_t>(m_newMaterialsInfo.size()); }

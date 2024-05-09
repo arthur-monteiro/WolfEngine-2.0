@@ -10,6 +10,7 @@
 
 #include "DescriptorSet.h"
 #include "Pipeline.h"
+#include "ResourceReference.h"
 #include "ShaderParser.h"
 
 namespace Wolf
@@ -42,7 +43,7 @@ namespace Wolf
 			bool primitiveRestartEnable = false;
 
 			// Resources layouts
-			std::vector<std::pair<VkDescriptorSetLayout, uint32_t>> descriptorSetLayouts;
+			std::vector<std::pair<ResourceReference<const DescriptorSetLayout>, uint32_t>> descriptorSetLayouts;
 			uint32_t cameraDescriptorSlot = -1;
 			uint32_t bindlessDescriptorSlot = -1;
 

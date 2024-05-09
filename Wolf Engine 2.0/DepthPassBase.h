@@ -1,5 +1,7 @@
 #pragma once
 
+#include <memory>
+
 #include "CommandRecordBase.h"
 #include "Image.h"
 #include "FrameBuffer.h"
@@ -27,13 +29,13 @@ namespace Wolf
 		virtual uint32_t getHeight() = 0;
 
 		virtual void recordDraws(const RecordContext& context) = 0;
-		virtual VkCommandBuffer getCommandBuffer(const RecordContext& context) = 0;
+		virtual const CommandBuffer& getCommandBuffer(const RecordContext& context) = 0;
 		virtual VkImageUsageFlags getAdditionalUsages() { return 0; }
 		virtual VkImageLayout getFinalLayout() { return VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL; }
 
 		/* Parameters */
 		std::unique_ptr<RenderPass> m_renderPass;
-		std::unique_ptr<Framebuffer> m_frameBuffer;
+		std::unique_ptr<FrameBuffer> m_frameBuffer;
 		std::unique_ptr<Image> m_depthImage;
 	};
 }

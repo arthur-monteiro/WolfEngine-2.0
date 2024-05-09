@@ -159,11 +159,11 @@
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>_DEBUG;_CONSOLE;_CRT_SECURE_NO_WARNINGS;RESOURCE_DEBUG;IMMEDIATE_DELETE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>_DEBUG;_CONSOLE;_CRT_SECURE_NO_WARNINGS;RESOURCE_DEBUG;IMMEDIATE_DELETE;WOLF_USE_VULKAN;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp20</LanguageStandard>
       <ScanSourceForModuleDependencies>true</ScanSourceForModuleDependencies>
-      <AdditionalIncludeDirectories>..\ThirdParty\FrustumCull;..\ThirdParty\glm;..\ThirdParty\vulkan\Include;..\ThirdParty\stb_image;..\ThirdParty\tiny_obj;..\ThirdParty\GLFW\include;..\ThirdParty\OVR\Include;..\ThirdParty\UltraLight\include;..\ThirdParty\xxh64;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\Common;..\GraphicAPIBroker\Public;..\ThirdParty\FrustumCull;..\ThirdParty\glm;..\ThirdParty\vulkan\Include;..\ThirdParty\stb_image;..\ThirdParty\tiny_obj;..\ThirdParty\GLFW\include;..\ThirdParty\OVR\Include;..\ThirdParty\UltraLight\include;..\ThirdParty\xxh64;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -172,6 +172,12 @@
     <PreBuildEvent>
       <Command>"../x64/Debug/GenerateCodeFileHashes.exe"</Command>
     </PreBuildEvent>
+    <Lib>
+      <AdditionalDependencies>%(AdditionalDependencies)</AdditionalDependencies>
+    </Lib>
+    <Lib>
+      <AdditionalLibraryDirectories>%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+    </Lib>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Lib - Debug|x64'">
     <ClCompile>
@@ -210,31 +216,18 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="AccelerationStructure.cpp" />
     <ClCompile Include="AndroidCacheHelper.cpp" />
-    <ClCompile Include="BottomLevelAccelerationStructure.cpp" />
-    <ClCompile Include="Buffer.cpp" />
     <ClCompile Include="CameraInterface.cpp" />
     <ClCompile Include="CameraList.cpp" />
-    <ClCompile Include="CommandBuffer.cpp" />
-    <ClCompile Include="CommandPool.cpp" />
-    <ClCompile Include="Configuration.cpp" />
-    <ClCompile Include="Debug.cpp" />
     <ClCompile Include="DebugMarker.cpp" />
     <ClCompile Include="DebugMarkerSymbols.cpp" />
     <ClCompile Include="DepthPassBase.cpp" />
-    <ClCompile Include="DescriptorPool.cpp" />
-    <ClCompile Include="DescriptorSet.cpp" />
     <ClCompile Include="DescriptorSetGenerator.cpp" />
-    <ClCompile Include="DescriptorSetLayout.cpp" />
     <ClCompile Include="DescriptorSetLayoutGenerator.cpp" />
     <ClCompile Include="Dump.cpp" />
     <ClCompile Include="DynamicStableArray.cpp" />
-    <ClCompile Include="Fence.cpp" />
     <ClCompile Include="FirstPersonCamera.cpp" />
-    <ClCompile Include="FrameBuffer.cpp" />
     <ClCompile Include="GraphicCameraInterface.cpp" />
-    <ClCompile Include="Image.cpp" />
     <ClCompile Include="ImageCompression.cpp" />
     <ClCompile Include="ImageFileLoader.cpp" />
     <ClCompile Include="InputHandler.cpp" />
@@ -247,62 +240,35 @@
     <ClCompile Include="ModelLoader.cpp" />
     <ClCompile Include="CommandRecordBase.cpp" />
     <ClCompile Include="OrthographicCamera.cpp" />
-    <ClCompile Include="Pipeline.cpp" />
     <ClCompile Include="PipelineSet.cpp" />
     <ClCompile Include="RayTracingShaderGroupGenerator.cpp" />
-    <ClCompile Include="RayTracingSymbols.cpp" />
     <ClCompile Include="RenderMeshList.cpp" />
-    <ClCompile Include="ResourceNonOwner.cpp" />
-    <ClCompile Include="ResourceUniqueOwner.cpp" />
     <ClCompile Include="ShaderList.cpp" />
-    <ClCompile Include="RenderPass.cpp" />
-    <ClCompile Include="Sampler.cpp" />
-    <ClCompile Include="Semaphore.cpp" />
-    <ClCompile Include="ShaderBindingTable.cpp" />
     <ClCompile Include="ShaderParser.cpp" />
     <ClCompile Include="ShadingRateSymbols.cpp" />
     <ClCompile Include="SubMesh.cpp" />
-    <ClCompile Include="SwapChain.cpp" />
     <ClCompile Include="Timer.cpp" />
-    <ClCompile Include="TopLevelAccelerationStructure.cpp" />
     <ClCompile Include="UltraLight.cpp" />
     <ClCompile Include="UltraLightSurface.cpp" />
     <ClCompile Include="UltralightViewListener.cpp" />
-    <ClCompile Include="Vulkan.cpp" />
-    <ClCompile Include="VulkanHelper.cpp" />
     <ClCompile Include="Window.cpp" />
     <ClCompile Include="WolfEngine.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="AABB.h" />
-    <ClInclude Include="AccelerationStructure.h" />
     <ClInclude Include="AndroidCacheHelper.h" />
-    <ClInclude Include="Attachment.h" />
-    <ClInclude Include="BottomLevelAccelerationStructure.h" />
-    <ClInclude Include="Buffer.h" />
     <ClInclude Include="CameraInterface.h" />
     <ClInclude Include="CameraList.h" />
     <ClInclude Include="CodeFileHashes.h" />
-    <ClInclude Include="CommandBuffer.h" />
-    <ClInclude Include="CommandPool.h" />
-    <ClInclude Include="Configuration.h" />
-    <ClInclude Include="Debug.h" />
     <ClInclude Include="DebugMarker.h" />
     <ClInclude Include="DepthPassBase.h" />
-    <ClInclude Include="DescriptorLayout.h" />
-    <ClInclude Include="DescriptorPool.h" />
-    <ClInclude Include="DescriptorSet.h" />
     <ClInclude Include="DescriptorSetGenerator.h" />
-    <ClInclude Include="DescriptorSetLayout.h" />
     <ClInclude Include="DescriptorSetLayoutGenerator.h" />
     <ClInclude Include="Dump.h" />
     <ClInclude Include="DynamicResourceUniqueOwnerArray.h" />
     <ClInclude Include="DynamicStableArray.h" />
-    <ClInclude Include="Fence.h" />
     <ClInclude Include="FirstPersonCamera.h" />
-    <ClInclude Include="FrameBuffer.h" />
     <ClInclude Include="GraphicCameraInterface.h" />
-    <ClInclude Include="Image.h" />
     <ClInclude Include="ImageCompression.h" />
     <ClInclude Include="ImageFileLoader.h" />
     <ClInclude Include="InputHandler.h" />
@@ -316,33 +282,21 @@
     <ClInclude Include="ModelLoader.h" />
     <ClInclude Include="CommandRecordBase.h" />
     <ClInclude Include="OrthographicCamera.h" />
-    <ClInclude Include="Pipeline.h" />
     <ClInclude Include="PipelineSet.h" />
     <ClInclude Include="QueueFamilyIndices.h" />
     <ClInclude Include="RayTracingShaderGroupGenerator.h" />
     <ClInclude Include="RenderMeshList.h" />
-    <ClInclude Include="ResourceNonOwner.h" />
-    <ClInclude Include="ResourceUniqueOwner.h" />
     <ClInclude Include="ShaderList.h" />
-    <ClInclude Include="RenderPass.h" />
-    <ClInclude Include="Sampler.h" />
-    <ClInclude Include="Semaphore.h" />
-    <ClInclude Include="ShaderBindingTable.h" />
     <ClInclude Include="ShaderCommon.h" />
     <ClInclude Include="ShaderParser.h" />
     <ClInclude Include="ShadingRatePalette.h" />
     <ClInclude Include="ShadingRateSymbols.h" />
     <ClInclude Include="SubMesh.h" />
-    <ClInclude Include="SwapChain.h" />
     <ClInclude Include="SwapChainSupportDetails.h" />
     <ClInclude Include="Timer.h" />
-    <ClInclude Include="TopLevelAccelerationStructure.h" />
     <ClInclude Include="UltraLight.h" />
     <ClInclude Include="UltraLightSurface.h" />
     <ClInclude Include="UltralightViewListener.h" />
-    <ClInclude Include="UpdateRate.h" />
-    <ClInclude Include="Vulkan.h" />
-    <ClInclude Include="VulkanHelper.h" />
     <ClInclude Include="Window.h" />
     <ClInclude Include="WolfEngine.h" />
   </ItemGroup>

@@ -1,11 +1,15 @@
 #pragma once
 
+#include <memory>
 #include <stdint.h>
 #include <vector>
 #include <vulkan/vulkan_core.h>
 
-#include "CommandBuffer.h"
-#include "Semaphore.h"
+#include <CommandBuffer.h>
+#include <GraphicAPIManager.h>
+#include <Semaphore.h>
+
+struct GLFWwindow;
 
 namespace Wolf
 {
@@ -46,8 +50,8 @@ namespace Wolf
 		uint32_t commandBufferIdx;
 		const Semaphore* swapChainImageAvailableSemaphore;
 		const Semaphore* userInterfaceImageAvailableSemaphore;
-		VkFence frameFence;
-		VkDevice device;
+		Fence* frameFence;
+		GraphicAPIManager* graphicAPIManager;
 	};
 
 	class CommandRecordBase

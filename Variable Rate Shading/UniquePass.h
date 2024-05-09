@@ -32,7 +32,7 @@ private:
 private:
 	std::unique_ptr<Wolf::RenderPass> m_renderPass;
 	std::unique_ptr<Wolf::Image> m_depthImage;
-	std::vector<std::unique_ptr<Wolf::Framebuffer>> m_frameBuffers;
+	std::vector<std::unique_ptr<Wolf::FrameBuffer>> m_frameBuffers;
 
 	/* Pipeline */
 	std::unique_ptr<Wolf::ShaderParser> m_vertexShaderParser;

@@ -26,7 +26,7 @@ private:
 private:
 	std::unique_ptr<Wolf::RenderPass> m_renderPass;
 	std::unique_ptr<Wolf::Image> m_depthImage;
-	std::vector<std::unique_ptr<Wolf::Framebuffer>> m_frameBuffers;
+	std::vector<std::unique_ptr<Wolf::FrameBuffer>> m_frameBuffers;
 
 	std::unique_ptr<Wolf::Pipeline> m_pipeline;
 	uint32_t m_swapChainWidth;

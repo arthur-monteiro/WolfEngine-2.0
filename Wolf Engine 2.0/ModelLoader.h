@@ -5,6 +5,7 @@
 #define GLM_ENABLE_EXPERIMENTAL
 #include <glm/glm.hpp>
 #include <glm/gtx/hash.hpp>
+#include <mutex>
 #include <tiny_obj_loader.h>
 
 #include "Image.h"
