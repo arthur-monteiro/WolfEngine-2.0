@@ -2,12 +2,16 @@
 
 #include <glm/glm.hpp>
 
-#include "ResourceNonOwner.h"
-
 #ifndef __ANDROID__
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
 #endif
+
+// TEMP for VkExtent3D
+#include <vulkan/vulkan.h>
+
+#include "ResourceNonOwner.h"
+
 
 namespace Wolf
 {

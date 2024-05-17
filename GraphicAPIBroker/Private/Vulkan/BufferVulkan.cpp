@@ -1,5 +1,5 @@
 #include "CommandBufferVulkan.h"
-#ifdef WOLF_USE_VULKAN
+#ifdef WOLF_VULKAN
 
 #include <Debug.h>
 
@@ -109,10 +109,12 @@ void Wolf::BufferVulkan::createBuffer(VkDeviceSize size, VkBufferUsageFlags usag
 	allocInfo.allocationSize = memRequirements.size;
 	allocInfo.memoryTypeIndex = findMemoryType(g_vulkanInstance->getPhysicalDevice(), memRequirements.memoryTypeBits, properties);
 
+#ifdef WOLF_VULKAN_1_2
 	VkMemoryAllocateFlagsInfoKHR allocFlagsInfo = { VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_FLAGS_INFO_KHR };
 	allocFlagsInfo.flags = VK_MEMORY_ALLOCATE_DEVICE_ADDRESS_BIT_KHR;
 
 	allocInfo.pNext = &allocFlagsInfo;
+#endif
 
 	if (vkAllocateMemory(g_vulkanInstance->getDevice(), &allocInfo, nullptr, &m_bufferMemory) != VK_SUCCESS)
 		Debug::sendError("Error : memory allocation");

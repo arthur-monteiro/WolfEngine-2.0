@@ -63,7 +63,7 @@ Wolf::WolfEngine::WolfEngine(const WolfInstanceCreateInfo& createInfo) : m_rende
 
 #ifdef __ANDROID__
 	int32_t width = ANativeWindow_getWidth(createInfo.androidWindow);
-	int32_t height = ANativeWindow_getHeight(createInfo.androidWindow);
+	int32_t height = 2340; // ANativeWindow_getHeight(createInfo.androidWindow);
 	VkExtent2D extent = { static_cast<uint32_t>(width), static_cast<uint32_t>(height) };
 #else
 	VkExtent2D extent = chooseExtent(m_window->getWindow());

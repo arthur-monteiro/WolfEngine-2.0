@@ -1,10 +1,19 @@
 #pragma once
 
+#ifdef WOLF_VULKAN
 // START TEMP
-#ifdef WOLF_USE_VULKAN
 #include <vulkan/vulkan.h>
-#endif
 // END TEMP
+
+#define WOLF_VULKAN_1_1
+#ifndef WOLF_VULKAN_FORCE_1_1
+#define WOLF_VULKAN_1_2
+#ifndef WOLF_VULKAN_FORCE_1_2
+#define WOLF_VULKAN_1_3
+#endif
+#endif
+
+#endif
 
 struct GLFWwindow;
 

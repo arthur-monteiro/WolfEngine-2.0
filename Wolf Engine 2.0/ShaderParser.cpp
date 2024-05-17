@@ -23,7 +23,9 @@ uint64_t Wolf::ShaderParser::MaterialFetchProcedure::computeHash() const
 Wolf::ShaderParser::ShaderParser(const std::string& filename, const std::vector<std::string>& conditionBlocksToInclude, uint32_t cameraDescriptorSlot, uint32_t bindlessDescriptorSlot, const MaterialFetchProcedure& materialFetchProcedure)
 {
     m_filename = filename;
+#ifndef __ANDROID__
     m_filenamesWithLastModifiedTime.insert({ filename, std::filesystem::last_write_time(filename) });
+#endif
     m_conditionBlocksToInclude = conditionBlocksToInclude;
 
     m_cameraDescriptorSlot = cameraDescriptorSlot;
@@ -36,6 +38,10 @@ Wolf::ShaderParser::ShaderParser(const std::string& filename, const std::vector<
 
 bool Wolf::ShaderParser::compileIfFileHasBeenModified(const std::vector<std::string>& conditionBlocksToInclude)
 {
+#ifdef __ANDROID__
+    return false;
+#endif
+
     bool needToRecompile = false;
     if(conditionBlocksToInclude != m_conditionBlocksToInclude)
     {
@@ -263,6 +269,7 @@ bool Wolf::ShaderParser::isRespectingConditions(const std::vector<std::string>& 
     {
         Debug::sendError("Permutations are not available on android (std::ranges not supported)");
     }
+    return true;
 #endif
 }
 

@@ -32,7 +32,7 @@ namespace Wolf
 	private:
 		uint32_t m_windowWidth = 0;
 		uint32_t m_windowHeight = 0;
-		uint32_t m_maxCachedFrames = 0;
+		uint32_t m_maxCachedFrames = 1;
 		bool m_useVIL = false;
 		bool m_useRenderDoc = false;
 		bool m_saveUICommands = false;

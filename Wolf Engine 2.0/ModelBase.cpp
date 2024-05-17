@@ -25,12 +25,14 @@ Wolf::ModelBase::ModelBase(ModelLoadingInfo& modelLoadingInfo, bool requestAccel
 	descriptorSetGenerator.setBuffer(0, *m_uniformBuffer);
 	m_descriptorSet->update(descriptorSetGenerator.getDescriptorSetCreateInfo());
 
+#if !defined(__ANDROID__) or __ANDROID_MIN_SDK_VERSION__ > 30
 	if (requestAccelerationStructuresBuild)
 	{
 		modelLoadingInfo.vulkanQueueLock->lock();
 		buildAccelerationStructures();
 		modelLoadingInfo.vulkanQueueLock->unlock();
 	}
+#endif
 }
 
 Wolf::ModelBase::ModelBase(ModelLoadingInfo& modelLoadingInfo, bool requestAccelerationStructuresBuild, const ResourceNonOwner<MaterialsGPUManager>& materialsGPUManager)
@@ -68,6 +70,7 @@ void Wolf::ModelBase::updateGraphic()
 	m_previousTransform = m_transform;
 }
 
+#if !defined(__ANDROID__) or __ANDROID_MIN_SDK_VERSION__ > 30
 void Wolf::ModelBase::buildAccelerationStructures()
 {
 	BottomLevelAccelerationStructureCreateInfo blasCreateInfo;
@@ -86,3 +89,4 @@ void Wolf::ModelBase::buildAccelerationStructures()
 	blasCreateInfo.geometryInfos = geometries;
 	m_blas.reset(BottomLevelAccelerationStructure::createBottomLevelAccelerationStructure(blasCreateInfo));
 }
+#endif

@@ -2,7 +2,7 @@
 
 #include <Debug.h>
 
-#ifdef WOLF_USE_VULKAN
+#ifdef WOLF_VULKAN
 #include "../Private/Vulkan/BufferVulkan.h"
 #include "../Private/Vulkan/PipelineVulkan.h"
 #include "../Private/Vulkan/Vulkan.h"
@@ -10,7 +10,7 @@
 
 Wolf::ShaderBindingTable::ShaderBindingTable(uint32_t shaderCount, const Pipeline& pipeline)
 {
-#ifdef WOLF_USE_VULKAN
+#ifdef WOLF_VULKAN
 	const uint32_t groupHandleSize = g_vulkanInstance->getRayTracingProperties().shaderGroupHandleSize;
 	m_baseAlignement = g_vulkanInstance->getRayTracingProperties().shaderGroupBaseAlignment;
 

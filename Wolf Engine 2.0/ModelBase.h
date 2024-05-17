@@ -27,7 +27,9 @@ namespace Wolf
 		virtual void addMeshToRenderList(RenderMeshList& renderMeshList, const RenderMeshList::MeshToRenderInfo::InstanceInfos& instanceInfos = { nullptr, 1 });
 		void updateGraphic();
 
+#if !defined(__ANDROID__) or __ANDROID_MIN_SDK_VERSION__ > 30
 		const BottomLevelAccelerationStructure* getBLAS() const { return m_blas.get(); }
+#endif
 		const glm::mat4& getTransform() const { return m_transform; }
 		const DescriptorSetLayout* getDescriptorSetLayout() const { return m_descriptorSetLayout->getResource(); }
 
@@ -36,7 +38,9 @@ namespace Wolf
 		void setPipelineSet(PipelineSet* pipelineSet) { m_pipelineSet = pipelineSet; }
 
 	private:
+#if !defined(__ANDROID__) or __ANDROID_MIN_SDK_VERSION__ > 30
 		void buildAccelerationStructures();
+#endif
 
 		ModelData m_modelData;
 		PipelineSet* m_pipelineSet = nullptr;
@@ -54,6 +58,8 @@ namespace Wolf
 		ResourceUniqueOwner<DescriptorSet> m_descriptorSet;
 		std::unique_ptr<Buffer> m_uniformBuffer;
 
+#if !defined(__ANDROID__) or __ANDROID_MIN_SDK_VERSION__ > 30
 		std::unique_ptr<BottomLevelAccelerationStructure> m_blas;
+#endif
 	};
 }

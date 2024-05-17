@@ -92,7 +92,11 @@ void Wolf::SwapChainVulkan::initialize(VkExtent2D extent)
 		createInfo.imageSharingMode = VK_SHARING_MODE_EXCLUSIVE;
 
 	createInfo.preTransform = swapChainSupport.capabilities.currentTransform;
+#ifdef __ANDROID__
+	createInfo.compositeAlpha = VK_COMPOSITE_ALPHA_INHERIT_BIT_KHR;
+#else
 	createInfo.compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
+#endif
 	createInfo.presentMode = presentMode;
 	createInfo.clipped = VK_TRUE;
 

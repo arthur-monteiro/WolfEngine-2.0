@@ -137,7 +137,7 @@ namespace Wolf
 #ifdef RESOURCE_DEBUG
 				[this](ResourceNonOwner<U>* instance) { nonOwnerResourceDeleteTracked(instance); }, [this](ResourceNonOwner<U>* instance) { addNonOwnerResourceTracked(instance); }, location
 #else
-				[this]{ nonOwnerResourceDeleteCommon(); }, [this] { addNonOwnerResourceCommon(); }
+				[this] { nonOwnerResourceDeleteCommon(); }, [this] { addNonOwnerResourceCommon(); }
 #endif
 			);
 		}

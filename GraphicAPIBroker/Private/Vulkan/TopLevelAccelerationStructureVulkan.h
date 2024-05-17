@@ -1,5 +1,7 @@
 #pragma once
 
+#if !defined(__ANDROID__) or __ANDROID_MIN_SDK_VERSION__ > 30
+
 #include "AccelerationStructureVulkan.h"
 #include "../../Public/TopLevelAccelerationStructure.h"
 
@@ -16,3 +18,4 @@ namespace Wolf
 	};
 }
 
+#endif

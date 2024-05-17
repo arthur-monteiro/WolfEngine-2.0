@@ -71,6 +71,7 @@ void Wolf::DescriptorSetVulkan::update(const DescriptorSetUpdateInfo& descriptor
 		descriptorWrites.push_back(descriptorWrite);
 	}
 
+#if !defined(__ANDROID__) or __ANDROID_MIN_SDK_VERSION__ > 30
 	for (uint32_t i = 0; i < descriptorSetCreateInfo.descriptorAccelerationStructures.size(); ++i)
 	{
 		VkWriteDescriptorSet descriptorWrite{};
@@ -91,6 +92,7 @@ void Wolf::DescriptorSetVulkan::update(const DescriptorSetUpdateInfo& descriptor
 
 		descriptorWrites.push_back(descriptorWrite);
 	}
+#endif
 
 	vkUpdateDescriptorSets(g_vulkanInstance->getDevice(), static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);
 }

@@ -3,6 +3,9 @@
 #include <array>
 #include <unordered_map>
 #include <string>
+#include <vector>
+
+#include <vulkan/vulkan_core.h>
 
 #include "../../Public/Image.h"
 
