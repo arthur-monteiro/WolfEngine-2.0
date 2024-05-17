@@ -6,17 +6,30 @@
 
 Wolf::RenderPassVulkan::RenderPassVulkan(const std::vector<Attachment>& attachments)
 {
+#ifdef WOLF_VULKAN_1_2
 	std::vector<VkAttachmentReference2> colorAttachmentRefs;
 	VkAttachmentReference2 depthAttachmentRef; bool useDepthAttachment = false;
 	std::vector<VkAttachmentReference2> resolveAttachmentRefs;
 	VkAttachmentReference2 shadingRateAttachmentRef; bool useShadingRateAttachment = false;
+#else
+	std::vector<VkAttachmentReference> colorAttachmentRefs;
+	VkAttachmentReference depthAttachmentRef; bool useDepthAttachment = false;
+	std::vector<VkAttachmentReference> resolveAttachmentRefs;
+#endif
 
 	// Attachment descriptions
+#ifdef WOLF_VULKAN_1_2
 	std::vector<VkAttachmentDescription2> attachmentDescriptions;
+#else
+	std::vector<VkAttachmentDescription> attachmentDescriptions;
+#endif
+	
 	for (int i(0); i < attachments.size(); ++i)
 	{
 		attachmentDescriptions.resize(attachmentDescriptions.size() + 1);
+#ifdef WOLF_VULKAN_1_2
 		attachmentDescriptions[i].sType = VK_STRUCTURE_TYPE_ATTACHMENT_DESCRIPTION_2;
+#endif
 		attachmentDescriptions[i].format = attachments[i].format;
 		attachmentDescriptions[i].samples = attachments[i].sampleCount;
 		attachmentDescriptions[i].loadOp = attachments[i].loadOperation;
@@ -25,31 +38,45 @@ Wolf::RenderPassVulkan::RenderPassVulkan(const std::vector<Attachment>& attachme
 		attachmentDescriptions[i].stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
 		attachmentDescriptions[i].initialLayout = attachments[i].initialLayout;
 		attachmentDescriptions[i].finalLayout = attachments[i].finalLayout;
+#ifdef WOLF_VULKAN_1_2
 		attachmentDescriptions[i].pNext = nullptr;
+#endif
 
+#ifdef WOLF_VULKAN_1_2
 		VkAttachmentReference2 ref{};
 		ref.sType = VK_STRUCTURE_TYPE_ATTACHMENT_REFERENCE_2;
+#else
+		VkAttachmentReference ref{};
+#endif
+		
 		ref.attachment = i;
 
 		if ((attachments[i].usageType & VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT) && (attachments[i].usageType & VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT))
 		{
+#ifdef WOLF_VULKAN_1_2
 			ref.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+#endif
 			ref.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
 			resolveAttachmentRefs.push_back(ref);
 		}
 		else if (attachments[i].usageType & VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT)
 		{
+#ifdef WOLF_VULKAN_1_2
 			ref.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+#endif
 			ref.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
 			colorAttachmentRefs.push_back(ref);
 		}
 		else if (attachments[i].usageType & VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT)
 		{
+#ifdef WOLF_VULKAN_1_2
 			ref.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT;
+#endif
 			ref.layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
 			depthAttachmentRef = ref;
 			useDepthAttachment = true;
 		}
+#ifdef WOLF_VULKAN_1_2
 		else if(attachments[i].usageType & VK_IMAGE_USAGE_FRAGMENT_SHADING_RATE_ATTACHMENT_BIT_KHR)
 		{
 			ref.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
@@ -57,11 +84,17 @@ Wolf::RenderPassVulkan::RenderPassVulkan(const std::vector<Attachment>& attachme
 			useShadingRateAttachment = true;
 			shadingRateAttachmentRef = ref;
 		}
+#endif
 	}
 
 	// Subpass
+#ifdef WOLF_VULKAN_1_2
 	VkSubpassDescription2 subpass = {};
 	subpass.sType = VK_STRUCTURE_TYPE_SUBPASS_DESCRIPTION_2;
+#else
+	VkSubpassDescription subpass = {};
+#endif
+
 	subpass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
 	subpass.colorAttachmentCount = static_cast<uint32_t>(colorAttachmentRefs.size());
 	subpass.pColorAttachments = colorAttachmentRefs.data();
@@ -70,6 +103,7 @@ Wolf::RenderPassVulkan::RenderPassVulkan(const std::vector<Attachment>& attachme
 	if (!resolveAttachmentRefs.empty())
 		subpass.pResolveAttachments = resolveAttachmentRefs.data();
 
+#ifdef WOLF_VULKAN_1_2
 	VkFragmentShadingRateAttachmentInfoKHR shadingRateAttachmentInfo{};
 	if (useShadingRateAttachment)
 	{
@@ -82,12 +116,24 @@ Wolf::RenderPassVulkan::RenderPassVulkan(const std::vector<Attachment>& attachme
 	{
 		subpass.pNext = nullptr;
 	}
+#endif
 
 	// Dependencies
+#ifdef WOLF_VULKAN_1_2
 	const std::vector<VkSubpassDependency2> dependencies(0);
+#else
+	const std::vector<VkSubpassDependency> dependencies(0);
+#endif
+	
 
+#ifdef WOLF_VULKAN_1_2
 	VkRenderPassCreateInfo2 renderPassInfo = {};
 	renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO_2;
+#else
+	VkRenderPassCreateInfo renderPassInfo = {};
+	renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
+#endif
+	
 	renderPassInfo.attachmentCount = static_cast<uint32_t>(attachmentDescriptions.size());
 	renderPassInfo.pAttachments = attachmentDescriptions.data();
 	renderPassInfo.subpassCount = 1;
@@ -96,7 +142,11 @@ Wolf::RenderPassVulkan::RenderPassVulkan(const std::vector<Attachment>& attachme
 	renderPassInfo.pDependencies = dependencies.data();
 	renderPassInfo.pNext = nullptr;
 
+#ifdef WOLF_VULKAN_1_2
 	if (vkCreateRenderPass2(g_vulkanInstance->getDevice(), &renderPassInfo, nullptr, &m_renderPass) != VK_SUCCESS)
+#else
+	if (vkCreateRenderPass(g_vulkanInstance->getDevice(), &renderPassInfo, nullptr, &m_renderPass) != VK_SUCCESS)
+#endif
 		Debug::sendError("Error : create render pass");
 
 	m_extent = attachments[0].extent;

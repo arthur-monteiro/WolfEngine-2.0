@@ -10,7 +10,9 @@
 
 const Wolf::Vulkan* Wolf::g_vulkanInstance = nullptr;
 
+#if !defined(__ANDROID__) or __ANDROID_MIN_SDK_VERSION__ > 30
 void registerGlobalDeviceForDebugMarker(VkDevice device);
+#endif
 
 #ifdef __ANDROID__
 Wolf::Vulkan::Vulkan(struct ANativeWindow* window)
@@ -54,8 +56,8 @@ Wolf::Vulkan::Vulkan(GLFWwindow* glfwWindowPtr, bool useOVR)
 //#endif
 	createInstance();
 
-#ifndef __ANDROID__
 	setupDebugMessenger();
+#ifndef __ANDROID__
 
 	if (glfwCreateWindowSurface(m_instance, glfwWindowPtr, nullptr, &m_surface) != VK_SUCCESS)
 	{
@@ -96,10 +98,12 @@ Wolf::Vulkan::Vulkan(GLFWwindow* glfwWindowPtr, bool useOVR)
 
 	initializeShadingRateFunctions(m_device);
 
+#if !defined(__ANDROID__) or __ANDROID_MIN_SDK_VERSION__ > 30
 	if(useDebugMarkers)
 	{
 		registerGlobalDeviceForDebugMarker(m_device);
 	}
+#endif
 
 	createCommandPools();
 

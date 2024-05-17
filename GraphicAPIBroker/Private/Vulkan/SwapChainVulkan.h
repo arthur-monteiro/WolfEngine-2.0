@@ -18,7 +18,7 @@ namespace Wolf
 		uint32_t getCurrentImage(uint32_t currentFrameGPU) const override;
 		void present(const Semaphore* waitSemaphore, uint32_t imageIndex) const override;
 
-		void recreate(VkExtent2D extent);
+		void recreate(VkExtent2D extent) override;
 	
 	private:
 		void initialize(VkExtent2D extent);

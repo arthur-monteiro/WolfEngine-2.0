@@ -1,5 +1,7 @@
 #include "TopLevelAccelerationStructureVulkan.h"
 
+#if !defined(__ANDROID__) or __ANDROID_MIN_SDK_VERSION__ > 30
+
 #include <Debug.h>
 
 #include "BottomLevelAccelerationStructureVulkan.h"
@@ -78,3 +80,5 @@ Wolf::TopLevelAccelerationStructureVulkan::TopLevelAccelerationStructureVulkan(s
 
 	m_scratchBuffer.reset();
 }
+
+#endif

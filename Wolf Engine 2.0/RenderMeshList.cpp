@@ -15,7 +15,7 @@ void Wolf::RenderMeshList::addMeshToRender(const MeshToRenderInfo& meshToRenderI
 	const std::vector<uint64_t> pipelinesHash = meshToRenderInfo.pipelineSet->retrieveAllPipelinesHash();
 	for (uint64_t pipelineHash : pipelinesHash)
 	{
-		if (std::ranges::find(m_uniquePipelinesHash, pipelineHash) == m_uniquePipelinesHash.end())
+		if (std::find(m_uniquePipelinesHash.begin(), m_uniquePipelinesHash.end(), pipelineHash) == m_uniquePipelinesHash.end())
 		{
 			m_uniquePipelinesHash.push_back(pipelineHash);
 		}
@@ -68,6 +68,7 @@ void Wolf::RenderMeshList::draw(const RecordContext& context, const CommandBuffe
 
 void Wolf::RenderMeshList::clear()
 {
+	m_meshesToRenderByPipelineIdx.clear();
 	m_currentFrameMeshesToRender.clear();
 	m_nextFrameMeshesToRender.clear();
 }
@@ -94,7 +95,7 @@ void Wolf::RenderMeshList::moveToNextFrame(const CameraList& cameraList)
 					RenderMesh* renderMeshPtr = meshToRender.get();
 					m_meshesToRenderByPipelineIdx[pipelineIdx].push_back(renderMeshPtr);
 
-					if (std::ranges::find(uniqueRenderMeshes, renderMeshPtr) == uniqueRenderMeshes.end())
+					if (std::find(uniqueRenderMeshes.begin(), uniqueRenderMeshes.end(), renderMeshPtr) == uniqueRenderMeshes.end())
 						uniqueRenderMeshes.push_back(renderMeshPtr);
 				}
 			}

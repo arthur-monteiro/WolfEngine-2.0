@@ -1,6 +1,6 @@
 #pragma once
 
-#ifdef WOLF_USE_VULKAN
+#ifdef WOLF_VULKAN
 
 #include <cstdint>
 #include <vector>

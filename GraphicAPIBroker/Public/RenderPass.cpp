@@ -1,12 +1,12 @@
 #include "RenderPass.h"
 
-#ifdef WOLF_USE_VULKAN
+#ifdef WOLF_VULKAN
 #include "../Private/Vulkan/RenderPassVulkan.h"
 #endif
 
 Wolf::RenderPass* Wolf::RenderPass::createRenderPass(const std::vector<Attachment>& attachments)
 {
-#ifdef WOLF_USE_VULKAN
+#ifdef WOLF_VULKAN
 	return new RenderPassVulkan(attachments);
 #else
 	return nullptr;

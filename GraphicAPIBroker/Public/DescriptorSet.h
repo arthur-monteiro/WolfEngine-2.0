@@ -27,7 +27,7 @@ namespace Wolf
 		struct ImageData
 		{
 			VkImageLayout imageLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-			ImageView imageView = nullptr;
+			ImageView imageView = IMAGE_VIEW_NULL;
 			const Sampler* sampler = nullptr;
 		};
 		struct DescriptorImage

@@ -2,13 +2,13 @@
 
 #include "Fence.h"
 
-#ifdef WOLF_USE_VULKAN
+#ifdef WOLF_VULKAN
 #include "../Private/Vulkan/SwapChainVulkan.h"
 #endif
 
 Wolf::SwapChain* Wolf::SwapChain::createSwapChain(VkExtent2D extent)
 {
-#ifdef WOLF_USE_VULKAN
+#ifdef WOLF_VULKAN
 	return new SwapChainVulkan(extent);
 #else
 	return nullptr;

@@ -1,5 +1,7 @@
 #include "vulkan/vulkan.h"
 
+#if !defined(__ANDROID__) or __ANDROID_MIN_SDK_VERSION__ > 30
+
 static VkDevice sGlobalDevice = VK_NULL_HANDLE;
 
 void registerGlobalDeviceForDebugMarker(VkDevice device)
@@ -32,3 +34,5 @@ vkCmdDebugMarkerEndEXT(VkCommandBuffer commandBuffer)
         vkGetDeviceProcAddr(sGlobalDevice, "vkCmdDebugMarkerEndEXT"));
     return call(commandBuffer);
 }
+
+#endif
