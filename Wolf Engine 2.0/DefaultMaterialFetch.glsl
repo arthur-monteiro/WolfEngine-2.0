@@ -9,6 +9,8 @@ struct InputMaterialInfo
     uint albedoIdx;
 	uint normalIdx;
 	uint roughnessMetalnessAOIdx;
+
+    uint shadingMode;
 };
 
 layout(std430, binding = 2, set = £BINDLESS_DESCRIPTOR_SLOT) readonly restrict buffer MaterialBufferLayout
@@ -23,6 +25,9 @@ struct MaterialInfo
     float roughness;
     float metalness;
     float matAO;
+    float anisoStrength;
+
+    uint shadingMode;
 };
 
 MaterialInfo fetchMaterial(in const vec2 texCoords, in const uint materialId, in const mat3 matrixTBN, in const vec3 worldPos)
@@ -31,10 +36,12 @@ MaterialInfo fetchMaterial(in const vec2 texCoords, in const uint materialId, in
 
     materialInfo.albedo = texture(sampler2D(textures[materialsInfo[materialId].albedoIdx], textureSampler), texCoords).rgb;
     materialInfo.normal = (texture(sampler2D(textures[materialsInfo[materialId].normalIdx], textureSampler), texCoords).rgb * 2.0 - vec3(1.0)) * matrixTBN;
-    vec3 combinedRoughnessMetalnessAO = texture(sampler2D(textures[materialsInfo[materialId].roughnessMetalnessAOIdx], textureSampler), texCoords).rgb;
-	materialInfo.roughness = combinedRoughnessMetalnessAO.r;
-	materialInfo.metalness = combinedRoughnessMetalnessAO.g;
-    materialInfo.matAO = combinedRoughnessMetalnessAO.b;
+    vec4 combinedRoughnessMetalnessAOAniso = texture(sampler2D(textures[materialsInfo[materialId].roughnessMetalnessAOIdx], textureSampler), texCoords).rgba;
+	materialInfo.roughness = combinedRoughnessMetalnessAOAniso.r;
+	materialInfo.metalness = combinedRoughnessMetalnessAOAniso.g;
+    materialInfo.matAO = combinedRoughnessMetalnessAOAniso.b;
+    materialInfo.anisoStrength = combinedRoughnessMetalnessAOAniso.a;
+    materialInfo.shadingMode = materialsInfo[materialId].shadingMode;
 
     return materialInfo;
 }

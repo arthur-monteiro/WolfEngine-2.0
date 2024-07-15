@@ -8,7 +8,7 @@
 
 namespace Wolf
 {
-	class BufferVulkan : public Buffer
+	class BufferVulkan final : public Buffer
 	{
 	public:
 		BufferVulkan(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties);

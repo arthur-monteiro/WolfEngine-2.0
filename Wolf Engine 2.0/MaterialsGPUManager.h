@@ -1,5 +1,7 @@
 #pragma once
 
+#include <mutex>
+
 #include "BindlessDescriptor.h"
 #include "ResourceUniqueOwner.h"
 
@@ -14,14 +16,36 @@ namespace Wolf
 
 		MaterialsGPUManager(const std::vector<DescriptorSetGenerator::ImageDescription>& firstImages);
 
-		void addNewMaterials(const std::vector<DescriptorSetGenerator::ImageDescription>& images);
+		struct MaterialInfo
+		{
+			std::array<ResourceUniqueOwner<Image>, TEXTURE_COUNT_PER_MATERIAL> images;
+			uint32_t shadingMode;
+
+#ifdef MATERIAL_DEBUG
+			std::string materialName;
+			std::vector<std::string> imageNames;
+#endif
+		};
+		void addNewMaterials(std::vector<MaterialInfo>& materials);
 		void pushMaterialsToGPU();
+
+		void changeMaterialShadingModeBeforeFrame(uint32_t materialIdx, uint32_t newShadingMode) const;
 
 		void bind(const CommandBuffer& commandBuffer, const Pipeline& pipeline, uint32_t descriptorSlot) const;
 		[[nodiscard]] static const DescriptorSetLayout* getDescriptorSetLayout() { return LazyInitSharedResource<DescriptorSetLayout, BindlessDescriptor>::getResource(); }
 		[[nodiscard]] const DescriptorSet* getDescriptorSet() const { return m_descriptorSet.get(); }
 
 		uint32_t getCurrentMaterialCount() const { return m_currentMaterialCount + static_cast<uint32_t>(m_newMaterialsInfo.size()); }
+
+#ifdef MATERIAL_DEBUG
+		struct MaterialCacheInfo
+		{
+			std::string materialName;
+			std::vector<std::string> imageNames;
+			uint32_t shadingMode;
+		};
+		const std::vector<MaterialCacheInfo>& getMaterialsInfo() const { return m_materialsInfoCache; }
+#endif
 
 	private:
 		uint32_t addImagesToBindless(const std::vector<DescriptorSetGenerator::ImageDescription>& images);
@@ -34,16 +58,18 @@ namespace Wolf
 
 		// Material layout
 		static constexpr uint32_t MAX_MATERIAL_COUNT = 1024;
-		struct MaterialInfo
+		struct MaterialGPUInfo
 		{
 			uint32_t albedoIdx = 0;
 			uint32_t normalIdx = 1;
 			uint32_t roughnessMetalnessAOIdx = 2;
+
+			uint32_t shadingMode = 0;
 		};
 		uint32_t m_currentMaterialCount = 0;
 
 		// Info to add
-		std::vector<MaterialInfo> m_newMaterialsInfo;
+		std::vector<MaterialGPUInfo> m_newMaterialsInfo;
 
 		// GPU resources
 		ResourceUniqueOwner<Buffer> m_materialsBuffer;
@@ -51,5 +77,10 @@ namespace Wolf
 		std::unique_ptr<DescriptorSet> m_descriptorSet;
 
 		std::unique_ptr<Sampler> m_sampler;
+
+		// Debug cache
+#ifdef MATERIAL_DEBUG
+		std::vector<MaterialCacheInfo> m_materialsInfoCache;
+#endif
 	};
 }

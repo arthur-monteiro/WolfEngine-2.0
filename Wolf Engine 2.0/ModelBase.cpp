@@ -40,14 +40,7 @@ Wolf::ModelBase::ModelBase(ModelLoadingInfo& modelLoadingInfo, bool requestAccel
 {
 	if (modelLoadingInfo.materialLayout != MaterialLoader::InputMaterialLayout::NO_MATERIAL)
 	{
-		std::vector<DescriptorSetGenerator::ImageDescription> imageDescriptions;
-		for (const ResourceUniqueOwner<Image>& image : m_modelData.images)
-		{
-			imageDescriptions.resize(imageDescriptions.size() + 1);
-			imageDescriptions.back().imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-			imageDescriptions.back().imageView = image->getDefaultImageView();
-		}
-		materialsGPUManager->addNewMaterials(imageDescriptions);
+		materialsGPUManager->addNewMaterials(m_modelData.materials);
 	}
 }
 

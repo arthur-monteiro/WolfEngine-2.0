@@ -1,9 +1,9 @@
-#include "CommandBufferVulkan.h"
 #ifdef WOLF_VULKAN
 
 #include <Debug.h>
 
 #include "BufferVulkan.h"
+#include "CommandBufferVulkan.h"
 #include "FenceVulkan.h"
 #include "SemaphoreVulkan.h"
 #include "Vulkan.h"

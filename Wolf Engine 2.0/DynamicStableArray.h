@@ -138,7 +138,10 @@ namespace Wolf
 	template <class T, size_t BatchSize>
 	T& DynamicStableArray<T, BatchSize>::back()
 	{
-		return m_pages.back()->elements[m_pages.back()->count - 1];
+		if (m_pages.back()->count > 0)
+			return m_pages.back()->elements[m_pages.back()->count - 1];
+		else
+			return m_pages[m_pages.size() - 2]->elements.back();
 	}
 
 	template <class T, size_t BatchSize>

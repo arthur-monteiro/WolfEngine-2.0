@@ -114,7 +114,7 @@ namespace Wolf
 	struct ModelData
 	{
 		ResourceUniqueOwner<Mesh> mesh;
-		std::vector<ResourceUniqueOwner<Image>> images;
+		std::vector<MaterialsGPUManager::MaterialInfo> materials;
 	};
 
 	class ModelLoader
@@ -132,7 +132,7 @@ namespace Wolf
 		bool loadCache(ModelLoadingInfo& modelLoadingInfo) const;
 
 		// Materials
-		void loadMaterial(const tinyobj::material_t& material, const std::string& mtlFolder, MaterialLoader::InputMaterialLayout materialLayout, uint32_t& indexTexture);
+		void loadMaterial(const tinyobj::material_t& material, const std::string& mtlFolder, MaterialLoader::InputMaterialLayout materialLayout, uint32_t indexMaterial);
 		
 		bool m_useCache;
 		std::vector<std::vector<unsigned char>> m_imagesData;
