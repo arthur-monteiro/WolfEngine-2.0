@@ -85,7 +85,7 @@ void Wolf::ShaderParser::parseAndCompile()
 
     std::ifstream inFile(m_filename);
 
-    std::vector<std::string> extensions = { ".vert", ".frag", ".comp", ".rgen", ".rmiss", ".rchit" };
+    std::vector<std::string> extensions = { ".vert", ".frag", ".comp", ".rgen", ".rmiss", ".rchit", ".tesc", ".tese" };
 
     std::string parsedFilename = m_filename;
 

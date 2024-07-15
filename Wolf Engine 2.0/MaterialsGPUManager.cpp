@@ -15,9 +15,9 @@ Wolf::MaterialsGPUManager::MaterialsGPUManager(const std::vector<DescriptorSetGe
 	descriptorSetLayoutGenerator.addStorageBuffer(VK_SHADER_STAGE_FRAGMENT_BIT, BINDING_SLOT + 2);
 
 	m_sampler.reset(Sampler::createSampler(VK_SAMPLER_ADDRESS_MODE_REPEAT, 11, VK_FILTER_LINEAR));
-	m_materialsBuffer.reset(Buffer::createBuffer(MAX_MATERIAL_COUNT * sizeof(MaterialInfo), VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT));
-	constexpr MaterialInfo initMaterialInfo{ 0, 1, 2 };
-	m_materialsBuffer->transferCPUMemoryWithStagingBuffer(&initMaterialInfo, sizeof(MaterialInfo), 0, 0);
+	m_materialsBuffer.reset(Buffer::createBuffer(MAX_MATERIAL_COUNT * sizeof(MaterialGPUInfo), VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT));
+	constexpr MaterialGPUInfo initMaterialInfo{ 0, 1, 2 };
+	m_materialsBuffer->transferCPUMemoryWithStagingBuffer(&initMaterialInfo, sizeof(MaterialGPUInfo), 0, 0);
 	m_currentMaterialCount = 1;
 
 	m_descriptorSetLayout.reset(new LazyInitSharedResource<DescriptorSetLayout, BindlessDescriptor>([&descriptorSetLayoutGenerator](std::unique_ptr<DescriptorSetLayout>& descriptorSetLayout)
@@ -35,40 +35,48 @@ Wolf::MaterialsGPUManager::MaterialsGPUManager(const std::vector<DescriptorSetGe
 	m_currentBindlessCount = static_cast<uint32_t>(firstImages.size());
 }
 
-void Wolf::MaterialsGPUManager::addNewMaterials(const std::vector<DescriptorSetGenerator::ImageDescription>& images)
+void Wolf::MaterialsGPUManager::addNewMaterials(std::vector<MaterialInfo>& materials)
 {
-	if (images.size() % TEXTURE_COUNT_PER_MATERIAL != 0)
-	{
-		Debug::sendError("Material doesn't have right number of images");
-	}
-
-	const uint32_t materialCountToAdd = static_cast<uint32_t>(images.size()) / TEXTURE_COUNT_PER_MATERIAL;
+	const size_t materialCountToAdd = materials.size();
 	const uint32_t oldNewMaterialsInfoCount = static_cast<uint32_t>(m_newMaterialsInfo.size());
 	m_newMaterialsInfo.resize(m_newMaterialsInfo.size() + materialCountToAdd);
 
 	// Clean images to remove nullptr
 	std::vector<DescriptorSetGenerator::ImageDescription> imagesCleaned;
-	imagesCleaned.reserve(images.size());
-	for (const DescriptorSetGenerator::ImageDescription& imageDescription : images)
+	imagesCleaned.reserve(materialCountToAdd * TEXTURE_COUNT_PER_MATERIAL);
+	for (MaterialInfo& materialInfo : materials)
 	{
-		if (imageDescription.imageView)
+		for (ResourceUniqueOwner<Image>& image : materialInfo.images)
 		{
-			imagesCleaned.push_back(imageDescription);
+			if (image)
+			{
+				imagesCleaned.emplace_back(VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, image->getDefaultImageView());
+			}
 		}
 	}
+	
 	uint32_t currentBindlessOffset = addImagesToBindless(imagesCleaned);
 
 	for (uint32_t newMaterialIdx = 0; newMaterialIdx < materialCountToAdd; ++newMaterialIdx)
 	{
-		MaterialInfo& newMaterialInfo = m_newMaterialsInfo[oldNewMaterialsInfoCount + newMaterialIdx];
+		MaterialGPUInfo& newMaterialInfo = m_newMaterialsInfo[oldNewMaterialsInfoCount + newMaterialIdx];
 
-		if (images[newMaterialIdx / TEXTURE_COUNT_PER_MATERIAL].imageView)
+		if (materials[newMaterialIdx].images[0])
 			newMaterialInfo.albedoIdx = currentBindlessOffset++;
-		if (images[newMaterialIdx / TEXTURE_COUNT_PER_MATERIAL + 1].imageView)
+		if (materials[newMaterialIdx].images[1])
 			newMaterialInfo.normalIdx = currentBindlessOffset++;
-		if (images[newMaterialIdx / TEXTURE_COUNT_PER_MATERIAL + 2].imageView)
+		if (materials[newMaterialIdx].images[2])
 			newMaterialInfo.roughnessMetalnessAOIdx = currentBindlessOffset++;
+
+		newMaterialInfo.shadingMode = materials[newMaterialIdx].shadingMode;
 	}
+
+#ifdef MATERIAL_DEBUG
+	for (const MaterialInfo& material : materials)
+	{
+		m_materialsInfoCache.push_back({ material.materialName, material.imageNames, material.shadingMode });
+	}
+#endif
 }
 
 void Wolf::MaterialsGPUManager::pushMaterialsToGPU()
@@ -76,10 +84,15 @@ void Wolf::MaterialsGPUManager::pushMaterialsToGPU()
 	if (m_newMaterialsInfo.empty())
 		return;
 
-	m_materialsBuffer->transferCPUMemoryWithStagingBuffer(m_newMaterialsInfo.data(), m_newMaterialsInfo.size() * sizeof(MaterialInfo), 0, m_currentMaterialCount * sizeof(MaterialInfo));
+	m_materialsBuffer->transferCPUMemoryWithStagingBuffer(m_newMaterialsInfo.data(), m_newMaterialsInfo.size() * sizeof(MaterialGPUInfo), 0, m_currentMaterialCount * sizeof(MaterialGPUInfo));
 
 	m_currentMaterialCount += static_cast<uint32_t>(m_newMaterialsInfo.size());
 	m_newMaterialsInfo.clear();
+}
+
+void Wolf::MaterialsGPUManager::changeMaterialShadingModeBeforeFrame(uint32_t materialIdx, uint32_t newShadingMode) const
+{
+	m_materialsBuffer->transferCPUMemoryWithStagingBuffer(&newShadingMode, sizeof(uint32_t), 0, materialIdx * sizeof(MaterialGPUInfo) + offsetof(MaterialGPUInfo, shadingMode));
 }
 
 uint32_t Wolf::MaterialsGPUManager::addImagesToBindless(const std::vector<DescriptorSetGenerator::ImageDescription>& images)

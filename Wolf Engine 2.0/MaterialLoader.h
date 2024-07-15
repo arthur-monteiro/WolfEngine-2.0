@@ -27,6 +27,7 @@ namespace Wolf
 			std::string roughness;
 			std::string metalness;
 			std::string ao;
+			std::string anisoStrength;
 		};
 
 		MaterialLoader(const MaterialFileInfo& material, InputMaterialLayout materialLayout, bool useCache);

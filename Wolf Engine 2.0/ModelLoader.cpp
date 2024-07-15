@@ -8,6 +8,7 @@
 #include "AndroidCacheHelper.h"
 #include "CodeFileHashes.h"
 #include "ImageFileLoader.h"
+#include "MaterialLoader.h"
 #include "MaterialsGPUManager.h"
 #include "MipMapGenerator.h"
 
@@ -181,12 +182,13 @@ Wolf::ModelLoader::ModelLoader(ModelData& outputModel, ModelLoadingInfo& modelLo
 
 	if (modelLoadingInfo.materialLayout != MaterialLoader::InputMaterialLayout::NO_MATERIAL)
 	{
-		m_outputModel.images.resize(materials.size() * MaterialsGPUManager::TEXTURE_COUNT_PER_MATERIAL);
+		m_outputModel.materials.resize(materials.size());
 		m_imagesData.resize(materials.size() * MaterialsGPUManager::TEXTURE_COUNT_PER_MATERIAL); // is kept empty if no cache is used
-		uint32_t indexTexture = 0;
+		uint32_t indexMaterial = 0;
 		for (auto& material : materials)
 		{
-			loadMaterial(material, modelLoadingInfo.mtlFolder, modelLoadingInfo.materialLayout, indexTexture);
+			loadMaterial(material, modelLoadingInfo.mtlFolder, modelLoadingInfo.materialLayout, indexMaterial);
+			indexMaterial++;
 		}
 	}
 
@@ -223,14 +225,44 @@ Wolf::ModelLoader::ModelLoader(ModelData& outputModel, ModelLoadingInfo& modelLo
 			outCacheFile.write(reinterpret_cast<const char*>(&shapeInfo), sizeof(InternalShapeInfo));
 		}
 
-		/* Textures*/
-		uint32_t imageCount = static_cast<uint32_t>(m_outputModel.images.size());
-		outCacheFile.write(reinterpret_cast<char*>(&imageCount), sizeof(uint32_t));
-		for (uint32_t i = 0; i < m_imagesData.size(); ++i)
+		/* Materials */
+		uint32_t materialCount = static_cast<uint32_t>(m_outputModel.materials.size());
+		outCacheFile.write(reinterpret_cast<char*>(&materialCount), sizeof(uint32_t));
+
+		for (uint32_t materialIdx = 0; materialIdx < materialCount; ++materialIdx)
 		{
-			VkExtent3D extent = m_outputModel.images[i]->getExtent();
-			outCacheFile.write(reinterpret_cast<char*>(&extent), sizeof(VkExtent3D));
-			outCacheFile.write(reinterpret_cast<char*>(m_imagesData[i].data()), m_imagesData[i].size());
+			MaterialsGPUManager::MaterialInfo& currentMaterial = m_outputModel.materials[materialIdx];
+
+			uint32_t imageCount = MaterialsGPUManager::TEXTURE_COUNT_PER_MATERIAL;
+			outCacheFile.write(reinterpret_cast<char*>(&imageCount), sizeof(uint32_t));
+			for (uint32_t imageIdx = 0; imageIdx < imageCount; ++imageIdx)
+			{
+				ResourceUniqueOwner<Image>& currentImage = currentMaterial.images[imageIdx];
+
+				VkExtent3D extent = currentImage->getExtent();
+				outCacheFile.write(reinterpret_cast<char*>(&extent), sizeof(VkExtent3D));
+				const std::vector<unsigned char>& imageData = m_imagesData[materialIdx * MaterialsGPUManager::TEXTURE_COUNT_PER_MATERIAL + imageIdx];
+				outCacheFile.write(reinterpret_cast<const char*>(imageData.data()), static_cast<uint32_t>(imageData.size()));
+			}
+
+			uint32_t shadingMode = currentMaterial.shadingMode;
+			outCacheFile.write(reinterpret_cast<char*>(&shadingMode), sizeof(uint32_t));
+
+#ifdef MATERIAL_DEBUG
+			uint32_t materialNameSize = static_cast<uint32_t>(currentMaterial.materialName.size());
+			outCacheFile.write(reinterpret_cast<char*>(&materialNameSize), sizeof(uint32_t));
+			outCacheFile.write(currentMaterial.materialName.c_str(), materialNameSize);
+
+			uint32_t imageNameCount = static_cast<uint32_t>(currentMaterial.imageNames.size());
+			outCacheFile.write(reinterpret_cast<char*>(&imageNameCount), sizeof(uint32_t));
+
+			for (uint32_t imageNameIdx = 0; imageNameIdx < imageNameCount; ++imageNameIdx)
+			{
+				uint32_t imageNameSize = static_cast<uint32_t>(currentMaterial.imageNames[imageNameIdx].size());
+				outCacheFile.write(reinterpret_cast<char*>(&imageNameSize), sizeof(uint32_t));
+				outCacheFile.write(currentMaterial.imageNames[imageNameIdx].c_str(), imageNameSize);
+			}
+#endif
 		}
 
 		outCacheFile.close();
@@ -292,55 +324,90 @@ bool Wolf::ModelLoader::loadCache(ModelLoadingInfo& modelLoadingInfo) const
 			m_outputModel.mesh->addSubMesh(shapeInfo.indicesOffset, nextShapeInfo.indicesOffset - shapeInfo.indicesOffset);
 		}
 
-		uint32_t textureCount;
-		input.read(reinterpret_cast<char*>(&textureCount), sizeof(textureCount));
-		m_outputModel.images.resize(textureCount);
+		uint32_t materialCount;
+		input.read(reinterpret_cast<char*>(&materialCount), sizeof(materialCount));
+		m_outputModel.materials.resize(materialCount);
 
 		if (modelLoadingInfo.vulkanQueueLock)
 			modelLoadingInfo.vulkanQueueLock->lock();
 
 		std::chrono::steady_clock::time_point startTimer = std::chrono::steady_clock::now();
 
-		for (uint32_t i(0); i < textureCount; ++i)
+		for (uint32_t materialIdx(0); materialIdx < materialCount; ++materialIdx)
 		{
-			std::chrono::steady_clock::time_point currentTimer = std::chrono::steady_clock::now();
-			long long timeDiff = std::chrono::duration_cast<std::chrono::milliseconds>(currentTimer - startTimer).count();
+			uint32_t imageCount;
+			input.read(reinterpret_cast<char*>(&imageCount), sizeof(uint32_t));
 
-			if (timeDiff > 33 && modelLoadingInfo.vulkanQueueLock)
+			if (imageCount != MaterialsGPUManager::TEXTURE_COUNT_PER_MATERIAL)
 			{
-				modelLoadingInfo.vulkanQueueLock->unlock();
-				std::this_thread::sleep_for(std::chrono::milliseconds(1));
-				modelLoadingInfo.vulkanQueueLock->lock();
-
-				startTimer = std::chrono::steady_clock::now();
+				Debug::sendError("Image count is wrong, cache is maybe corrupted");
+				return false;
 			}
 
-			VkExtent3D extent;
-			input.read(reinterpret_cast<char*>(&extent), sizeof(extent));
+			for (uint32_t imageIdx = 0; imageIdx < imageCount; ++imageIdx)
+			{
+				std::chrono::steady_clock::time_point currentTimer = std::chrono::steady_clock::now();
+				long long timeDiff = std::chrono::duration_cast<std::chrono::milliseconds>(currentTimer - startTimer).count();
 
-			CreateImageInfo createImageInfo;
-			createImageInfo.extent = { (extent.width), (extent.height), 1 };
-			createImageInfo.aspect = VK_IMAGE_ASPECT_COLOR_BIT;
-			createImageInfo.format = i % MaterialsGPUManager::TEXTURE_COUNT_PER_MATERIAL == 0 ? VK_FORMAT_BC1_RGB_SRGB_BLOCK : VK_FORMAT_R8G8B8A8_UNORM;
-			createImageInfo.mipLevelCount = MAX_MIP_COUNT;
-			createImageInfo.usage = VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
-			m_outputModel.images[i].reset(Image::createImage(createImageInfo));
-
-			auto computeImageSize = [](VkExtent3D extent, float bbp, uint32_t mipLevel)
+				if (timeDiff > 33 && modelLoadingInfo.vulkanQueueLock)
 				{
-					const VkExtent3D adjustedExtent = { extent.width >> mipLevel, extent.height >> mipLevel, extent.depth };
-					return static_cast<VkDeviceSize>(static_cast<float>(adjustedExtent.width) * static_cast<float>(adjustedExtent.height) * static_cast<float>(adjustedExtent.depth) * bbp);
-				};
+					modelLoadingInfo.vulkanQueueLock->unlock();
+					std::this_thread::sleep_for(std::chrono::milliseconds(1));
+					modelLoadingInfo.vulkanQueueLock->lock();
 
-			for (uint32_t mipLevel = 0; mipLevel < m_outputModel.images[i]->getMipLevelCount(); ++mipLevel)
-			{
-				VkDeviceSize imageSize = computeImageSize(extent, m_outputModel.images[i]->getBBP(), mipLevel);
+					startTimer = std::chrono::steady_clock::now();
+				}
 
-				std::vector<unsigned char> pixels(imageSize);
-				input.read(reinterpret_cast<char*>(pixels.data()), pixels.size());
+				VkExtent3D extent;
+				input.read(reinterpret_cast<char*>(&extent), sizeof(extent));
 
-				m_outputModel.images[i]->copyCPUBuffer(pixels.data(), Image::SampledInFragmentShader(mipLevel), mipLevel);
+				ResourceUniqueOwner<Image>& currentImage = m_outputModel.materials[materialIdx].images[imageIdx];
+
+				CreateImageInfo createImageInfo;
+				createImageInfo.extent = { (extent.width), (extent.height), 1 };
+				createImageInfo.aspect = VK_IMAGE_ASPECT_COLOR_BIT;
+				createImageInfo.format = imageIdx == 0 ? VK_FORMAT_BC1_RGB_SRGB_BLOCK : VK_FORMAT_R8G8B8A8_UNORM;
+				createImageInfo.mipLevelCount = MAX_MIP_COUNT;
+				createImageInfo.usage = VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
+				currentImage.reset(Image::createImage(createImageInfo));
+
+				auto computeImageSize = [](VkExtent3D extent, float bbp, uint32_t mipLevel)
+					{
+						const VkExtent3D adjustedExtent = { extent.width >> mipLevel, extent.height >> mipLevel, extent.depth };
+						return static_cast<VkDeviceSize>(static_cast<float>(adjustedExtent.width) * static_cast<float>(adjustedExtent.height) * static_cast<float>(adjustedExtent.depth) * bbp);
+					};
+
+				for (uint32_t mipLevel = 0; mipLevel < currentImage->getMipLevelCount(); ++mipLevel)
+				{
+					VkDeviceSize imageSize = computeImageSize(extent, currentImage->getBBP(), mipLevel);
+
+					std::vector<unsigned char> pixels(imageSize);
+					input.read(reinterpret_cast<char*>(pixels.data()), pixels.size());
+
+					currentImage->copyCPUBuffer(pixels.data(), Image::SampledInFragmentShader(mipLevel), mipLevel);
+				}
 			}
+
+			input.read(reinterpret_cast<char*>(&m_outputModel.materials[materialIdx].shadingMode), sizeof(uint32_t));
+
+#ifdef MATERIAL_DEBUG
+			uint32_t materialNameSize;
+			input.read(reinterpret_cast<char*>(&materialNameSize), sizeof(uint32_t));
+			m_outputModel.materials[materialIdx].materialName.resize(materialNameSize);
+			input.read(m_outputModel.materials[materialIdx].materialName.data(), materialNameSize);
+
+			uint32_t imageNameCount;
+			input.read(reinterpret_cast<char*>(&imageNameCount), sizeof(uint32_t));
+			m_outputModel.materials[materialIdx].imageNames.resize(imageNameCount);
+
+			for (uint32_t imageNameIdx = 0; imageNameIdx < imageNameCount; ++imageNameIdx)
+			{
+				uint32_t imageNameSize;
+				input.read(reinterpret_cast<char*>(&imageNameSize), sizeof(uint32_t));
+				m_outputModel.materials[materialIdx].imageNames[imageNameIdx].resize(imageNameSize);
+				input.read(m_outputModel.materials[materialIdx].imageNames[imageNameIdx].data(), imageNameSize);
+			}
+#endif
 		}
 
 		if (modelLoadingInfo.vulkanQueueLock)
@@ -359,7 +426,7 @@ inline std::string getTexName(const std::string& texName, const std::string& fol
 }
 
 
-void Wolf::ModelLoader::loadMaterial(const tinyobj::material_t& material, const std::string& mtlFolder, MaterialLoader::InputMaterialLayout materialLayout, uint32_t& indexTexture)
+void Wolf::ModelLoader::loadMaterial(const tinyobj::material_t& material, const std::string& mtlFolder, MaterialLoader::InputMaterialLayout materialLayout, uint32_t indexMaterial)
 {
 	MaterialLoader::MaterialFileInfo materialFileInfo{};
 	materialFileInfo.name = material.name;
@@ -370,13 +437,28 @@ void Wolf::ModelLoader::loadMaterial(const tinyobj::material_t& material, const 
 		materialFileInfo.roughness = getTexName(material.specular_highlight_texname, mtlFolder);
 		materialFileInfo.metalness = getTexName(material.specular_texname, mtlFolder);
 		materialFileInfo.ao = getTexName(material.ambient_texname, mtlFolder);
+		materialFileInfo.anisoStrength = getTexName(material.sheen_texname, mtlFolder);
+
+#ifdef MATERIAL_DEBUG
+		m_outputModel.materials[indexMaterial].materialName = materialFileInfo.name;
+		m_outputModel.materials[indexMaterial].imageNames =
+		{
+			material.diffuse_texname,
+			material.bump_texname,
+			material.specular_highlight_texname,
+			material.specular_texname,
+			material.ambient_texname,
+			material.sheen_texname
+		};
+#endif
 	}
 
 	MaterialLoader materialLoader(materialFileInfo, materialLayout, m_useCache);
 	for (uint32_t i = 0; i < MaterialsGPUManager::TEXTURE_COUNT_PER_MATERIAL; ++i)
 	{
 		if (m_useCache)
-			materialLoader.assignCache(i, m_imagesData[indexTexture]);
-		m_outputModel.images[indexTexture++].reset(materialLoader.releaseImage(i));
+			materialLoader.assignCache(i, m_imagesData[indexMaterial * MaterialsGPUManager::TEXTURE_COUNT_PER_MATERIAL + i]);
+		m_outputModel.materials[indexMaterial].images[i].reset(materialLoader.releaseImage(i));
 	}
+	m_outputModel.materials[indexMaterial].shadingMode = material.illum;
 }

@@ -54,7 +54,7 @@ Wolf::MaterialLoader::MaterialLoader(const MaterialFileInfo& material, InputMate
 			createImageFromData(extent, VK_FORMAT_R8G8B8A8_UNORM, reinterpret_cast<const unsigned char*>(pixels.data()), mipsData, 1);
 		}
 
-		std::vector<ImageCompression::RGBA8> combinedRoughnessMetalnessAO;
+		std::vector<ImageCompression::RGBA8> combinedRoughnessMetalnessAOAniso;
 		std::vector<std::vector<ImageCompression::RGBA8>> combinedRoughnessMetalnessAOMipLevels;
 		VkExtent3D combinedRoughnessMetalnessAOExtent;
 
@@ -65,10 +65,10 @@ Wolf::MaterialLoader::MaterialLoader(const MaterialFileInfo& material, InputMate
 			std::vector<std::vector<ImageCompression::RGBA8>> mipLevels;
 			loadImageFile(material.roughness, VK_FORMAT_R8G8B8A8_UNORM, pixels, mipLevels, combinedRoughnessMetalnessAOExtent);
 
-			combinedRoughnessMetalnessAO.resize(pixels.size());
+			combinedRoughnessMetalnessAOAniso.resize(pixels.size());
 			for (uint32_t i = 0; i < pixels.size(); ++i)
 			{
-				combinedRoughnessMetalnessAO[i].r = pixels[i].r;
+				combinedRoughnessMetalnessAOAniso[i].r = pixels[i].r;
 			}
 			combinedRoughnessMetalnessAOMipLevels.resize(mipLevels.size());
 			for (uint32_t i = 0; i < mipLevels.size(); ++i)
@@ -97,7 +97,7 @@ Wolf::MaterialLoader::MaterialLoader(const MaterialFileInfo& material, InputMate
 			{
 				for (uint32_t i = 0; i < pixels.size(); ++i)
 				{
-					combinedRoughnessMetalnessAO[i].g = pixels[i].r;
+					combinedRoughnessMetalnessAOAniso[i].g = pixels[i].r;
 				}
 				for (uint32_t i = 0; i < mipLevels.size(); ++i)
 				{
@@ -125,13 +125,41 @@ Wolf::MaterialLoader::MaterialLoader(const MaterialFileInfo& material, InputMate
 			{
 				for (uint32_t i = 0; i < pixels.size(); ++i)
 				{
-					combinedRoughnessMetalnessAO[i].b = pixels[i].r;
+					combinedRoughnessMetalnessAOAniso[i].b = pixels[i].r;
 				}
 				for (uint32_t i = 0; i < mipLevels.size(); ++i)
 				{
 					for (uint32_t j = 0; j < mipLevels[i].size(); ++j)
 					{
 						combinedRoughnessMetalnessAOMipLevels[i][j].b = mipLevels[i][j].r;
+					}
+				}
+			}
+		}
+
+		// Anisotropy strength
+		if (!material.anisoStrength.empty())
+		{
+			std::vector<ImageCompression::RGBA8> pixels;
+			std::vector<std::vector<ImageCompression::RGBA8>> mipLevels;
+			VkExtent3D extent;
+			loadImageFile(material.anisoStrength, VK_FORMAT_R8G8B8A8_UNORM, pixels, mipLevels, extent);
+
+			if (extent.width != combinedRoughnessMetalnessAOExtent.width || extent.height != combinedRoughnessMetalnessAOExtent.height)
+			{
+				Debug::sendWarning("Anisotropic strength has not same resolution than roughness, this is not supported and will be set to default value");
+			}
+			else
+			{
+				for (uint32_t i = 0; i < pixels.size(); ++i)
+				{
+					combinedRoughnessMetalnessAOAniso[i].a = pixels[i].r;
+				}
+				for (uint32_t i = 0; i < mipLevels.size(); ++i)
+				{
+					for (uint32_t j = 0; j < mipLevels[i].size(); ++j)
+					{
+						combinedRoughnessMetalnessAOMipLevels[i][j].a = mipLevels[i][j].r;
 					}
 				}
 			}
@@ -144,7 +172,7 @@ Wolf::MaterialLoader::MaterialLoader(const MaterialFileInfo& material, InputMate
 			{
 				mipsData[i] = reinterpret_cast<const unsigned char*>(combinedRoughnessMetalnessAOMipLevels[i].data());
 			}
-			createImageFromData(combinedRoughnessMetalnessAOExtent, VK_FORMAT_R8G8B8A8_UNORM, reinterpret_cast<const unsigned char*>(combinedRoughnessMetalnessAO.data()), mipsData, 2);
+			createImageFromData(combinedRoughnessMetalnessAOExtent, VK_FORMAT_R8G8B8A8_UNORM, reinterpret_cast<const unsigned char*>(combinedRoughnessMetalnessAOAniso.data()), mipsData, 2);
 		}
 	}
 }
