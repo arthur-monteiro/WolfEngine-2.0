@@ -1,6 +1,7 @@
 #pragma once
 
 #include <array>
+#include <mutex>
 #include <vector>
 
 #include "ResourceUniqueOwner.h"
@@ -22,6 +23,9 @@ namespace Wolf
 		size_t size() const;
 		bool empty() const;
 
+		void lockAccessElements();
+		void unlockAccessElements();
+
 		T& operator [](size_t idx);
 		const T& operator [] (size_t idx) const;
 		T& back();
@@ -33,6 +37,8 @@ namespace Wolf
 			uint8_t count = 0;
 		};
 		std::vector<std::unique_ptr<Page>> m_pages;
+
+		std::mutex m_accessElementsLock;
 
 		void resizePages(size_t newSize);
 		void beforeAddingNewElement();
@@ -47,16 +53,22 @@ namespace Wolf
 	template <class T, size_t BatchSize>
 	void DynamicStableArray<T, BatchSize>::push_back(const T& element)
 	{
+		lockAccessElements();
+
 		beforeAddingNewElement();
 
 		std::unique_ptr<Page>& lastBatch = m_pages.back();
 		lastBatch->elements[lastBatch->count++] = element;
+
+		unlockAccessElements();
 	}
 
 	template <class T, size_t BatchSize>
 	template <class ... Args>
 	void DynamicStableArray<T, BatchSize>::emplace_back(Args&&... args)
 	{
+		lockAccessElements();
+
 		if constexpr (hasResetFunction<T>)
 		{
 			beforeAddingNewElement();
@@ -68,11 +80,15 @@ namespace Wolf
 		{
 			push_back(T(args...));
 		}
+
+		unlockAccessElements();
 	}
 
 	template <class T, size_t BatchSize>
 	void DynamicStableArray<T, BatchSize>::resize(size_t newSize)
 	{
+		lockAccessElements();
+
 		uint32_t newBatchCount = static_cast<uint32_t>(newSize / BatchSize + 1);
 		uint32_t newElementCount = static_cast<uint32_t>(newSize % BatchSize);
 		if (newBatchCount != m_pages.size())
@@ -84,7 +100,7 @@ namespace Wolf
 				{
 					for (uint32_t elementIdx = newElementCount; elementIdx < BatchSize; ++elementIdx)
 					{
-						m_pages[newElementCount - 1].elements[elementIdx].reset();
+						m_pages[newBatchCount - 1].elements[elementIdx].reset();
 					}
 				}
 			}
@@ -98,13 +114,19 @@ namespace Wolf
 		{
 			m_pages.back()->count = newElementCount;
 		}
+
+		unlockAccessElements();
 	}
 
 	template <class T, size_t BatchSize>
 	void DynamicStableArray<T, BatchSize>::clear()
 	{
+		lockAccessElements();
+
 		m_pages.clear();
 		resizePages(1);
+
+		unlockAccessElements();
 	}
 
 	template <class T, size_t BatchSize>
@@ -117,6 +139,18 @@ namespace Wolf
 	bool DynamicStableArray<T, BatchSize>::empty() const
 	{
 		return m_pages.size() == 1 && m_pages.back()->count == 0;
+	}
+
+	template <class T, size_t BatchSize>
+	void DynamicStableArray<T, BatchSize>::lockAccessElements()
+	{
+		m_accessElementsLock.lock();
+	}
+
+	template <class T, size_t BatchSize>
+	void DynamicStableArray<T, BatchSize>::unlockAccessElements()
+	{
+		m_accessElementsLock.unlock();
 	}
 
 	template <class T, size_t BatchSize>
