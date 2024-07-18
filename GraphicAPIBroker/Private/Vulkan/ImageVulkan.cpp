@@ -114,8 +114,8 @@ void Wolf::ImageVulkan::copyCPUBuffer(const unsigned char* pixels, const Transit
 
 	VkBufferImageCopy copyRegion;
 	copyRegion.bufferOffset = 0;
-	copyRegion.bufferRowLength = 0;
-	copyRegion.bufferImageHeight = 0;
+	copyRegion.bufferRowLength = extent.width;
+	copyRegion.bufferImageHeight = extent.height;
 
 	copyRegion.imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
 	copyRegion.imageSubresource.mipLevel = mipLevel;

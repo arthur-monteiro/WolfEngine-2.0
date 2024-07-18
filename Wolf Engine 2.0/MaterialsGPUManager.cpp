@@ -72,9 +72,17 @@ void Wolf::MaterialsGPUManager::addNewMaterials(std::vector<MaterialInfo>& mater
 	}
 
 #ifdef MATERIAL_DEBUG
-	for (const MaterialInfo& material : materials)
+	for (uint32_t i = 0; i < materials.size(); ++i)
 	{
-		m_materialsInfoCache.push_back({ material.materialName, material.imageNames, material.shadingMode });
+		MaterialInfo& material = materials[i];
+
+		MaterialCacheInfo& materialCacheInfo = m_materialsInfoCache.emplace_back();
+		materialCacheInfo.materialInfo = &material;
+
+		const MaterialGPUInfo& materialGPUInfo = m_newMaterialsInfo[oldNewMaterialsInfoCount + i];
+		materialCacheInfo.albedoIdx = materialGPUInfo.albedoIdx;
+		materialCacheInfo.normalIdx = materialGPUInfo.normalIdx;
+		materialCacheInfo.roughnessMetalnessAOIdx = materialGPUInfo.roughnessMetalnessAOIdx;
 	}
 #endif
 }
@@ -93,6 +101,24 @@ void Wolf::MaterialsGPUManager::pushMaterialsToGPU()
 void Wolf::MaterialsGPUManager::changeMaterialShadingModeBeforeFrame(uint32_t materialIdx, uint32_t newShadingMode) const
 {
 	m_materialsBuffer->transferCPUMemoryWithStagingBuffer(&newShadingMode, sizeof(uint32_t), 0, materialIdx * sizeof(MaterialGPUInfo) + offsetof(MaterialGPUInfo, shadingMode));
+}
+
+void Wolf::MaterialsGPUManager::changeExistingMaterialBeforeFrame(uint32_t materialIdx, MaterialCacheInfo& materialCacheInfo)
+{
+	if (materialIdx == 0)
+		return;
+
+	if (!materialCacheInfo.materialInfo->images[0])
+		return;
+
+	if (materialCacheInfo.albedoIdx == 0)
+	{
+		materialCacheInfo.albedoIdx = m_currentBindlessCount++;
+		m_materialsBuffer->transferCPUMemoryWithStagingBuffer(&materialCacheInfo.albedoIdx, sizeof(uint32_t), 0, materialIdx * sizeof(MaterialGPUInfo) + offsetof(MaterialGPUInfo, albedoIdx));
+	}
+
+	DescriptorSetGenerator::ImageDescription imageToUpdate { VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, materialCacheInfo.materialInfo->images[0]->getDefaultImageView()};
+	updateImageInBindless(imageToUpdate, materialCacheInfo.albedoIdx);
 }
 
 uint32_t Wolf::MaterialsGPUManager::addImagesToBindless(const std::vector<DescriptorSetGenerator::ImageDescription>& images)
@@ -118,6 +144,24 @@ uint32_t Wolf::MaterialsGPUManager::addImagesToBindless(const std::vector<Descri
 	m_descriptorSet->update(descriptorSetUpdateInfo);
 
 	return previousCounter;
+}
+
+void Wolf::MaterialsGPUManager::updateImageInBindless(const DescriptorSetGenerator::ImageDescription& image, uint32_t bindlessOffset) const
+{
+	DescriptorSetUpdateInfo descriptorSetUpdateInfo;
+	descriptorSetUpdateInfo.descriptorImages.resize(1);
+
+	descriptorSetUpdateInfo.descriptorImages[0].images.resize(1);
+	DescriptorSetUpdateInfo::ImageData& imageData = descriptorSetUpdateInfo.descriptorImages[0].images.back();
+	imageData.imageLayout = image.imageLayout;
+	imageData.imageView = image.imageView;
+
+	DescriptorLayout& descriptorLayout = descriptorSetUpdateInfo.descriptorImages[0].descriptorLayout;
+	descriptorLayout.binding = BINDING_SLOT;
+	descriptorLayout.arrayIndex = bindlessOffset;
+	descriptorLayout.descriptorType = VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE;
+
+	m_descriptorSet->update(descriptorSetUpdateInfo);
 }
 
 void Wolf::MaterialsGPUManager::bind(const CommandBuffer& commandBuffer, const Pipeline& pipeline, uint32_t descriptorSlot) const

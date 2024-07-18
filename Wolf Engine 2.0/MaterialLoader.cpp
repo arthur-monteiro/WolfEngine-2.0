@@ -24,6 +24,15 @@ Wolf::MaterialLoader::MaterialLoader(const MaterialFileInfo& material, InputMate
 			uint32_t mipHeight = extent.height / 2;
 			for (uint32_t i = 0; i < mipLevels.size(); ++i)
 			{
+				// Can't compress if size can't be divided by 4 (as we take 4x4 blocks)
+				if (mipWidth % 4 != 0 || mipHeight % 4 != 0)
+				{
+					Debug::sendWarning("Image " + material.albedo + " resolution is not a power of 2, not all mips are generated");
+					mipLevels.resize(i);
+					mipBlocks.resize(i);
+					break;
+				}
+
 				ImageCompression::compressBC1({ mipWidth, mipHeight, 1 }, mipLevels[i], mipBlocks[i]);
 
 				mipWidth /= 2;

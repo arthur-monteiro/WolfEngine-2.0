@@ -24,12 +24,11 @@ namespace Wolf
 #ifdef MATERIAL_DEBUG
 			std::string materialName;
 			std::vector<std::string> imageNames;
+			std::string materialFolder;
 #endif
 		};
 		void addNewMaterials(std::vector<MaterialInfo>& materials);
 		void pushMaterialsToGPU();
-
-		void changeMaterialShadingModeBeforeFrame(uint32_t materialIdx, uint32_t newShadingMode) const;
 
 		void bind(const CommandBuffer& commandBuffer, const Pipeline& pipeline, uint32_t descriptorSlot) const;
 		[[nodiscard]] static const DescriptorSetLayout* getDescriptorSetLayout() { return LazyInitSharedResource<DescriptorSetLayout, BindlessDescriptor>::getResource(); }
@@ -38,17 +37,23 @@ namespace Wolf
 		uint32_t getCurrentMaterialCount() const { return m_currentMaterialCount + static_cast<uint32_t>(m_newMaterialsInfo.size()); }
 
 #ifdef MATERIAL_DEBUG
+		void changeMaterialShadingModeBeforeFrame(uint32_t materialIdx, uint32_t newShadingMode) const;
+
 		struct MaterialCacheInfo
 		{
-			std::string materialName;
-			std::vector<std::string> imageNames;
-			uint32_t shadingMode;
+			uint32_t albedoIdx = 0;
+			uint32_t normalIdx = 1;
+			uint32_t roughnessMetalnessAOIdx = 2;
+
+			MaterialInfo* materialInfo = nullptr;
 		};
-		const std::vector<MaterialCacheInfo>& getMaterialsInfo() const { return m_materialsInfoCache; }
+		std::vector<MaterialCacheInfo>& getMaterialsCacheInfo() { return m_materialsInfoCache; }
+		void changeExistingMaterialBeforeFrame(uint32_t materialIdx, MaterialCacheInfo& materialCacheInfo);
 #endif
 
 	private:
 		uint32_t addImagesToBindless(const std::vector<DescriptorSetGenerator::ImageDescription>& images);
+		void updateImageInBindless(const DescriptorSetGenerator::ImageDescription& image, uint32_t bindlessOffset) const;
 
 		// Bindless resources
 		static constexpr uint32_t MAX_IMAGES = 1000;
