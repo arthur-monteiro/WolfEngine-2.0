@@ -38,6 +38,7 @@ namespace Wolf
 		void fillBuffer(const Buffer& buffer, uint64_t  dstOffset, uint64_t size, uint32_t data) const override;
 		void imageCopy(const Image& imageSrc, VkImageLayout srcImageLayout, const Image& imageDst, VkImageLayout dstImageLayout, const ImageCopyInfo& imageCopyInfo) const override;
 
+		void draw(uint32_t vertexCount, uint32_t instanceCount, uint32_t firstVertex, uint32_t firstInstance) const override;
 		void drawIndexed(uint32_t indexCount, uint32_t instanceCount, uint32_t firstIndex, int32_t vertexOffset, uint32_t firstInstance) const override;
 		void dispatch(uint32_t groupCountX, uint32_t groupCountY, uint32_t groupCountZ) const override;
 #if !defined(__ANDROID__) or __ANDROID_MIN_SDK_VERSION__ > 30

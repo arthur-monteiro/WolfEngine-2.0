@@ -1,16 +1,10 @@
-///
-/// @file Monitor.h
-///
-/// @brief The header for the Monitor class.
-///
-/// @author
-///
-/// This file is a part of Ultralight, a fast, lightweight, HTML UI engine
-///
-/// Website: <http://ultralig.ht>
-///
-/// Copyright (C) 2019 Ultralight, Inc. All rights reserved.
-///
+/******************************************************************************
+ *  This file is a part of Ultralight, an ultra-portable web-browser engine.  *
+ *                                                                            *
+ *  See <https://ultralig.ht> for licensing and more.                         *
+ *                                                                            *
+ *  (C) 2023 Ultralight, Inc.                                                 *
+ *****************************************************************************/
 #pragma once
 #include "Defines.h"
 
@@ -24,18 +18,34 @@ public:
   virtual ~Monitor() {}
 
   ///
+  /// Get the unique display ID of the monitor.
+  /// 
+  /// The renderer uses this ID to identify which monitor a View is on (ViewConfig::display_id).
+  /// 
+  /// AppCore internally tracks the display's hardware refresh event and automatically calls
+  /// Renderer::RefreshDisplay(id) to drive animation in all corresponding Views.
+  /// 
+  virtual uint32_t display_id() const = 0;
+
+  ///
   /// Get the DPI scale (1.0 = 100%)
   ///
   virtual double scale() const = 0;
 
   ///
-  /// Get the width of the monitor.
+  /// Get the width of the monitor (in pixels).
   ///
   virtual uint32_t width() const = 0;
 
-  /// Get the height of the monitor.
+  ///
+  /// Get the height of the monitor (in pixels).
   ///
   virtual uint32_t height() const = 0;
+
+  ///
+  /// Get the refresh rate of the monitor (in Hz).
+  /// 
+  virtual uint32_t refresh_rate() const = 0;
 };
 
 }  // namespace ultralight

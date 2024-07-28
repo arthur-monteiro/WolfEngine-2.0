@@ -355,6 +355,7 @@ void Wolf::ImageVulkan::setBBP()
 		m_bbp = 0.5f;
 		break;
 	case VK_FORMAT_BC3_UNORM_BLOCK:
+	case VK_FORMAT_BC3_SRGB_BLOCK:
 	case VK_FORMAT_R8_UINT:
 		m_bbp = 1.0f;
 		break;

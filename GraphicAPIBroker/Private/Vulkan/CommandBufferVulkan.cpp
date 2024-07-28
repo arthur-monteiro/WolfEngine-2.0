@@ -233,6 +233,11 @@ void Wolf::CommandBufferVulkan::imageCopy(const Image& imageSrc, VkImageLayout s
 	vkCmdCopyImage(m_commandBuffer, static_cast<const ImageVulkan*>(&imageSrc)->getImage(), srcImageLayout, static_cast<const ImageVulkan*>(&imageDst)->getImage(), dstImageLayout, 1, &copyRegion);
 }
 
+void Wolf::CommandBufferVulkan::draw(uint32_t vertexCount, uint32_t instanceCount, uint32_t firstVertex, uint32_t firstInstance) const
+{
+	vkCmdDraw(m_commandBuffer, vertexCount, instanceCount, firstVertex, firstInstance);
+}
+
 void Wolf::CommandBufferVulkan::drawIndexed(uint32_t indexCount, uint32_t instanceCount, uint32_t firstIndex,
                                             int32_t vertexOffset, uint32_t firstInstance) const
 {

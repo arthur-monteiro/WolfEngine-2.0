@@ -156,7 +156,7 @@ const Wolf::Pipeline* Wolf::PipelineSet::getOrCreatePipeline(uint32_t idx, Rende
 			{
 				if (pipelineInfo.cameraDescriptorSlot == slot)
 				{
-					renderingPipelineCreateInfo.descriptorSetLayouts.emplace_back( GraphicCameraInterface::getDescriptorSetLayout());
+					renderingPipelineCreateInfo.descriptorSetLayouts.emplace_back(GraphicCameraInterface::getDescriptorSetLayout());
 					slotFound = true;
 				}
 				else if (pipelineInfo.bindlessDescriptorSlot == slot)

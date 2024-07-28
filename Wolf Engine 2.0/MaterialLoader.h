@@ -18,6 +18,11 @@ namespace Wolf
 			EACH_TEXTURE_A_FILE
 		};
 
+		struct OutputLayout
+		{
+			ImageCompression::Compression albedoCompression;
+		};
+
 		struct MaterialFileInfo
 		{
 			std::string name;
@@ -30,7 +35,7 @@ namespace Wolf
 			std::string anisoStrength;
 		};
 
-		MaterialLoader(const MaterialFileInfo& material, InputMaterialLayout materialLayout, bool useCache);
+		MaterialLoader(const MaterialFileInfo& material, InputMaterialLayout materialLayout, const OutputLayout& outputLayout, bool useCache);
 		Image* releaseImage(uint32_t idx);
 		void assignCache(uint32_t idx, std::vector<unsigned char>& output);
 
@@ -41,5 +46,8 @@ namespace Wolf
 
 		void loadImageFile(const std::string& filename, VkFormat format, std::vector<ImageCompression::RGBA8>& pixels, std::vector<std::vector<ImageCompression::RGBA8>>& mipLevels, VkExtent3D& outExtent) const;
 		void createImageFromData(VkExtent3D extent, VkFormat format, const unsigned char* pixels, const std::vector<const unsigned char*>& mipLevels, uint32_t idx);
+
+		template <typename T>
+		void compressAndCreateImage(std::vector<std::vector<ImageCompression::RGBA8>>& mipLevels, const std::vector<ImageCompression::RGBA8>& pixels, VkExtent3D& extent, VkFormat format, const MaterialFileInfo& material);
 	};
 }

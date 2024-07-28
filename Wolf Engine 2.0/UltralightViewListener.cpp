@@ -10,13 +10,11 @@ UltralightViewListener::UltralightViewListener(const ResourceNonOwner<InputHandl
 {
 }
 
-void UltralightViewListener::OnAddConsoleMessage(ultralight::View* caller, ultralight::MessageSource source,
-                                       ultralight::MessageLevel level, const ultralight::String& message, uint32_t line_number, uint32_t column_number,
-                                       const ultralight::String& source_id)
+void UltralightViewListener::OnAddConsoleMessage(ultralight::View* caller, const ultralight::ConsoleMessage& message)
 {
-    const std::string logMessage = "Ultralight console: " + std::string(message.utf8().data()) + " in " + std::string(source_id.utf8().data()) + " line " + std::to_string(line_number);
+    const std::string logMessage = "Ultralight console: " + std::string(message.message().utf8().data()) + " in " + std::string(message.source_id().utf8().data()) + " line " + std::to_string(message.line_number());
 
-    switch (level)
+    switch (message.level())
     {
     case ultralight::kMessageLevel_Log:
     case ultralight::kMessageLevel_Debug:

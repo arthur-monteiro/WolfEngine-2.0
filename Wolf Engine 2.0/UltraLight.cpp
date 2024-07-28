@@ -131,6 +131,8 @@ void Wolf::UltraLight::processImplementation(const char* htmlURL, const std::fun
             continue;
         }
 
+        m_ultraLightImplementation->evaluateScript("frame()");
+
         m_evaluateScriptRequestsMutex.lock();
         if (!m_evaluateScriptRequests.empty())
         {
@@ -157,10 +159,10 @@ Wolf::UltraLight::UltraLightImplementation::UltraLightImplementation(uint32_t wi
     m_viewListener.reset(new UltralightViewListener(inputHandler));
 
     Config config;
-    config.device_scale = 1.0;
-    config.font_family_standard = "Arial";
-    config.resource_path = "./resources/";
-    config.use_gpu_renderer = false;
+    ViewConfig viewConfig;
+    viewConfig.initial_device_scale = 1.0;
+    viewConfig.is_accelerated = false;
+    viewConfig.is_transparent = true;
 
     Platform::instance().set_surface_factory(&m_surfaceFactory);
     Platform::instance().set_config(config);
@@ -168,7 +170,7 @@ Wolf::UltraLight::UltraLightImplementation::UltraLightImplementation(uint32_t wi
     Platform::instance().set_file_system(GetPlatformFileSystem("."));
     Platform::instance().set_logger(this);
     m_renderer = Renderer::Create();
-    m_view = m_renderer->CreateView(width, height, true, nullptr);
+    m_view = m_renderer->CreateView(width, height, viewConfig, nullptr);
     m_view->set_load_listener(this);
     m_view->set_view_listener(m_viewListener.get());
     //m_view->LoadHTML(htmlString);
@@ -198,17 +200,17 @@ void Wolf::UltraLight::UltraLightImplementation::OnFinishLoading(View* caller, u
     }
 }
 
-void Wolf::UltraLight::UltraLightImplementation::LogMessage(LogLevel log_level, const String16& message)
+void Wolf::UltraLight::UltraLightImplementation::LogMessage(LogLevel log_level, const String& message)
 {
     switch (log_level)
     {
-    case kLogLevel_Error:
+    case LogLevel::Error:
         Debug::sendError(String(message).utf8().data());
         break;
-    case kLogLevel_Warning:
+    case LogLevel::Warning:
         Debug::sendWarning(String(message).utf8().data());
         break;
-    case kLogLevel_Info:
+    case LogLevel::Info:
         Debug::sendInfo(String(message).utf8().data());
         break;
     default:
@@ -219,8 +221,8 @@ void Wolf::UltraLight::UltraLightImplementation::LogMessage(LogLevel log_level, 
 
 void Wolf::UltraLight::UltraLightImplementation::OnDOMReady(View* caller, uint64_t frame_id, bool is_main_frame, const String& url)
 {
-    Ref<JSContext> context = caller->LockJSContext();
-    SetJSContext(context.get());
+    RefPtr<JSContext> context = caller->LockJSContext();
+    SetJSContext(context->ctx());
 }
 
 Wolf::Image* Wolf::UltraLight::UltraLightImplementation::getImage() const
@@ -295,6 +297,21 @@ void Wolf::UltraLight::UltraLightImplementation::update(const ResourceNonOwner<I
     {
         mouseEvent.type = MouseEvent::kType_MouseUp;
         mouseEvent.button = MouseEvent::kButton_Left;
+
+        m_view->FireMouseEvent(mouseEvent);
+    }
+
+    if (inputHandler->mouseButtonPressedThisFrame(GLFW_MOUSE_BUTTON_RIGHT, this))
+    {
+        mouseEvent.type = MouseEvent::kType_MouseDown;
+        mouseEvent.button = MouseEvent::kButton_Right;
+
+        m_view->FireMouseEvent(mouseEvent);
+    }
+    else if (inputHandler->mouseButtonReleasedThisFrame(GLFW_MOUSE_BUTTON_RIGHT, this))
+    {
+        mouseEvent.type = MouseEvent::kType_MouseUp;
+        mouseEvent.button = MouseEvent::kButton_Right;
 
         m_view->FireMouseEvent(mouseEvent);
     }

@@ -24,6 +24,7 @@
 #include "SwapChain.h"
 #include "UltraLight.h"
 #include "Window.h"
+#include "Timer.h"
 
 namespace Wolf
 {
@@ -81,6 +82,7 @@ namespace Wolf
 		[[nodiscard]] RenderMeshList& getRenderMeshList() { return m_renderMeshList; }
 		[[nodiscard]] ResourceNonOwner<MaterialsGPUManager> getMaterialsManager() { return m_materialsManager.createNonOwnerResource(); }
 		[[nodiscard]] const std::vector<std::string>& getSavedUICommands() const { return m_savedUICommands; }
+		[[nodiscard]] const Timer& getGlobalTimer() const { return m_globalTimer; }
 
 	private:
 		void fillInitializeContext(InitializationContext& context) const;
@@ -106,6 +108,7 @@ namespace Wolf
 
 		// Frame counter
 		uint32_t m_currentFrame = 0;
+		Timer m_globalTimer;
 
 		// Gameplay
 		CameraList m_cameraList;

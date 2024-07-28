@@ -22,11 +22,59 @@ std::string ws2s(const std::wstring& wstr)
 	return { str };
 }
 
-Wolf::JSONReader::JSONReader(const std::string& filename)
+Wolf::JSONReader::JSONReader(const FileReadInfo& fileReadInfo)
+{
+	std::wifstream inputFile(fileReadInfo.filename);
+
+	Lines lines;
+
+	std::wstring line;
+	while (std::getline(inputFile, line))
+	{
+		lines.addLine(line);
+	}
+
+	readFromLines(lines);
+}
+
+Wolf::JSONReader::JSONReader(const StringReadInfo& stringReadInfo)
+{
+	Lines lines;
+
+	std::wstring line(stringReadInfo.jsonData.begin(), stringReadInfo.jsonData.end());
+	lines.addLine(line);
+
+	readFromLines(lines);
+}
+
+Wolf::JSONReader::~JSONReader()
+{
+	std::function<void(JSONObject* object)> deleteDataInsideObject;
+	deleteDataInsideObject = [&deleteDataInsideObject](JSONObject* object)
+	{
+		for (auto it = object->properties.begin(); it != object->properties.end(); ++it)
+		{
+			const JSONPropertyValue* propertyValue = it->second;
+			if (propertyValue->type == JSONPropertyType::Object)
+				deleteDataInsideObject(propertyValue->objectValue);
+			else if(propertyValue->type == JSONPropertyType::ObjectArray)
+			{
+				for(JSONObject* object : propertyValue->objectArrayValue)
+				{
+					deleteDataInsideObject(object);
+				}
+			}
+		}
+
+		delete object;
+	};
+
+	deleteDataInsideObject(m_rootObject);
+}
+
+void Wolf::JSONReader::readFromLines(const Lines& lines)
 {
 	m_rootObject = new JSONObject;
-
-	std::wifstream inputFile(filename);
 
 	// JSON current state
 	bool jsonStarted = false; // true inside main { }
@@ -39,59 +87,60 @@ Wolf::JSONReader::JSONReader(const std::string& filename)
 
 	// helpers
 	auto removeComments = [](std::wstring& line)
-	{
-		if (const size_t commentPos = line.find(L"//"); commentPos != std::wstring::npos)
 		{
-			line = line.substr(0, commentPos);
-		}
-	};
+			if (const size_t commentPos = line.find(L"//"); commentPos != std::wstring::npos)
+			{
+				line = line.substr(0, commentPos);
+			}
+		};
 	auto removeSpaces = [](std::wstring& line)
-	{
-		std::erase_if(line, isspace);
-	};
+		{
+			std::erase_if(line, isspace);
+		};
 
 	auto lookForAFloat = [&removeSpaces](const std::wstring& line, float& outputFloat, size_t& outputLastCharacterPosition)
-	{
-		if (!line.empty())
 		{
-			std::wstring stringToTry;
-
-			const size_t commaPos = line.find(',');
-			const size_t endArray = line.find(']');
-			const size_t endObject = line.find('}');
-
-			const size_t minEndingPos = std::min(commaPos, std::min(endArray, endObject));
-
-			if (minEndingPos != std::wstring::npos)
-				stringToTry = line.substr(0, minEndingPos);
-			else
-				stringToTry = line;
-
-			try
+			if (!line.empty())
 			{
-				std::wstring stringWithoutSpaces = stringToTry; removeSpaces(stringWithoutSpaces);
-				outputFloat = std::stof(stringWithoutSpaces);
-				outputLastCharacterPosition = minEndingPos != std::wstring::npos ? minEndingPos : stringToTry.size();
-				return true;
+				std::wstring stringToTry;
+
+				const size_t commaPos = line.find(',');
+				const size_t endArray = line.find(']');
+				const size_t endObject = line.find('}');
+
+				const size_t minEndingPos = std::min(commaPos, std::min(endArray, endObject));
+
+				if (minEndingPos != std::wstring::npos)
+					stringToTry = line.substr(0, minEndingPos);
+				else
+					stringToTry = line;
+
+				try
+				{
+					std::wstring stringWithoutSpaces = stringToTry; removeSpaces(stringWithoutSpaces);
+					outputFloat = std::stof(stringWithoutSpaces);
+					outputLastCharacterPosition = minEndingPos != std::wstring::npos ? minEndingPos : stringToTry.size();
+					return true;
+				}
+				catch (std::invalid_argument const&)
+				{
+				}
+
+				return false;
 			}
-			catch (std::invalid_argument const&)
-			{}
 
 			return false;
-		}
-
-		return false;
-	};
+		};
 
 	std::wstring line;
 	auto getLine = [&]()
-	{
-		if(line.empty())
 		{
-			return static_cast<bool>(std::getline(inputFile, line));
-		}
-		return true;
-	};
+			if (line.empty())
+			{
+				return lines.getNextLine(line);
+			}
+			return true;
+		};
 
 	while (getLine())
 	{
@@ -130,7 +179,7 @@ Wolf::JSONReader::JSONReader(const std::string& filename)
 					currentLookingFor = LookingFor::Colon;
 				}
 				else
-					Debug::sendError("JSON " + filename + " seems wrong: property doesn't end");
+					Debug::sendError("JSON seems wrong: property doesn't end");
 			}
 			else if (endObjectPos != std::string::npos)
 			{
@@ -162,7 +211,7 @@ Wolf::JSONReader::JSONReader(const std::string& filename)
 				line = line.substr(commaPos + 1);
 
 				bool isLookingForNextObjectArrayItem = !currentPropertyStack.empty() && currentPropertyStack.top()->type == JSONPropertyType::ObjectArray && currentObjectStack.top() != currentPropertyStack.top()->objectArrayValue.back();
-				if (!currentPropertyStack.empty() && (currentPropertyStack.top()->type == JSONPropertyType::FloatArray || isLookingForNextObjectArrayItem))
+				if (!currentPropertyStack.empty() && (currentPropertyStack.top()->type == JSONPropertyType::FloatArray || currentPropertyStack.top()->type == JSONPropertyType::StringArray || isLookingForNextObjectArrayItem))
 				{
 					currentLookingFor = LookingFor::NewArrayValue;
 				}
@@ -174,7 +223,7 @@ Wolf::JSONReader::JSONReader(const std::string& filename)
 			else if (endArrayPos != std::string::npos && endArrayPos < endObjectPos)
 			{
 				if (currentPropertyStack.empty() ||
-					(currentPropertyStack.top()->type != JSONPropertyType::FloatArray && currentPropertyStack.top()->type != JSONPropertyType::UnknownArray && currentPropertyStack.top()->type != JSONPropertyType::ObjectArray))
+					(currentPropertyStack.top()->type != JSONPropertyType::FloatArray && currentPropertyStack.top()->type != JSONPropertyType::StringArray && currentPropertyStack.top()->type != JSONPropertyType::UnknownArray && currentPropertyStack.top()->type != JSONPropertyType::ObjectArray))
 					Debug::sendError("JSON unexpected ']' when property is not array");
 
 				currentPropertyStack.pop();
@@ -241,14 +290,14 @@ Wolf::JSONReader::JSONReader(const std::string& filename)
 				line = line.substr(line.find('{') + 1);
 				currentLookingFor = LookingFor::NextProperty;
 			}
-			else if(quotePos < bracePos && quotePos < bracketPos)
+			else if (quotePos < bracePos && quotePos < bracketPos)
 			{
 				currentPropertyStack.top()->type = JSONPropertyType::String;
 				line = line.substr(quotePos + 1);
 				if (const size_t propertyStringEnding = line.find('"'); propertyStringEnding != std::string::npos)
 				{
 					std::wstring propertyValue = line.substr(0, propertyStringEnding);
-					
+
 					currentPropertyStack.top()->stringValue = ws2s(propertyValue);
 
 					line = line.substr(propertyStringEnding + 1);
@@ -256,7 +305,7 @@ Wolf::JSONReader::JSONReader(const std::string& filename)
 					currentLookingFor = LookingFor::Comma;
 				}
 				else
-					Debug::sendError("JSON " + filename + " seems wrong: property string value doesn't end");
+					Debug::sendError("JSON seems wrong: property string value doesn't end");
 			}
 			else if (bracketPos < bracePos && bracketPos < quotePos)
 			{
@@ -285,7 +334,19 @@ Wolf::JSONReader::JSONReader(const std::string& filename)
 			}
 			else if (quotePos == 0)
 			{
-				Debug::sendError("JSON string array is not currently supported");
+				currentPropertyStack.top()->type = JSONPropertyType::StringArray;
+				line = line.substr(line.find('"') + 1);
+				if (const size_t propertyStringEnding = line.find('"'); propertyStringEnding != std::string::npos)
+				{
+					std::wstring propertyValue = line.substr(0, propertyStringEnding);
+
+					currentPropertyStack.top()->stringValue = ws2s(propertyValue);
+
+					line = line.substr(propertyStringEnding + 1);
+					currentLookingFor = LookingFor::Comma;
+				}
+				else
+					Debug::sendError("JSON seems wrong: property string value doesn't end");
 			}
 			else
 			{
@@ -301,31 +362,6 @@ Wolf::JSONReader::JSONReader(const std::string& filename)
 			}
 		}
 	}
-}
-
-Wolf::JSONReader::~JSONReader()
-{
-	std::function<void(JSONObject* object)> deleteDataInsideObject;
-	deleteDataInsideObject = [&deleteDataInsideObject](JSONObject* object)
-	{
-		for (auto it = object->properties.begin(); it != object->properties.end(); ++it)
-		{
-			const JSONPropertyValue* propertyValue = it->second;
-			if (propertyValue->type == JSONPropertyType::Object)
-				deleteDataInsideObject(propertyValue->objectValue);
-			else if(propertyValue->type == JSONPropertyType::ObjectArray)
-			{
-				for(JSONObject* object : propertyValue->objectArrayValue)
-				{
-					deleteDataInsideObject(object);
-				}
-			}
-		}
-
-		delete object;
-	};
-
-	deleteDataInsideObject(m_rootObject);
 }
 
 float Wolf::JSONReader::JSONObject::getPropertyFloat(const std::string& propertyName)

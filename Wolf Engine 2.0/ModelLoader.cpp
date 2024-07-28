@@ -463,7 +463,10 @@ void Wolf::ModelLoader::loadMaterial(const tinyobj::material_t& material, const 
 #endif
 	}
 
-	MaterialLoader materialLoader(materialFileInfo, materialLayout, m_useCache);
+	MaterialLoader::OutputLayout outputLayout;
+	outputLayout.albedoCompression = ImageCompression::Compression::BC1;
+
+	MaterialLoader materialLoader(materialFileInfo, materialLayout, outputLayout, m_useCache);
 	for (uint32_t i = 0; i < MaterialsGPUManager::TEXTURE_COUNT_PER_MATERIAL; ++i)
 	{
 		if (m_useCache)
