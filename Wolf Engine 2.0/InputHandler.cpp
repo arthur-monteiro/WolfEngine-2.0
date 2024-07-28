@@ -305,7 +305,7 @@ void Wolf::InputHandler::getJoystickSpeedForGamepad(uint8_t gamepadIdx, uint8_t 
 	}
 	else
 	{
-		Debug::sendWarning("Requesting joystick speed for an inactive controller");
+		Debug::sendMessageOnce("Requesting joystick speed for an inactive controller", Debug::Severity::WARNING, this);
 		outX = 0.0f;
 		outY = 0.0f;
 	}

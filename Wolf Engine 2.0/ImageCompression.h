@@ -18,7 +18,6 @@ namespace Wolf
             uint16_t    rgb[2]; // 565 colors
             uint32_t    bitmap; // 2bpp rgb bitmap
         };
-
         static_assert(sizeof(BC1) == 8, "Mismatch block size");
 
         struct BC2
@@ -26,7 +25,6 @@ namespace Wolf
             uint16_t    bitmap[4];  // 4bpp alpha bitmap
             BC1         bc1;        // BC1 rgb data
         };
-
         static_assert(sizeof(BC2) == 16, "Mismatch block size");
 
         struct BC3
@@ -35,7 +33,6 @@ namespace Wolf
             uint8_t     bitmap[6];  // 3bpp alpha bitmap
             BC1         bc1;        // BC1 rgb data
         };
-
         static_assert(sizeof(BC3) == 16, "Mismatch block size");
 
         struct BC5
@@ -50,13 +47,11 @@ namespace Wolf
                 uint64_t toUInt64() const;
             };
 #pragma pack(pop)
-
             static_assert(sizeof(BC5Channel) == 8, "Mismatch block size");
 
             BC5Channel red;
             BC5Channel green;
         };
-
         static_assert(sizeof(BC5) == 16, "Mismatch block size");
 
         enum class Compression
@@ -136,7 +131,11 @@ namespace Wolf
             RG8() : RG8(0, 0) {}
         };
 
+        template <typename T>
+        static void compress(const VkExtent3D& extent, const std::vector<RGBA8>& pixels, std::vector<T>& outBlocks);
+
         static void compressBC1(const VkExtent3D& extent, const std::vector<RGBA8>& pixels, std::vector<BC1>& outBlocks);
+        static void compressBC3(const VkExtent3D& extent, const std::vector<RGBA8>& pixels, std::vector<BC3>& outBlocks);
 
         static void uncompressImage(Compression compression, const unsigned char* data, VkExtent2D extent, std::vector<RGBA8>& outPixels);
         static void uncompressImage(Compression compression, const unsigned char* data, VkExtent2D extent, std::vector<RG8>& outPixels);

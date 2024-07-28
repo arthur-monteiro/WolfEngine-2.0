@@ -63,7 +63,7 @@ namespace Wolf
             UltraLightImplementation(const UltraLightImplementation&) = delete;
 
             virtual void OnFinishLoading(ultralight::View* caller, uint64_t frame_id, bool is_main_frame, const ultralight::String& url) override;
-            virtual void LogMessage(ultralight::LogLevel log_level, const ultralight::String16& message) override;
+            virtual void LogMessage(ultralight::LogLevel log_level, const ultralight::String& message) override;
             virtual void OnDOMReady(ultralight::View* caller, uint64_t frame_id, bool is_main_frame, const ultralight::String& url) override;
 
             Image* getImage() const;

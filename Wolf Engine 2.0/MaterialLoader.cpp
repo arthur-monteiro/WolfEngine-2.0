@@ -3,7 +3,7 @@
 #include "ImageFileLoader.h"
 #include "MipMapGenerator.h"
 
-Wolf::MaterialLoader::MaterialLoader(const MaterialFileInfo& material, InputMaterialLayout materialLayout, bool useCache) : m_useCache(useCache)
+Wolf::MaterialLoader::MaterialLoader(const MaterialFileInfo& material, InputMaterialLayout materialLayout, const OutputLayout& outputLayout, bool useCache) : m_useCache(useCache)
 {
 	Debug::sendInfo("Loading material " + material.name);
 
@@ -17,25 +17,12 @@ Wolf::MaterialLoader::MaterialLoader(const MaterialFileInfo& material, InputMate
 			VkExtent3D extent;
 			loadImageFile(material.albedo, VK_FORMAT_R8G8B8A8_SRGB, pixels, mipLevels, extent);
 
-			std::vector<ImageCompression::BC1> compressedBlocks;
-			std::vector<std::vector<ImageCompression::BC1>> mipBlocks(mipLevels.size());
-			ImageCompression::compressBC1(extent, pixels, compressedBlocks);
-			uint32_t mipWidth = extent.width / 2;
-			uint32_t mipHeight = extent.height / 2;
-			for (uint32_t i = 0; i < mipLevels.size(); ++i)
-			{
-				ImageCompression::compressBC1({ mipWidth, mipHeight, 1 }, mipLevels[i], mipBlocks[i]);
-
-				mipWidth /= 2;
-				mipHeight /= 2;
-			}
-
-			std::vector<const unsigned char*> mipsData(mipBlocks.size());
-			for (uint32_t i = 0; i < mipBlocks.size(); ++i)
-			{
-				mipsData[i] = reinterpret_cast<const unsigned char*>(mipBlocks[i].data());
-			}
-			createImageFromData(extent, VK_FORMAT_BC1_RGB_SRGB_BLOCK, reinterpret_cast<const unsigned char*>(compressedBlocks.data()), mipsData, 0);
+			if (outputLayout.albedoCompression == ImageCompression::Compression::BC1)
+				compressAndCreateImage<ImageCompression::BC1>(mipLevels, pixels, extent, VK_FORMAT_BC1_RGB_SRGB_BLOCK, material);
+			else if (outputLayout.albedoCompression == ImageCompression::Compression::BC3)
+				compressAndCreateImage<ImageCompression::BC3>(mipLevels, pixels, extent, VK_FORMAT_BC3_SRGB_BLOCK, material);
+			else
+				Debug::sendError("Requested compression is not available");
 		}
 
 		// Normal
@@ -274,4 +261,37 @@ void Wolf::MaterialLoader::createImageFromData(VkExtent3D extent, VkFormat forma
 			copyOffset += copySize;
 		}
 	}
+}
+
+template <typename T>
+void Wolf::MaterialLoader::compressAndCreateImage(std::vector<std::vector<ImageCompression::RGBA8>>& mipLevels, const std::vector<ImageCompression::RGBA8>& pixels, VkExtent3D& extent, VkFormat format, const MaterialFileInfo& material)
+{
+	std::vector<T> compressedBlocks;
+	std::vector<std::vector<T>> mipBlocks(mipLevels.size());
+	ImageCompression::compress(extent, pixels, compressedBlocks);
+	uint32_t mipWidth = extent.width / 2;
+	uint32_t mipHeight = extent.height / 2;
+	for (uint32_t i = 0; i < mipLevels.size(); ++i)
+	{
+		// Can't compress if size can't be divided by 4 (as we take 4x4 blocks)
+		if (mipWidth % 4 != 0 || mipHeight % 4 != 0)
+		{
+			Debug::sendWarning("Image " + material.albedo + " resolution is not a power of 2, not all mips are generated");
+			mipLevels.resize(i);
+			mipBlocks.resize(i);
+			break;
+		}
+
+		ImageCompression::compress({ mipWidth, mipHeight, 1 }, mipLevels[i], mipBlocks[i]);
+
+		mipWidth /= 2;
+		mipHeight /= 2;
+	}
+
+	std::vector<const unsigned char*> mipsData(mipBlocks.size());
+	for (uint32_t i = 0; i < mipBlocks.size(); ++i)
+	{
+		mipsData[i] = reinterpret_cast<const unsigned char*>(mipBlocks[i].data());
+	}
+	createImageFromData(extent, format, reinterpret_cast<const unsigned char*>(compressedBlocks.data()), mipsData, 0);
 }

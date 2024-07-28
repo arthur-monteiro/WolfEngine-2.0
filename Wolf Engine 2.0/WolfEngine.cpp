@@ -25,7 +25,7 @@ VkExtent2D chooseExtent(GLFWwindow* window)
 }
 #endif
 
-Wolf::WolfEngine::WolfEngine(const WolfInstanceCreateInfo& createInfo) : m_renderMeshList(m_shaderList)
+Wolf::WolfEngine::WolfEngine(const WolfInstanceCreateInfo& createInfo) : m_globalTimer("Wolf-Engine global timer"), m_renderMeshList(m_shaderList)
 {
 #ifdef _WIN32
 	SetUnhandledExceptionFilter(unhandledExceptionFilter);
@@ -164,6 +164,8 @@ void Wolf::WolfEngine::updateBeforeFrame()
 	{
 		m_materialsManager->pushMaterialsToGPU();
 	}
+
+	m_globalTimer.updateCachedDuration();
 }
 
 void Wolf::WolfEngine::frame(const std::span<ResourceNonOwner<CommandRecordBase>>& passes, const Semaphore* frameEndedSemaphore)

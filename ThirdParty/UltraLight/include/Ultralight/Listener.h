@@ -1,53 +1,23 @@
-///
-/// @file Listener.h
-///
-/// @brief The header for View listener interfaces.
-///
-/// @author
-///
-/// This file is a part of Ultralight, a fast, lightweight, HTML UI engine
-///
-/// Website: <http://ultralig.ht>
-///
-/// Copyright (C) 2020 Ultralight, Inc. All rights reserved.
-///
+/******************************************************************************
+ *  This file is a part of Ultralight, an ultra-portable web-browser engine.  *
+ *                                                                            *
+ *  See <https://ultralig.ht> for licensing and more.                         *
+ *                                                                            *
+ *  (C) 2023 Ultralight, Inc.                                                 *
+ *****************************************************************************/
 #pragma once
 #include <Ultralight/Defines.h>
 #include <Ultralight/String.h>
 #include <Ultralight/RefPtr.h>
 #include <Ultralight/Geometry.h>
+#include <Ultralight/Buffer.h>
+#include <Ultralight/ConsoleMessage.h>
+#include <Ultralight/NetworkRequest.h>
 
 namespace ultralight {
 
 class View;
 
-///
-/// MessageSource types, @see ViewListener::OnAddConsoleMessage
-///
-enum MessageSource {
-  kMessageSource_XML = 0,
-  kMessageSource_JS,
-  kMessageSource_Network,
-  kMessageSource_ConsoleAPI,
-  kMessageSource_Storage,
-  kMessageSource_AppCache,
-  kMessageSource_Rendering,
-  kMessageSource_CSS,
-  kMessageSource_Security,
-  kMessageSource_ContentBlocker,
-  kMessageSource_Other,
-};
-
-///
-/// MessageLevel types, @see ViewListener::OnAddConsoleMessage
-///
-enum MessageLevel {
-  kMessageLevel_Log = 1,
-  kMessageLevel_Warning = 2,
-  kMessageLevel_Error = 3,
-  kMessageLevel_Debug = 4,
-  kMessageLevel_Info = 5,
-};
 
 ///
 /// Cursor types, @see ViewListener::OnChangeCursor
@@ -100,58 +70,49 @@ enum Cursor {
 };
 
 ///
-/// @brief  Interface for View-related events
+/// User-defined interface to listen for View-specific events.
 ///
-/// @note   For more info @see View::set_view_listener
+/// @see View::set_view_listener
 ///
 class UExport ViewListener {
-public:
-  virtual ~ViewListener() {}
+ public:
+  virtual ~ViewListener() { }
 
   ///
   /// Called when the page title changes
   ///
-  virtual void OnChangeTitle(ultralight::View* caller,
-                             const String& title) {}
+  virtual void OnChangeTitle(ultralight::View* caller, const String& title) { }
 
   ///
   /// Called when the page URL changes
   ///
-  virtual void OnChangeURL(ultralight::View* caller,
-                           const String& url) {}
+  virtual void OnChangeURL(ultralight::View* caller, const String& url) { }
 
   ///
   /// Called when the tooltip changes (usually as result of a mouse hover)
   ///
-  virtual void OnChangeTooltip(ultralight::View* caller,
-                               const String& tooltip) {}
+  virtual void OnChangeTooltip(ultralight::View* caller, const String& tooltip) { }
 
   ///
   /// Called when the mouse cursor changes
   ///
-  virtual void OnChangeCursor(ultralight::View* caller,
-                              Cursor cursor) {}
+  virtual void OnChangeCursor(ultralight::View* caller, Cursor cursor) { }
 
   ///
   /// Called when a message is added to the console (useful for errors / debug)
   ///
   virtual void OnAddConsoleMessage(ultralight::View* caller,
-                                   MessageSource source,
-                                   MessageLevel level,
-                                   const String& message,
-                                   uint32_t line_number,
-                                   uint32_t column_number,
-                                   const String& source_id) {}
+                                   const ultralight::ConsoleMessage& message) { }
 
   ///
-  /// Called when the page wants to create a new View.
+  /// Called when the page wants to create a new child View.
   ///
   /// This is usually the result of a user clicking a link with target="_blank"
   /// or by JavaScript calling window.open(url).
   ///
-  /// To allow creation of these new Views, you should create a new View in
-  /// this callback (eg, Renderer::CreateView()), resize it to your container,
-  /// and return it. You are responsible for displaying the returned View.
+  /// To allow creation of these new Views, you should create a new View in this callback (eg,
+  /// Renderer::CreateView()), resize it to your container, and return it. You are responsible for
+  /// displaying the returned View.
   ///
   /// @param  caller      The View that called this event.
   ///
@@ -161,29 +122,44 @@ public:
   ///
   /// @param  is_popup    Whether or not this was triggered by window.open().
   ///
-  /// @param  popup_rect  Popups can optionally request certain dimensions and
-  ///                     coordinates via window.open(). You can choose to
-  ///                     respect these or not by resizing/moving the View to
-  ///                     this rect.
+  /// @param  popup_rect  Popups can optionally request certain dimensions and coordinates via
+  ///                     window.open(). You can choose to respect these or not by resizing/moving
+  ///                     the View to this rect.
   ///
-  /// @return  Returns a RefPtr<> to a created View to use to satisfy the
-  ///          the request (or return nullptr if you want to block the action).
+  /// @return  Returns a RefPtr to a created View to use to satisfy the the request (or return
+  ///          nullptr if you want to block the action).
   ///
-  virtual RefPtr<View> OnCreateChildView(ultralight::View* caller,
-                                         const String& opener_url,
-                                         const String& target_url,
-                                         bool is_popup,
+  virtual RefPtr<View> OnCreateChildView(ultralight::View* caller, const String& opener_url,
+                                         const String& target_url, bool is_popup,
                                          const IntRect& popup_rect);
+
+  ///
+  /// Called when the page wants to create a new View to display the local inspector in.
+  /// 
+  /// You should create a new View in this callback (eg, Renderer::CreateView()), resize it to your
+  /// container, and return it. You are responsible for displaying the returned View.
+  ///
+  /// @return  Returns a RefPtr to a created View to use to satisfy the the request (or return
+  ///          nullptr if you want to block the action).
+  /// 
+  virtual RefPtr<View> OnCreateInspectorView(ultralight::View* caller, bool is_local,
+                                             const String& inspected_url);
+
+  ///
+  /// Called when the page requests to be closed.
+  /// 
+  virtual void OnRequestClose(ultralight::View* caller) { }
+
 };
 
 ///
-/// @brief  Interface for Load-related events
+/// User-defined interface to listen for load-related events for a View.
 ///
-/// @note   For more info @see View::set_load_listener
+///  @see View::set_load_listener
 ///
 class UExport LoadListener {
-public:
-  virtual ~LoadListener() {}
+ public:
+  virtual ~LoadListener() { }
 
   ///
   /// Called when the page begins loading a new URL into a frame.
@@ -194,10 +170,8 @@ public:
   ///
   /// @param  url            The URL for the load.
   ///
-  virtual void OnBeginLoading(ultralight::View* caller,
-                              uint64_t frame_id,
-                              bool is_main_frame,
-                              const String& url) {}
+  virtual void OnBeginLoading(ultralight::View* caller, uint64_t frame_id, bool is_main_frame,
+                              const String& url) { }
 
   ///
   /// Called when the page finishes loading a URL into a frame.
@@ -208,10 +182,8 @@ public:
   ///
   /// @param  url            The URL for the load.
   ///
-  virtual void OnFinishLoading(ultralight::View* caller,
-                               uint64_t frame_id,
-                               bool is_main_frame,
-                               const String& url) {}
+  virtual void OnFinishLoading(ultralight::View* caller, uint64_t frame_id, bool is_main_frame,
+                               const String& url) { }
 
   ///
   /// Called when an error occurs while loading a URL into a frame.
@@ -228,26 +200,21 @@ public:
   ///
   /// @param  error_code     Internal error code generated by the module.
   ///
-  virtual void OnFailLoading(ultralight::View* caller,
-                             uint64_t frame_id,
-                             bool is_main_frame,
-                             const String& url,
-                             const String& description,
-                             const String& error_domain,
-                             int error_code) {}
+  virtual void OnFailLoading(ultralight::View* caller, uint64_t frame_id, bool is_main_frame,
+                             const String& url, const String& description,
+                             const String& error_domain, int error_code) { }
 
   ///
   /// Called when the JavaScript window object is reset for a new page load.
   ///
-  /// This is called before any scripts are executed on the page and is the
-  /// earliest time to setup any initial JavaScript state or bindings.
+  /// This is called before any scripts are executed on the page and is the earliest time to setup
+  /// any initial JavaScript state or bindings.
   ///
-  /// The document is not guaranteed to be loaded/parsed at this point. If
-  /// you need to make any JavaScript calls that are dependent on DOM elements
-  /// or scripts on the page, use OnDOMReady instead.
+  /// The document is not guaranteed to be loaded/parsed at this point. If you need to make any
+  /// JavaScript calls that are dependent on DOM elements or scripts on the page, use OnDOMReady
+  /// instead.
   ///
-  /// The window object is lazily initialized (this will not be called on pages
-  /// with no scripts).
+  /// The window object is lazily initialized (this will not be called on pages with no scripts).
   ///
   /// @param  frame_id       A unique ID for the frame.
   ///
@@ -255,16 +222,14 @@ public:
   ///
   /// @param  url            The URL for the load.
   ///
-  virtual void OnWindowObjectReady(ultralight::View* caller,
-                                   uint64_t frame_id,
-                                   bool is_main_frame,
-                                   const String& url) {}
+  virtual void OnWindowObjectReady(ultralight::View* caller, uint64_t frame_id, bool is_main_frame,
+                                   const String& url) { }
 
   ///
   /// Called when all JavaScript has been parsed and the document is ready.
   ///
-  /// This is the best time to make any JavaScript calls that are dependent on
-  /// DOM elements or scripts on the page.
+  /// This is the best time to make any JavaScript calls that are dependent on DOM elements or
+  /// scripts on the page.
   ///
   /// @param  frame_id       A unique ID for the frame.
   ///
@@ -272,16 +237,95 @@ public:
   ///
   /// @param  url            The URL for the load.
   ///
-  virtual void OnDOMReady(ultralight::View* caller,
-                          uint64_t frame_id,
-                          bool is_main_frame,
-                          const String& url) {}
+  virtual void OnDOMReady(ultralight::View* caller, uint64_t frame_id, bool is_main_frame,
+                          const String& url) { }
 
   ///
   /// Called when the session history (back/forward state) is modified.
   ///
-  virtual void OnUpdateHistory(ultralight::View* caller) {}
-
+  virtual void OnUpdateHistory(ultralight::View* caller) { }
 };
 
-}  // namespace ultralight
+///
+/// A unique identifier representing an active download.
+/// 
+typedef uint32_t DownloadId;
+
+///
+/// @brief  Interface for Download-related events
+///
+/// @note   For more info @see View::set_download_listener
+///
+class UExport DownloadListener {
+ public:
+  virtual ~DownloadListener() {}
+
+  ///
+  /// Called when the View wants to generate a unique download id.
+  /// 
+  /// You should generally return an integer (starting at 0) that is incremented with each call
+  /// to this callback.
+  ///
+  virtual DownloadId NextDownloadId(ultralight::View* caller) = 0;
+
+  ///
+  /// Called when the View wants to start downloading a resource from the network.
+  /// 
+  /// You should return true to allow the download, or false to block the download.
+  /// 
+  virtual bool OnRequestDownload(ultralight::View* caller, DownloadId id, const String& url) = 0;
+
+  ///
+  /// Called when the View begins downloading a resource from the network.
+  /// 
+  /// The View will not actually write any data to disk, you should open a file for writing
+  /// yourself and handle the OnReceiveDataForDownload callback below.
+  /// 
+  virtual void OnBeginDownload(ultralight::View* caller, DownloadId id, const String& url,
+                               const String& filename, int64_t expected_content_length)  = 0;
+
+  ///
+  /// Called when the View receives data for a certain download from the network.
+  /// 
+  /// This may be called multiple times for each active download as data is streamed in.
+  /// 
+  /// You should write the data to the associated file in this callback.
+  /// 
+  virtual void OnReceiveDataForDownload(ultralight::View* caller, DownloadId id,
+                                        RefPtr<Buffer> data) = 0;
+
+  ///
+  /// Called when the View finishes downloading a resource from the network.
+  /// 
+  /// You should close the associated file in this callback.
+  /// 
+  virtual void OnFinishDownload(ultralight::View* caller, DownloadId id) = 0;
+
+  ///
+  /// Called when the View fails downloading a resource from the network.
+  ///
+  /// You should close the associated file and delete it from disk in this callback.
+  /// 
+  virtual void OnFailDownload(ultralight::View* caller, DownloadId id) = 0;
+};
+
+///
+/// @brief  Interface for Network-related events
+///
+/// @note   For more info @see View::set_network_listener
+///
+class UExport NetworkListener {
+ public:
+  virtual ~NetworkListener() { }
+
+  ///
+  /// Called when the View is about to begin a network request.
+  /// 
+  /// You can use this to block or modify network requests before they are sent.
+  /// 
+  /// Return true to allow the request, return false to block it.
+  /// 
+  virtual bool OnNetworkRequest(ultralight::View* caller, NetworkRequest& request) = 0;
+};
+
+} // namespace ultralight

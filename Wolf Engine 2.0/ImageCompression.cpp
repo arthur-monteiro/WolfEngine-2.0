@@ -12,6 +12,16 @@ uint64_t Wolf::ImageCompression::BC5::BC5Channel::toUInt64() const
     return r;
 }
 
+template<> void Wolf::ImageCompression::compress<Wolf::ImageCompression::BC1>(const VkExtent3D& extent, const std::vector<RGBA8>& pixels, std::vector<Wolf::ImageCompression::BC1>& outBlocks)
+{
+    compressBC1(extent, pixels, outBlocks);
+}
+
+template<> void Wolf::ImageCompression::compress<Wolf::ImageCompression::BC3>(const VkExtent3D& extent, const std::vector<RGBA8>& pixels, std::vector<Wolf::ImageCompression::BC3>& outBlocks)
+{
+    compressBC3(extent, pixels, outBlocks);
+}
+
 void Wolf::ImageCompression::compressBC1(const VkExtent3D& extent, const std::vector<RGBA8>& pixels, std::vector<BC1>& outBlocks)
 {
 	const uint32_t blockCountX = extent.width / 4;
@@ -79,6 +89,78 @@ void Wolf::ImageCompression::compressBC1(const VkExtent3D& extent, const std::ve
                 }
             }
 		}
+    }
+}
+
+void Wolf::ImageCompression::compressBC3(const VkExtent3D& extent, const std::vector<RGBA8>& pixels, std::vector<BC3>& outBlocks)
+{
+    std::vector<BC1> bc1Blocks;
+    compressBC1(extent, pixels, bc1Blocks);
+
+    outBlocks.resize(bc1Blocks.size());
+
+    const uint32_t blockCountX = extent.width / 4;
+    const uint32_t blockCountY = extent.height / 4;
+
+    for (uint32_t blockIdx = 0; blockIdx < outBlocks.size(); ++blockIdx)
+    {
+        uint32_t blockX = blockIdx % blockCountX;
+        uint32_t blockY = blockIdx / blockCountX;
+
+        uint32_t firstPixelX = blockX * 4;
+        uint32_t firstPixelY = blockY * 4;
+
+        uint8_t minAlpha = 255, maxAlpha = 0;
+        for (uint32_t alphaIdx = 0; alphaIdx < 16; ++alphaIdx)
+        {
+            uint32_t pixelX = firstPixelX + alphaIdx % 4;
+            uint32_t pixelY = firstPixelY + alphaIdx / 4;
+
+            uint8_t alpha = pixels[pixelX + pixelY * extent.width].a;
+
+            if (alpha < minAlpha)
+                minAlpha = alpha;
+            if (alpha > maxAlpha)
+                maxAlpha = alpha;
+        }
+
+        uint8_t refs[8];
+        refs[0] = minAlpha;
+        refs[1] = maxAlpha;
+        for (uint32_t refIdx = 2; refIdx < 8; ++refIdx)
+        {
+            refs[refIdx] = glm::mix(minAlpha, maxAlpha, static_cast<float>(refIdx - 1) / 7);
+        }
+
+        uint64_t alphaBitmap = 0;
+        static constexpr uint32_t ALPHA_BITMAP_BIT_COUNT = 48;
+        for (uint32_t alphaIdx = 0; alphaIdx < 16; ++alphaIdx)
+        {
+            uint32_t pixelX = firstPixelX + alphaIdx % 4;
+            uint32_t pixelY = firstPixelY + alphaIdx / 4;
+
+            uint8_t alpha = pixels[pixelX + pixelY * extent.width].a;
+
+            float minDistance = 1'000;
+            uint64_t minRefIdx = 0;
+            for (uint32_t refIdx = 0; refIdx < 8; ++refIdx)
+            {
+                const float distance = glm::abs(static_cast<float>(refs[refIdx] - alpha));
+                if (distance < minDistance)
+                {
+                    minDistance = distance;
+                    minRefIdx = static_cast<uint64_t>(refIdx);
+                }
+            }
+
+            alphaBitmap |= (minRefIdx & 0b111) << (ALPHA_BITMAP_BIT_COUNT - ((alphaIdx + 1) * 3));
+        }
+
+        outBlocks[blockIdx].alpha[0] = maxAlpha;
+        outBlocks[blockIdx].alpha[1] = minAlpha;
+        memcpy(&outBlocks[blockIdx].bitmap[0], reinterpret_cast<uint8_t*>(&alphaBitmap) + (64 - ALPHA_BITMAP_BIT_COUNT) / 8, ALPHA_BITMAP_BIT_COUNT / 8);
+
+        outBlocks[blockIdx].bc1 = bc1Blocks[blockIdx];
     }
 }
 

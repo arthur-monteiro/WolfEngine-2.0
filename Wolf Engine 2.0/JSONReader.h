@@ -10,7 +10,17 @@ namespace Wolf
 	class JSONReader
 	{
 	public:
-		JSONReader(const std::string& filename);
+		struct FileReadInfo
+		{
+			std::string filename;
+		};
+		JSONReader(const FileReadInfo& fileReadInfo);
+
+		struct StringReadInfo
+		{
+			std::string jsonData;
+		};
+		JSONReader(const StringReadInfo& stringReadInfo);
 		~JSONReader();
 
 		class JSONObjectInterface
@@ -30,9 +40,30 @@ namespace Wolf
 		JSONObjectInterface* getRoot() { return m_rootObject; }
 
 	private:
+		class Lines
+		{
+		public:
+			void addLine(const std::wstring& line) { m_lines.push_back(line); }
+
+			bool getNextLine(std::wstring& outLine) const
+			{
+				if (m_currentLine == m_lines.size())
+					return false;
+
+				outLine = m_lines[m_currentLine++];
+				return true;
+			}
+
+		private:
+			std::vector<std::wstring> m_lines;
+			mutable uint32_t m_currentLine = 0;
+		};
+
+		void readFromLines(const Lines& lines);
+
 		class JSONObject;
 
-		enum class JSONPropertyType { String, Object, Float, UnknownArray, ObjectArray, FloatArray, Bool, Unknown };
+		enum class JSONPropertyType { String, Object, Float, UnknownArray, ObjectArray, FloatArray, StringArray, Bool, Unknown };
 		struct JSONPropertyValue
 		{
 			JSONPropertyType type;

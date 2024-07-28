@@ -2,6 +2,7 @@
 
 #include <glm/glm.hpp>
 #include <memory>
+#include <utility>
 #include <vector>
 
 #include "CommandBuffer.h"
@@ -27,7 +28,7 @@ namespace Wolf
 		{
 			ResourceNonOwner<Mesh> mesh;
 			const glm::mat4& transform;
-			PipelineSet* pipelineSet;
+			const PipelineSet* pipelineSet;
 			struct DescriptorSetBindInfo
 			{
 				ResourceNonOwner<const DescriptorSet> descriptorSet;
@@ -41,7 +42,7 @@ namespace Wolf
 			};
 			InstanceInfos instanceInfos;
 
-			MeshToRenderInfo(const ResourceNonOwner<Mesh>& mesh, PipelineSet* pipelineSet, const glm::mat4& transform = glm::mat4(1.0f)) : mesh(mesh), transform(transform), pipelineSet(pipelineSet) {}
+			MeshToRenderInfo(const ResourceNonOwner<Mesh>& mesh, const PipelineSet* pipelineSet, const glm::mat4& transform = glm::mat4(1.0f)) : mesh(mesh), transform(transform), pipelineSet(pipelineSet) {}
 		};
 		void addMeshToRender(const MeshToRenderInfo& meshToRenderInfo);
 
@@ -60,12 +61,12 @@ namespace Wolf
 		class RenderMesh
 		{
 		public:
-			RenderMesh(ResourceNonOwner<Mesh> mesh, const glm::mat4& transform, PipelineSet* pipelineSet, std::vector<MeshToRenderInfo::DescriptorSetBindInfo> descriptorSets, const MeshToRenderInfo::InstanceInfos& instanceInfos) :
-				m_mesh(mesh), m_transform(transform), m_pipelineSet(pipelineSet), m_descriptorSets(std::move(descriptorSets)), m_instanceInfos(instanceInfos) { }
+			RenderMesh(ResourceNonOwner<Mesh> mesh, const glm::mat4& transform, const PipelineSet* pipelineSet, std::vector<MeshToRenderInfo::DescriptorSetBindInfo> descriptorSets, const MeshToRenderInfo::InstanceInfos& instanceInfos) :
+				m_mesh(std::move(mesh)), m_transform(transform), m_pipelineSet(pipelineSet), m_descriptorSets(std::move(descriptorSets)), m_instanceInfos(instanceInfos) { }
 
 			void draw(const CommandBuffer& commandBuffer, const Pipeline* pipeline, uint32_t cameraIdx) const;
 
-			PipelineSet* getPipelineSet() const { return m_pipelineSet; }
+			const PipelineSet* getPipelineSet() const { return m_pipelineSet; }
 			ResourceNonOwner<Mesh> getMesh() const { return m_mesh; }
 			const glm::mat4& getTransform() const { return m_transform; }
 			bool isInstanced() const { return m_instanceInfos.instanceCount > 1; }
@@ -73,7 +74,7 @@ namespace Wolf
 		private:
 			ResourceNonOwner<Mesh> m_mesh;
 			glm::mat4 m_transform;
-			PipelineSet* m_pipelineSet;
+			const PipelineSet* m_pipelineSet;
 			std::vector<MeshToRenderInfo::DescriptorSetBindInfo> m_descriptorSets;
 			MeshToRenderInfo::InstanceInfos m_instanceInfos;
 		};

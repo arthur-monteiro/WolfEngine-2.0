@@ -262,6 +262,10 @@ Wolf::ModelLoader::ModelLoader(ModelData& outputModel, ModelLoadingInfo& modelLo
 				outCacheFile.write(reinterpret_cast<char*>(&imageNameSize), sizeof(uint32_t));
 				outCacheFile.write(currentMaterial.imageNames[imageNameIdx].c_str(), imageNameSize);
 			}
+
+			uint32_t materialFolderSize = static_cast<uint32_t>(modelLoadingInfo.mtlFolder.size());
+			outCacheFile.write(reinterpret_cast<char*>(&materialFolderSize), sizeof(uint32_t));
+			outCacheFile.write(modelLoadingInfo.mtlFolder.c_str(), materialFolderSize);
 #endif
 		}
 
@@ -407,6 +411,11 @@ bool Wolf::ModelLoader::loadCache(ModelLoadingInfo& modelLoadingInfo) const
 				m_outputModel.materials[materialIdx].imageNames[imageNameIdx].resize(imageNameSize);
 				input.read(m_outputModel.materials[materialIdx].imageNames[imageNameIdx].data(), imageNameSize);
 			}
+
+			uint32_t materialFolderSize;
+			input.read(reinterpret_cast<char*>(&materialFolderSize), sizeof(uint32_t));
+			m_outputModel.materials[materialIdx].materialFolder.resize(materialFolderSize);
+			input.read(m_outputModel.materials[materialIdx].materialFolder.data(), materialFolderSize);
 #endif
 		}
 
@@ -450,10 +459,14 @@ void Wolf::ModelLoader::loadMaterial(const tinyobj::material_t& material, const 
 			material.ambient_texname,
 			material.sheen_texname
 		};
+		m_outputModel.materials[indexMaterial].materialFolder = mtlFolder;
 #endif
 	}
 
-	MaterialLoader materialLoader(materialFileInfo, materialLayout, m_useCache);
+	MaterialLoader::OutputLayout outputLayout;
+	outputLayout.albedoCompression = ImageCompression::Compression::BC1;
+
+	MaterialLoader materialLoader(materialFileInfo, materialLayout, outputLayout, m_useCache);
 	for (uint32_t i = 0; i < MaterialsGPUManager::TEXTURE_COUNT_PER_MATERIAL; ++i)
 	{
 		if (m_useCache)
