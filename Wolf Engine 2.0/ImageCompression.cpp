@@ -125,15 +125,14 @@ void Wolf::ImageCompression::compressBC3(const VkExtent3D& extent, const std::ve
         }
 
         uint8_t refs[8];
-        refs[0] = minAlpha;
-        refs[1] = maxAlpha;
+        refs[0] = maxAlpha;
+        refs[1] = minAlpha;
         for (uint32_t refIdx = 2; refIdx < 8; ++refIdx)
         {
-            refs[refIdx] = glm::mix(minAlpha, maxAlpha, static_cast<float>(refIdx - 1) / 7);
+            refs[refIdx] = glm::mix(maxAlpha, minAlpha, static_cast<float>(refIdx - 1) / 7);
         }
 
         uint64_t alphaBitmap = 0;
-        static constexpr uint32_t ALPHA_BITMAP_BIT_COUNT = 48;
         for (uint32_t alphaIdx = 0; alphaIdx < 16; ++alphaIdx)
         {
             uint32_t pixelX = firstPixelX + alphaIdx % 4;
@@ -153,12 +152,15 @@ void Wolf::ImageCompression::compressBC3(const VkExtent3D& extent, const std::ve
                 }
             }
 
-            alphaBitmap |= (minRefIdx & 0b111) << (ALPHA_BITMAP_BIT_COUNT - ((alphaIdx + 1) * 3));
+            alphaBitmap |= (minRefIdx & 0b111) << alphaIdx * 3;
         }
 
         outBlocks[blockIdx].alpha[0] = maxAlpha;
         outBlocks[blockIdx].alpha[1] = minAlpha;
-        memcpy(&outBlocks[blockIdx].bitmap[0], reinterpret_cast<uint8_t*>(&alphaBitmap) + (64 - ALPHA_BITMAP_BIT_COUNT) / 8, ALPHA_BITMAP_BIT_COUNT / 8);
+        for (uint32_t i = 0; i < 6; ++i)
+        {
+        	memcpy(&outBlocks[blockIdx].bitmap[i], reinterpret_cast<uint8_t*>(&alphaBitmap) + i , 1);
+        }
 
         outBlocks[blockIdx].bc1 = bc1Blocks[blockIdx];
     }
