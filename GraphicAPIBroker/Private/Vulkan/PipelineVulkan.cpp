@@ -103,12 +103,12 @@ Wolf::PipelineVulkan::PipelineVulkan(const RenderingPipelineCreateInfo& renderin
 		{
 			colorBlendAttachments[i].colorWriteMask = 0xf;
 			colorBlendAttachments[i].blendEnable = VK_TRUE;
-			colorBlendAttachments[i].srcColorBlendFactor = VK_BLEND_FACTOR_ONE;
+			colorBlendAttachments[i].srcColorBlendFactor = VK_BLEND_FACTOR_SRC_ALPHA;
 			colorBlendAttachments[i].dstColorBlendFactor = VK_BLEND_FACTOR_ONE;
 			colorBlendAttachments[i].colorBlendOp = VK_BLEND_OP_ADD;
-			colorBlendAttachments[i].srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE;
-			colorBlendAttachments[i].dstAlphaBlendFactor = VK_BLEND_FACTOR_ONE;
-			colorBlendAttachments[i].alphaBlendOp = VK_BLEND_OP_MAX;
+			colorBlendAttachments[i].srcAlphaBlendFactor = VK_BLEND_FACTOR_SRC_ALPHA;
+			colorBlendAttachments[i].dstAlphaBlendFactor = VK_BLEND_FACTOR_DST_ALPHA;
+			colorBlendAttachments[i].alphaBlendOp = VK_BLEND_OP_ADD;
 		}
 		else if (renderingPipelineCreateInfo.blendModes[i] == RenderingPipelineCreateInfo::BLEND_MODE::TRANS_ALPHA)
 		{

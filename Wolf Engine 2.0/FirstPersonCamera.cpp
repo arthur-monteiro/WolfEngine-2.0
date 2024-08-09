@@ -16,6 +16,8 @@ Wolf::FirstPersonCamera::FirstPersonCamera(glm::vec3 initialPosition, glm::vec3 
 	m_sensibility = sensibility;
 	m_speed = speed;
 	m_aspect = aspect;
+
+	m_locked = true;
 }
 
 void Wolf::FirstPersonCamera::update(const CameraUpdateContext& context)
@@ -26,7 +28,6 @@ void Wolf::FirstPersonCamera::update(const CameraUpdateContext& context)
 	if (m_oldMousePosX < 0 || m_locked)
 	{
 		context.inputHandler->getMousePosition(m_oldMousePosX, m_oldMousePosY);
-		return;
 	}
 
 	const auto currentTime = std::chrono::high_resolution_clock::now();
@@ -41,27 +42,30 @@ void Wolf::FirstPersonCamera::update(const CameraUpdateContext& context)
 	m_oldMousePosX = currentMousePosX;
 	m_oldMousePosY = currentMousePosY;
 
-	if (context.inputHandler->keyPressedThisFrameOrMaintained(GLFW_KEY_W) || context.inputHandler->keyPressedThisFrameOrMaintained(GLFW_KEY_Z))
+	if (!m_locked)
 	{
-		m_position = m_position + m_orientation * (secondOffset * m_speed);
-		m_target = m_position + m_orientation;
-	}
-	else if (context.inputHandler->keyPressedThisFrameOrMaintained(GLFW_KEY_S))
-	{
-		m_position = m_position - m_orientation * (secondOffset * m_speed);
-		m_target = m_position + m_orientation;
-	}
+		if (context.inputHandler->keyPressedThisFrameOrMaintained(GLFW_KEY_W) || context.inputHandler->keyPressedThisFrameOrMaintained(GLFW_KEY_Z))
+		{
+			m_position = m_position + m_orientation * (secondOffset * m_speed);
+			m_target = m_position + m_orientation;
+		}
+		else if (context.inputHandler->keyPressedThisFrameOrMaintained(GLFW_KEY_S))
+		{
+			m_position = m_position - m_orientation * (secondOffset * m_speed);
+			m_target = m_position + m_orientation;
+		}
 
-	if (context.inputHandler->keyPressedThisFrameOrMaintained(GLFW_KEY_A) || context.inputHandler->keyPressedThisFrameOrMaintained(GLFW_KEY_Q))
-	{
-		m_position = m_position + m_lateralDirection * (secondOffset * m_speed);
-		m_target = m_position + m_orientation;
-	}
+		if (context.inputHandler->keyPressedThisFrameOrMaintained(GLFW_KEY_A) || context.inputHandler->keyPressedThisFrameOrMaintained(GLFW_KEY_Q))
+		{
+			m_position = m_position + m_lateralDirection * (secondOffset * m_speed);
+			m_target = m_position + m_orientation;
+		}
 
-	else if (context.inputHandler->keyPressedThisFrameOrMaintained(GLFW_KEY_D))
-	{
-		m_position = m_position - m_lateralDirection * (secondOffset * m_speed);
-		m_target = m_position + m_orientation;
+		else if (context.inputHandler->keyPressedThisFrameOrMaintained(GLFW_KEY_D))
+		{
+			m_position = m_position - m_lateralDirection * (secondOffset * m_speed);
+			m_target = m_position + m_orientation;
+		}
 	}
 
 	m_previousViewMatrix = m_viewMatrix;

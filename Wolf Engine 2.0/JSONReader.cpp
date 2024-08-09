@@ -395,6 +395,9 @@ bool Wolf::JSONReader::JSONObject::getPropertyBool(const std::string& propertyNa
 
 Wolf::JSONReader::JSONObjectInterface* Wolf::JSONReader::JSONObject::getPropertyObject(const std::string& propertyName)
 {
+	if (!properties.contains(propertyName))
+		return nullptr;
+
 	if (properties[propertyName]->type != JSONPropertyType::Object)
 		Debug::sendError("Property is not an object");
 	return properties[propertyName]->objectValue;
