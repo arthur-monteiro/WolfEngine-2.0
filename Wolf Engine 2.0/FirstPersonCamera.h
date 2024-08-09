@@ -30,6 +30,8 @@ namespace Wolf
 		glm::vec3 getOrientation() const override { return m_orientation; }
 		glm::vec3 getTarget() const { return m_target; }
 		float getFOV() const override { return m_radFOV; }
+		float getPhi() const { return m_phi; }
+		float getTheta() const { return m_theta; }
 
 		const DescriptorSet* getDescriptorSet() const override { return GraphicCameraInterface::getDescriptorSet(); }
 
@@ -39,6 +41,10 @@ namespace Wolf
 		void setAspect(float aspect) { m_aspect = aspect; }
 
 		void overrideMatrices(const glm::mat4& viewMatrix, const glm::mat4& projectionMatrix);
+
+		void setPosition(glm::vec3 position) { m_position = position; }
+		void setPhi(float phi) { m_phi = phi; }
+		void setTheta(float theta) { m_theta = theta; }
 
 	private:
 		void updateOrientation(float xOffset, float yOffset);

@@ -85,7 +85,7 @@ Wolf::WolfEngine::WolfEngine(const WolfInstanceCreateInfo& createInfo) : m_globa
 
 	if (createInfo.useBindlessDescriptor)
 	{
-		const std::array defaultImageFilename = {
+		constexpr std::array defaultImageFilename = {
 			"Textures/no_texture_albedo.png",
 			"Textures/no_texture_normal.png",
 			"Textures/no_texture_roughness_metalness_ao.png"
@@ -95,10 +95,10 @@ Wolf::WolfEngine::WolfEngine(const WolfInstanceCreateInfo& createInfo) : m_globa
 		for (uint32_t i = 0; i < defaultImageFilename.size(); ++i)
 		{
 			const ImageFileLoader imageFileLoader(defaultImageFilename[i]);
-			const MipMapGenerator mipmapGenerator(imageFileLoader.getPixels(), { static_cast<uint32_t>(imageFileLoader.getWidth()), static_cast<uint32_t>(imageFileLoader.getHeight()) }, VK_FORMAT_R8G8B8A8_SRGB);
+			const MipMapGenerator mipmapGenerator(imageFileLoader.getPixels(), { imageFileLoader.getWidth(), imageFileLoader.getHeight() }, VK_FORMAT_R8G8B8A8_SRGB);
 
 			CreateImageInfo createImageInfo;
-			createImageInfo.extent = { static_cast<uint32_t>(imageFileLoader.getWidth()), static_cast<uint32_t>(imageFileLoader.getHeight()), 1 };
+			createImageInfo.extent = { imageFileLoader.getWidth(), imageFileLoader.getHeight(), 1 };
 			createImageInfo.aspect = VK_IMAGE_ASPECT_COLOR_BIT;
 			createImageInfo.format = VK_FORMAT_R8G8B8A8_SRGB;
 			createImageInfo.mipLevelCount = mipmapGenerator.getMipLevelCount();
