@@ -31,7 +31,7 @@ namespace Wolf
 		void pushMaterialsToGPU();
 
 		void bind(const CommandBuffer& commandBuffer, const Pipeline& pipeline, uint32_t descriptorSlot) const;
-		[[nodiscard]] static const DescriptorSetLayout* getDescriptorSetLayout() { return LazyInitSharedResource<DescriptorSetLayout, BindlessDescriptor>::getResource(); }
+		[[nodiscard]] static ResourceUniqueOwner<DescriptorSetLayout>& getDescriptorSetLayout() { return LazyInitSharedResource<DescriptorSetLayout, BindlessDescriptor>::getResource(); }
 		[[nodiscard]] const DescriptorSet* getDescriptorSet() const { return m_descriptorSet.get(); }
 
 		uint32_t getCurrentMaterialCount() const { return m_currentMaterialCount + static_cast<uint32_t>(m_newMaterialsInfo.size()); }

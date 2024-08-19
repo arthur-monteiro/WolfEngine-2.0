@@ -232,6 +232,7 @@
     <ClCompile Include="ImageFileLoader.cpp" />
     <ClCompile Include="InputHandler.cpp" />
     <ClCompile Include="JSONReader.cpp" />
+    <ClCompile Include="LightManager.cpp" />
     <ClCompile Include="MaterialLoader.cpp" />
     <ClCompile Include="MaterialsGPUManager.cpp" />
     <ClCompile Include="Mesh.cpp" />
@@ -262,6 +263,7 @@
     <ClInclude Include="CodeFileHashes.h" />
     <ClInclude Include="DebugMarker.h" />
     <ClInclude Include="DepthPassBase.h" />
+    <ClInclude Include="DescriptorSetBindInfo.h" />
     <ClInclude Include="DescriptorSetGenerator.h" />
     <ClInclude Include="DescriptorSetLayoutGenerator.h" />
     <ClInclude Include="Dump.h" />
@@ -274,6 +276,7 @@
     <ClInclude Include="InputHandler.h" />
     <ClInclude Include="JSONReader.h" />
     <ClInclude Include="LazyInitSharedResource.h" />
+    <ClInclude Include="LightManager.h" />
     <ClInclude Include="MaterialLoader.h" />
     <ClInclude Include="MaterialsGPUManager.h" />
     <ClInclude Include="Mesh.h" />
@@ -303,6 +306,7 @@
   <ItemGroup>
     <None Include="Camera.glsl" />
     <None Include="DefaultMaterialFetch.glsl" />
+    <None Include="LightInfo.glsl" />
     <None Include="ShaderCommon.glsl" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

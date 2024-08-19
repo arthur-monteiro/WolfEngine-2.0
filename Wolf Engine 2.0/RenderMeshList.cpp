@@ -3,6 +3,7 @@
 #include "CameraList.h"
 #include "CommandRecordBase.h"
 #include "Debug.h"
+#include "LightManager.h"
 #include "Mesh.h"
 #include "Pipeline.h"
 #include "PipelineSet.h"
@@ -27,7 +28,7 @@ void Wolf::RenderMeshList::addMeshToRender(const MeshToRenderInfo& meshToRenderI
 	m_pipelineIdxCount = std::max(m_pipelineIdxCount, static_cast<uint32_t>(pipelinesHash.size()));
 }
 
-void Wolf::RenderMeshList::draw(const RecordContext& context, const CommandBuffer& commandBuffer, RenderPass* renderPass, uint32_t pipelineIdx, uint32_t cameraIdx, const std::vector<std::pair<uint32_t, const DescriptorSet*>>& descriptorSetsToBind) const
+void Wolf::RenderMeshList::draw(const RecordContext& context, const CommandBuffer& commandBuffer, RenderPass* renderPass, uint32_t pipelineIdx, uint32_t cameraIdx, const std::vector<DescriptorSetBindInfo>& descriptorSetsToBind) const
 {
 	if (m_meshesToRenderByPipelineIdx.empty()) // no mesh added yet
 		return;
@@ -37,14 +38,14 @@ void Wolf::RenderMeshList::draw(const RecordContext& context, const CommandBuffe
 	const Pipeline* currentPipeline = nullptr;
 	for (const RenderMesh* mesh : meshesToRender)
 	{
-		if (const Pipeline* meshPipeline = mesh->getPipelineSet()->getOrCreatePipeline(pipelineIdx, renderPass, m_shaderList); meshPipeline != currentPipeline)
+		if (const Pipeline* meshPipeline = mesh->getPipelineSet()->getOrCreatePipeline(pipelineIdx, renderPass, mesh->getDescriptorSets(), descriptorSetsToBind, m_shaderList); meshPipeline != currentPipeline)
 		{
 			commandBuffer.bindPipeline(meshPipeline);
 			currentPipeline = meshPipeline;
 
-			for (const std::pair<uint32_t, const DescriptorSet*>& descriptorSetToBind : descriptorSetsToBind)
+			for (const DescriptorSetBindInfo& descriptorSetToBind : descriptorSetsToBind)
 			{
-				commandBuffer.bindDescriptorSet(descriptorSetToBind.second, descriptorSetToBind.first, *meshPipeline);
+				commandBuffer.bindDescriptorSet(descriptorSetToBind.getDescriptorSet(), descriptorSetToBind.getBindingSlot(), *meshPipeline);
 			}
 
 			if (cameraIdx != NO_CAMERA_IDX)
@@ -59,6 +60,11 @@ void Wolf::RenderMeshList::draw(const RecordContext& context, const CommandBuffe
 			if (const uint32_t bindlessDescriptorSlot = mesh->getPipelineSet()->getBindlessDescriptorSlot(pipelineIdx); bindlessDescriptorSlot != static_cast<uint32_t>(-1))
 			{
 				commandBuffer.bindDescriptorSet(context.bindlessDescriptorSet, bindlessDescriptorSlot, *meshPipeline);
+			}
+
+			if (const uint32_t lightDescriptorSlot = mesh->getPipelineSet()->getLightDescriptorSlot(pipelineIdx); lightDescriptorSlot != static_cast<uint32_t>(-1))
+			{
+				commandBuffer.bindDescriptorSet(context.lightManager->getDescriptorSet().createConstNonOwnerResource(), lightDescriptorSlot, *meshPipeline);
 			}
 		}
 
@@ -117,9 +123,9 @@ void Wolf::RenderMeshList::moveToNextFrame(const CameraList& cameraList)
 
 void Wolf::RenderMeshList::RenderMesh::draw(const CommandBuffer& commandBuffer, const Pipeline* pipeline, uint32_t cameraIdx) const
 {
-	for (const MeshToRenderInfo::DescriptorSetBindInfo& descriptorSetBindInfo : m_descriptorSets)
+	for (const DescriptorSetBindInfo& descriptorSetBindInfo : m_descriptorSets)
 	{
-		commandBuffer.bindDescriptorSet(descriptorSetBindInfo.descriptorSet, descriptorSetBindInfo.descriptorSetBindingSlot, *pipeline);
+		commandBuffer.bindDescriptorSet(descriptorSetBindInfo.getDescriptorSet(), descriptorSetBindInfo.getBindingSlot(), *pipeline);
 	}
 
 	if (m_instanceInfos.instanceBuffer)

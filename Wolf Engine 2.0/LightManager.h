@@ -1,0 +1,81 @@
+#pragma once
+
+#include <memory>
+#include <glm/glm.hpp>
+#include <vector>
+
+#include <Buffer.h>
+#include <DescriptorSet.h>
+
+#include "DescriptorSetLayoutGenerator.h"
+#include "LazyInitSharedResource.h"
+#include "ResourceUniqueOwner.h"
+
+namespace Wolf
+{
+	class LightManager
+	{
+	public:
+		LightManager();
+
+		struct PointLightInfo
+		{
+			glm::vec3 worldPos;
+			glm::vec3 color;
+			float intensity;
+		};
+		void addPointLightForNextFrame(const PointLightInfo& pointLightInfo);
+
+		struct SunLightInfo
+		{
+			glm::vec3 direction;
+			glm::vec3 color;
+			float intensity;
+		};
+		void addSunLightInfoForNextFrame(const SunLightInfo& sunLightInfo);
+
+		void updateBeforeFrame();
+
+		[[nodiscard]] static ResourceUniqueOwner<DescriptorSetLayout>& getDescriptorSetLayout() { return LazyInitSharedResource<DescriptorSetLayout, LightManager>::getResource(); }
+		ResourceUniqueOwner<DescriptorSet>& getDescriptorSet() { return m_descriptorSet; }
+
+	private:
+		std::vector<PointLightInfo> m_currentPointLights;
+		std::vector<PointLightInfo> m_nextFramePointLights;
+
+		std::vector<SunLightInfo> m_currentSunLights;
+		std::vector<SunLightInfo> m_nextFrameSunLights;
+
+		// GPU Info
+		struct PointLightUBInfo
+		{
+			glm::vec4 lightPos;
+			glm::vec4 lightColor;
+		};
+		static constexpr uint32_t MAX_POINT_LIGHTS = 16;
+
+		struct SunLightUBInfo
+		{
+			glm::vec4 sunDirection;
+			glm::vec4 sunColor;
+		};
+		static constexpr uint32_t MAX_SUN_LIGHTS = 1;
+
+		struct LightsUBData
+		{
+			PointLightUBInfo pointLights[MAX_POINT_LIGHTS];
+			uint32_t pointLightsCount;
+			glm::vec3 padding;
+
+			SunLightUBInfo sunLights[MAX_SUN_LIGHTS];
+			uint32_t sunLightsCount;
+			glm::vec3 padding2;
+		};
+		ResourceUniqueOwner<Buffer> m_uniformBuffer;
+
+		DescriptorSetLayoutGenerator m_descriptorSetLayoutGenerator;
+		ResourceUniqueOwner<DescriptorSet> m_descriptorSet;
+		std::unique_ptr<LazyInitSharedResource<DescriptorSetLayout, LightManager>> m_descriptorSetLayout;
+	};
+
+}

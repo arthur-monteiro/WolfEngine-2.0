@@ -21,7 +21,7 @@ namespace Wolf
 		[[nodiscard]] virtual float getNear() const = 0;
 		[[nodiscard]] virtual float getFar() const = 0;
 
-		static const DescriptorSetLayout* getDescriptorSetLayout() { return LazyInitSharedResource<DescriptorSetLayout, GraphicCameraInterface>::getResource(); }
+		static ResourceUniqueOwner<DescriptorSetLayout>& getDescriptorSetLayout() { return LazyInitSharedResource<DescriptorSetLayout, GraphicCameraInterface>::getResource(); }
 		virtual const DescriptorSet* getDescriptorSet() const { return m_descriptorSet.get(); }
 
 	protected:

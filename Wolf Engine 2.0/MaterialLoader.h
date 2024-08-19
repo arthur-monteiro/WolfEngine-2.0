@@ -23,7 +23,7 @@ namespace Wolf
 			ImageCompression::Compression albedoCompression;
 		};
 
-		struct MaterialFileInfo
+		struct MaterialFileInfoGGX
 		{
 			std::string name;
 
@@ -34,8 +34,17 @@ namespace Wolf
 			std::string ao;
 			std::string anisoStrength;
 		};
+		MaterialLoader(const MaterialFileInfoGGX& material, const OutputLayout& outputLayout, bool useCache);
 
-		MaterialLoader(const MaterialFileInfo& material, InputMaterialLayout materialLayout, const OutputLayout& outputLayout, bool useCache);
+		struct MaterialFileInfoSixWayLighting
+		{
+			std::string name;
+
+			std::string tex0; // r = right, g = top, b = back, a = transparency
+			std::string tex1; // r = left, g = bottom, b = front, a = unused (emissive ?)
+		};
+		MaterialLoader(const MaterialFileInfoSixWayLighting& material, bool useCache);
+
 		Image* releaseImage(uint32_t idx);
 		void assignCache(uint32_t idx, std::vector<unsigned char>& output);
 
@@ -48,6 +57,6 @@ namespace Wolf
 		void createImageFromData(VkExtent3D extent, VkFormat format, const unsigned char* pixels, const std::vector<const unsigned char*>& mipLevels, uint32_t idx);
 
 		template <typename T>
-		void compressAndCreateImage(std::vector<std::vector<ImageCompression::RGBA8>>& mipLevels, const std::vector<ImageCompression::RGBA8>& pixels, VkExtent3D& extent, VkFormat format, const MaterialFileInfo& material);
+		void compressAndCreateImage(std::vector<std::vector<ImageCompression::RGBA8>>& mipLevels, const std::vector<ImageCompression::RGBA8>& pixels, VkExtent3D& extent, VkFormat format, const MaterialFileInfoGGX& material);
 	};
 }

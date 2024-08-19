@@ -3,24 +3,26 @@
 #include <functional>
 #include <memory>
 
+#include "ResourceUniqueOwner.h"
+
 namespace Wolf
 {
 	template <class T, class U>
 	class LazyInitSharedResource
 	{
 	public:
-		LazyInitSharedResource(const std::function<void(std::unique_ptr<T>&)>& initFunction);
+		LazyInitSharedResource(const std::function<void(ResourceUniqueOwner<T>&)>& initFunction);
 		~LazyInitSharedResource();
 		
-		static T* getResource() { return m_data.get(); }
+		static ResourceUniqueOwner<T>& getResource() { return m_data; }
 
 	private:
-		inline static std::unique_ptr<T> m_data;
+		inline static ResourceUniqueOwner<T> m_data;
 		inline static uint32_t m_userCount = 0;
 	};
 
 	template <class T, class U>
-	LazyInitSharedResource<T, U>::LazyInitSharedResource(const std::function<void(std::unique_ptr<T>&)>& initFunction)
+	LazyInitSharedResource<T, U>::LazyInitSharedResource(const std::function<void(ResourceUniqueOwner<T>&)>& initFunction)
 	{
 		m_userCount++;
 

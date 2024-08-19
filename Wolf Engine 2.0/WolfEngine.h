@@ -17,6 +17,7 @@
 #include "CommandRecordBase.h"
 #include "Configuration.h"
 #include "InputHandler.h"
+#include "LightManager.h"
 #include "MaterialsGPUManager.h"
 #include "RenderMeshList.h"
 #include "ResourceUniqueOwner.h"
@@ -80,6 +81,7 @@ namespace Wolf
 
 		[[nodiscard]] CameraList& getCameraList() { return m_cameraList; }
 		[[nodiscard]] RenderMeshList& getRenderMeshList() { return m_renderMeshList; }
+		[[nodiscard]] ResourceUniqueOwner<LightManager>& getLightManager() { return m_lightManager; }
 		[[nodiscard]] ResourceNonOwner<MaterialsGPUManager> getMaterialsManager() { return m_materialsManager.createNonOwnerResource(); }
 		[[nodiscard]] const std::vector<std::string>& getSavedUICommands() const { return m_savedUICommands; }
 		[[nodiscard]] const Timer& getGlobalTimer() const { return m_globalTimer; }
@@ -113,6 +115,7 @@ namespace Wolf
 		// Gameplay
 		CameraList m_cameraList;
 		std::vector<void*> m_gameContexts;
+		ResourceUniqueOwner<LightManager> m_lightManager;
 
 		bool m_resizeIsNeeded = false;
 		std::function<void(uint32_t, uint32_t)> m_resizeCallback;

@@ -97,7 +97,7 @@ Wolf::PipelineVulkan::PipelineVulkan(const RenderingPipelineCreateInfo& renderin
 
 	/* Color blend */
 	std::vector<VkPipelineColorBlendAttachmentState> colorBlendAttachments(renderingPipelineCreateInfo.blendModes.size());
-	for (int i(0); i < renderingPipelineCreateInfo.blendModes.size(); ++i)
+	for (uint32_t i = 0; i < renderingPipelineCreateInfo.blendModes.size(); ++i)
 	{
 		if (renderingPipelineCreateInfo.blendModes[i] == RenderingPipelineCreateInfo::BLEND_MODE::TRANS_ADD)
 		{

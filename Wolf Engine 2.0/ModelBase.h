@@ -31,11 +31,11 @@ namespace Wolf
 		const BottomLevelAccelerationStructure* getBLAS() const { return m_blas.get(); }
 #endif
 		const glm::mat4& getTransform() const { return m_transform; }
-		const DescriptorSetLayout* getDescriptorSetLayout() const { return m_descriptorSetLayout->getResource(); }
+		const ResourceUniqueOwner<DescriptorSetLayout>& getDescriptorSetLayout() const { return m_descriptorSetLayout->getResource(); }
 
 		void setTransform(const glm::mat4& transform) { m_transform = transform; }
 		void setPosition(glm::vec3 position) { m_transform[3] = glm::vec4(position, 1.0f); }
-		void setPipelineSet(PipelineSet* pipelineSet) { m_pipelineSet = pipelineSet; }
+		//void setPipelineSet(PipelineSet* pipelineSet) { m_pipelineSet = pipelineSet; }
 
 	private:
 #if !defined(__ANDROID__) or __ANDROID_MIN_SDK_VERSION__ > 30
@@ -43,7 +43,7 @@ namespace Wolf
 #endif
 
 		ModelData m_modelData;
-		PipelineSet* m_pipelineSet = nullptr;
+		ResourceUniqueOwner<PipelineSet> m_pipelineSet;
 
 		std::unique_ptr<LazyInitSharedResource<DescriptorSetLayoutGenerator, ModelBase>> m_descriptorSetLayoutGenerator;
 		std::unique_ptr<LazyInitSharedResource<DescriptorSetLayout, ModelBase>> m_descriptorSetLayout;
