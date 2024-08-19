@@ -9,6 +9,7 @@
 #include <vector>
 
 #include "DescriptorSet.h"
+#include "DescriptorSetBindInfo.h"
 #include "Pipeline.h"
 #include "ResourceReference.h"
 #include "ShaderParser.h"
@@ -43,9 +44,9 @@ namespace Wolf
 			bool primitiveRestartEnable = false;
 
 			// Resources layouts
-			std::vector<std::pair<ResourceReference<const DescriptorSetLayout>, uint32_t>> descriptorSetLayouts;
 			uint32_t cameraDescriptorSlot = -1;
 			uint32_t bindlessDescriptorSlot = -1;
+			uint32_t lightDescriptorSlot = -1;
 
 			// Viewport
 			std::array<float, 2> viewportScale = { 1.0f, 1.0f };
@@ -82,10 +83,11 @@ namespace Wolf
 
 		std::vector<uint64_t> retrieveAllPipelinesHash() const;
 		std::vector<const PipelineInfo*> retrieveAllPipelinesInfo() const;
-		const Pipeline* getOrCreatePipeline(uint32_t idx, RenderPass* renderPass, ShaderList& shaderList) const;
+		const Pipeline* getOrCreatePipeline(uint32_t idx, RenderPass* renderPass, const std::vector<DescriptorSetBindInfo>& meshDescriptorSetsBindInfo, const std::vector<DescriptorSetBindInfo>& additionalDescriptorSetsBindInfo, ShaderList& shaderList) const;
 		uint64_t getPipelineHash(uint32_t idx) const { return m_infoForPipelines[idx] ? m_infoForPipelines[idx]->getHash() : 0; }
 		uint32_t getCameraDescriptorSlot(uint32_t idx) const { return m_infoForPipelines[idx]->getPipelineInfo().cameraDescriptorSlot; }
 		uint32_t getBindlessDescriptorSlot(uint32_t idx) const { return m_infoForPipelines[idx]->getPipelineInfo().bindlessDescriptorSlot; }
+		uint32_t getLightDescriptorSlot(uint32_t idx) const { return m_infoForPipelines[idx]->getPipelineInfo().lightDescriptorSlot; }
 
 	private:
 		void shaderCodeChanged(const ShaderParser* shaderParser) const;

@@ -437,36 +437,33 @@ inline std::string getTexName(const std::string& texName, const std::string& fol
 
 void Wolf::ModelLoader::loadMaterial(const tinyobj::material_t& material, const std::string& mtlFolder, MaterialLoader::InputMaterialLayout materialLayout, uint32_t indexMaterial)
 {
-	MaterialLoader::MaterialFileInfo materialFileInfo{};
+	MaterialLoader::MaterialFileInfoGGX materialFileInfo{};
 	materialFileInfo.name = material.name;
-	if (materialLayout == MaterialLoader::InputMaterialLayout::EACH_TEXTURE_A_FILE)
-	{
-		materialFileInfo.albedo = getTexName(material.diffuse_texname, mtlFolder, "Textures/no_texture_albedo.png");
-		materialFileInfo.normal = getTexName(material.bump_texname, mtlFolder);
-		materialFileInfo.roughness = getTexName(material.specular_highlight_texname, mtlFolder);
-		materialFileInfo.metalness = getTexName(material.specular_texname, mtlFolder);
-		materialFileInfo.ao = getTexName(material.ambient_texname, mtlFolder);
-		materialFileInfo.anisoStrength = getTexName(material.sheen_texname, mtlFolder);
+	materialFileInfo.albedo = getTexName(material.diffuse_texname, mtlFolder, "Textures/no_texture_albedo.png");
+	materialFileInfo.normal = getTexName(material.bump_texname, mtlFolder);
+	materialFileInfo.roughness = getTexName(material.specular_highlight_texname, mtlFolder);
+	materialFileInfo.metalness = getTexName(material.specular_texname, mtlFolder);
+	materialFileInfo.ao = getTexName(material.ambient_texname, mtlFolder);
+	materialFileInfo.anisoStrength = getTexName(material.sheen_texname, mtlFolder);
 
 #ifdef MATERIAL_DEBUG
-		m_outputModel.materials[indexMaterial].materialName = materialFileInfo.name;
-		m_outputModel.materials[indexMaterial].imageNames =
-		{
-			material.diffuse_texname,
-			material.bump_texname,
-			material.specular_highlight_texname,
-			material.specular_texname,
-			material.ambient_texname,
-			material.sheen_texname
-		};
-		m_outputModel.materials[indexMaterial].materialFolder = mtlFolder;
+	m_outputModel.materials[indexMaterial].materialName = materialFileInfo.name;
+	m_outputModel.materials[indexMaterial].imageNames =
+	{
+		material.diffuse_texname,
+		material.bump_texname,
+		material.specular_highlight_texname,
+		material.specular_texname,
+		material.ambient_texname,
+		material.sheen_texname
+	};
+	m_outputModel.materials[indexMaterial].materialFolder = mtlFolder;
 #endif
-	}
 
 	MaterialLoader::OutputLayout outputLayout;
 	outputLayout.albedoCompression = ImageCompression::Compression::BC1;
 
-	MaterialLoader materialLoader(materialFileInfo, materialLayout, outputLayout, m_useCache);
+	MaterialLoader materialLoader(materialFileInfo, outputLayout, m_useCache);
 	for (uint32_t i = 0; i < MaterialsGPUManager::TEXTURE_COUNT_PER_MATERIAL; ++i)
 	{
 		if (m_useCache)

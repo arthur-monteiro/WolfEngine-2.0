@@ -27,6 +27,9 @@ struct MaterialInfo
     float matAO;
     float anisoStrength;
 
+    vec4 sixWaysLightmap0;
+    vec4 sixWaysLightmap1;
+
     uint shadingMode;
 };
 
@@ -35,13 +38,17 @@ MaterialInfo fetchMaterial(in const vec2 texCoords, in const uint materialIdx, i
     MaterialInfo materialInfo;
 
     materialInfo.albedo = texture(sampler2D(textures[materialsInfo[materialIdx].albedoIdx], textureSampler), texCoords).rgba;
-    materialInfo.normal = (texture(sampler2D(textures[materialsInfo[materialIdx].normalIdx], textureSampler), texCoords).rgb * 2.0 - vec3(1.0)) * matrixTBN;
+    vec4 normal = texture(sampler2D(textures[materialsInfo[materialIdx].normalIdx], textureSampler), texCoords).rgba;
+    materialInfo.normal = (normal.rgb * 2.0 - vec3(1.0)) * matrixTBN;
     vec4 combinedRoughnessMetalnessAOAniso = texture(sampler2D(textures[materialsInfo[materialIdx].roughnessMetalnessAOIdx], textureSampler), texCoords).rgba;
 	materialInfo.roughness = combinedRoughnessMetalnessAOAniso.r;
 	materialInfo.metalness = combinedRoughnessMetalnessAOAniso.g;
     materialInfo.matAO = combinedRoughnessMetalnessAOAniso.b;
     materialInfo.anisoStrength = combinedRoughnessMetalnessAOAniso.a;
     materialInfo.shadingMode = materialsInfo[materialIdx].shadingMode;
+
+    materialInfo.sixWaysLightmap0  = materialInfo.albedo;
+    materialInfo.sixWaysLightmap1  = normal;
 
     return materialInfo;
 }

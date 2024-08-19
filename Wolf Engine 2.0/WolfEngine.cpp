@@ -117,6 +117,8 @@ Wolf::WolfEngine::WolfEngine(const WolfInstanceCreateInfo& createInfo) : m_globa
 		
 		m_materialsManager.reset(new MaterialsGPUManager(defaultImageDescription));
 	}
+
+	m_lightManager.reset(new LightManager);
 }
 
 void Wolf::WolfEngine::initializePass(const ResourceNonOwner<CommandRecordBase>& pass) const
@@ -156,7 +158,7 @@ void Wolf::WolfEngine::updateBeforeFrame()
 	context.frameIdx = m_currentFrame;
 	context.swapChainExtent = m_swapChain->getImage(0)->getExtent();
 	m_cameraList.moveToNextFrame(context);
-
+	
 	m_renderMeshList.moveToNextFrame(m_cameraList);
 	m_shaderList.checkForModifiedShader();
 
@@ -166,6 +168,8 @@ void Wolf::WolfEngine::updateBeforeFrame()
 	}
 
 	m_globalTimer.updateCachedDuration();
+
+	m_lightManager->updateBeforeFrame();
 }
 
 void Wolf::WolfEngine::frame(const std::span<ResourceNonOwner<CommandRecordBase>>& passes, const Semaphore* frameEndedSemaphore)
@@ -207,7 +211,7 @@ void Wolf::WolfEngine::frame(const std::span<ResourceNonOwner<CommandRecordBase>
 
 	const uint32_t currentSwapChainImageIndex = m_swapChain->getCurrentImage(m_currentFrame);
 
-	RecordContext recordContext{};
+	RecordContext recordContext(m_lightManager.createNonOwnerResource());
 	recordContext.currentFrameIdx = m_currentFrame;
 	recordContext.commandBufferIdx = m_currentFrame % g_configuration->getMaxCachedFrames();
 	recordContext.swapChainImageIdx = currentSwapChainImageIndex;
@@ -219,7 +223,7 @@ void Wolf::WolfEngine::frame(const std::span<ResourceNonOwner<CommandRecordBase>
 	recordContext.gameContext = m_gameContexts[recordContext.commandBufferIdx];
 	recordContext.renderMeshList = &m_renderMeshList;
 	if (m_materialsManager)
-		recordContext.bindlessDescriptorSet = m_materialsManager->getDescriptorSet();
+		recordContext.bindlessDescriptorSet = m_materialsManager->getDescriptorSet();;
 
 	for (const ResourceNonOwner<CommandRecordBase>& pass : passes)
 	{

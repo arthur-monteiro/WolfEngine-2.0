@@ -20,7 +20,7 @@ uint64_t Wolf::ShaderParser::MaterialFetchProcedure::computeHash() const
     return xxh64::hash(codeString.c_str(), codeString.length(), 0);
 }
 
-Wolf::ShaderParser::ShaderParser(const std::string& filename, const std::vector<std::string>& conditionBlocksToInclude, uint32_t cameraDescriptorSlot, uint32_t bindlessDescriptorSlot, const MaterialFetchProcedure& materialFetchProcedure)
+Wolf::ShaderParser::ShaderParser(const std::string& filename, const std::vector<std::string>& conditionBlocksToInclude, uint32_t cameraDescriptorSlot, uint32_t bindlessDescriptorSlot, uint32_t lightDescriptorSlot, const MaterialFetchProcedure& materialFetchProcedure)
 {
     m_filename = filename;
 #ifndef __ANDROID__
@@ -30,6 +30,7 @@ Wolf::ShaderParser::ShaderParser(const std::string& filename, const std::vector<
 
     m_cameraDescriptorSlot = cameraDescriptorSlot;
     m_bindlessDescriptorSlot = bindlessDescriptorSlot;
+    m_lightDescriptorSlot = lightDescriptorSlot;
     m_materialFetchProcedure = materialFetchProcedure;
     m_materialFetchProcedureHash = materialFetchProcedure.computeHash();
 
@@ -127,7 +128,10 @@ void Wolf::ShaderParser::parseAndCompile()
     outFileGLSL << "#version 460\n";
     addCameraCode(outFileGLSL);
     if (extensionFound == "Frag")
-		addMaterialFetchCode(outFileGLSL);
+    {
+        addMaterialFetchCode(outFileGLSL);
+        addLightInfoCode(outFileGLSL);
+    }
 
     std::vector<std::string> currentConditions;
     std::string inShaderLine;
@@ -323,4 +327,22 @@ void Wolf::ShaderParser::addMaterialFetchCode(std::ofstream& outFileGLSL) const
     }
 
     outFileGLSL << materialFetchCode;
+}
+
+void Wolf::ShaderParser::addLightInfoCode(std::ofstream& outFileGLSL) const
+{
+    if (m_lightDescriptorSlot == static_cast<uint32_t>(-1))
+        return;
+
+    std::string lightInfoCode =
+		#include "LightInfo.glsl"
+    ;
+
+    const std::string& descriptorSlotToken = "£LIGHT_INFO_DESCRIPTOR_SLOT";
+    if (const size_t descriptorSlotTokenPos = lightInfoCode.find(descriptorSlotToken); descriptorSlotTokenPos != std::string::npos)
+    {
+        lightInfoCode.replace(descriptorSlotTokenPos, descriptorSlotToken.length(), std::to_string(m_lightDescriptorSlot));
+    }
+
+    outFileGLSL << lightInfoCode;
 }

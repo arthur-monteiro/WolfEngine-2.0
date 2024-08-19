@@ -5,6 +5,7 @@
 #include "MaterialsGPUManager.h"
 #include "Debug.h"
 #include "GraphicCameraInterface.h"
+#include "LightManager.h"
 #include "RenderPass.h"
 #include "ShaderList.h"
 
@@ -78,7 +79,7 @@ std::vector<const Wolf::PipelineSet::PipelineInfo*> Wolf::PipelineSet::retrieveA
 	return r;
 }
 
-const Wolf::Pipeline* Wolf::PipelineSet::getOrCreatePipeline(uint32_t idx, RenderPass* renderPass, ShaderList& shaderList) const
+const Wolf::Pipeline* Wolf::PipelineSet::getOrCreatePipeline(uint32_t idx, RenderPass* renderPass, const std::vector<DescriptorSetBindInfo>& meshDescriptorSetsBindInfo, const std::vector<DescriptorSetBindInfo>& additionalDescriptorSetsBindInfo, ShaderList& shaderList) const
 {
 	if (!m_infoForPipelines[idx]->getPipelines().contains(renderPass))
 	{
@@ -104,6 +105,7 @@ const Wolf::Pipeline* Wolf::PipelineSet::getOrCreatePipeline(uint32_t idx, Rende
 			});
 			addShaderInfo.cameraDescriptorSlot = pipelineInfo.cameraDescriptorSlot;
 			addShaderInfo.bindlessDescriptorSlot = pipelineInfo.shaderInfos[i].stage == VK_SHADER_STAGE_FRAGMENT_BIT ? pipelineInfo.bindlessDescriptorSlot : -1;
+			addShaderInfo.lightDescriptorSlot = pipelineInfo.shaderInfos[i].stage == VK_SHADER_STAGE_FRAGMENT_BIT ? pipelineInfo.lightDescriptorSlot : -1;
 			addShaderInfo.materialFetchProcedure = pipelineInfo.shaderInfos[i].materialFetchProcedure;
 			if (!addShaderInfo.materialFetchProcedure.codeString.empty())
 			{
@@ -124,10 +126,15 @@ const Wolf::Pipeline* Wolf::PipelineSet::getOrCreatePipeline(uint32_t idx, Rende
 
 		// Resources layouts
 		uint32_t maxSlot = 0;
-		for (const std::pair<ResourceReference<const DescriptorSetLayout>, uint32_t>& descriptorSetLayout : pipelineInfo.descriptorSetLayouts)
+		for (const DescriptorSetBindInfo& descriptorSetLayout : additionalDescriptorSetsBindInfo)
 		{
-			if (descriptorSetLayout.second > maxSlot)
-				maxSlot = descriptorSetLayout.second;
+			if (descriptorSetLayout.getBindingSlot() > maxSlot)
+				maxSlot = descriptorSetLayout.getBindingSlot();
+		}
+		for (const DescriptorSetBindInfo& descriptorSetLayout : meshDescriptorSetsBindInfo)
+		{
+			if (descriptorSetLayout.getBindingSlot() > maxSlot)
+				maxSlot = descriptorSetLayout.getBindingSlot();
 		}
 		if (pipelineInfo.cameraDescriptorSlot != static_cast<uint32_t>(-1))
 		{
@@ -139,15 +146,29 @@ const Wolf::Pipeline* Wolf::PipelineSet::getOrCreatePipeline(uint32_t idx, Rende
 			if (pipelineInfo.bindlessDescriptorSlot > maxSlot)
 				maxSlot = pipelineInfo.bindlessDescriptorSlot;
 		}
+		if (pipelineInfo.lightDescriptorSlot != static_cast<uint32_t>(-1))
+		{
+			if (pipelineInfo.lightDescriptorSlot > maxSlot)
+				maxSlot = pipelineInfo.lightDescriptorSlot;
+		}
 
 		for (uint32_t slot = 0; slot <= maxSlot; ++slot)
 		{
 			bool slotFound = false;
-			for (const std::pair<ResourceReference<const DescriptorSetLayout>, uint32_t>& descriptorSetLayout : pipelineInfo.descriptorSetLayouts)
+			for (const DescriptorSetBindInfo& descriptorSetLayout : additionalDescriptorSetsBindInfo)
 			{
-				if (descriptorSetLayout.second == slot)
+				if (descriptorSetLayout.getBindingSlot() == slot)
 				{
-					renderingPipelineCreateInfo.descriptorSetLayouts.emplace_back(descriptorSetLayout.first);
+					renderingPipelineCreateInfo.descriptorSetLayouts.emplace_back(descriptorSetLayout.getDescriptorSetLayout());
+					slotFound = true;
+				}
+			}
+
+			for (const DescriptorSetBindInfo& descriptorSetLayout : meshDescriptorSetsBindInfo)
+			{
+				if (descriptorSetLayout.getBindingSlot() == slot)
+				{
+					renderingPipelineCreateInfo.descriptorSetLayouts.emplace_back(descriptorSetLayout.getDescriptorSetLayout());
 					slotFound = true;
 				}
 			}
@@ -156,12 +177,17 @@ const Wolf::Pipeline* Wolf::PipelineSet::getOrCreatePipeline(uint32_t idx, Rende
 			{
 				if (pipelineInfo.cameraDescriptorSlot == slot)
 				{
-					renderingPipelineCreateInfo.descriptorSetLayouts.emplace_back(GraphicCameraInterface::getDescriptorSetLayout());
+					renderingPipelineCreateInfo.descriptorSetLayouts.emplace_back(GraphicCameraInterface::getDescriptorSetLayout().createConstNonOwnerResource());
 					slotFound = true;
 				}
 				else if (pipelineInfo.bindlessDescriptorSlot == slot)
 				{
-					renderingPipelineCreateInfo.descriptorSetLayouts.emplace_back(MaterialsGPUManager::getDescriptorSetLayout());
+					renderingPipelineCreateInfo.descriptorSetLayouts.emplace_back(MaterialsGPUManager::getDescriptorSetLayout().createConstNonOwnerResource());
+					slotFound = true;
+				}
+				else if (pipelineInfo.lightDescriptorSlot == slot)
+				{
+					renderingPipelineCreateInfo.descriptorSetLayouts.emplace_back(LightManager::getDescriptorSetLayout().createConstNonOwnerResource());
 					slotFound = true;
 				}
 			}

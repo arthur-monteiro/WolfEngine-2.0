@@ -3,18 +3,19 @@
 #include "BindlessDescriptor.h"
 #include "DescriptorSetGenerator.h"
 #include "RenderMeshList.h"
+#include "PipelineSet.h"
 
 Wolf::ModelBase::ModelBase(ModelLoadingInfo& modelLoadingInfo, bool requestAccelerationStructuresBuild)
 {
 	ModelLoader::loadObject(m_modelData, modelLoadingInfo);
 
-	m_descriptorSetLayoutGenerator.reset(new LazyInitSharedResource<DescriptorSetLayoutGenerator, ModelBase>([this](std::unique_ptr<DescriptorSetLayoutGenerator>& descriptorSetLayoutGenerator)
+	m_descriptorSetLayoutGenerator.reset(new LazyInitSharedResource<DescriptorSetLayoutGenerator, ModelBase>([this](ResourceUniqueOwner<DescriptorSetLayoutGenerator>& descriptorSetLayoutGenerator)
 		{
 			descriptorSetLayoutGenerator.reset(new DescriptorSetLayoutGenerator);
 			descriptorSetLayoutGenerator->addUniformBuffer(VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0);
 		}));
 
-	m_descriptorSetLayout.reset(new LazyInitSharedResource<DescriptorSetLayout, ModelBase>([this](std::unique_ptr<DescriptorSetLayout>& descriptorSetLayout)
+	m_descriptorSetLayout.reset(new LazyInitSharedResource<DescriptorSetLayout, ModelBase>([this](ResourceUniqueOwner<DescriptorSetLayout>& descriptorSetLayout)
 		{
 			descriptorSetLayout.reset(DescriptorSetLayout::createDescriptorSetLayout(m_descriptorSetLayoutGenerator->getResource()->getDescriptorLayouts()));
 		}));
@@ -46,8 +47,9 @@ Wolf::ModelBase::ModelBase(ModelLoadingInfo& modelLoadingInfo, bool requestAccel
 
 void Wolf::ModelBase::addMeshToRenderList(RenderMeshList& renderMeshList, const RenderMeshList::MeshToRenderInfo::InstanceInfos& instanceInfos)
 {
-	RenderMeshList::MeshToRenderInfo meshToRenderInfo(m_modelData.mesh.createNonOwnerResource(), m_pipelineSet, m_transform);
-	meshToRenderInfo.descriptorSets.push_back({ m_descriptorSet.createConstNonOwnerResource(), 0 });
+	RenderMeshList::MeshToRenderInfo meshToRenderInfo(m_modelData.mesh.createNonOwnerResource(), m_pipelineSet.createConstNonOwnerResource(), m_transform);
+
+	meshToRenderInfo.descriptorSets.emplace_back(m_descriptorSet.createConstNonOwnerResource(), m_descriptorSetLayout->getResource().createConstNonOwnerResource(), 0);
 	meshToRenderInfo.instanceInfos = instanceInfos;
 	renderMeshList.addMeshToRender(meshToRenderInfo);
 }

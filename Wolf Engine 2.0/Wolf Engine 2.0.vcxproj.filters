@@ -150,6 +150,9 @@
     <ClCompile Include="DynamicStableArray.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="LightManager.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="WolfEngine.h">
@@ -284,6 +287,12 @@
     <ClInclude Include="DynamicResourceUniqueOwnerArray.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="DescriptorSetBindInfo.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="LightManager.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="ShaderCommon.glsl" />
@@ -291,5 +300,6 @@
       <Filter>Camera</Filter>
     </None>
     <None Include="DefaultMaterialFetch.glsl" />
+    <None Include="LightInfo.glsl" />
   </ItemGroup>
 </Project>

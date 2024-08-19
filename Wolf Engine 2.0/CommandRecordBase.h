@@ -13,6 +13,7 @@ struct GLFWwindow;
 
 namespace Wolf
 {
+	class LightManager;
 	class CameraList;
 	class DescriptorSet;
 	class Image;
@@ -42,6 +43,9 @@ namespace Wolf
 		const void* gameContext;
 		RenderMeshList* renderMeshList;
 		const DescriptorSet* bindlessDescriptorSet;
+		ResourceNonOwner<LightManager> lightManager;
+
+		RecordContext(const ResourceNonOwner<LightManager>& lightManager) : lightManager(lightManager) {} 
 	};
 
 	struct SubmitContext
