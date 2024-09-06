@@ -63,4 +63,9 @@ vec3 computeWorldPosFromViewPos(in const vec3 viewPos)
 {
 	return (getInvViewMatrix() * vec4(viewPos, 1.0)).xyz;
 }
+
+vec3 getCameraPos()
+{
+	return ubCamera.invView[3].xyz;
+}
 )"

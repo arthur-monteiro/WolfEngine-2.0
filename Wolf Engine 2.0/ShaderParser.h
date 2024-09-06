@@ -16,13 +16,21 @@ namespace Wolf
 
 			uint64_t computeHash() const;
 		};
-		ShaderParser(const std::string& filename, const std::vector<std::string>& conditionBlocksToInclude = {}, uint32_t cameraDescriptorSlot = -1, uint32_t bindlessDescriptorSlot = -1, uint32_t lightDescriptorSlot = -1, const MaterialFetchProcedure& materialFetchProcedure = MaterialFetchProcedure());
+		struct ShaderCodeToAdd
+		{
+			std::string codeString;
+
+			uint64_t computeHash() const;
+			void addToGLSL(std::ofstream& outFileGLSL) const;
+		};
+		ShaderParser(const std::string& filename, const std::vector<std::string>& conditionBlocksToInclude = {}, uint32_t cameraDescriptorSlot = -1, uint32_t bindlessDescriptorSlot = -1, uint32_t lightDescriptorSlot = -1, const MaterialFetchProcedure& materialFetchProcedure = MaterialFetchProcedure(),
+			const ShaderCodeToAdd& shaderCodesToAdd = ShaderCodeToAdd());
 
 		bool compileIfFileHasBeenModified(const std::vector<std::string>& conditionBlocksToInclude = {});
 		void readCompiledShader(std::vector<char>& shaderCode) const;
 
 		const std::vector<std::string>& getCurrentConditionsBlocks() const { return m_conditionBlocksToInclude; }
-		bool isSame(const std::string& filename, const std::vector<std::string>& conditionBlocksToInclude, uint64_t materialFetchProcedureHash) const;
+		bool isSame(const std::string& filename, const std::vector<std::string>& conditionBlocksToInclude, uint64_t materialFetchProcedureHash, uint64_t shaderCodeToAddHash) const;
 
 	private:
 		void parseAndCompile();
@@ -42,6 +50,8 @@ namespace Wolf
 		uint32_t m_lightDescriptorSlot;
 		MaterialFetchProcedure m_materialFetchProcedure;
 		uint64_t m_materialFetchProcedureHash = 0;
+		ShaderCodeToAdd m_shaderCodeToAdd;
+		uint64_t m_shaderCodeToAddHash = 0;
 
 		std::string m_compileFilename;
 	};

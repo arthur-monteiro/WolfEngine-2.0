@@ -20,7 +20,21 @@ uint64_t Wolf::ShaderParser::MaterialFetchProcedure::computeHash() const
     return xxh64::hash(codeString.c_str(), codeString.length(), 0);
 }
 
-Wolf::ShaderParser::ShaderParser(const std::string& filename, const std::vector<std::string>& conditionBlocksToInclude, uint32_t cameraDescriptorSlot, uint32_t bindlessDescriptorSlot, uint32_t lightDescriptorSlot, const MaterialFetchProcedure& materialFetchProcedure)
+uint64_t Wolf::ShaderParser::ShaderCodeToAdd::computeHash() const
+{
+    if (codeString.empty())
+        return 0;
+
+    return xxh64::hash(codeString.c_str(), codeString.length(), 0);
+}
+
+void Wolf::ShaderParser::ShaderCodeToAdd::addToGLSL(std::ofstream& outFileGLSL) const
+{
+    outFileGLSL << codeString;
+}
+
+Wolf::ShaderParser::ShaderParser(const std::string& filename, const std::vector<std::string>& conditionBlocksToInclude, uint32_t cameraDescriptorSlot, uint32_t bindlessDescriptorSlot, uint32_t lightDescriptorSlot, 
+                                 const MaterialFetchProcedure& materialFetchProcedure, const ShaderCodeToAdd& shaderCodeToAdd)
 {
     m_filename = filename;
 #ifndef __ANDROID__
@@ -33,6 +47,8 @@ Wolf::ShaderParser::ShaderParser(const std::string& filename, const std::vector<
     m_lightDescriptorSlot = lightDescriptorSlot;
     m_materialFetchProcedure = materialFetchProcedure;
     m_materialFetchProcedureHash = materialFetchProcedure.computeHash();
+    m_shaderCodeToAdd = shaderCodeToAdd;
+    m_shaderCodeToAddHash = shaderCodeToAdd.computeHash();
 
     parseAndCompile();
 }
@@ -72,9 +88,9 @@ void Wolf::ShaderParser::readCompiledShader(std::vector<char>& shaderCode) const
     readFile(shaderCode, m_compileFilename);
 }
 
-bool Wolf::ShaderParser::isSame(const std::string& filename, const std::vector<std::string>& conditionBlocksToInclude, uint64_t materialFetchProcedureHash) const
+bool Wolf::ShaderParser::isSame(const std::string& filename, const std::vector<std::string>& conditionBlocksToInclude, uint64_t materialFetchProcedureHash, uint64_t shaderCodeToAddHash) const
 {
-    return filename == m_filename && conditionBlocksToInclude == m_conditionBlocksToInclude && m_materialFetchProcedureHash == materialFetchProcedureHash;
+    return filename == m_filename && conditionBlocksToInclude == m_conditionBlocksToInclude && m_materialFetchProcedureHash == materialFetchProcedureHash && m_shaderCodeToAddHash == shaderCodeToAddHash;
 }
 
 void Wolf::ShaderParser::parseAndCompile()
@@ -116,6 +132,11 @@ void Wolf::ShaderParser::parseAndCompile()
         parsedFilename += "_" + std::to_string(m_materialFetchProcedureHash);
     }
 
+    if (m_shaderCodeToAddHash != 0)
+    {
+        parsedFilename += "_" + std::to_string(m_shaderCodeToAddHash);
+    }
+
     std::string compiledFilename = parsedFilename;
     parsedFilename += "Parsed" + extensionFound;
 
@@ -126,11 +147,22 @@ void Wolf::ShaderParser::parseAndCompile()
     std::ofstream outFileGLSL(parsedFilename);
 
     outFileGLSL << "#version 460\n";
+
+    if (extensionFound == "Comp")
+    {
+        outFileGLSL << "#define COMPUTE_SHADER\n";
+    }
+
     addCameraCode(outFileGLSL);
     if (extensionFound == "Frag")
     {
         addMaterialFetchCode(outFileGLSL);
         addLightInfoCode(outFileGLSL);
+    }
+
+    if (m_shaderCodeToAddHash)
+    {
+        m_shaderCodeToAdd.addToGLSL(outFileGLSL);
     }
 
     std::vector<std::string> currentConditions;

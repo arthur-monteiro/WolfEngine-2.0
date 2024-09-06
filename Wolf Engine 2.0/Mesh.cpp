@@ -48,8 +48,6 @@ void Wolf::Mesh::draw(const CommandBuffer& commandBuffer, uint32_t cameraIdx, ui
 
 	if(m_subMeshes.empty() || cameraIdx == RenderMeshList::NO_CAMERA_IDX)
 	{
-		if (m_subMeshes.empty())
-			Debug::sendMessageOnce("Drawing a mesh without any submesh. The entire mesh will be drawn", Debug::Severity::WARNING, this);
 		commandBuffer.drawIndexed(m_indexCount, instanceCount, 0, 0, 0);
 	}
 	else
