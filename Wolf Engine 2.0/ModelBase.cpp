@@ -47,11 +47,13 @@ Wolf::ModelBase::ModelBase(ModelLoadingInfo& modelLoadingInfo, bool requestAccel
 
 void Wolf::ModelBase::addMeshToRenderList(RenderMeshList& renderMeshList, const RenderMeshList::MeshToRenderInfo::InstanceInfos& instanceInfos)
 {
+	Debug::sendCriticalError("Is it used?");
+
 	RenderMeshList::MeshToRenderInfo meshToRenderInfo(m_modelData.mesh.createNonOwnerResource(), m_pipelineSet.createConstNonOwnerResource(), m_transform);
 
-	meshToRenderInfo.descriptorSets.emplace_back(m_descriptorSet.createConstNonOwnerResource(), m_descriptorSetLayout->getResource().createConstNonOwnerResource(), 0);
+	/*meshToRenderInfo.descriptorSets.emplace_back(m_descriptorSet.createConstNonOwnerResource(), m_descriptorSetLayout->getResource().createConstNonOwnerResource(), 0);
 	meshToRenderInfo.instanceInfos = instanceInfos;
-	renderMeshList.addMeshToRender(meshToRenderInfo);
+	renderMeshList.addMeshToRender(meshToRenderInfo);*/
 }
 
 void Wolf::ModelBase::updateGraphic()

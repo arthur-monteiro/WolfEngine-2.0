@@ -39,6 +39,9 @@ namespace Wolf
 		[[nodiscard]] static ResourceUniqueOwner<DescriptorSetLayout>& getDescriptorSetLayout() { return LazyInitSharedResource<DescriptorSetLayout, LightManager>::getResource(); }
 		ResourceUniqueOwner<DescriptorSet>& getDescriptorSet() { return m_descriptorSet; }
 
+		uint32_t getSunLightCount() const { return static_cast<uint32_t>(m_currentSunLights.size()); }
+		const SunLightInfo& getSunLightInfo(uint32_t idx) const { return m_currentSunLights[idx]; }
+
 	private:
 		std::vector<PointLightInfo> m_currentPointLights;
 		std::vector<PointLightInfo> m_nextFramePointLights;

@@ -1,5 +1,6 @@
 #pragma once
 
+#include <array>
 #include <glm/glm.hpp>
 #include <memory>
 #include <utility>
@@ -8,6 +9,7 @@
 #include "CommandBuffer.h"
 #include "DescriptorSetBindInfo.h"
 #include "DescriptorSetLayout.h"
+#include "PipelineSet.h"
 #include "ResourceNonOwner.h"
 
 namespace Wolf
@@ -31,7 +33,7 @@ namespace Wolf
 			ResourceNonOwner<Mesh> mesh;
 			const glm::mat4& transform;
 			ResourceNonOwner<const PipelineSet> pipelineSet;
-			std::vector<DescriptorSetBindInfo> descriptorSets;
+			std::array<std::vector<DescriptorSetBindInfo>, PipelineSet::MAX_PIPELINE_COUNT> perPipelineDescriptorSets;
 			struct InstanceInfos
 			{
 				const Buffer* instanceBuffer = nullptr;
@@ -44,7 +46,12 @@ namespace Wolf
 		void addMeshToRender(const MeshToRenderInfo& meshToRenderInfo);
 
 		static constexpr uint32_t NO_CAMERA_IDX = -1;
-		void draw(const RecordContext& context, const CommandBuffer& commandBuffer, RenderPass* renderPass, uint32_t pipelineIdx, uint32_t cameraIdx, const std::vector<DescriptorSetBindInfo>& descriptorSetsToBind) const;
+		struct AdditionalDescriptorSet
+		{
+			DescriptorSetBindInfo descriptorSetBindInfo;
+			uint32_t mask = 0;
+		};
+		void draw(const RecordContext& context, const CommandBuffer& commandBuffer, RenderPass* renderPass, uint32_t pipelineIdx, uint32_t cameraIdx, const std::vector<AdditionalDescriptorSet>& descriptorSetsToBind) const;
 
 		void clear();
 
@@ -58,22 +65,22 @@ namespace Wolf
 		class RenderMesh
 		{
 		public:
-			RenderMesh(ResourceNonOwner<Mesh> mesh, const glm::mat4& transform, const ResourceNonOwner<const PipelineSet>& pipelineSet, std::vector<DescriptorSetBindInfo> descriptorSets, const MeshToRenderInfo::InstanceInfos& instanceInfos) :
-				m_mesh(std::move(mesh)), m_transform(transform), m_pipelineSet(pipelineSet), m_descriptorSets(std::move(descriptorSets)), m_instanceInfos(instanceInfos) { }
+			RenderMesh(ResourceNonOwner<Mesh> mesh, const glm::mat4& transform, const ResourceNonOwner<const PipelineSet>& pipelineSet, std::array<std::vector<DescriptorSetBindInfo>, PipelineSet::MAX_PIPELINE_COUNT> perPipelineDescriptorSets, const MeshToRenderInfo::InstanceInfos& instanceInfos) :
+				m_mesh(std::move(mesh)), m_transform(transform), m_pipelineSet(pipelineSet), m_perPipelineDescriptorSets(std::move(perPipelineDescriptorSets)), m_instanceInfos(instanceInfos) { }
 
-			void draw(const CommandBuffer& commandBuffer, const Pipeline* pipeline, uint32_t cameraIdx) const;
+			void draw(const CommandBuffer& commandBuffer, const Pipeline* pipeline, uint32_t cameraIdx, uint32_t pipelineIdx) const;
 
 			ResourceNonOwner<const PipelineSet> getPipelineSet() const { return m_pipelineSet; }
 			ResourceNonOwner<Mesh> getMesh() const { return m_mesh; }
 			const glm::mat4& getTransform() const { return m_transform; }
 			bool isInstanced() const { return m_instanceInfos.instanceCount > 1; }
-			const std::vector<DescriptorSetBindInfo>& getDescriptorSets() const { return m_descriptorSets; }
+			const std::vector<DescriptorSetBindInfo>& getDescriptorSets(uint32_t pipelineIdx) const { return m_perPipelineDescriptorSets[pipelineIdx]; }
 
 		private:
 			ResourceNonOwner<Mesh> m_mesh;
 			glm::mat4 m_transform;
 			ResourceNonOwner<const PipelineSet> m_pipelineSet;
-			std::vector<DescriptorSetBindInfo> m_descriptorSets;
+			std::array<std::vector<DescriptorSetBindInfo>, PipelineSet::MAX_PIPELINE_COUNT> m_perPipelineDescriptorSets;
 			MeshToRenderInfo::InstanceInfos m_instanceInfos;
 		};
 

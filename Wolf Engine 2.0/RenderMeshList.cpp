@@ -10,7 +10,7 @@
 
 void Wolf::RenderMeshList::addMeshToRender(const MeshToRenderInfo& meshToRenderInfo)
 {
-	m_nextFrameMeshesToRender.push_back(std::make_unique<RenderMesh>(meshToRenderInfo.mesh, meshToRenderInfo.transform, meshToRenderInfo.pipelineSet, meshToRenderInfo.descriptorSets, 
+	m_nextFrameMeshesToRender.push_back(std::make_unique<RenderMesh>(meshToRenderInfo.mesh, meshToRenderInfo.transform, meshToRenderInfo.pipelineSet, meshToRenderInfo.perPipelineDescriptorSets, 
 		meshToRenderInfo.instanceInfos));
 
 	const std::vector<uint64_t> pipelinesHash = meshToRenderInfo.pipelineSet->retrieveAllPipelinesHash();
@@ -25,12 +25,12 @@ void Wolf::RenderMeshList::addMeshToRender(const MeshToRenderInfo& meshToRenderI
 	if (pipelinesHash.empty())
 		Debug::sendError("Mesh added without any pipeline, it won't be rendered");
 
-	m_pipelineIdxCount = std::max(m_pipelineIdxCount, static_cast<uint32_t>(pipelinesHash.size()));
+	m_pipelineIdxCount = std::max(m_pipelineIdxCount, meshToRenderInfo.pipelineSet->getPipelineCount());
 }
 
-void Wolf::RenderMeshList::draw(const RecordContext& context, const CommandBuffer& commandBuffer, RenderPass* renderPass, uint32_t pipelineIdx, uint32_t cameraIdx, const std::vector<DescriptorSetBindInfo>& descriptorSetsToBind) const
+void Wolf::RenderMeshList::draw(const RecordContext& context, const CommandBuffer& commandBuffer, RenderPass* renderPass, uint32_t pipelineIdx, uint32_t cameraIdx, const std::vector<AdditionalDescriptorSet>& descriptorSetsToBind) const
 {
-	if (m_meshesToRenderByPipelineIdx.empty()) // no mesh added yet
+	if (m_meshesToRenderByPipelineIdx.size() <= pipelineIdx) // no mesh added yet
 		return;
 
 	const std::vector<RenderMesh*>& meshesToRender = m_meshesToRenderByPipelineIdx[pipelineIdx];
@@ -38,12 +38,23 @@ void Wolf::RenderMeshList::draw(const RecordContext& context, const CommandBuffe
 	const Pipeline* currentPipeline = nullptr;
 	for (const RenderMesh* mesh : meshesToRender)
 	{
-		if (const Pipeline* meshPipeline = mesh->getPipelineSet()->getOrCreatePipeline(pipelineIdx, renderPass, mesh->getDescriptorSets(), descriptorSetsToBind, m_shaderList); meshPipeline != currentPipeline)
+		std::vector<DescriptorSetBindInfo> descriptorSetsBindInfo;
+		descriptorSetsBindInfo.reserve(descriptorSetsToBind.size());
+
+		for (const AdditionalDescriptorSet& additionalDescriptorSet : descriptorSetsToBind)
+		{
+			if (additionalDescriptorSet.mask == 0 || additionalDescriptorSet.mask & mesh->getPipelineSet()->getCustomMask(pipelineIdx))
+			{
+				descriptorSetsBindInfo.push_back(additionalDescriptorSet.descriptorSetBindInfo);
+			}
+		}
+
+		if (const Pipeline* meshPipeline = mesh->getPipelineSet()->getOrCreatePipeline(pipelineIdx, renderPass, mesh->getDescriptorSets(pipelineIdx), descriptorSetsBindInfo, m_shaderList); meshPipeline != currentPipeline)
 		{
 			commandBuffer.bindPipeline(meshPipeline);
 			currentPipeline = meshPipeline;
 
-			for (const DescriptorSetBindInfo& descriptorSetToBind : descriptorSetsToBind)
+			for (const DescriptorSetBindInfo& descriptorSetToBind : descriptorSetsBindInfo)
 			{
 				commandBuffer.bindDescriptorSet(descriptorSetToBind.getDescriptorSet(), descriptorSetToBind.getBindingSlot(), *meshPipeline);
 			}
@@ -68,7 +79,7 @@ void Wolf::RenderMeshList::draw(const RecordContext& context, const CommandBuffe
 			}
 		}
 
-		mesh->draw(commandBuffer, currentPipeline, cameraIdx);
+		mesh->draw(commandBuffer, currentPipeline, cameraIdx, pipelineIdx);
 	}
 }
 
@@ -121,9 +132,9 @@ void Wolf::RenderMeshList::moveToNextFrame(const CameraList& cameraList)
 	}
 }
 
-void Wolf::RenderMeshList::RenderMesh::draw(const CommandBuffer& commandBuffer, const Pipeline* pipeline, uint32_t cameraIdx) const
+void Wolf::RenderMeshList::RenderMesh::draw(const CommandBuffer& commandBuffer, const Pipeline* pipeline, uint32_t cameraIdx, uint32_t pipelineIdx) const
 {
-	for (const DescriptorSetBindInfo& descriptorSetBindInfo : m_descriptorSets)
+	for (const DescriptorSetBindInfo& descriptorSetBindInfo : m_perPipelineDescriptorSets[pipelineIdx])
 	{
 		commandBuffer.bindDescriptorSet(descriptorSetBindInfo.getDescriptorSet(), descriptorSetBindInfo.getBindingSlot(), *pipeline);
 	}

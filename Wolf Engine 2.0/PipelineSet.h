@@ -22,6 +22,8 @@ namespace Wolf
 	class PipelineSet
 	{
 	public:
+		static constexpr uint32_t MAX_PIPELINE_COUNT = 16;
+
 		struct PipelineInfo
 		{
 			struct ShaderInfo
@@ -47,6 +49,7 @@ namespace Wolf
 			uint32_t cameraDescriptorSlot = -1;
 			uint32_t bindlessDescriptorSlot = -1;
 			uint32_t lightDescriptorSlot = -1;
+			uint32_t customMask = 0;
 
 			// Viewport
 			std::array<float, 2> viewportScale = { 1.0f, 1.0f };
@@ -82,12 +85,14 @@ namespace Wolf
 		void updatePipeline(const PipelineInfo& pipelineInfo, uint32_t idx);
 
 		std::vector<uint64_t> retrieveAllPipelinesHash() const;
+		uint32_t getPipelineCount() const;
 		std::vector<const PipelineInfo*> retrieveAllPipelinesInfo() const;
 		const Pipeline* getOrCreatePipeline(uint32_t idx, RenderPass* renderPass, const std::vector<DescriptorSetBindInfo>& meshDescriptorSetsBindInfo, const std::vector<DescriptorSetBindInfo>& additionalDescriptorSetsBindInfo, ShaderList& shaderList) const;
-		uint64_t getPipelineHash(uint32_t idx) const { return m_infoForPipelines[idx] ? m_infoForPipelines[idx]->getHash() : 0; }
+		uint64_t getPipelineHash(uint32_t idx) const { return (idx < m_infoForPipelines.size() && m_infoForPipelines[idx]) ? m_infoForPipelines[idx]->getHash() : 0; }
 		uint32_t getCameraDescriptorSlot(uint32_t idx) const { return m_infoForPipelines[idx]->getPipelineInfo().cameraDescriptorSlot; }
 		uint32_t getBindlessDescriptorSlot(uint32_t idx) const { return m_infoForPipelines[idx]->getPipelineInfo().bindlessDescriptorSlot; }
 		uint32_t getLightDescriptorSlot(uint32_t idx) const { return m_infoForPipelines[idx]->getPipelineInfo().lightDescriptorSlot; }
+		uint32_t getCustomMask(uint32_t idx) const { return m_infoForPipelines[idx]->getPipelineInfo().customMask; }
 
 	private:
 		void shaderCodeChanged(const ShaderParser* shaderParser) const;

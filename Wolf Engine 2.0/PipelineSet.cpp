@@ -20,6 +20,12 @@ uint32_t Wolf::PipelineSet::addPipeline(const PipelineInfo& pipelineInfo, int32_
 	}
 
 	const uint32_t insertionIdx = forceIdx >= 0 ? forceIdx : static_cast<uint32_t>(m_infoForPipelines.size());
+
+	if (insertionIdx >= MAX_PIPELINE_COUNT)
+	{
+		Debug::sendCriticalError("Adding more pipeline than supported");
+	}
+
 	if (insertionIdx >= m_infoForPipelines.size())
 		m_infoForPipelines.resize(insertionIdx + 1);
 
@@ -67,6 +73,11 @@ std::vector<uint64_t> Wolf::PipelineSet::retrieveAllPipelinesHash() const
 	}
 
 	return pipelinesHash;
+}
+
+uint32_t Wolf::PipelineSet::getPipelineCount() const
+{
+	return static_cast<uint32_t>(m_infoForPipelines.size());
 }
 
 std::vector<const Wolf::PipelineSet::PipelineInfo*> Wolf::PipelineSet::retrieveAllPipelinesInfo() const
