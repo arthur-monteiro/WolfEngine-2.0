@@ -1,6 +1,7 @@
 #ifdef WOLF_VULKAN
 
 #include <Debug.h>
+#include <GPUMemoryDebug.h>
 
 #include "BufferVulkan.h"
 #include "CommandBufferVulkan.h"
@@ -20,6 +21,8 @@ Wolf::BufferVulkan::~BufferVulkan()
 {
 	vkDestroyBuffer(g_vulkanInstance->getDevice(), m_buffer, nullptr);
 	vkFreeMemory(g_vulkanInstance->getDevice(), m_bufferMemory, nullptr);
+
+	GPUMemoryDebug::unregisterResource(GPUMemoryDebug::TYPE::BUFFER, 0, m_bufferSize, m_allocationSize);
 }
 
 void Wolf::BufferVulkan::transferCPUMemory(const void* data, uint64_t srcSize, uint64_t srcOffset) const
@@ -43,10 +46,10 @@ void Wolf::BufferVulkan::transferCPUMemoryWithStagingBuffer(const void* data, ui
 	bufferCopy.size = srcSize;
 	bufferCopy.srcOffset = 0;
 	bufferCopy.dstOffset = dstOffset;
-	transferGPUMemory(stagingBuffer, bufferCopy);
+	transferGPUMemoryImmediate(stagingBuffer, bufferCopy);
 }
 
-void Wolf::BufferVulkan::transferGPUMemory(const Buffer& bufferSrc, const BufferCopy& copyRegion) const
+void Wolf::BufferVulkan::transferGPUMemoryImmediate(const Buffer& bufferSrc, const BufferCopy& copyRegion) const
 {
 	VkBufferCopy vkCopyRegion;
 	vkCopyRegion.size = copyRegion.size;
@@ -67,6 +70,19 @@ void Wolf::BufferVulkan::transferGPUMemory(const Buffer& bufferSrc, const Buffer
 	const FenceVulkan fence(0);
 	commandBuffer.submit(waitSemaphores, signalSemaphores, &fence);
 	fence.waitForFence();
+}
+
+void Wolf::BufferVulkan::recordTransferGPUMemory(CommandBuffer* commandBuffer, const Buffer& bufferSrc, const BufferCopy& copyRegion) const
+{
+	CommandBufferVulkan* commandBufferVulkan = static_cast<CommandBufferVulkan*>(commandBuffer);
+	const BufferVulkan* srcAsBufferVulkan = static_cast<const BufferVulkan*>(&bufferSrc);
+
+	VkBufferCopy vkCopyRegion;
+	vkCopyRegion.size = copyRegion.size;
+	vkCopyRegion.srcOffset = copyRegion.srcOffset;
+	vkCopyRegion.dstOffset = copyRegion.dstOffset;
+
+	vkCmdCopyBuffer(commandBufferVulkan->getCommandBuffer(), srcAsBufferVulkan->getBuffer(), m_buffer, 1, &vkCopyRegion);
 }
 
 void Wolf::BufferVulkan::map(void** pData, VkDeviceSize size) const
@@ -107,6 +123,7 @@ void Wolf::BufferVulkan::createBuffer(VkDeviceSize size, VkBufferUsageFlags usag
 	VkMemoryAllocateInfo allocInfo = {};
 	allocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
 	allocInfo.allocationSize = memRequirements.size;
+	m_allocationSize = allocInfo.allocationSize;
 	allocInfo.memoryTypeIndex = findMemoryType(g_vulkanInstance->getPhysicalDevice(), memRequirements.memoryTypeBits, properties);
 
 #ifdef WOLF_VULKAN_1_2
@@ -120,6 +137,8 @@ void Wolf::BufferVulkan::createBuffer(VkDeviceSize size, VkBufferUsageFlags usag
 		Debug::sendError("Error : memory allocation");
 
 	vkBindBufferMemory(g_vulkanInstance->getDevice(), m_buffer, m_bufferMemory, 0);
+
+	GPUMemoryDebug::registerNewResource(GPUMemoryDebug::TYPE::BUFFER, 0, size, memRequirements.size);
 }
 
 #endif

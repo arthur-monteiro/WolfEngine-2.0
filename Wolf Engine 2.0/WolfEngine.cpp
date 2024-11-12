@@ -1,7 +1,7 @@
 #include "WolfEngine.h"
 
-#include <filesystem>
 #include <limits>
+#include <Tracy.hpp>
 
 #ifdef __ANDROID__
 #include <android/native_window.h>
@@ -12,6 +12,7 @@
 #include "Dump.h"
 #include "ImageFileLoader.h"
 #include "MipMapGenerator.h"
+#include "ProfilerCommon.h"
 
 const Wolf::GraphicAPIManager* Wolf::g_graphicAPIManagerInstance = nullptr;
 
@@ -25,7 +26,7 @@ VkExtent2D chooseExtent(GLFWwindow* window)
 }
 #endif
 
-Wolf::WolfEngine::WolfEngine(const WolfInstanceCreateInfo& createInfo) : m_globalTimer("Wolf-Engine global timer"), m_renderMeshList(m_shaderList)
+Wolf::WolfEngine::WolfEngine(const WolfInstanceCreateInfo& createInfo) : m_globalTimer("Wolf-Engine global timer")
 {
 #ifdef _WIN32
 	SetUnhandledExceptionFilter(unhandledExceptionFilter);
@@ -119,6 +120,7 @@ Wolf::WolfEngine::WolfEngine(const WolfInstanceCreateInfo& createInfo) : m_globa
 	}
 
 	m_lightManager.reset(new LightManager);
+	m_renderMeshList.reset(new RenderMeshList(m_shaderList));
 }
 
 void Wolf::WolfEngine::initializePass(const ResourceNonOwner<CommandRecordBase>& pass) const
@@ -140,6 +142,8 @@ bool Wolf::WolfEngine::windowShouldClose() const
 
 void Wolf::WolfEngine::updateBeforeFrame()
 {
+	PROFILE_FUNCTION
+
 #ifndef __ANDROID__
 	m_window->pollEvents();
 #endif
@@ -159,7 +163,7 @@ void Wolf::WolfEngine::updateBeforeFrame()
 	context.swapChainExtent = m_swapChain->getImage(0)->getExtent();
 	m_cameraList.moveToNextFrame(context);
 	
-	m_renderMeshList.moveToNextFrame(m_cameraList);
+	m_renderMeshList->moveToNextFrame();
 	m_shaderList.checkForModifiedShader();
 
 	if (static_cast<bool>(m_materialsManager))
@@ -211,44 +215,54 @@ void Wolf::WolfEngine::frame(const std::span<ResourceNonOwner<CommandRecordBase>
 
 	const uint32_t currentSwapChainImageIndex = m_swapChain->getCurrentImage(m_currentFrame);
 
-	RecordContext recordContext(m_lightManager.createNonOwnerResource());
-	recordContext.currentFrameIdx = m_currentFrame;
-	recordContext.commandBufferIdx = m_currentFrame % g_configuration->getMaxCachedFrames();
-	recordContext.swapChainImageIdx = currentSwapChainImageIndex;
-	recordContext.swapchainImage = m_swapChain->getImage(currentSwapChainImageIndex);
-#ifndef __ANDROID__
-	recordContext.glfwWindow = m_window->getWindow();
-#endif
-	recordContext.cameraList = &m_cameraList;
-	recordContext.gameContext = m_gameContexts[recordContext.commandBufferIdx];
-	recordContext.renderMeshList = &m_renderMeshList;
-	if (m_materialsManager)
-		recordContext.bindlessDescriptorSet = m_materialsManager->getDescriptorSet();;
-
-	for (const ResourceNonOwner<CommandRecordBase>& pass : passes)
 	{
-		pass->record(recordContext);
+		PROFILE_SCOPED("Record GPU passes")
+
+		RecordContext recordContext(m_lightManager.createNonOwnerResource(), m_renderMeshList.createNonOwnerResource());
+		recordContext.currentFrameIdx = m_currentFrame;
+		recordContext.commandBufferIdx = m_currentFrame % g_configuration->getMaxCachedFrames();
+		recordContext.swapChainImageIdx = currentSwapChainImageIndex;
+		recordContext.swapchainImage = m_swapChain->getImage(currentSwapChainImageIndex);
+#ifndef __ANDROID__
+		recordContext.glfwWindow = m_window->getWindow();
+#endif
+		recordContext.cameraList = &m_cameraList;
+		recordContext.gameContext = m_gameContexts[recordContext.commandBufferIdx];
+		if (m_materialsManager)
+			recordContext.bindlessDescriptorSet = m_materialsManager->getDescriptorSet();
+
+		for (const ResourceNonOwner<CommandRecordBase>& pass : passes)
+		{
+			pass->record(recordContext);
+		}
 	}
 
-	SubmitContext submitContext{};
-	submitContext.currentFrameIdx = m_currentFrame;
-	submitContext.commandBufferIdx = m_currentFrame % g_configuration->getMaxCachedFrames();
-	submitContext.swapChainImageAvailableSemaphore = m_swapChain->getImageAvailableSemaphore(m_currentFrame % m_swapChain->getImageCount()); // we use the semaphore used to acquire image
-#ifdef __ANDROID__
-	submitContext.userInterfaceImageAvailableSemaphore = nullptr;
-#else
-	submitContext.userInterfaceImageAvailableSemaphore = m_ultraLight ? m_ultraLight->getImageCopySemaphore() : nullptr;
-#endif
-	submitContext.frameFence = m_swapChain->getFrameFence(m_currentFrame % g_configuration->getMaxCachedFrames());
-	submitContext.graphicAPIManager = m_graphicAPIManager.get();
-
-	for (const ResourceNonOwner<CommandRecordBase>& pass : passes)
 	{
-		pass->submit(submitContext);
+		PROFILE_SCOPED("Submit GPU passes")
+
+		SubmitContext submitContext{};
+		submitContext.currentFrameIdx = m_currentFrame;
+		submitContext.commandBufferIdx = m_currentFrame % g_configuration->getMaxCachedFrames();
+		submitContext.swapChainImageAvailableSemaphore = m_swapChain->getImageAvailableSemaphore(m_currentFrame % m_swapChain->getImageCount()); // we use the semaphore used to acquire image
+#ifdef __ANDROID__
+		submitContext.userInterfaceImageAvailableSemaphore = nullptr;
+#else
+		submitContext.userInterfaceImageAvailableSemaphore = m_ultraLight ? m_ultraLight->getImageCopySemaphore() : nullptr;
+#endif
+		submitContext.frameFence = m_swapChain->getFrameFence(m_currentFrame % g_configuration->getMaxCachedFrames());
+		submitContext.graphicAPIManager = m_graphicAPIManager.get();
+
+		for (const ResourceNonOwner<CommandRecordBase>& pass : passes)
+		{
+			pass->submit(submitContext);
+		}
 	}
 
 	m_swapChain->present(frameEndedSemaphore, currentSwapChainImageIndex);
-	m_swapChain->synchroniseCPUFromGPU(m_currentFrame); // don't update UBs while a frame is being rendered
+	{
+		PROFILE_SCOPED("Wait for GPU frame to end")
+		m_swapChain->synchroniseCPUFromGPU(m_currentFrame); // don't update UBs while a frame is being rendered
+	}
 
 	m_currentFrame++;
 }

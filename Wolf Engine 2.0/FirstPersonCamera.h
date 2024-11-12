@@ -45,6 +45,7 @@ namespace Wolf
 		void setPosition(glm::vec3 position) { m_position = position; }
 		void setPhi(float phi) { m_phi = phi; }
 		void setTheta(float theta) { m_theta = theta; }
+		void setFar(float far) { m_far = far; }
 
 	private:
 		void updateOrientation(float xOffset, float yOffset);

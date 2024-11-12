@@ -80,7 +80,7 @@ namespace Wolf
 		void setGameContexts(const std::vector<void*>& gameContexts) { m_gameContexts = gameContexts; }
 
 		[[nodiscard]] CameraList& getCameraList() { return m_cameraList; }
-		[[nodiscard]] RenderMeshList& getRenderMeshList() { return m_renderMeshList; }
+		[[nodiscard]] ResourceNonOwner<RenderMeshList> getRenderMeshList() { return m_renderMeshList.createNonOwnerResource(); }
 		[[nodiscard]] ResourceUniqueOwner<LightManager>& getLightManager() { return m_lightManager; }
 		[[nodiscard]] ResourceNonOwner<MaterialsGPUManager> getMaterialsManager() { return m_materialsManager.createNonOwnerResource(); }
 		[[nodiscard]] const std::vector<std::string>& getSavedUICommands() const { return m_savedUICommands; }
@@ -121,7 +121,7 @@ namespace Wolf
 		std::function<void(uint32_t, uint32_t)> m_resizeCallback;
 
 		// Mesh render
-		RenderMeshList m_renderMeshList;
+		ResourceUniqueOwner<RenderMeshList> m_renderMeshList;
 		ShaderList m_shaderList;
 		std::array<std::unique_ptr<Image>, 5> m_defaultImages;
 		ResourceUniqueOwner<MaterialsGPUManager> m_materialsManager;

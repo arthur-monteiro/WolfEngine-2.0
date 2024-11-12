@@ -1,6 +1,7 @@
 #include "Mesh.h"
 
 #include "CameraInterface.h"
+#include "ProfilerCommon.h"
 #include "RenderMeshList.h"
 
 void Wolf::Mesh::addSubMesh(uint32_t indicesOffset, uint32_t indexCount, AABB aabb)
@@ -13,6 +14,8 @@ void Wolf::Mesh::addSubMesh(uint32_t indicesOffset, uint32_t indexCount, AABB aa
 
 void Wolf::Mesh::cullForCamera(uint32_t cameraIdx, const CameraInterface* camera, const glm::mat4& transform, bool isInstanced)
 {
+	return;
+
 	if (m_subMeshes.empty())
 		return;
 
@@ -41,20 +44,20 @@ void Wolf::Mesh::cullForCamera(uint32_t cameraIdx, const CameraInterface* camera
 	}
 }
 
-void Wolf::Mesh::draw(const CommandBuffer& commandBuffer, uint32_t cameraIdx, uint32_t instanceCount) const
+void Wolf::Mesh::draw(const CommandBuffer& commandBuffer, uint32_t cameraIdx, uint32_t instanceCount, uint32_t firstInstance) const
 {
 	commandBuffer.bindVertexBuffer(*m_vertexBuffer);
 	commandBuffer.bindIndexBuffer(*m_indexBuffer, IndexType::U32);
 
-	if(m_subMeshes.empty() || cameraIdx == RenderMeshList::NO_CAMERA_IDX)
+	//if(m_subMeshes.empty() || cameraIdx == RenderMeshList::NO_CAMERA_IDX)
 	{
-		commandBuffer.drawIndexed(m_indexCount, instanceCount, 0, 0, 0);
+		commandBuffer.drawIndexed(m_indexCount, instanceCount, 0, 0, firstInstance);
 	}
-	else
+	/*else
 	{
 		for (const std::unique_ptr<SubMeshToDrawInfo>& subMesh : m_subMeshesToDrawByCamera.at(cameraIdx))
 		{
 			commandBuffer.drawIndexed(subMesh->indexCount, instanceCount, subMesh->indicesOffset, 0, 0);
 		}
-	}
+	}*/
 }

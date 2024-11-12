@@ -1,9 +1,12 @@
 #pragma once
 
 #include <functional>
+#include <memory>
 #ifdef RESOURCE_DEBUG
 #include <source_location>
 #endif
+
+#include "Debug.h"
 
 namespace Wolf
 {
@@ -132,5 +135,44 @@ namespace Wolf
 #endif
 		);
 	}
+
+	template <typename T>
+	class NullableResourceNonOwner
+	{
+	public:
+		NullableResourceNonOwner(const ResourceNonOwner<T>& resource) : m_resource(resource)
+		{
+		}
+		NullableResourceNonOwner() : m_resource(static_cast<T*>(nullptr),
+#ifdef RESOURCE_DEBUG
+			[](ResourceNonOwner<T>* instance) {}, [](ResourceNonOwner<T>* instance) {}, std::source_location::current()
+#else
+			[]{}, [] {}
+#endif
+			)
+		{
+		}
+
+		[[nodiscard]] operator bool() const { return static_cast<bool>(m_resource); }
+		[[nodiscard]] const T& operator*() const noexcept requires(!std::is_void_v<T>)
+		{
+			if (!m_resource)
+			{
+				Debug::sendCriticalError("Trying to get reference of nullptr");
+			}
+			return *m_resource;
+		}
+		[[nodiscard]] T& operator*() requires(!std::is_void_v<T>)
+		{
+			if (!m_resource)
+			{
+				Debug::sendCriticalError("Trying to get reference of nullptr");
+			}
+			return *m_resource;
+		}
+
+	private:
+		ResourceNonOwner<T> m_resource;
+	};
 }
 
