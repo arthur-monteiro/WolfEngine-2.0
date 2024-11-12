@@ -159,11 +159,11 @@
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>_DEBUG;_CONSOLE;_CRT_SECURE_NO_WARNINGS;RESOURCE_DEBUG;IMMEDIATE_DELETE;WOLF_VULKAN;MATERIAL_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>_DEBUG;_CONSOLE;_CRT_SECURE_NO_WARNINGS;RESOURCE_DEBUG;IMMEDIATE_DELETE;WOLF_VULKAN;MATERIAL_DEBUG;TRACY_ENABLE;TRACY_ON_DEMAND;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp20</LanguageStandard>
       <ScanSourceForModuleDependencies>true</ScanSourceForModuleDependencies>
-      <AdditionalIncludeDirectories>..\Common;..\GraphicAPIBroker\Public;..\ThirdParty\FrustumCull;..\ThirdParty\glm;..\ThirdParty\vulkan\Include;..\ThirdParty\stb_image;..\ThirdParty\tiny_obj;..\ThirdParty\GLFW\include;..\ThirdParty\OVR\Include;..\ThirdParty\UltraLight\include;..\ThirdParty\xxh64;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\Common;..\GraphicAPIBroker\Public;..\ThirdParty\FrustumCull;..\ThirdParty\glm;..\ThirdParty\vulkan\Include;..\ThirdParty\stb_image;..\ThirdParty\tiny_obj;..\ThirdParty\GLFW\include;..\ThirdParty\OVR\Include;..\ThirdParty\UltraLight\include;..\ThirdParty\xxh64;..\ThirdParty\Tracy\tracy;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -216,6 +216,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="..\ThirdParty\Tracy\TracyClient.cpp" />
     <ClCompile Include="AndroidCacheHelper.cpp" />
     <ClCompile Include="CameraInterface.cpp" />
     <ClCompile Include="CameraList.cpp" />
@@ -237,7 +238,6 @@
     <ClCompile Include="MaterialsGPUManager.cpp" />
     <ClCompile Include="Mesh.cpp" />
     <ClCompile Include="MipMapGenerator.cpp" />
-    <ClCompile Include="ModelBase.cpp" />
     <ClCompile Include="ModelLoader.cpp" />
     <ClCompile Include="CommandRecordBase.cpp" />
     <ClCompile Include="OrthographicCamera.cpp" />
@@ -281,11 +281,11 @@
     <ClInclude Include="MaterialsGPUManager.h" />
     <ClInclude Include="Mesh.h" />
     <ClInclude Include="MipMapGenerator.h" />
-    <ClInclude Include="ModelBase.h" />
     <ClInclude Include="ModelLoader.h" />
     <ClInclude Include="CommandRecordBase.h" />
     <ClInclude Include="OrthographicCamera.h" />
     <ClInclude Include="PipelineSet.h" />
+    <ClInclude Include="ProfilerCommon.h" />
     <ClInclude Include="QueueFamilyIndices.h" />
     <ClInclude Include="RayTracingShaderGroupGenerator.h" />
     <ClInclude Include="RenderMeshList.h" />

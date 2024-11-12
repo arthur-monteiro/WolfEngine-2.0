@@ -40,7 +40,7 @@ namespace Wolf
 		[[nodiscard]] const AABB& getAABB() const { return m_AABB; }
 
 		void cullForCamera(uint32_t cameraIdx, const CameraInterface* camera, const glm::mat4& transform, bool isInstanced);
-		void draw(const CommandBuffer& commandBuffer, uint32_t cameraIdx, uint32_t instanceCount = 1) const;
+		void draw(const CommandBuffer& commandBuffer, uint32_t cameraIdx, uint32_t instanceCount = 1, uint32_t firstInstance = 0) const;
 
 	private:
 		std::unique_ptr<Buffer> m_vertexBuffer;

@@ -156,6 +156,9 @@ namespace Wolf
 	template <class T, size_t BatchSize>
 	T& DynamicStableArray<T, BatchSize>::operator[](size_t idx)
 	{
+		if (idx >= size())
+			Debug::sendCriticalError("Index out of range");
+
 		uint32_t batchIdx = static_cast<uint32_t>(idx / BatchSize);
 		uint32_t elementIdx = static_cast<uint32_t>(idx % BatchSize);
 		return m_pages[batchIdx]->elements[elementIdx];
@@ -194,7 +197,7 @@ namespace Wolf
 	void DynamicStableArray<T, BatchSize>::beforeAddingNewElement()
 	{
 		std::unique_ptr<Page>& lastBatch = m_pages.back();
-		if (lastBatch->count >= BatchSize - 1)
+		if (lastBatch->count >= BatchSize)
 		{
 			resizePages(m_pages.size() + 1);
 		}

@@ -64,5 +64,7 @@ namespace Wolf
 		uint32_t m_arrayLayerCount;
 		VkImageAspectFlags m_aspectFlags;
 		VkMemoryPropertyFlags m_memoryProperties = 0x0;
+
+		VkDeviceSize m_allocationSize = 0;
 	};
 }

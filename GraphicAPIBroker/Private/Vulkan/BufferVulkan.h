@@ -17,7 +17,8 @@ namespace Wolf
 
 		void transferCPUMemory(const void* data, uint64_t srcSize, uint64_t srcOffset = 0) const override;
 		void transferCPUMemoryWithStagingBuffer(const void* data, uint64_t srcSize, uint64_t srcOffset = 0, uint64_t dstOffset = 0) const override;
-		void transferGPUMemory(const Buffer& bufferSrc, const BufferCopy& copyRegion) const override;
+		void transferGPUMemoryImmediate(const Buffer& bufferSrc, const BufferCopy& copyRegion) const override;
+		void recordTransferGPUMemory(CommandBuffer* commandBuffer, const Buffer& bufferSrc, const BufferCopy& copyRegion) const override;
 
 		void map(void** pData, VkDeviceSize size = 0) const override;
 		void unmap() const override;
@@ -36,6 +37,7 @@ namespace Wolf
 		VkDeviceMemory m_bufferMemory;
 
 		VkDeviceSize m_bufferSize;
+		VkDeviceSize m_allocationSize = 0;
 
 	};
 }

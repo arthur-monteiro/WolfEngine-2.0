@@ -5,6 +5,8 @@
 
 namespace Wolf
 {
+	class CommandBuffer;
+
 	class Buffer
 	{
 	public:
@@ -20,7 +22,8 @@ namespace Wolf
 			uint64_t    dstOffset;
 			uint64_t    size;
 		} BufferCopy;
-		virtual void transferGPUMemory(const Buffer& bufferSrc, const BufferCopy& copyRegion) const = 0;
+		virtual void transferGPUMemoryImmediate(const Buffer& bufferSrc, const BufferCopy& copyRegion) const = 0;
+		virtual void recordTransferGPUMemory(CommandBuffer* commandBuffer, const Buffer& bufferSrc, const BufferCopy& copyRegion) const = 0;
 
 		virtual void map(void** pData, uint64_t size = 0) const = 0;
 		virtual void unmap() const = 0;

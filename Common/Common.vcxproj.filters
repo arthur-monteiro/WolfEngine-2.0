@@ -47,5 +47,8 @@
     <ClInclude Include="ResourceReference.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="GPUMemoryDebug.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

@@ -137,6 +137,7 @@
   <ItemGroup>
     <ClInclude Include="Configuration.h" />
     <ClInclude Include="Debug.h" />
+    <ClInclude Include="GPUMemoryDebug.h" />
     <ClInclude Include="ResourceNonOwner.h" />
     <ClInclude Include="ResourceReference.h" />
     <ClInclude Include="ResourceUniqueOwner.h" />

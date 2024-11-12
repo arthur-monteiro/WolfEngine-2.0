@@ -415,7 +415,9 @@ void Wolf::UltraLight::UltraLightImplementation::createOutputAndRecordCopyComman
     copyRegion.extent = { width, height, 1 };
 
     const UltraLightSurface* surface = dynamic_cast<UltraLightSurface*>(m_view->surface());
+    m_userInterfaceImage->transitionImageLayout(*m_copyImageCommandBuffer, { VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_ACCESS_TRANSFER_WRITE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, 0, 1 });
     m_userInterfaceImage->recordCopyGPUImage(surface->getImage(), copyRegion, *m_copyImageCommandBuffer);
+    m_userInterfaceImage->transitionImageLayout(*m_copyImageCommandBuffer, { VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_ACCESS_SHADER_READ_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, 0, 1 });
 
     m_copyImageCommandBuffer->endCommandBuffer();
 }

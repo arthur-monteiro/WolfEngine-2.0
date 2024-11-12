@@ -28,22 +28,31 @@ namespace Wolf
 	class RenderMeshList
 	{
 	public:
-		struct MeshToRenderInfo
+		RenderMeshList(ShaderList& shaderList) : m_shaderList(&shaderList) {}
+
+		void moveToNextFrame();
+		void clear();
+
+		struct MeshToRender
 		{
 			ResourceNonOwner<Mesh> mesh;
-			const glm::mat4& transform;
 			ResourceNonOwner<const PipelineSet> pipelineSet;
 			std::array<std::vector<DescriptorSetBindInfo>, PipelineSet::MAX_PIPELINE_COUNT> perPipelineDescriptorSets;
-			struct InstanceInfos
-			{
-				const Buffer* instanceBuffer = nullptr;
-				uint32_t instanceCount = 1;
-			};
-			InstanceInfos instanceInfos;
-
-			MeshToRenderInfo(const ResourceNonOwner<Mesh>& mesh, const ResourceNonOwner<const PipelineSet>& pipelineSet, const glm::mat4& transform = glm::mat4(1.0f)) : mesh(mesh), transform(transform), pipelineSet(pipelineSet) {}
 		};
-		void addMeshToRender(const MeshToRenderInfo& meshToRenderInfo);
+		uint32_t registerMesh(const MeshToRender& mesh);
+		void addTransientMesh(const MeshToRender& mesh);
+
+		struct InstancedMesh
+		{
+			MeshToRender mesh;
+
+			NullableResourceNonOwner<Buffer> instanceBuffer;
+			uint32_t instanceSize;
+		};
+		uint32_t registerInstancedMesh(const InstancedMesh& mesh, uint32_t maxInstanceCount, uint32_t instanceIdx);
+		void addInstance(uint32_t instancedMeshIdx, uint32_t instanceIdx);
+		void removeInstance(uint32_t instancedMeshIdx, uint32_t instanceIdx);
+		void addTransientInstancedMesh(const InstancedMesh& mesh, uint32_t instanceCount);
 
 		static constexpr uint32_t NO_CAMERA_IDX = -1;
 		struct AdditionalDescriptorSet
@@ -53,44 +62,33 @@ namespace Wolf
 		};
 		void draw(const RecordContext& context, const CommandBuffer& commandBuffer, RenderPass* renderPass, uint32_t pipelineIdx, uint32_t cameraIdx, const std::vector<AdditionalDescriptorSet>& descriptorSetsToBind) const;
 
-		void clear();
-
 	private:
-		friend WolfEngine;
-
-		RenderMeshList(ShaderList& shaderList) : m_shaderList(shaderList) {}
-
-		void moveToNextFrame(const CameraList& cameraList);
-
-		class RenderMesh
+		struct InternalMesh
 		{
-		public:
-			RenderMesh(ResourceNonOwner<Mesh> mesh, const glm::mat4& transform, const ResourceNonOwner<const PipelineSet>& pipelineSet, std::array<std::vector<DescriptorSetBindInfo>, PipelineSet::MAX_PIPELINE_COUNT> perPipelineDescriptorSets, const MeshToRenderInfo::InstanceInfos& instanceInfos) :
-				m_mesh(std::move(mesh)), m_transform(transform), m_pipelineSet(pipelineSet), m_perPipelineDescriptorSets(std::move(perPipelineDescriptorSets)), m_instanceInfos(instanceInfos) { }
-
-			void draw(const CommandBuffer& commandBuffer, const Pipeline* pipeline, uint32_t cameraIdx, uint32_t pipelineIdx) const;
-
-			ResourceNonOwner<const PipelineSet> getPipelineSet() const { return m_pipelineSet; }
-			ResourceNonOwner<Mesh> getMesh() const { return m_mesh; }
-			const glm::mat4& getTransform() const { return m_transform; }
-			bool isInstanced() const { return m_instanceInfos.instanceCount > 1; }
-			const std::vector<DescriptorSetBindInfo>& getDescriptorSets(uint32_t pipelineIdx) const { return m_perPipelineDescriptorSets[pipelineIdx]; }
-
-		private:
-			ResourceNonOwner<Mesh> m_mesh;
-			glm::mat4 m_transform;
-			ResourceNonOwner<const PipelineSet> m_pipelineSet;
-			std::array<std::vector<DescriptorSetBindInfo>, PipelineSet::MAX_PIPELINE_COUNT> m_perPipelineDescriptorSets;
-			MeshToRenderInfo::InstanceInfos m_instanceInfos;
+			MeshToRender meshToRender;
 		};
+		std::vector<InternalMesh> m_meshes;
+		std::vector<InternalMesh> m_transientMeshesCurrentFrame;
+		std::vector<InternalMesh> m_transientMeshesNextFrame;
 
-		std::vector<std::vector<RenderMesh*>> m_meshesToRenderByPipelineIdx;
-		std::vector<std::unique_ptr<RenderMesh>> m_currentFrameMeshesToRender;
-		std::vector<std::unique_ptr<RenderMesh>> m_nextFrameMeshesToRender;
+		struct InternalInstancedMesh
+		{
+			InstancedMesh instancedMesh;
 
-		uint32_t m_pipelineIdxCount = 0;
-		std::vector<uint64_t> m_uniquePipelinesHash; // list of all pipelines info hash
+			struct OffsetAndCount
+			{
+				uint32_t offset;
+				uint32_t count;
+			};
+			std::vector<OffsetAndCount> offsetAndCounts; // offset in instance buffer and instance count
+			void buildOffsetAndCounts();
 
-		ShaderList& m_shaderList;
+			std::vector<bool> activatedInstances;
+		};
+		std::vector<InternalInstancedMesh> m_instancedMeshes;
+		std::vector<InternalInstancedMesh> m_transientInstancedMeshesCurrentFrame;
+		std::vector<InternalInstancedMesh> m_transientInstancedMeshesNextFrame;
+
+		ShaderList* m_shaderList;
 	};
 }

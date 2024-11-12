@@ -41,11 +41,11 @@ namespace Wolf
 #endif
 		CameraList* cameraList;
 		const void* gameContext;
-		RenderMeshList* renderMeshList;
+		ResourceNonOwner<RenderMeshList> renderMeshList;
 		const DescriptorSet* bindlessDescriptorSet;
 		ResourceNonOwner<LightManager> lightManager;
 
-		RecordContext(const ResourceNonOwner<LightManager>& lightManager) : lightManager(lightManager) {} 
+		RecordContext(const ResourceNonOwner<LightManager>& lightManager, const ResourceNonOwner<RenderMeshList>& renderMeshList) : lightManager(lightManager), renderMeshList(renderMeshList) {}
 	};
 
 	struct SubmitContext

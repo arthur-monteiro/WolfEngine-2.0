@@ -15,6 +15,17 @@ Wolf::MaterialLoader::MaterialLoader(const MaterialFileInfoGGX& material, const 
 		VkExtent3D extent;
 		loadImageFile(material.albedo, VK_FORMAT_R8G8B8A8_SRGB, pixels, mipLevels, extent);
 
+		if (pixels.size() < 4)
+		{
+			Debug::sendWarning("Image size must be at least 4x4");
+			pixels.resize(4 * 4);
+			for (uint32_t i = 1; i < 4 * 4; ++i)
+			{
+				pixels[i] = pixels[0];
+			}
+			extent.width = extent.height = 4;
+		}
+
 		if (outputLayout.albedoCompression == ImageCompression::Compression::BC1)
 			compressAndCreateImage<ImageCompression::BC1>(mipLevels, pixels, extent, VK_FORMAT_BC1_RGB_SRGB_BLOCK, material);
 		else if (outputLayout.albedoCompression == ImageCompression::Compression::BC3)

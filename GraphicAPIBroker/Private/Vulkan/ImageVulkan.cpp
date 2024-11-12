@@ -1,6 +1,7 @@
 #include "ImageVulkan.h"
 
 #include <Debug.h>
+#include <GPUMemoryDebug.h>
 
 #include "CommandBufferVulkan.h"
 #include "BufferVulkan.h"
@@ -58,6 +59,7 @@ Wolf::ImageVulkan::ImageVulkan(const CreateImageInfo& createImageInfo)
 	allocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
 	allocInfo.allocationSize = memRequirements.size;
 	m_memoryProperties = createImageInfo.memoryProperties;
+	m_allocationSize = allocInfo.allocationSize;
 	allocInfo.memoryTypeIndex = findMemoryType(g_vulkanInstance->getPhysicalDevice(), memRequirements.memoryTypeBits, createImageInfo.memoryProperties);
 
 	if (allocInfo.memoryTypeIndex == static_cast<uint32_t>(-1))
@@ -69,6 +71,18 @@ Wolf::ImageVulkan::ImageVulkan(const CreateImageInfo& createImageInfo)
 	vkBindImageMemory(g_vulkanInstance->getDevice(), m_image, m_imageMemory, 0);
 
 	setBBP();
+
+	uint64_t totalRequestedSize = static_cast<uint64_t>(static_cast<float>(m_extent.width) * static_cast<float>(m_extent.height) * static_cast<float>(m_extent.depth) * m_bbp);
+	uint32_t currentWidth = m_extent.width;
+	uint32_t currentHeight = m_extent.height;
+	for (uint32_t mipLevel = 1; mipLevel < m_mipLevelCount; ++mipLevel)
+	{
+		currentWidth /= 2;
+		currentHeight /= 2;
+
+		totalRequestedSize += static_cast<uint64_t>(static_cast<float>(currentWidth) * static_cast<float>(currentHeight) * static_cast<float>(m_extent.depth) * m_bbp);
+	}
+	GPUMemoryDebug::registerNewResource(GPUMemoryDebug::TYPE::TEXTURE, 0, totalRequestedSize, memRequirements.size);
 }
 
 Wolf::ImageVulkan::ImageVulkan(VkImage image, VkFormat format, VkImageAspectFlags aspect, VkExtent2D extent)
@@ -98,6 +112,8 @@ Wolf::ImageVulkan::~ImageVulkan()
 		return;
 	vkDestroyImage(g_vulkanInstance->getDevice(), m_image, nullptr);
 	vkFreeMemory(g_vulkanInstance->getDevice(), m_imageMemory, nullptr);
+
+	GPUMemoryDebug::unregisterResource(GPUMemoryDebug::TYPE::TEXTURE, 0, static_cast<uint64_t>(static_cast<float>(m_extent.width) * static_cast<float>(m_extent.height) * static_cast<float>(m_extent.depth) * m_bbp), m_allocationSize);
 }
 
 void Wolf::ImageVulkan::copyCPUBuffer(const unsigned char* pixels, const TransitionLayoutInfo& finalLayout, uint32_t mipLevel)
@@ -150,8 +166,10 @@ void Wolf::ImageVulkan::copyGPUImage(const Image& imageSrc, const VkImageCopy& i
 {
 	const CommandBufferVulkan commandBuffer(QueueType::TRANSFER, true);
 	commandBuffer.beginCommandBuffer();
-	
+
+	transitionImageLayout(commandBuffer, { VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_ACCESS_TRANSFER_WRITE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, imageCopy.dstSubresource.mipLevel, 1 });
 	recordCopyGPUImage(imageSrc, imageCopy, commandBuffer);
+	transitionImageLayout(commandBuffer, { VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_ACCESS_SHADER_READ_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, imageCopy.dstSubresource.mipLevel, 1 });
 
 	commandBuffer.endCommandBuffer();
 
@@ -167,9 +185,7 @@ void Wolf::ImageVulkan::recordCopyGPUImage(const Image& imageSrc, const VkImageC
 	const ImageVulkan* imageVulkanSrc = static_cast<const ImageVulkan*>(&imageSrc);
 	const CommandBufferVulkan* commandBufferVulkan = static_cast<const CommandBufferVulkan*>(&commandBuffer);
 
-	transitionImageLayout(commandBuffer, { VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_ACCESS_TRANSFER_WRITE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, imageCopy.dstSubresource.mipLevel, 1 });
 	vkCmdCopyImage(commandBufferVulkan->getCommandBuffer(), imageVulkanSrc->getImage(), imageVulkanSrc->getImageLayout(imageCopy.srcSubresource.mipLevel), m_image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &imageCopy);
-	transitionImageLayout(commandBuffer, { VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_ACCESS_SHADER_READ_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, imageCopy.dstSubresource.mipLevel, 1 });
 }
 
 void* Wolf::ImageVulkan::map() const

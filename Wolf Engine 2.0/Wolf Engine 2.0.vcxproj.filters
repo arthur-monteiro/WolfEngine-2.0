@@ -120,9 +120,6 @@
     <ClCompile Include="ModelLoader.cpp">
       <Filter>Model Management</Filter>
     </ClCompile>
-    <ClCompile Include="ModelBase.cpp">
-      <Filter>Model Management</Filter>
-    </ClCompile>
     <ClCompile Include="Mesh.cpp">
       <Filter>Model Management</Filter>
     </ClCompile>
@@ -151,6 +148,9 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="LightManager.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\ThirdParty\Tracy\TracyClient.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -251,9 +251,6 @@
     <ClInclude Include="ModelLoader.h">
       <Filter>Model Management</Filter>
     </ClInclude>
-    <ClInclude Include="ModelBase.h">
-      <Filter>Model Management</Filter>
-    </ClInclude>
     <ClInclude Include="Mesh.h">
       <Filter>Model Management</Filter>
     </ClInclude>
@@ -291,6 +288,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="LightManager.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ProfilerCommon.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

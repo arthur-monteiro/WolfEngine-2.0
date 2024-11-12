@@ -6,6 +6,7 @@
 #include "Debug.h"
 #include "GraphicCameraInterface.h"
 #include "LightManager.h"
+#include "ProfilerCommon.h"
 #include "RenderPass.h"
 #include "ShaderList.h"
 
@@ -92,6 +93,8 @@ std::vector<const Wolf::PipelineSet::PipelineInfo*> Wolf::PipelineSet::retrieveA
 
 const Wolf::Pipeline* Wolf::PipelineSet::getOrCreatePipeline(uint32_t idx, RenderPass* renderPass, const std::vector<DescriptorSetBindInfo>& meshDescriptorSetsBindInfo, const std::vector<DescriptorSetBindInfo>& additionalDescriptorSetsBindInfo, ShaderList& shaderList) const
 {
+	PROFILE_FUNCTION
+
 	if (!m_infoForPipelines[idx]->getPipelines().contains(renderPass))
 	{
 		renderPass->registerNewExtentChangedCallback([this](const RenderPass* paramRenderPass)
@@ -257,7 +260,8 @@ void Wolf::PipelineSet::renderPassExtentChanged(const RenderPass* renderPass) co
 {
 	for (const std::unique_ptr<InfoForPipeline>& infoForPipeline : m_infoForPipelines)
 	{
-		infoForPipeline->getPipelines().erase(renderPass);
+		if (infoForPipeline)
+			infoForPipeline->getPipelines().erase(renderPass);
 	}
 }
 
