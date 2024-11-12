@@ -51,6 +51,9 @@ void UltralightViewListener::OnChangeCursor(ultralight::View* caller, ultralight
         case ultralight::kCursor_ColumnResize:
             windowCursorType = Window::CursorType::HRESIZE;
             break;
+        case ultralight::kCursor_RowResize:
+            windowCursorType = Window::CursorType::VRESIZE;
+            break;
         default:
 	        Debug::sendError("Unhandled cursor type");
             break;

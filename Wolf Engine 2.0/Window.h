@@ -19,7 +19,7 @@ namespace Wolf
 		bool windowShouldClose() const;
 		bool windowVisible() const;
 
-		enum class CursorType { POINTER, HAND, IBEAM, HRESIZE, Count };
+		enum class CursorType { POINTER, HAND, IBEAM, HRESIZE, VRESIZE, Count };
 		void setCursorType(CursorType cursorType) const;
 
 		[[nodiscard]] GLFWwindow* getWindow() const { return m_window; }
@@ -37,7 +37,7 @@ namespace Wolf
 	private:
 		GLFWwindow* m_window;
 
-		std::array<GLFWcursor*, 4> m_cursors;
+		std::array<GLFWcursor*, 5> m_cursors;
 		static_assert(std::tuple_size<decltype(m_cursors)>{} == static_cast<uint32_t>(CursorType::Count));
 
 		void* m_systemManagerInstance = nullptr;
