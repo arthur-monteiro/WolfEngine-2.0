@@ -70,9 +70,9 @@ Wolf::ImageVulkan::ImageVulkan(const CreateImageInfo& createImageInfo)
 
 	vkBindImageMemory(g_vulkanInstance->getDevice(), m_image, m_imageMemory, 0);
 
-	setBBP();
+	setBPP();
 
-	uint64_t totalRequestedSize = static_cast<uint64_t>(static_cast<float>(m_extent.width) * static_cast<float>(m_extent.height) * static_cast<float>(m_extent.depth) * m_bbp);
+	uint64_t totalRequestedSize = static_cast<uint64_t>(static_cast<float>(m_extent.width) * static_cast<float>(m_extent.height) * static_cast<float>(m_extent.depth) * m_bpp);
 	uint32_t currentWidth = m_extent.width;
 	uint32_t currentHeight = m_extent.height;
 	for (uint32_t mipLevel = 1; mipLevel < m_mipLevelCount; ++mipLevel)
@@ -80,7 +80,7 @@ Wolf::ImageVulkan::ImageVulkan(const CreateImageInfo& createImageInfo)
 		currentWidth /= 2;
 		currentHeight /= 2;
 
-		totalRequestedSize += static_cast<uint64_t>(static_cast<float>(currentWidth) * static_cast<float>(currentHeight) * static_cast<float>(m_extent.depth) * m_bbp);
+		totalRequestedSize += static_cast<uint64_t>(static_cast<float>(currentWidth) * static_cast<float>(currentHeight) * static_cast<float>(m_extent.depth) * m_bpp);
 	}
 	GPUMemoryDebug::registerNewResource(GPUMemoryDebug::TYPE::TEXTURE, 0, totalRequestedSize, memRequirements.size);
 }
@@ -100,7 +100,7 @@ Wolf::ImageVulkan::ImageVulkan(VkImage image, VkFormat format, VkImageAspectFlag
 	for (VkImageLayout& imageLayout : m_imageLayouts)
 		imageLayout = VK_IMAGE_LAYOUT_UNDEFINED;
 
-	setBBP();
+	setBPP();
 }
 
 Wolf::ImageVulkan::~ImageVulkan()
@@ -113,13 +113,13 @@ Wolf::ImageVulkan::~ImageVulkan()
 	vkDestroyImage(g_vulkanInstance->getDevice(), m_image, nullptr);
 	vkFreeMemory(g_vulkanInstance->getDevice(), m_imageMemory, nullptr);
 
-	GPUMemoryDebug::unregisterResource(GPUMemoryDebug::TYPE::TEXTURE, 0, static_cast<uint64_t>(static_cast<float>(m_extent.width) * static_cast<float>(m_extent.height) * static_cast<float>(m_extent.depth) * m_bbp), m_allocationSize);
+	GPUMemoryDebug::unregisterResource(GPUMemoryDebug::TYPE::TEXTURE, 0, static_cast<uint64_t>(static_cast<float>(m_extent.width) * static_cast<float>(m_extent.height) * static_cast<float>(m_extent.depth) * m_bpp), m_allocationSize);
 }
 
 void Wolf::ImageVulkan::copyCPUBuffer(const unsigned char* pixels, const TransitionLayoutInfo& finalLayout, uint32_t mipLevel)
 {
 	const VkExtent3D extent = { m_extent.width >> mipLevel, m_extent.height >> mipLevel, m_extent.depth };
-	const VkDeviceSize imageSize = static_cast<VkDeviceSize>(static_cast<float>(extent.width) * static_cast<float>(extent.height) * static_cast<float>(extent.depth) * m_bbp);
+	const VkDeviceSize imageSize = static_cast<VkDeviceSize>(static_cast<float>(extent.width) * static_cast<float>(extent.height) * static_cast<float>(extent.depth) * m_bpp);
 
 	const BufferVulkan stagingBuffer(imageSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
 	
@@ -190,7 +190,7 @@ void Wolf::ImageVulkan::recordCopyGPUImage(const Image& imageSrc, const VkImageC
 
 void* Wolf::ImageVulkan::map() const
 {
-	const VkDeviceSize imageSize = static_cast<VkDeviceSize>(static_cast<float>(m_extent.width) * static_cast<float>(m_extent.height) * static_cast<float>(m_extent.depth) * m_bbp);
+	const VkDeviceSize imageSize = static_cast<VkDeviceSize>(static_cast<float>(m_extent.width) * static_cast<float>(m_extent.height) * static_cast<float>(m_extent.depth) * m_bpp);
 	void* mappedData;
 	vkMapMemory(g_vulkanInstance->getDevice(), m_imageMemory, 0, imageSize, 0, &mappedData);
 	return mappedData;
@@ -349,34 +349,34 @@ void Wolf::ImageVulkan::createImageView(VkFormat format)
 	m_imageViews[hash] = imageView;
 }
 
-void Wolf::ImageVulkan::setBBP()
+void Wolf::ImageVulkan::setBPP()
 {
 	switch (m_imageFormat)
 	{
 	case VK_FORMAT_R32G32B32A32_SFLOAT:
-		m_bbp = 16.0f;
+		m_bpp = 16.0f;
 		break;
 	case VK_FORMAT_R32G32_SFLOAT:
-		m_bbp = 8.0f;
+		m_bpp = 8.0f;
 		break;
 	case VK_FORMAT_R8G8B8A8_UNORM:
 	case VK_FORMAT_B8G8R8A8_UNORM:
 	case VK_FORMAT_R8G8B8A8_SRGB:
 	case VK_FORMAT_D32_SFLOAT:
 	case VK_FORMAT_R32_SFLOAT:
-		m_bbp = 4.0f;
+		m_bpp = 4.0f;
 		break;
 	case VK_FORMAT_BC1_RGB_UNORM_BLOCK:
 	case VK_FORMAT_BC1_RGB_SRGB_BLOCK:
-		m_bbp = 0.5f;
+		m_bpp = 0.5f;
 		break;
 	case VK_FORMAT_BC3_UNORM_BLOCK:
 	case VK_FORMAT_BC3_SRGB_BLOCK:
 	case VK_FORMAT_R8_UINT:
-		m_bbp = 1.0f;
+		m_bpp = 1.0f;
 		break;
 	default:
-		m_bbp = 1.0f;
+		m_bpp = 1.0f;
 		Debug::sendError("Unsupported image format");
 		break;
 	}

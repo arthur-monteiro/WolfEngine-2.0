@@ -8,7 +8,7 @@
 #include "AndroidCacheHelper.h"
 #include "CodeFileHashes.h"
 #include "ImageFileLoader.h"
-#include "MaterialLoader.h"
+#include "TextureSetLoader.h"
 #include "MaterialsGPUManager.h"
 #include "MipMapGenerator.h"
 
@@ -17,7 +17,7 @@ void Wolf::ModelLoader::loadObject(ModelData& outputModel, ModelLoadingInfo& mod
 	ModelLoader objLoader(outputModel, modelLoadingInfo);
 }
 
-Wolf::ModelLoader::ModelLoader(ModelData& outputModel, ModelLoadingInfo& modelLoadingInfo) : m_outputModel(outputModel)
+Wolf::ModelLoader::ModelLoader(ModelData& outputModel, ModelLoadingInfo& modelLoadingInfo) : m_outputModel(&outputModel)
 {
 #ifdef __ANDROID__
     if(modelLoadingInfo.isInAssets)
@@ -61,6 +61,8 @@ Wolf::ModelLoader::ModelLoader(ModelData& outputModel, ModelLoadingInfo& modelLo
 	glm::vec3 maxPos(-1'000'000.f);
 
 	bool hasEncounteredAnInvalidMaterialId = false;
+	std::map<int32_t /* materialId */, uint32_t /* subMeshIdx */> m_materialIdToSubMeshIdx;
+
 	for(uint32_t shapeIdx = 0; shapeIdx < shapes.size(); ++shapeIdx)
 	{
 		auto& [name, mesh, lines, points] = shapes[shapeIdx];
@@ -110,19 +112,19 @@ Wolf::ModelLoader::ModelLoader(ModelData& outputModel, ModelLoadingInfo& modelLo
 				};
 			}
 
-			if (modelLoadingInfo.materialLayout == MaterialLoader::InputMaterialLayout::NO_MATERIAL)
-				vertex.materialID = modelLoadingInfo.materialIdOffset;
-			else
+			int32_t materialId = mesh.material_ids[numVertex / 3];
+			if (materialId < 0)
 			{
-				int32_t materialId = mesh.material_ids[numVertex / 3];
-				if (materialId < 0)
-				{
-					hasEncounteredAnInvalidMaterialId = true;
-					vertex.materialID = 0;
-				}
-				else
-					vertex.materialID = modelLoadingInfo.materialIdOffset + materialId;
+				materialId = -1;
+				hasEncounteredAnInvalidMaterialId = true;
 			}
+
+			if (!m_materialIdToSubMeshIdx.contains(materialId))
+			{
+				m_materialIdToSubMeshIdx[materialId] = static_cast<uint32_t>(m_materialIdToSubMeshIdx.size());
+			}
+			
+			vertex.subMeshIdx = m_materialIdToSubMeshIdx[materialId];
 
 			if (!uniqueVertices.contains(vertex))
 			{
@@ -168,26 +170,36 @@ Wolf::ModelLoader::ModelLoader(ModelData& outputModel, ModelLoadingInfo& modelLo
 		tempTriangle[i % 3] = vertices[indices[i]];
 	}
 
-	m_outputModel.mesh.reset(new Mesh(vertices, indices, aabb, modelLoadingInfo.additionalVertexBufferUsages, modelLoadingInfo.additionalIndexBufferUsages));
+	m_outputModel->mesh.reset(new Mesh(vertices, indices, aabb, modelLoadingInfo.additionalVertexBufferUsages, modelLoadingInfo.additionalIndexBufferUsages));
 
 	for (uint32_t shapeIdx = 0; shapeIdx < shapeInfos.size(); ++shapeIdx)
 	{
 		const InternalShapeInfo& shapeInfo = shapeInfos[shapeIdx];
 		const InternalShapeInfo& nextShapeInfo = shapeIdx == shapeInfos.size() - 1 ? InternalShapeInfo{ static_cast<uint32_t>(indices.size()) } : shapeInfos[shapeIdx + 1];
 
-		m_outputModel.mesh->addSubMesh(shapeInfo.indicesOffset, nextShapeInfo.indicesOffset - shapeInfo.indicesOffset);
+		m_outputModel->mesh->addSubMesh(shapeInfo.indicesOffset, nextShapeInfo.indicesOffset - shapeInfo.indicesOffset);
 	}
 
 	Debug::sendInfo("Model " + modelLoadingInfo.filename + " loaded with " + std::to_string(indices.size() / 3) + " triangles and " + std::to_string(shapeInfos.size()) + " shapes");
 
-	if (modelLoadingInfo.materialLayout != MaterialLoader::InputMaterialLayout::NO_MATERIAL)
+	if (modelLoadingInfo.textureSetLayout != TextureSetLoader::InputTextureSetLayout::NO_MATERIAL)
 	{
-		m_outputModel.materials.resize(materials.size());
+		m_outputModel->textureSets.resize(materials.size());
 		m_imagesData.resize(materials.size() * MaterialsGPUManager::TEXTURE_COUNT_PER_MATERIAL); // is kept empty if no cache is used
 		uint32_t indexMaterial = 0;
-		for (auto& material : materials)
+		for (uint32_t subMeshIdx = 0; subMeshIdx < m_materialIdToSubMeshIdx.size(); ++subMeshIdx)
 		{
-			loadMaterial(material, modelLoadingInfo.mtlFolder, modelLoadingInfo.materialLayout, indexMaterial);
+			int32_t materialIdx = 0;
+			for (; materialIdx < static_cast<int32_t>(materials.size()); ++materialIdx)
+			{
+				if (m_materialIdToSubMeshIdx[materialIdx] == subMeshIdx)
+					break;
+			}
+
+			if (materialIdx == static_cast<int32_t>(materials.size()))
+				continue; // the submesh probably don't have a material
+
+			loadTextureSet(materials[materialIdx], modelLoadingInfo.mtlFolder, modelLoadingInfo.textureSetLayout, indexMaterial);
 			indexMaterial++;
 		}
 	}
@@ -205,13 +217,6 @@ Wolf::ModelLoader::ModelLoader(ModelData& outputModel, ModelLoadingInfo& modelLo
 		/* Geometry */
 		uint32_t verticesCount = static_cast<uint32_t>(vertices.size());
 		outCacheFile.write(reinterpret_cast<char*>(&verticesCount), sizeof(uint32_t));
-		for(Vertex3D& vertex : vertices)
-		{
-			if (vertex.materialID == 0)
-				vertex.materialID = static_cast<uint32_t>(-1);
-			else
-				vertex.materialID -= modelLoadingInfo.materialIdOffset;
-		}
 		outCacheFile.write(reinterpret_cast<char*>(vertices.data()), verticesCount * sizeof(vertices[0]));
 		uint32_t indicesCount = static_cast<uint32_t>(indices.size());
 		outCacheFile.write(reinterpret_cast<char*>(&indicesCount), sizeof(uint32_t));
@@ -226,41 +231,38 @@ Wolf::ModelLoader::ModelLoader(ModelData& outputModel, ModelLoadingInfo& modelLo
 		}
 
 		/* Materials */
-		uint32_t materialCount = static_cast<uint32_t>(m_outputModel.materials.size());
-		outCacheFile.write(reinterpret_cast<char*>(&materialCount), sizeof(uint32_t));
+		uint32_t textureSetCount = static_cast<uint32_t>(m_outputModel->textureSets.size());
+		outCacheFile.write(reinterpret_cast<char*>(&textureSetCount), sizeof(uint32_t));
 
-		for (uint32_t materialIdx = 0; materialIdx < materialCount; ++materialIdx)
+		for (uint32_t textureSetIdx = 0; textureSetIdx < textureSetCount; ++textureSetIdx)
 		{
-			MaterialsGPUManager::MaterialInfo& currentMaterial = m_outputModel.materials[materialIdx];
+			MaterialsGPUManager::TextureSetInfo& currentTextureSet = m_outputModel->textureSets[textureSetIdx];
 
 			uint32_t imageCount = MaterialsGPUManager::TEXTURE_COUNT_PER_MATERIAL;
 			outCacheFile.write(reinterpret_cast<char*>(&imageCount), sizeof(uint32_t));
 			for (uint32_t imageIdx = 0; imageIdx < imageCount; ++imageIdx)
 			{
-				ResourceUniqueOwner<Image>& currentImage = currentMaterial.images[imageIdx];
+				ResourceUniqueOwner<Image>& currentImage = currentTextureSet.images[imageIdx];
 
 				VkExtent3D extent = currentImage->getExtent();
 				outCacheFile.write(reinterpret_cast<char*>(&extent), sizeof(VkExtent3D));
-				const std::vector<unsigned char>& imageData = m_imagesData[materialIdx * MaterialsGPUManager::TEXTURE_COUNT_PER_MATERIAL + imageIdx];
+				const std::vector<unsigned char>& imageData = m_imagesData[textureSetIdx * MaterialsGPUManager::TEXTURE_COUNT_PER_MATERIAL + imageIdx];
 				outCacheFile.write(reinterpret_cast<const char*>(imageData.data()), static_cast<uint32_t>(imageData.size()));
 			}
 
-			uint32_t shadingMode = currentMaterial.shadingMode;
-			outCacheFile.write(reinterpret_cast<char*>(&shadingMode), sizeof(uint32_t));
-
 #ifdef MATERIAL_DEBUG
-			uint32_t materialNameSize = static_cast<uint32_t>(currentMaterial.materialName.size());
+			uint32_t materialNameSize = static_cast<uint32_t>(currentTextureSet.materialName.size());
 			outCacheFile.write(reinterpret_cast<char*>(&materialNameSize), sizeof(uint32_t));
-			outCacheFile.write(currentMaterial.materialName.c_str(), materialNameSize);
+			outCacheFile.write(currentTextureSet.materialName.c_str(), materialNameSize);
 
-			uint32_t imageNameCount = static_cast<uint32_t>(currentMaterial.imageNames.size());
+			uint32_t imageNameCount = static_cast<uint32_t>(currentTextureSet.imageNames.size());
 			outCacheFile.write(reinterpret_cast<char*>(&imageNameCount), sizeof(uint32_t));
 
 			for (uint32_t imageNameIdx = 0; imageNameIdx < imageNameCount; ++imageNameIdx)
 			{
-				uint32_t imageNameSize = static_cast<uint32_t>(currentMaterial.imageNames[imageNameIdx].size());
+				uint32_t imageNameSize = static_cast<uint32_t>(currentTextureSet.imageNames[imageNameIdx].size());
 				outCacheFile.write(reinterpret_cast<char*>(&imageNameSize), sizeof(uint32_t));
-				outCacheFile.write(currentMaterial.imageNames[imageNameIdx].c_str(), imageNameSize);
+				outCacheFile.write(currentTextureSet.imageNames[imageNameIdx].c_str(), imageNameSize);
 			}
 
 			uint32_t materialFolderSize = static_cast<uint32_t>(modelLoadingInfo.mtlFolder.size());
@@ -293,14 +295,6 @@ bool Wolf::ModelLoader::loadCache(ModelLoadingInfo& modelLoadingInfo) const
 		std::vector<Vertex3D> vertices(verticesCount);
 		input.read(reinterpret_cast<char*>(vertices.data()), verticesCount * sizeof(vertices[0]));
 
-		for (Vertex3D& vertex : vertices)
-		{
-			if (vertex.materialID == static_cast<uint32_t>(-1))
-				vertex.materialID = 0;
-			else
-				vertex.materialID += modelLoadingInfo.materialIdOffset;
-		}
-
 		uint32_t indicesCount;
 		input.read(reinterpret_cast<char*>(&indicesCount), sizeof(indicesCount));
 		std::vector<uint32_t> indices(indicesCount);
@@ -311,7 +305,7 @@ bool Wolf::ModelLoader::loadCache(ModelLoadingInfo& modelLoadingInfo) const
 
 		if (modelLoadingInfo.vulkanQueueLock)
 			modelLoadingInfo.vulkanQueueLock->lock();
-		m_outputModel.mesh.reset(new Mesh(vertices, indices, aabb, modelLoadingInfo.additionalVertexBufferUsages, modelLoadingInfo.additionalIndexBufferUsages, VK_FORMAT_R32G32B32_SFLOAT));
+		m_outputModel->mesh.reset(new Mesh(vertices, indices, aabb, modelLoadingInfo.additionalVertexBufferUsages, modelLoadingInfo.additionalIndexBufferUsages, VK_FORMAT_R32G32B32_SFLOAT));
 		if (modelLoadingInfo.vulkanQueueLock)
 			modelLoadingInfo.vulkanQueueLock->unlock();
 
@@ -325,19 +319,19 @@ bool Wolf::ModelLoader::loadCache(ModelLoadingInfo& modelLoadingInfo) const
 			const InternalShapeInfo& shapeInfo = shapes[shapeIdx];
 			const InternalShapeInfo& nextShapeInfo = shapeIdx == shapes.size() - 1 ? InternalShapeInfo{ static_cast<uint32_t>(indices.size()) } : shapes[shapeIdx + 1];
 
-			m_outputModel.mesh->addSubMesh(shapeInfo.indicesOffset, nextShapeInfo.indicesOffset - shapeInfo.indicesOffset);
+			m_outputModel->mesh->addSubMesh(shapeInfo.indicesOffset, nextShapeInfo.indicesOffset - shapeInfo.indicesOffset);
 		}
 
-		uint32_t materialCount;
-		input.read(reinterpret_cast<char*>(&materialCount), sizeof(materialCount));
-		m_outputModel.materials.resize(materialCount);
+		uint32_t textureSetCount;
+		input.read(reinterpret_cast<char*>(&textureSetCount), sizeof(textureSetCount));
+		m_outputModel->textureSets.resize(textureSetCount);
 
 		if (modelLoadingInfo.vulkanQueueLock)
 			modelLoadingInfo.vulkanQueueLock->lock();
 
 		std::chrono::steady_clock::time_point startTimer = std::chrono::steady_clock::now();
 
-		for (uint32_t materialIdx(0); materialIdx < materialCount; ++materialIdx)
+		for (uint32_t textureSetIdx(0); textureSetIdx < textureSetCount; ++textureSetIdx)
 		{
 			uint32_t imageCount;
 			input.read(reinterpret_cast<char*>(&imageCount), sizeof(uint32_t));
@@ -365,7 +359,7 @@ bool Wolf::ModelLoader::loadCache(ModelLoadingInfo& modelLoadingInfo) const
 				VkExtent3D extent;
 				input.read(reinterpret_cast<char*>(&extent), sizeof(extent));
 
-				ResourceUniqueOwner<Image>& currentImage = m_outputModel.materials[materialIdx].images[imageIdx];
+				ResourceUniqueOwner<Image>& currentImage = m_outputModel->textureSets[textureSetIdx].images[imageIdx];
 
 				CreateImageInfo createImageInfo;
 				createImageInfo.extent = { (extent.width), (extent.height), 1 };
@@ -375,15 +369,15 @@ bool Wolf::ModelLoader::loadCache(ModelLoadingInfo& modelLoadingInfo) const
 				createImageInfo.usage = VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
 				currentImage.reset(Image::createImage(createImageInfo));
 
-				auto computeImageSize = [](VkExtent3D extent, float bbp, uint32_t mipLevel)
+				auto computeImageSize = [](VkExtent3D extent, float bpp, uint32_t mipLevel)
 					{
 						const VkExtent3D adjustedExtent = { extent.width >> mipLevel, extent.height >> mipLevel, extent.depth };
-						return static_cast<VkDeviceSize>(static_cast<float>(adjustedExtent.width) * static_cast<float>(adjustedExtent.height) * static_cast<float>(adjustedExtent.depth) * bbp);
+						return static_cast<VkDeviceSize>(static_cast<float>(adjustedExtent.width) * static_cast<float>(adjustedExtent.height) * static_cast<float>(adjustedExtent.depth) * bpp);
 					};
 
 				for (uint32_t mipLevel = 0; mipLevel < currentImage->getMipLevelCount(); ++mipLevel)
 				{
-					VkDeviceSize imageSize = computeImageSize(extent, currentImage->getBBP(), mipLevel);
+					VkDeviceSize imageSize = computeImageSize(extent, currentImage->getBPP(), mipLevel);
 
 					std::vector<unsigned char> pixels(imageSize);
 					input.read(reinterpret_cast<char*>(pixels.data()), pixels.size());
@@ -392,30 +386,28 @@ bool Wolf::ModelLoader::loadCache(ModelLoadingInfo& modelLoadingInfo) const
 				}
 			}
 
-			input.read(reinterpret_cast<char*>(&m_outputModel.materials[materialIdx].shadingMode), sizeof(uint32_t));
-
 #ifdef MATERIAL_DEBUG
 			uint32_t materialNameSize;
 			input.read(reinterpret_cast<char*>(&materialNameSize), sizeof(uint32_t));
-			m_outputModel.materials[materialIdx].materialName.resize(materialNameSize);
-			input.read(m_outputModel.materials[materialIdx].materialName.data(), materialNameSize);
+			m_outputModel->textureSets[textureSetIdx].materialName.resize(materialNameSize);
+			input.read(m_outputModel->textureSets[textureSetIdx].materialName.data(), materialNameSize);
 
 			uint32_t imageNameCount;
 			input.read(reinterpret_cast<char*>(&imageNameCount), sizeof(uint32_t));
-			m_outputModel.materials[materialIdx].imageNames.resize(imageNameCount);
+			m_outputModel->textureSets[textureSetIdx].imageNames.resize(imageNameCount);
 
 			for (uint32_t imageNameIdx = 0; imageNameIdx < imageNameCount; ++imageNameIdx)
 			{
 				uint32_t imageNameSize;
 				input.read(reinterpret_cast<char*>(&imageNameSize), sizeof(uint32_t));
-				m_outputModel.materials[materialIdx].imageNames[imageNameIdx].resize(imageNameSize);
-				input.read(m_outputModel.materials[materialIdx].imageNames[imageNameIdx].data(), imageNameSize);
+				m_outputModel->textureSets[textureSetIdx].imageNames[imageNameIdx].resize(imageNameSize);
+				input.read(m_outputModel->textureSets[textureSetIdx].imageNames[imageNameIdx].data(), imageNameSize);
 			}
 
 			uint32_t materialFolderSize;
 			input.read(reinterpret_cast<char*>(&materialFolderSize), sizeof(uint32_t));
-			m_outputModel.materials[materialIdx].materialFolder.resize(materialFolderSize);
-			input.read(m_outputModel.materials[materialIdx].materialFolder.data(), materialFolderSize);
+			m_outputModel->textureSets[textureSetIdx].materialFolder.resize(materialFolderSize);
+			input.read(m_outputModel->textureSets[textureSetIdx].materialFolder.data(), materialFolderSize);
 #endif
 		}
 
@@ -435,9 +427,9 @@ inline std::string getTexName(const std::string& texName, const std::string& fol
 }
 
 
-void Wolf::ModelLoader::loadMaterial(const tinyobj::material_t& material, const std::string& mtlFolder, MaterialLoader::InputMaterialLayout materialLayout, uint32_t indexMaterial)
+void Wolf::ModelLoader::loadTextureSet(const tinyobj::material_t& material, const std::string& mtlFolder, TextureSetLoader::InputTextureSetLayout textureSetLayout, uint32_t indexMaterial)
 {
-	MaterialLoader::MaterialFileInfoGGX materialFileInfo{};
+	TextureSetLoader::TextureSetFileInfoGGX materialFileInfo{};
 	materialFileInfo.name = material.name;
 	materialFileInfo.albedo = getTexName(material.diffuse_texname, mtlFolder, "Textures/no_texture_albedo.png");
 	materialFileInfo.normal = getTexName(material.bump_texname, mtlFolder);
@@ -447,8 +439,8 @@ void Wolf::ModelLoader::loadMaterial(const tinyobj::material_t& material, const 
 	materialFileInfo.anisoStrength = getTexName(material.sheen_texname, mtlFolder);
 
 #ifdef MATERIAL_DEBUG
-	m_outputModel.materials[indexMaterial].materialName = materialFileInfo.name;
-	m_outputModel.materials[indexMaterial].imageNames =
+	m_outputModel->textureSets[indexMaterial].materialName = materialFileInfo.name;
+	m_outputModel->textureSets[indexMaterial].imageNames =
 	{
 		material.diffuse_texname,
 		material.bump_texname,
@@ -457,18 +449,17 @@ void Wolf::ModelLoader::loadMaterial(const tinyobj::material_t& material, const 
 		material.ambient_texname,
 		material.sheen_texname
 	};
-	m_outputModel.materials[indexMaterial].materialFolder = mtlFolder;
+	m_outputModel->textureSets[indexMaterial].materialFolder = mtlFolder;
 #endif
 
-	MaterialLoader::OutputLayout outputLayout;
+	TextureSetLoader::OutputLayout outputLayout;
 	outputLayout.albedoCompression = ImageCompression::Compression::BC1;
 
-	MaterialLoader materialLoader(materialFileInfo, outputLayout, m_useCache);
+	TextureSetLoader materialLoader(materialFileInfo, outputLayout, m_useCache);
 	for (uint32_t i = 0; i < MaterialsGPUManager::TEXTURE_COUNT_PER_MATERIAL; ++i)
 	{
 		if (m_useCache)
 			materialLoader.assignCache(i, m_imagesData[indexMaterial * MaterialsGPUManager::TEXTURE_COUNT_PER_MATERIAL + i]);
-		m_outputModel.materials[indexMaterial].images[i].reset(materialLoader.releaseImage(i));
+		m_outputModel->textureSets[indexMaterial].images[i].reset(materialLoader.releaseImage(i));
 	}
-	m_outputModel.materials[indexMaterial].shadingMode = material.illum;
 }

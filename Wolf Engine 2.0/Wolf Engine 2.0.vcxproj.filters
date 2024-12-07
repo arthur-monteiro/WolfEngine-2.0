@@ -141,7 +141,7 @@
     <ClCompile Include="MaterialsGPUManager.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="MaterialLoader.cpp">
+    <ClCompile Include="TextureSetLoader.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="DynamicStableArray.cpp">
@@ -275,7 +275,7 @@
     <ClInclude Include="MaterialsGPUManager.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="MaterialLoader.h">
+    <ClInclude Include="TextureSetLoader.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="DynamicStableArray.h">

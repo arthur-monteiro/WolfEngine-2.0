@@ -30,13 +30,28 @@ uint32_t Wolf::findMemoryType(VkPhysicalDevice physicalDevice, uint32_t typeFilt
 	VkPhysicalDeviceMemoryProperties memProperties;
 	vkGetPhysicalDeviceMemoryProperties(physicalDevice, &memProperties);
 
+	uint32_t memoryType = -1;
 	for (uint32_t i = 0; i < memProperties.memoryTypeCount; i++)
 	{
 		if (typeFilter & (1 << i) && (memProperties.memoryTypes[i].propertyFlags & properties) == properties)
+		{
 			return i;
+
+			if (memoryType != static_cast<uint32_t>(-1))
+			{
+				if (memProperties.memoryTypes[memProperties.memoryTypes[i].heapIndex].propertyFlags & VK_MEMORY_HEAP_DEVICE_LOCAL_BIT) // prefer local over host
+				{
+					memoryType = i;
+				}
+			}
+			else
+			{
+				memoryType = i;
+			}
+		}
 	}
 
-	return -1;
+	return memoryType;
 }
 
 VkFormat Wolf::findDepthFormat(VkPhysicalDevice physicalDevice)

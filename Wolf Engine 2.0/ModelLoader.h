@@ -10,7 +10,7 @@
 
 #include "Image.h"
 #include "ImageCompression.h"
-#include "MaterialLoader.h"
+#include "TextureSetLoader.h"
 #include "Mesh.h"
 #include "ResourceUniqueOwner.h"
 
@@ -22,7 +22,7 @@ namespace Wolf
 		glm::vec3 normal;
 		glm::vec3 tangent;
 		glm::vec2 texCoord;
-		glm::uint materialID;
+		glm::uint subMeshIdx;
 
 		static void getBindingDescription(VkVertexInputBindingDescription& bindingDescription, uint32_t binding)
 		{
@@ -59,12 +59,12 @@ namespace Wolf
 			attributeDescriptions[attributeDescriptionCountBefore + 4].binding = binding;
 			attributeDescriptions[attributeDescriptionCountBefore + 4].location = 4;
 			attributeDescriptions[attributeDescriptionCountBefore + 4].format = VK_FORMAT_R32_UINT;
-			attributeDescriptions[attributeDescriptionCountBefore + 4].offset = offsetof(Vertex3D, materialID);
+			attributeDescriptions[attributeDescriptionCountBefore + 4].offset = offsetof(Vertex3D, subMeshIdx);
 		}
 
 		bool operator==(const Vertex3D& other) const
 		{
-			return pos == other.pos && normal == other.normal && texCoord == other.texCoord && tangent == other.tangent && materialID == other.materialID;
+			return pos == other.pos && normal == other.normal && texCoord == other.texCoord && tangent == other.tangent && subMeshIdx == other.subMeshIdx;
 		}
 	};
 }
@@ -97,8 +97,7 @@ namespace Wolf
 		glm::vec3 defaultNormal = glm::vec3(0.0f, 1.0f, 0.0f);
 
 		// Material options
-		MaterialLoader::InputMaterialLayout materialLayout = MaterialLoader::InputMaterialLayout::EACH_TEXTURE_A_FILE;
-		uint32_t materialIdOffset = 0;
+		TextureSetLoader::InputTextureSetLayout textureSetLayout = TextureSetLoader::InputTextureSetLayout::EACH_TEXTURE_A_FILE;
 
 		// Cache options
 		bool useCache = true;
@@ -114,7 +113,7 @@ namespace Wolf
 	struct ModelData
 	{
 		ResourceUniqueOwner<Mesh> mesh;
-		std::vector<MaterialsGPUManager::MaterialInfo> materials;
+		std::vector<MaterialsGPUManager::TextureSetInfo> textureSets;
 	};
 
 	class ModelLoader
@@ -132,11 +131,11 @@ namespace Wolf
 		bool loadCache(ModelLoadingInfo& modelLoadingInfo) const;
 
 		// Materials
-		void loadMaterial(const tinyobj::material_t& material, const std::string& mtlFolder, MaterialLoader::InputMaterialLayout materialLayout, uint32_t indexMaterial);
+		void loadTextureSet(const tinyobj::material_t& material, const std::string& mtlFolder, TextureSetLoader::InputTextureSetLayout textureSetLayout, uint32_t indexMaterial);
 		
 		bool m_useCache;
 		std::vector<std::vector<unsigned char>> m_imagesData;
 
-		ModelData& m_outputModel;
+		ModelData* m_outputModel = nullptr;
 	};
 }
