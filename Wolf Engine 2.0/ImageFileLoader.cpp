@@ -312,9 +312,9 @@ void Wolf::ImageFileLoader::loadDDS(const std::string& fullFilePath)
             Debug::sendError("Unsupported compression");
             return;
     }
-    const float bbp = 16.0f / static_cast<float>(blockSize);
+    const float bpp = 16.0f / static_cast<float>(blockSize);
 
-    const size_t sizeInBytes = static_cast<size_t>(static_cast<float>(minWidth) * static_cast<float>(minHeight) * bbp);
+    const size_t sizeInBytes = static_cast<size_t>(static_cast<float>(minWidth) * static_cast<float>(minHeight) * bpp);
 
     m_pixels = new unsigned char[static_cast<size_t>(minWidth) * minHeight];
     infile.seekg(header.size + 4, std::ios::beg);
