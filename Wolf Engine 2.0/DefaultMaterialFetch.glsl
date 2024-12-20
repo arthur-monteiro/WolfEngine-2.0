@@ -1,8 +1,8 @@
 R"(
 #extension GL_EXT_nonuniform_qualifier : enable
 
-layout (binding = 0, set = ï¿½BINDLESS_DESCRIPTOR_SLOT) uniform texture2D[] textures;
-layout (binding = 1, set = ï¿½BINDLESS_DESCRIPTOR_SLOT) uniform sampler textureSampler;
+layout (binding = 0, set = £BINDLESS_DESCRIPTOR_SLOT) uniform texture2D[] textures;
+layout (binding = 1, set = £BINDLESS_DESCRIPTOR_SLOT) uniform sampler textureSampler;
 
 struct InputTextureSetInfo
 {
@@ -14,7 +14,7 @@ struct InputTextureSetInfo
     vec3 scale;
     float pad;
 };
-layout(std430, binding = 2, set = ï¿½BINDLESS_DESCRIPTOR_SLOT) readonly restrict buffer TextureSetBufferLayout
+layout(std430, binding = 2, set = £BINDLESS_DESCRIPTOR_SLOT) readonly restrict buffer TextureSetBufferLayout
 {
     InputTextureSetInfo textureSetsInfo[];
 };
@@ -28,7 +28,7 @@ struct InputMaterialInfo
     float textureSetStrengths[TEXTURE_SET_COUNT_PER_MATERIAL];
     uint shadingMode;
 };
-layout(std430, binding = 3, set = ï¿½BINDLESS_DESCRIPTOR_SLOT) readonly restrict buffer MaterialBufferLayout
+layout(std430, binding = 3, set = £BINDLESS_DESCRIPTOR_SLOT) readonly restrict buffer MaterialBufferLayout
 {
     InputMaterialInfo materialsInfo[];
 };
