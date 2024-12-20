@@ -7,9 +7,9 @@
 
 #include <Debug.h>
 
-Wolf::ImageFileLoader::ImageFileLoader(const std::string& fullFilePath)
+Wolf::ImageFileLoader::ImageFileLoader(const std::string& fullFilePath, bool loadFloat)
 {
-	if (fullFilePath[fullFilePath.size() - 4] == '.' && fullFilePath[fullFilePath.size() - 3] == 'h' && fullFilePath[fullFilePath.size() - 2] == 'd' && fullFilePath[fullFilePath.size() - 1] == 'r')
+	if (fullFilePath[fullFilePath.size() - 4] == '.' && fullFilePath[fullFilePath.size() - 3] == 'h' && fullFilePath[fullFilePath.size() - 2] == 'd' && fullFilePath[fullFilePath.size() - 1] == 'r' || loadFloat)
 	{
         int iWidth(0), iHeight(0), iChannels(0);
 		float* pixels = stbi_loadf(fullFilePath.c_str(), &iWidth, &iHeight, &iChannels, STBI_rgb_alpha);

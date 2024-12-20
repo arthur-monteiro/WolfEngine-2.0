@@ -136,17 +136,44 @@ void Wolf::MaterialsGPUManager::changeStrengthBeforeFrame(uint32_t materialIdx, 
 
 void Wolf::MaterialsGPUManager::changeExistingTextureSetBeforeFrame(TextureSetCacheInfo& textureSetCacheInfo, const TextureSetInfo& textureSetInfo)
 {
-	if (textureSetCacheInfo.textureSetIdx == 0 || !textureSetInfo.images[0])
+	if (textureSetCacheInfo.textureSetIdx == 0)
 		return;
 
-	if (textureSetCacheInfo.albedoIdx == 0)
+	if (textureSetInfo.images[0])
 	{
-		textureSetCacheInfo.albedoIdx = m_currentBindlessCount++;
-		m_textureSetsBuffer->transferCPUMemoryWithStagingBuffer(&textureSetCacheInfo.albedoIdx, sizeof(uint32_t), 0, textureSetCacheInfo.textureSetIdx * sizeof(TextureSetGPUInfo) + offsetof(TextureSetGPUInfo, albedoIdx));
+		if (textureSetCacheInfo.albedoIdx == 0)
+		{
+			textureSetCacheInfo.albedoIdx = m_currentBindlessCount++;
+			m_textureSetsBuffer->transferCPUMemoryWithStagingBuffer(&textureSetCacheInfo.albedoIdx, sizeof(uint32_t), 0, textureSetCacheInfo.textureSetIdx * sizeof(TextureSetGPUInfo) + offsetof(TextureSetGPUInfo, albedoIdx));
+		}
+
+		DescriptorSetGenerator::ImageDescription imageToUpdate{ VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, textureSetInfo.images[0]->getDefaultImageView() };
+		updateImageInBindless(imageToUpdate, textureSetCacheInfo.albedoIdx);
 	}
 
-	DescriptorSetGenerator::ImageDescription imageToUpdate { VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, textureSetInfo.images[0]->getDefaultImageView()};
-	updateImageInBindless(imageToUpdate, textureSetCacheInfo.albedoIdx);
+	if (textureSetInfo.images[1])
+	{
+		if (textureSetCacheInfo.normalIdx == 1)
+		{
+			textureSetCacheInfo.normalIdx = m_currentBindlessCount++;
+			m_textureSetsBuffer->transferCPUMemoryWithStagingBuffer(&textureSetCacheInfo.normalIdx, sizeof(uint32_t), 0, textureSetCacheInfo.textureSetIdx * sizeof(TextureSetGPUInfo) + offsetof(TextureSetGPUInfo, normalIdx));
+		}
+
+		DescriptorSetGenerator::ImageDescription imageToUpdate{ VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, textureSetInfo.images[1]->getDefaultImageView() };
+		updateImageInBindless(imageToUpdate, textureSetCacheInfo.normalIdx);
+	}
+
+	if (textureSetInfo.images[2])
+	{
+		if (textureSetCacheInfo.roughnessMetalnessAOIdx == 2)
+		{
+			textureSetCacheInfo.roughnessMetalnessAOIdx = m_currentBindlessCount++;
+			m_textureSetsBuffer->transferCPUMemoryWithStagingBuffer(&textureSetCacheInfo.roughnessMetalnessAOIdx, sizeof(uint32_t), 0, textureSetCacheInfo.textureSetIdx * sizeof(TextureSetGPUInfo) + offsetof(TextureSetGPUInfo, roughnessMetalnessAOIdx));
+		}
+
+		DescriptorSetGenerator::ImageDescription imageToUpdate{ VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, textureSetInfo.images[2]->getDefaultImageView() };
+		updateImageInBindless(imageToUpdate, textureSetCacheInfo.roughnessMetalnessAOIdx);
+	}
 }
 
 void Wolf::MaterialsGPUManager::changeSamplingModeBeforeFrame(uint32_t textureSetIdx, TextureSetInfo::SamplingMode newSamplingMode) const
@@ -155,9 +182,9 @@ void Wolf::MaterialsGPUManager::changeSamplingModeBeforeFrame(uint32_t textureSe
 	m_textureSetsBuffer->transferCPUMemoryWithStagingBuffer(&newSamplingModeUInt, sizeof(uint32_t), 0, textureSetIdx * sizeof(TextureSetGPUInfo) + offsetof(TextureSetGPUInfo, samplingMode));
 }
 
-void Wolf::MaterialsGPUManager::changeTriplanarScaleBeforeFrame(uint32_t textureSetIdx, glm::vec3 newTriplanarScale) const
+void Wolf::MaterialsGPUManager::changeScaleBeforeFrame(uint32_t textureSetIdx, glm::vec3 newScale) const
 {
-	m_textureSetsBuffer->transferCPUMemoryWithStagingBuffer(&newTriplanarScale, sizeof(glm::vec3), 0, textureSetIdx * sizeof(TextureSetGPUInfo) + offsetof(TextureSetGPUInfo, triplanarScale));
+	m_textureSetsBuffer->transferCPUMemoryWithStagingBuffer(&newScale, sizeof(glm::vec3), 0, textureSetIdx * sizeof(TextureSetGPUInfo) + offsetof(TextureSetGPUInfo, scale));
 }
 #endif
 

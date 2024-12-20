@@ -1,15 +1,12 @@
 #include "ImageCompression.h"
 
-#include <glm/detail/func_common.hpp>
+#include <glm/glm.hpp>
 
 #include "Debug.h"
 
 uint64_t Wolf::ImageCompression::BC5::BC5Channel::toUInt64() const
 {
-    uint64_t r;
-    std::memcpy(reinterpret_cast<uint8_t*>(&r) + 4, &bitmap0, 4);
-    std::memcpy(reinterpret_cast<uint8_t*>(&r) + 2, &bitmap1, 2);
-    return r;
+    return bitmap;
 }
 
 template<> void Wolf::ImageCompression::compress<Wolf::ImageCompression::BC1>(const VkExtent3D& extent, const std::vector<RGBA8>& pixels, std::vector<Wolf::ImageCompression::BC1>& outBlocks)
@@ -17,9 +14,86 @@ template<> void Wolf::ImageCompression::compress<Wolf::ImageCompression::BC1>(co
     compressBC1(extent, pixels, outBlocks);
 }
 
+template<> void Wolf::ImageCompression::compress<Wolf::ImageCompression::BC1>(const VkExtent3D& extent, const std::vector<RG32F>& pixels, std::vector<Wolf::ImageCompression::BC1>& outBlocks)
+{
+    Debug::sendCriticalError("Can't compress to BC1 with RG32F pixels");
+}
+
 template<> void Wolf::ImageCompression::compress<Wolf::ImageCompression::BC3>(const VkExtent3D& extent, const std::vector<RGBA8>& pixels, std::vector<Wolf::ImageCompression::BC3>& outBlocks)
 {
     compressBC3(extent, pixels, outBlocks);
+}
+
+template<> void Wolf::ImageCompression::compress<Wolf::ImageCompression::BC3>(const VkExtent3D& extent, const std::vector<RG32F>& pixels, std::vector<Wolf::ImageCompression::BC3>& outBlocks)
+{
+    Debug::sendCriticalError("Can't compress to BC3 with RG32F pixels");
+}
+
+template<> void Wolf::ImageCompression::compress<Wolf::ImageCompression::BC5>(const VkExtent3D& extent, const std::vector<RG32F>& pixels, std::vector<Wolf::ImageCompression::BC5>& outBlocks)
+{
+    compressBC5(extent, pixels, outBlocks);
+}
+
+template<> void Wolf::ImageCompression::compress<Wolf::ImageCompression::BC5>(const VkExtent3D& extent, const std::vector<RGBA8>& pixels, std::vector<Wolf::ImageCompression::BC5>& outBlocks)
+{
+	Debug::sendCriticalError("Can't compress to BC5 with RGBA8 pixels");
+}
+
+uint8_t Wolf::ImageCompression::RGBA8::mergeColor(uint8_t c00, uint8_t c01, uint8_t c10, uint8_t c11)
+{
+    const float f00 = c00 / 255.0f;
+    const float f01 = c01 / 255.0f;
+    const float f10 = c10 / 255.0f;
+    const float f11 = c11 / 255.0f;
+
+    const float merged0 = (f00 + f01) / 2.0f;
+    const float merged1 = (f10 + f11) / 2.0f;
+
+    const float merged = (merged0 + merged1) / 2.0f;
+
+    return static_cast<uint8_t>(merged * 255);
+}
+
+Wolf::ImageCompression::RGBA8 Wolf::ImageCompression::RGBA8::mergeBlock(const RGBA8& block00, const RGBA8& block01,
+                                                                        const RGBA8& block10, const RGBA8& block11)
+{
+    const uint8_t r = mergeColor(block00.r, block01.r, block10.r, block11.r);
+    const uint8_t g = mergeColor(block00.g, block01.g, block10.g, block11.g);
+    const uint8_t b = mergeColor(block00.b, block01.b, block10.b, block11.b);
+    const uint8_t a = mergeColor(block00.a, block01.a, block10.a, block11.a);
+
+    return { r, g, b, a };
+}
+
+float Wolf::ImageCompression::RGBA32F::mergeFloats(float c00, float c01, float c10, float c11)
+{
+    const float f00 = c00;
+    const float f01 = c01;
+    const float f10 = c10;
+    const float f11 = c11;
+
+    const float merged0 = (f00 + f01) / 2.0f;
+    const float merged1 = (f10 + f11) / 2.0f;
+
+    const float merged = (merged0 + merged1) / 2.0f;
+
+    return merged;
+}
+
+float Wolf::ImageCompression::RG32F::operator[](uint32_t idx) const
+{
+    if (idx > 1)
+        Debug::sendCriticalError("Invalid idx");
+    return idx == 0 ? r : g;
+}
+
+Wolf::ImageCompression::RG32F Wolf::ImageCompression::RG32F::mergeBlock(const RG32F& block00, const RG32F& block01,
+                                                                        const RG32F& block10, const RG32F& block11)
+{
+    const float r = RGBA32F::mergeFloats(block00.r, block01.r, block10.r, block11.r);
+    const float g = RGBA32F::mergeFloats(block00.g, block01.g, block10.g, block11.g);
+
+    return { r, g };
 }
 
 void Wolf::ImageCompression::compressBC1(const VkExtent3D& extent, const std::vector<RGBA8>& pixels, std::vector<BC1>& outBlocks)
@@ -163,6 +237,96 @@ void Wolf::ImageCompression::compressBC3(const VkExtent3D& extent, const std::ve
         }
 
         outBlocks[blockIdx].bc1 = bc1Blocks[blockIdx];
+    }
+}
+
+void Wolf::ImageCompression::compressBC5(const VkExtent3D& extent, const std::vector<RG32F>& pixels, std::vector<BC5>& outBlocks)
+{
+    const uint32_t blockCountX = extent.width / 4;
+    const uint32_t blockCountY = extent.height / 4;
+
+    outBlocks.resize(static_cast<size_t>(blockCountX) * blockCountY);
+
+    for (uint32_t blockX = 0; blockX < blockCountX; ++blockX)
+    {
+        for (uint32_t blockY = 0; blockY < blockCountY; ++blockY)
+        {
+            float minR(1.0f), maxR(0.0f), minG(1.0f), maxG(0.0f);
+            for (uint32_t pixelX = blockX * 4; pixelX < (blockX + 1) * 4; ++pixelX)
+            {
+                for (uint32_t pixelY = blockY * 4; pixelY < (blockY + 1) * 4; ++pixelY)
+                {
+                    const RG32F& pixel = pixels[pixelX + pixelY * extent.width];
+
+                    if (pixel.r > maxR)
+                        maxR = pixel.r;
+                    if (pixel.r < minR)
+                        minR = pixel.r;
+
+                    if (pixel.g > maxG)
+                        maxG = pixel.g;
+                    if (pixel.g < minG)
+                        minG = pixel.g;
+                }
+            }
+
+            BC5& block = outBlocks[blockX + blockY * blockCountX];
+            block = BC5{};
+
+            auto computeChannel = [&](uint8_t channelIdx)
+                {
+                    float min = channelIdx == 0 ? minR : minG;
+                    float max = channelIdx == 0 ? maxR : maxG;
+
+                    BC5::BC5Channel& channel = channelIdx == 0 ? block.red : block.green;
+
+                    channel.data.refs[0] = static_cast<uint8_t>((max * 0.5f + 0.5f) * 255.0f);
+                    channel.data.refs[1] = static_cast<uint8_t>((min * 0.5f + 0.5f) * 255.0f);
+
+					// min and max must not be equal (https://learn.microsoft.com/fr-fr/windows/win32/direct3d10/d3d10-graphics-programming-guide-resources-block-compression#bc5)
+					if (channel.data.refs[0] == channel.data.refs[1])
+					{
+                        if (channel.data.refs[0] != 255)
+                            channel.data.refs[0]++;
+                        else
+                            channel.data.refs[1]--;
+					}
+
+                    float refs[8];
+                    refs[0] = max;
+                    refs[1] = min;
+                    for (uint32_t i = 2; i < 8; ++i)
+                    {
+                        refs[i] = glm::mix(max, min, static_cast<float>(i - 1) / 7.0f);
+                    }
+
+                    for (uint32_t pixelX = blockX * 4; pixelX < (blockX + 1) * 4; ++pixelX)
+                    {
+                        for (uint32_t pixelY = blockY * 4; pixelY < (blockY + 1) * 4; ++pixelY)
+                        {
+                            const RG32F& pixel = pixels[pixelX + pixelY * extent.width];
+                            float minDistance = 1'000;
+                            uint8_t minRefIdx = 0;
+                            for (uint32_t refIdx = 0; refIdx < 8; ++refIdx)
+                            {
+                                const float distance = glm::distance(pixel[channelIdx], refs[refIdx]);
+                                if (distance < minDistance)
+                                {
+                                    minDistance = distance;
+                                    minRefIdx = static_cast<uint8_t>(refIdx);
+                                }
+                            }
+
+                            uint32_t bitOffset = ((pixelX - blockX * 4) + (pixelY - blockY * 4) * 4) * 3 + 16;
+                            uint64_t valueToPush = (minRefIdx & 0b111); // this must be 64 bits
+                            channel.bitmap |= valueToPush << bitOffset;
+                        }
+                    }
+                };
+
+            computeChannel(0);
+            computeChannel(1);
+        }
     }
 }
 
@@ -402,11 +566,11 @@ void Wolf::ImageCompression::uncompressImage(Compression compression, const unsi
 
         if (compression == Compression::BC5)
         {
-            referencesRed[0] = refToFloat(static_cast<BC5*>(block)->red.refs[0]);
-            referencesRed[1] = refToFloat(static_cast<BC5*>(block)->red.refs[1]);
+            referencesRed[0] = refToFloat(static_cast<BC5*>(block)->red.data.refs[0]);
+            referencesRed[1] = refToFloat(static_cast<BC5*>(block)->red.data.refs[1]);
 
-            referencesGreen[0] = refToFloat(static_cast<BC5*>(block)->green.refs[0]);
-            referencesGreen[1] = refToFloat(static_cast<BC5*>(block)->green.refs[1]);
+            referencesGreen[0] = refToFloat(static_cast<BC5*>(block)->green.data.refs[0]);
+            referencesGreen[1] = refToFloat(static_cast<BC5*>(block)->green.data.refs[1]);
         }
         else
         {

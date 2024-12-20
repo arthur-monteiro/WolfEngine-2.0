@@ -21,6 +21,7 @@ namespace Wolf
 		struct OutputLayout
 		{
 			ImageCompression::Compression albedoCompression;
+			ImageCompression::Compression normalCompression;
 		};
 
 		struct TextureSetFileInfoGGX
@@ -53,10 +54,16 @@ namespace Wolf
 		std::array<std::vector<unsigned char>, MaterialsGPUManager::TEXTURE_COUNT_PER_MATERIAL> m_imagesData;
 		bool m_useCache;
 
+		[[nodiscard]] bool createImageFileFromCache(const std::string& filename, bool sRGB, ImageCompression::Compression compression, uint32_t imageIdx);
+		template <typename PixelType>
+		void createImageFileFromSource(const std::string& filename, bool sRGB, ImageCompression::Compression compression, uint32_t imageIdx);
+
 		void loadImageFile(const std::string& filename, VkFormat format, std::vector<ImageCompression::RGBA8>& pixels, std::vector<std::vector<ImageCompression::RGBA8>>& mipLevels, VkExtent3D& outExtent) const;
+		void loadImageFile(const std::string& filename, VkFormat format, std::vector<ImageCompression::RG32F>& pixels, std::vector<std::vector<ImageCompression::RG32F>>& mipLevels, VkExtent3D& outExtent) const;
 		void createImageFromData(VkExtent3D extent, VkFormat format, const unsigned char* pixels, const std::vector<const unsigned char*>& mipLevels, uint32_t idx);
 
-		template <typename T>
-		void compressAndCreateImage(std::vector<std::vector<ImageCompression::RGBA8>>& mipLevels, const std::vector<ImageCompression::RGBA8>& pixels, VkExtent3D& extent, VkFormat format, const TextureSetFileInfoGGX& material);
+		template <typename CompressionType, typename PixelType>
+		void compressAndCreateImage(std::vector<std::vector<PixelType>>& mipLevels, const std::vector<PixelType>& pixels, VkExtent3D& extent, VkFormat format, const std::string& filename, std::fstream& outCacheFile,
+			uint32_t imageIdx);
 	};
 }

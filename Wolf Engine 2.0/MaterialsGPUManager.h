@@ -83,7 +83,7 @@ namespace Wolf
 		std::vector<TextureSetCacheInfo>& getTextureSetsCacheInfo() { return m_textureSetsCacheInfo; }
 		void changeExistingTextureSetBeforeFrame(TextureSetCacheInfo& textureSetCacheInfo, const TextureSetInfo& textureSetInfo);
 		void changeSamplingModeBeforeFrame(uint32_t textureSetIdx, TextureSetInfo::SamplingMode newSamplingMode) const;
-		void changeTriplanarScaleBeforeFrame(uint32_t textureSetIdx, glm::vec3 newTriplanarScale) const;
+		void changeScaleBeforeFrame(uint32_t textureSetIdx, glm::vec3 newScale) const;
 #endif
 
 	private:
@@ -105,7 +105,7 @@ namespace Wolf
 			uint32_t roughnessMetalnessAOIdx = 2;
 			uint32_t samplingMode = 0;
 
-			glm::vec3 triplanarScale = glm::vec3(1.0f); // TODO: this is only used for triplanar materials, can it be in a separated buffer to avoid using 3 * 4 Bytes per texture set?
+			glm::vec3 scale = glm::vec3(1.0f); // for tex coords or triplanar
 			uint32_t pad;
 		};
 		uint32_t m_currentTextureSetCount = 0;

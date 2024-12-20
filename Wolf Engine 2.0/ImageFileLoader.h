@@ -9,7 +9,7 @@ namespace Wolf
 	class ImageFileLoader
 	{
 	public:
-		ImageFileLoader(const std::string& fullFilePath);
+		ImageFileLoader(const std::string& fullFilePath, bool loadFloat = false);
 		ImageFileLoader(const ImageFileLoader&) = delete;
 		~ImageFileLoader();
 

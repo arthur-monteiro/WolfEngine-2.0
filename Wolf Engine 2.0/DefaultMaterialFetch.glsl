@@ -1,8 +1,8 @@
 R"(
 #extension GL_EXT_nonuniform_qualifier : enable
 
-layout (binding = 0, set = £BINDLESS_DESCRIPTOR_SLOT) uniform texture2D[] textures;
-layout (binding = 1, set = £BINDLESS_DESCRIPTOR_SLOT) uniform sampler textureSampler;
+layout (binding = 0, set = ï¿½BINDLESS_DESCRIPTOR_SLOT) uniform texture2D[] textures;
+layout (binding = 1, set = ï¿½BINDLESS_DESCRIPTOR_SLOT) uniform sampler textureSampler;
 
 struct InputTextureSetInfo
 {
@@ -11,10 +11,10 @@ struct InputTextureSetInfo
 	uint roughnessMetalnessAOIdx;
     uint samplingMode;
 
-    vec3 triplanarScale;
+    vec3 scale;
     float pad;
 };
-layout(std430, binding = 2, set = £BINDLESS_DESCRIPTOR_SLOT) readonly restrict buffer TextureSetBufferLayout
+layout(std430, binding = 2, set = ï¿½BINDLESS_DESCRIPTOR_SLOT) readonly restrict buffer TextureSetBufferLayout
 {
     InputTextureSetInfo textureSetsInfo[];
 };
@@ -28,7 +28,7 @@ struct InputMaterialInfo
     float textureSetStrengths[TEXTURE_SET_COUNT_PER_MATERIAL];
     uint shadingMode;
 };
-layout(std430, binding = 3, set = £BINDLESS_DESCRIPTOR_SLOT) readonly restrict buffer MaterialBufferLayout
+layout(std430, binding = 3, set = ï¿½BINDLESS_DESCRIPTOR_SLOT) readonly restrict buffer MaterialBufferLayout
 {
     InputMaterialInfo materialsInfo[];
 };
@@ -64,14 +64,16 @@ void addToMaterialInfoFromTexCoords(in const vec2 texCoords, in const InputTextu
 {
     materialInfo.albedo += texture(sampler2D(textures[textureSetInfo.albedoIdx], textureSampler), texCoords).rgba * strength;
     vec4 normal = texture(sampler2D(textures[textureSetInfo.normalIdx], textureSampler), texCoords).rgba;
-    materialInfo.normal += (normal.rgb * 2.0 - vec3(1.0)) * matrixTBN * strength; // TODO: normal blending
+    normal.xy = normal.rg * 2.0 - vec2(1.0);
+    normal.z = sqrt(1.0f - normal.x * normal.x - normal.y * normal.y);
+    materialInfo.normal += normal.xyz * matrixTBN * strength; // TODO: normal blending
     vec4 combinedRoughnessMetalnessAOAniso = texture(sampler2D(textures[textureSetInfo.roughnessMetalnessAOIdx], textureSampler), texCoords).rgba;
 	materialInfo.roughness += combinedRoughnessMetalnessAOAniso.r * strength;
 	materialInfo.metalness += combinedRoughnessMetalnessAOAniso.g * strength;
     materialInfo.matAO += combinedRoughnessMetalnessAOAniso.b * strength;
     materialInfo.anisoStrength += combinedRoughnessMetalnessAOAniso.a * strength;
 
-    materialInfo.sixWaysLightmap1 += normal * strength;
+    materialInfo.sixWaysLightmap1 += texture(sampler2D(textures[textureSetInfo.normalIdx], textureSampler), texCoords).rgba * strength;
 }
 
 void addToMaterialInfoTriplanr(in const InputTextureSetInfo textureSetInfo, in float strength, in const mat3 matrixTBN, in const vec3 worldPos, inout MaterialInfo materialInfo)
@@ -82,7 +84,7 @@ void addToMaterialInfoTriplanr(in const InputTextureSetInfo textureSetInfo, in f
     float b = (normal.x + normal.y + normal.z);
     normal /= b;
 
-    vec3 usedWorldPos = worldPos * textureSetInfo.triplanarScale;
+    vec3 usedWorldPos = worldPos * textureSetInfo.scale;
 
 #define MOD_TEX_COORDS(vec) vec2(mod(vec.x, 1.0f), mod(vec.y, 1.0f))
     MaterialInfo xAxis;
@@ -108,7 +110,7 @@ void addToMaterialInfoTriplanr(in const InputTextureSetInfo textureSetInfo, in f
 void addToMaterialInfo(in const vec2 texCoords, in const InputTextureSetInfo textureSetInfo, in float strength, in const mat3 matrixTBN, in const vec3 worldPos, inout MaterialInfo materialInfo)
 {
     if (textureSetInfo.samplingMode == SAMPLING_MODE_TEXTURE_COORDS)
-        addToMaterialInfoFromTexCoords(texCoords, textureSetInfo, strength, matrixTBN, materialInfo);
+        addToMaterialInfoFromTexCoords(texCoords * textureSetInfo.scale.xy, textureSetInfo, strength, matrixTBN, materialInfo);
     else if (textureSetInfo.samplingMode == SAMPLING_MODE_TRIPLANAR)
         addToMaterialInfoTriplanr(textureSetInfo, strength, matrixTBN, worldPos, materialInfo);
 }
