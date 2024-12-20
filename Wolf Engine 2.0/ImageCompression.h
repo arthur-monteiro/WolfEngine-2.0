@@ -40,9 +40,16 @@ namespace Wolf
 #pragma pack(push, 1) 
             struct BC5Channel
             {
-                uint8_t refs[2];
-                uint32_t bitmap0;
-                uint16_t bitmap1;
+	            union 
+	            {
+					struct Data
+					{
+                        uint8_t refs[2];
+                        uint32_t bitmap0;
+                        uint16_t bitmap1;
+					} data;
+                    uint64_t bitmap;
+	            };
 
                 uint64_t toUInt64() const;
             };
@@ -122,6 +129,9 @@ namespace Wolf
 	            const glm::vec3 thisAsVec(r, g, b);
                 return glm::distance(refAsVec, thisAsVec);
             }
+
+            static uint8_t mergeColor(uint8_t c00, uint8_t c01, uint8_t c10, uint8_t c11);
+            static RGBA8 mergeBlock(const RGBA8& block00, const RGBA8& block01, const RGBA8& block10, const RGBA8& block11);
         };
 
         struct RG8
@@ -131,11 +141,31 @@ namespace Wolf
             RG8() : RG8(0, 0) {}
         };
 
-        template <typename T>
-        static void compress(const VkExtent3D& extent, const std::vector<RGBA8>& pixels, std::vector<T>& outBlocks);
+        struct RGBA32F
+        {
+            float r, g, b, a;
+            RGBA32F(float r, float g, float b, float a) : r(r), g(g), b(b), a(a) {}
+            RGBA32F() : RGBA32F(0.0f, 0.0f, 0.0f, 0.0f) {}
+
+            static float mergeFloats(float c00, float c01, float c10, float c11);
+        };
+
+        struct RG32F
+        {
+            float r, g;
+            RG32F(float r, float g) : r(r), g(g) {}
+            RG32F() : RG32F(0.0f, 0.0f) {}
+            float operator[] (uint32_t idx) const;
+
+            static RG32F mergeBlock(const RG32F& block00, const RG32F& block01, const RG32F& block10, const RG32F& block11);
+        };
+
+        template <typename CompressionType, typename PixelType>
+        static void compress(const VkExtent3D& extent, const std::vector<PixelType>& pixels, std::vector<CompressionType>& outBlocks);
 
         static void compressBC1(const VkExtent3D& extent, const std::vector<RGBA8>& pixels, std::vector<BC1>& outBlocks);
         static void compressBC3(const VkExtent3D& extent, const std::vector<RGBA8>& pixels, std::vector<BC3>& outBlocks);
+        static void compressBC5(const VkExtent3D& extent, const std::vector<RG32F>& pixels, std::vector<BC5>& outBlocks);
 
         static void uncompressImage(Compression compression, const unsigned char* data, VkExtent2D extent, std::vector<RGBA8>& outPixels);
         static void uncompressImage(Compression compression, const unsigned char* data, VkExtent2D extent, std::vector<RG8>& outPixels);

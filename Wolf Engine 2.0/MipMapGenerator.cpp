@@ -3,6 +3,7 @@
 #include <cmath>
 
 #include "Debug.h"
+#include "ImageCompression.h"
 
 Wolf::MipMapGenerator::MipMapGenerator(const unsigned char* firstMipPixels, VkExtent2D extent, VkFormat format, int mipCount)
 {
@@ -23,13 +24,23 @@ Wolf::MipMapGenerator::MipMapGenerator(const unsigned char* firstMipPixels, VkEx
 	{
 		if (format == VK_FORMAT_R8G8B8A8_UNORM || format == VK_FORMAT_R8G8B8A8_SRGB)
 		{
-			const RGBA8* previousMip = reinterpret_cast<const RGBA8*>(firstMipPixels);
+			const ImageCompression::RGBA8* previousMip = reinterpret_cast<const ImageCompression::RGBA8*>(firstMipPixels);
 			if (mipLevel > 1)
-				previousMip = reinterpret_cast<RGBA8*>(m_mipLevels[mipLevel - 2].data());
+				previousMip = reinterpret_cast<ImageCompression::RGBA8*>(m_mipLevels[mipLevel - 2].data());
 
-			m_mipLevels[mipLevel - 1].resize((pixelCount >> mipLevel) * sizeof(RGBA8));
+			m_mipLevels[mipLevel - 1].resize((pixelCount >> mipLevel) * sizeof(ImageCompression::RGBA8));
 
-			createMipLevel(previousMip, reinterpret_cast<RGBA8*>(m_mipLevels[mipLevel - 1].data()), extent.width >> (mipLevel - 1), extent.height >> (mipLevel - 1));
+			createMipLevel(previousMip, reinterpret_cast<ImageCompression::RGBA8*>(m_mipLevels[mipLevel - 1].data()), extent.width >> (mipLevel - 1), extent.height >> (mipLevel - 1));
+		}
+		else if (format == VK_FORMAT_R32G32_SFLOAT)
+		{
+			const ImageCompression::RG32F * previousMip = reinterpret_cast<const ImageCompression::RG32F*>(firstMipPixels);
+			if (mipLevel > 1)
+				previousMip = reinterpret_cast<ImageCompression::RG32F*>(m_mipLevels[mipLevel - 2].data());
+
+			m_mipLevels[mipLevel - 1].resize((pixelCount >> mipLevel) * sizeof(ImageCompression::RG32F));
+
+			createMipLevel(previousMip, reinterpret_cast<ImageCompression::RG32F*>(m_mipLevels[mipLevel - 1].data()), extent.width >> (mipLevel - 1), extent.height >> (mipLevel - 1));
 		}
 		else
 		{
@@ -39,45 +50,39 @@ Wolf::MipMapGenerator::MipMapGenerator(const unsigned char* firstMipPixels, VkEx
 	}
 }
 
-uint8_t Wolf::MipMapGenerator::mergeColor(uint8_t c00, uint8_t c01, uint8_t c10, uint8_t c11)
-{
-	const float f00 = c00 / 255.0f;
-	const float f01 = c01 / 255.0f;
-	const float f10 = c10 / 255.0f;
-	const float f11 = c11 / 255.0f;
-
-	const float merged0 = (f00 + f01) / 2.0f;
-	const float merged1 = (f10 + f11) / 2.0f;
-
-	const float merged = (merged0 + merged1) / 2.0f;
-
-	return static_cast<uint8_t>(merged * 255);
-}
-
-void Wolf::MipMapGenerator::createMipLevel(const RGBA8* previousMip, RGBA8* currentMip, uint32_t width, uint32_t height)
+void Wolf::MipMapGenerator::createMipLevel(const ImageCompression::RGBA8* previousMip, ImageCompression::RGBA8* currentMip, uint32_t width, uint32_t height)
 {
 	for (uint32_t x = 0; x < width; x += 2)
 	{
 		for (uint32_t y = 0; y < height; y += 2)
 		{
-			const RGBA8& block00 = previousMip[x       + y * width];
-			const RGBA8& block01 = previousMip[x       + (y + 1) * width];
-			const RGBA8& block10 = previousMip[(x + 1) + y * width];
-			const RGBA8& block11 = previousMip[(x + 1) + (y + 1) * width];
+			const ImageCompression::RGBA8& block00 = previousMip[x       + y * width];
+			const ImageCompression::RGBA8& block01 = previousMip[x       + (y + 1) * width];
+			const ImageCompression::RGBA8& block10 = previousMip[(x + 1) + y * width];
+			const ImageCompression::RGBA8& block11 = previousMip[(x + 1) + (y + 1) * width];
 
-			const RGBA8 mergedPixel = RGBA8::mergeBlock(block00, block01, block10, block11);
+			const ImageCompression::RGBA8 mergedPixel = ImageCompression::RGBA8::mergeBlock(block00, block01, block10, block11);
 			currentMip[x / 2 + (y / 2) * (width / 2)] = mergedPixel;
 		}
 	}
 }
 
-
-Wolf::MipMapGenerator::RGBA8 Wolf::MipMapGenerator::RGBA8::mergeBlock(const RGBA8& block00, const RGBA8& block01, const RGBA8& block10, const RGBA8& block11)
+void Wolf::MipMapGenerator::createMipLevel(const ImageCompression::RG32F* previousMip, ImageCompression::RG32F* currentMip, uint32_t width, uint32_t height)
 {
-	const uint8_t r = mergeColor(block00.r, block01.r, block10.r, block11.r);
-	const uint8_t g = mergeColor(block00.g, block01.g, block10.g, block11.g);
-	const uint8_t b = mergeColor(block00.b, block01.b, block10.b, block11.b);
-	const uint8_t a = mergeColor(block00.a, block01.a, block10.a, block11.a);
+	for (uint32_t x = 0; x < width; x += 2)
+	{
+		for (uint32_t y = 0; y < height; y += 2)
+		{
+			const ImageCompression::RG32F& block00 = previousMip[x + y * width];
+			const ImageCompression::RG32F& block01 = previousMip[x + (y + 1) * width];
+			const ImageCompression::RG32F& block10 = previousMip[(x + 1) + y * width];
+			const ImageCompression::RG32F& block11 = previousMip[(x + 1) + (y + 1) * width];
 
-	return {r, g, b, a};
+			const ImageCompression::RG32F mergedPixel = ImageCompression::RG32F::mergeBlock(block00, block01, block10, block11);
+			glm::vec3 mergedPixelAsVec = glm::vec3(mergedPixel.r, mergedPixel.g, glm::sqrt(1.0f - mergedPixel.r * mergedPixel.r - mergedPixel.g * mergedPixel.g));
+			mergedPixelAsVec = glm::normalize(mergedPixelAsVec);
+
+			currentMip[x / 2 + (y / 2) * (width / 2)] = ImageCompression::RG32F(mergedPixelAsVec.x, mergedPixelAsVec.y);
+		}
+	}
 }

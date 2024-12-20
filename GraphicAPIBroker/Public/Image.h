@@ -63,7 +63,7 @@ namespace Wolf
 		virtual void transitionImageLayout(const CommandBuffer& commandBuffer, const TransitionLayoutInfo& transitionLayoutInfo) = 0;
 		virtual void setImageLayoutWithoutOperation(VkImageLayout newImageLayout, uint32_t baseMipLevel = 0, uint32_t levelCount = MAX_MIP_COUNT) = 0;
 
-		float getBBP() const { return m_bbp; }
+		float getBPP() const { return m_bpp; }
 
 		virtual ImageView getImageView(VkFormat format) = 0;
 		virtual ImageView getDefaultImageView() = 0;
@@ -75,6 +75,6 @@ namespace Wolf
 		[[nodiscard]] virtual uint32_t getMipLevelCount() const = 0;
 
 	protected:
-		float m_bbp = 0.0f;
+		float m_bpp = 0.0f;
 	};
 }

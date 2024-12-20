@@ -77,6 +77,8 @@ void Wolf::RenderMeshList::draw(const RecordContext& context, const CommandBuffe
 {
 	PROFILE_FUNCTION
 
+	ResourceReference<const DescriptorSet> lightDescriptorSet(context.lightManager->getDescriptorSet().createConstNonOwnerResource());
+
 	const Pipeline* currentPipeline = nullptr;
 	for (uint32_t i = 0; i < m_transientMeshesCurrentFrame.size() + m_meshes.size() + m_transientInstancedMeshesCurrentFrame.size() + m_instancedMeshes.size(); ++i)
 	{
@@ -138,7 +140,7 @@ void Wolf::RenderMeshList::draw(const RecordContext& context, const CommandBuffe
 
 			if (const uint32_t lightDescriptorSlot = meshToRender->pipelineSet->getLightDescriptorSlot(pipelineIdx); lightDescriptorSlot != static_cast<uint32_t>(-1))
 			{
-				commandBuffer.bindDescriptorSet(context.lightManager->getDescriptorSet().createConstNonOwnerResource(), lightDescriptorSlot, *meshPipeline);
+				commandBuffer.bindDescriptorSet(lightDescriptorSet, lightDescriptorSlot, *meshPipeline);
 			}
 		}
 

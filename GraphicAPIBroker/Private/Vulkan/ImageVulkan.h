@@ -46,7 +46,7 @@ namespace Wolf
 
 	private:
 		void createImageView(VkFormat format);
-		void setBBP();
+		void setBPP();
 
 	private:
 		VkImage m_image;

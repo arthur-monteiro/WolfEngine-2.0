@@ -7,9 +7,9 @@
 
 #include <Debug.h>
 
-Wolf::ImageFileLoader::ImageFileLoader(const std::string& fullFilePath)
+Wolf::ImageFileLoader::ImageFileLoader(const std::string& fullFilePath, bool loadFloat)
 {
-	if (fullFilePath[fullFilePath.size() - 4] == '.' && fullFilePath[fullFilePath.size() - 3] == 'h' && fullFilePath[fullFilePath.size() - 2] == 'd' && fullFilePath[fullFilePath.size() - 1] == 'r')
+	if (fullFilePath[fullFilePath.size() - 4] == '.' && fullFilePath[fullFilePath.size() - 3] == 'h' && fullFilePath[fullFilePath.size() - 2] == 'd' && fullFilePath[fullFilePath.size() - 1] == 'r' || loadFloat)
 	{
         int iWidth(0), iHeight(0), iChannels(0);
 		float* pixels = stbi_loadf(fullFilePath.c_str(), &iWidth, &iHeight, &iChannels, STBI_rgb_alpha);
@@ -312,9 +312,9 @@ void Wolf::ImageFileLoader::loadDDS(const std::string& fullFilePath)
             Debug::sendError("Unsupported compression");
             return;
     }
-    const float bbp = 16.0f / static_cast<float>(blockSize);
+    const float bpp = 16.0f / static_cast<float>(blockSize);
 
-    const size_t sizeInBytes = static_cast<size_t>(static_cast<float>(minWidth) * static_cast<float>(minHeight) * bbp);
+    const size_t sizeInBytes = static_cast<size_t>(static_cast<float>(minWidth) * static_cast<float>(minHeight) * bpp);
 
     m_pixels = new unsigned char[static_cast<size_t>(minWidth) * minHeight];
     infile.seekg(header.size + 4, std::ios::beg);

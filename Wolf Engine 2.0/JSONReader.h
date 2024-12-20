@@ -36,6 +36,12 @@ namespace Wolf
 
 			virtual uint32_t getArraySize(const std::string& propertyName) = 0;
 			virtual uint32_t getPropertyCount() = 0;
+
+			void setVisited() { m_visited = true; }
+			bool hasBeenVisited() const { return m_visited; }
+
+		private:
+			bool m_visited = false;
 		};
 		JSONObjectInterface* getRoot() { return m_rootObject; }
 
