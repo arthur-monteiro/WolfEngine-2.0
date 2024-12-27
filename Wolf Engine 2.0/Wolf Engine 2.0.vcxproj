@@ -288,6 +288,7 @@
     <ClCompile Include="AndroidCacheHelper.cpp" />
     <ClCompile Include="CameraInterface.cpp" />
     <ClCompile Include="CameraList.cpp" />
+    <ClCompile Include="DAEImporter.cpp" />
     <ClCompile Include="DebugMarker.cpp" />
     <ClCompile Include="DebugMarkerSymbols.cpp" />
     <ClCompile Include="DepthPassBase.cpp" />
@@ -329,6 +330,7 @@
     <ClInclude Include="CameraInterface.h" />
     <ClInclude Include="CameraList.h" />
     <ClInclude Include="CodeFileHashes.h" />
+    <ClInclude Include="DAEImporter.h" />
     <ClInclude Include="DebugMarker.h" />
     <ClInclude Include="DepthPassBase.h" />
     <ClInclude Include="DescriptorSetBindInfo.h" />
