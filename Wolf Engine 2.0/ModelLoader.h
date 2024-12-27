@@ -8,6 +8,7 @@
 #include <mutex>
 #include <tiny_obj_loader.h>
 
+#include "DAEImporter.h"
 #include "Image.h"
 #include "ImageCompression.h"
 #include "TextureSetLoader.h"
@@ -114,6 +115,8 @@ namespace Wolf
 	{
 		ResourceUniqueOwner<Mesh> mesh;
 		std::vector<MaterialsGPUManager::TextureSetInfo> textureSets;
+
+		std::unique_ptr<AnimationData> animationData;
 	};
 
 	class ModelLoader

@@ -19,9 +19,11 @@ namespace Wolf
 			: m_bindingSlot(other.m_bindingSlot), m_descriptorSet(other.m_descriptorSet), m_descriptorSetLayout(other.m_descriptorSetLayout)
 		{}
 
-		uint32_t getBindingSlot() const { return m_bindingSlot; }
-		ResourceNonOwner<const DescriptorSet> getDescriptorSet() const { return m_descriptorSet; }
-		ResourceNonOwner<const DescriptorSetLayout> getDescriptorSetLayout() const { return m_descriptorSetLayout; }
+		[[nodiscard]] uint32_t getBindingSlot() const { return m_bindingSlot; }
+		[[nodiscard]] ResourceNonOwner<const DescriptorSet> getDescriptorSet() const { return m_descriptorSet; }
+		[[nodiscard]] ResourceNonOwner<const DescriptorSetLayout> getDescriptorSetLayout() const { return m_descriptorSetLayout; }
+
+		void setBindingSlot(uint32_t bindingSlot) { m_bindingSlot = bindingSlot; }
 
 	private:
 		uint32_t m_bindingSlot;

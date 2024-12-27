@@ -7,6 +7,7 @@
 
 #include "AndroidCacheHelper.h"
 #include "CodeFileHashes.h"
+#include "DAEImporter.h"
 #include "ImageFileLoader.h"
 #include "TextureSetLoader.h"
 #include "MaterialsGPUManager.h"
@@ -14,7 +15,19 @@
 
 void Wolf::ModelLoader::loadObject(ModelData& outputModel, ModelLoadingInfo& modelLoadingInfo)
 {
-	ModelLoader objLoader(outputModel, modelLoadingInfo);
+	std::string filenameExtension = modelLoadingInfo.filename.substr(modelLoadingInfo.filename.find_last_of(".") + 1);
+	if (filenameExtension == "obj")
+	{
+		ModelLoader objLoader(outputModel, modelLoadingInfo);
+	}
+	else if (filenameExtension == "dae")
+	{
+		DAEImporter daeImporter(outputModel, modelLoadingInfo);
+	}
+	else
+	{
+		Debug::sendCriticalError("Unhandled filename extension");
+	}
 }
 
 Wolf::ModelLoader::ModelLoader(ModelData& outputModel, ModelLoadingInfo& modelLoadingInfo) : m_outputModel(&outputModel)

@@ -153,6 +153,9 @@
     <ClCompile Include="..\ThirdParty\Tracy\TracyClient.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="DAEImporter.cpp">
+      <Filter>Model Management</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="WolfEngine.h">
@@ -292,6 +295,9 @@
     </ClInclude>
     <ClInclude Include="ProfilerCommon.h">
       <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="DAEImporter.h">
+      <Filter>Model Management</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
