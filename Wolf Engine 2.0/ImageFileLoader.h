@@ -18,6 +18,8 @@ namespace Wolf
 		[[nodiscard]] uint32_t getHeight() const { return m_height; }
 		[[nodiscard]] uint32_t getChannelCount() const { return m_channels; }
 		[[nodiscard]] ImageCompression::Compression getCompression() const { return m_compression; }
+		[[nodiscard]] VkFormat getFormat() const { return m_format; }
+		[[nodiscard]] const std::vector<std::vector<uint8_t>>& getMipPixels() const { return m_mipPixels; }
 
 	private:
 		void loadDDS(const std::string& fullFilePath);
@@ -25,5 +27,9 @@ namespace Wolf
 		unsigned char* m_pixels = nullptr;
 		uint32_t m_width, m_height, m_channels;
 		ImageCompression::Compression m_compression = ImageCompression::Compression::NO_COMPRESSION;
+
+		// DDS related
+		std::vector<std::vector<uint8_t>> m_mipPixels;
+		VkFormat m_format = VK_FORMAT_UNDEFINED;
 	};
 }

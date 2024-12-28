@@ -357,6 +357,23 @@ bool Wolf::TextureSetLoader::createImageFileFromCache(const std::string& filenam
 
 		return true;
 	}
+	else if (filename[filename.size() - 4] == '.' && filename[filename.size() - 3] == 'd' && filename[filename.size() - 2] == 'd' && filename[filename.size() - 1] == 's')
+	{
+		const ImageFileLoader imageFileLoader(filename, false);
+
+		VkExtent3D extent = { imageFileLoader.getWidth(), imageFileLoader.getHeight(), 1 };
+		VkFormat format = imageFileLoader.getFormat();
+
+		const std::vector<std::vector<uint8_t>> mipPixels = imageFileLoader.getMipPixels();
+		std::vector<const unsigned char*> mipPtrs(mipPixels.size());
+		for (uint32_t i = 0; i < mipPixels.size(); ++i)
+		{
+			mipPtrs[i] = mipPixels[i].data();
+		}
+		createImageFromData(extent, format, imageFileLoader.getPixels(), mipPtrs, imageIdx);
+
+		return true;
+	}
 
 	Debug::sendInfo("Cache not found");
 	return false;
