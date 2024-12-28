@@ -383,6 +383,14 @@ Wolf::DAEImporter::DAEImporter(ModelData& outputModel, ModelLoadingInfo& modelLo
 			intString.push_back(c);
 		}
 	}
+	if (!intString.empty())
+	{
+		uint32_t u = std::stoi(intString);
+		boneIndicesAndWeightIndices[currentVertexIdx].push_back(u);
+
+		if (boneIndicesAndWeightIndices[currentVertexIdx].size() == 2 * boneCountPerVertex[currentVertexIdx])
+			currentVertexIdx++;
+	}
 
 	std::string weightName;
 	for (std::unique_ptr<Node>& vertexWeightChild : vertexWeightsNode->children)
@@ -424,14 +432,22 @@ Wolf::DAEImporter::DAEImporter(ModelData& outputModel, ModelLoadingInfo& modelLo
 		if (vertex.pos.z > maxPos.z)
 			maxPos.z = vertex.pos.z;
 
-		vertex.normal = glm::vec3(0.0f, 1.0f, 0.0f);
+		vertex.normal = glm::vec3(0.0f, 1.0f, 0.0f); // TODO: read normals
 		vertex.texCoords = glm::vec2(texCoords[index.z].x, 1.0f - texCoords[index.z].y);
+		vertex.bonesIds = glm::ivec4(-1, -1, -1, -1);
+		vertex.bonesWeights = glm::vec4(0.0f);
+
+		if (boneIndicesAndWeightIndices[index.x].size() % 2 != 0)
+		{
+			Debug::sendError("There not weight for all indices");
+		}
+
 		for (uint32_t i = 0; i < std::min(boneIndicesAndWeightIndices[index.x].size(), static_cast<size_t>(8)); ++i)
 		{
 			if (i % 2u == 0)
 			{
-				vertex.bonesIds[static_cast<int>(i / 2u)] = boneIndicesAndWeightIndices[index.x][i];
-				if (vertex.bonesIds[static_cast<int>(i / 2u)] > jointsCount)
+				vertex.bonesIds[static_cast<int>(i / 2u)] = static_cast<int>(boneIndicesAndWeightIndices[index.x][i]);
+				if (vertex.bonesIds[static_cast<int>(i / 2u)] > static_cast<int>(jointsCount))
 				{
 					Debug::sendError("Bone idx out of range");
 				}

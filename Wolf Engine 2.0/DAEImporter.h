@@ -24,7 +24,7 @@ namespace Wolf
 		glm::vec3 tangent;
 		glm::vec2 texCoords;
 
-		glm::uvec4 bonesIds;
+		glm::ivec4 bonesIds;
 		glm::vec4 bonesWeights;
 
 		static void getBindingDescription(VkVertexInputBindingDescription& bindingDescription, uint32_t binding)
@@ -61,7 +61,7 @@ namespace Wolf
 
 			attributeDescriptions[attributeDescriptionCountBefore + 4].binding = binding;
 			attributeDescriptions[attributeDescriptionCountBefore + 4].location = 4;
-			attributeDescriptions[attributeDescriptionCountBefore + 4].format = VK_FORMAT_R32G32B32A32_UINT;
+			attributeDescriptions[attributeDescriptionCountBefore + 4].format = VK_FORMAT_R32G32B32A32_SINT;
 			attributeDescriptions[attributeDescriptionCountBefore + 4].offset = offsetof(SkeletonVertex, bonesIds);
 
 			attributeDescriptions[attributeDescriptionCountBefore + 5].binding = binding;

@@ -254,6 +254,7 @@ void Wolf::ImageFileLoader::loadDDS(const std::string& fullFilePath)
     {
     case D3DFMT_DXT1:
         m_compression = ImageCompression::Compression::BC1;
+        m_format = VK_FORMAT_BC1_RGB_SRGB_BLOCK;
         break;
     case D3DFMT_DXT2:
     case D3DFMT_DXT3:
@@ -276,10 +277,17 @@ void Wolf::ImageFileLoader::loadDDS(const std::string& fullFilePath)
 
         switch (dxt10Header.dxgiFormat)
         {
-        case DXGI_FORMAT_BC5_UNORM:
-            m_compression = ImageCompression::Compression::BC5;
-        default:
-            Debug::sendError("Unsupported compression for DX10 DDS " + fullFilePath);
+			case DXGI_FORMAT_R8G8B8A8_UNORM:
+                m_format = VK_FORMAT_R8G8B8A8_UNORM;
+				break;
+        	case DXGI_FORMAT_R8G8B8A8_UNORM_SRGB:
+                m_format = VK_FORMAT_R8G8B8A8_SRGB;
+                break;
+	        case DXGI_FORMAT_BC5_UNORM:
+	            m_compression = ImageCompression::Compression::BC5;
+                break;
+	        default:
+	            Debug::sendError("Unsupported compression for DX10 DDS " + fullFilePath);
         }
         break;
 	}
@@ -287,8 +295,8 @@ void Wolf::ImageFileLoader::loadDDS(const std::string& fullFilePath)
 		Debug::sendError("Unsupported compression for " + fullFilePath);
     }
 
-    const uint32 minWidth = header.width % 4 != 0 ? (header.width / 4 + 1) * 4 : header.width;
-    const uint32 minHeight = header.height % 4 != 0 ? (header.height / 4 + 1) * 4 : header.height;
+    uint32 minWidth = header.width % 4 != 0 ? (header.width / 4 + 1) * 4 : header.width;
+    uint32 minHeight = header.height % 4 != 0 ? (header.height / 4 + 1) * 4 : header.height;
 
     uint32 blockSize;
     switch (m_compression)
@@ -312,11 +320,34 @@ void Wolf::ImageFileLoader::loadDDS(const std::string& fullFilePath)
             Debug::sendError("Unsupported compression");
             return;
     }
-    const float bpp = 16.0f / static_cast<float>(blockSize);
+    const float bpp = static_cast<float>(blockSize) / 16.0f;
 
-    const size_t sizeInBytes = static_cast<size_t>(static_cast<float>(minWidth) * static_cast<float>(minHeight) * bpp);
+    size_t sizeInBytes = static_cast<size_t>(static_cast<float>(minWidth) * static_cast<float>(minHeight) * bpp);
 
-    m_pixels = new unsigned char[static_cast<size_t>(minWidth) * minHeight];
+    m_pixels = new unsigned char[sizeInBytes];
     infile.seekg(header.size + 4, std::ios::beg);
     infile.read(reinterpret_cast<char*>(m_pixels), static_cast<long long>(sizeInBytes));
+
+    uint32_t currentPosInFile = header.size + 4 + static_cast<uint32_t>(sizeInBytes);
+
+    m_mipPixels.resize(header.mipMapCount - 1);
+    for (uint32_t i = 1; i < header.mipMapCount; ++i)
+    {
+        minWidth /= 2;
+        minHeight /= 2;
+
+        if (minWidth < 4 || minHeight < 4)
+        {
+            m_mipPixels.resize(i - 1);
+            break;
+        }
+
+        sizeInBytes = static_cast<size_t>(static_cast<float>(minWidth) * static_cast<float>(minHeight) * bpp);
+
+        m_mipPixels[i - 1].resize(static_cast<size_t>(static_cast<float>(minWidth) * static_cast<float>(minHeight) * bpp));
+        infile.seekg(currentPosInFile, std::ios::beg);
+        infile.read(reinterpret_cast<char*>(m_mipPixels[i - 1].data()), static_cast<long long>(sizeInBytes));
+
+        currentPosInFile += static_cast<uint32_t>(sizeInBytes);
+    }
 }
