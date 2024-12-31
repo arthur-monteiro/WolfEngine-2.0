@@ -123,8 +123,16 @@ void Wolf::InputHandler::moveToNextFrame()
 					gamepadCache.joystickEvent[joystickIdx].offsetX = state.axes[static_cast<size_t>(2 * joystickIdx)];
 					gamepadCache.joystickEvent[joystickIdx].offsetY = state.axes[static_cast<size_t>(2 * joystickIdx + 1)];
 
-					if (glm::abs(gamepadCache.joystickEvent[joystickIdx].offsetX) < GAMEPAD_JOYSTICK_DEAD_ZONE_SIZE) gamepadCache.joystickEvent[joystickIdx].offsetX = 0.0f;
-					if (glm::abs(gamepadCache.joystickEvent[joystickIdx].offsetY) < GAMEPAD_JOYSTICK_DEAD_ZONE_SIZE) gamepadCache.joystickEvent[joystickIdx].offsetY = 0.0f;
+					if (glm::abs(gamepadCache.joystickEvent[joystickIdx].offsetX) < GAMEPAD_JOYSTICK_DEAD_ZONE_SIZE && glm::abs(gamepadCache.joystickEvent[joystickIdx].offsetY) < GAMEPAD_JOYSTICK_DEAD_ZONE_SIZE)
+					{
+						gamepadCache.joystickEvent[joystickIdx].offsetX = 0.0f;
+						gamepadCache.joystickEvent[joystickIdx].offsetY = 0.0f;
+					}
+				}
+
+				for (uint8_t triggerIdx = 0; triggerIdx < GAMEPAD_TRIGGER_COUNT; ++triggerIdx)
+				{
+					gamepadCache.triggerEvents[triggerIdx] = state.axes[static_cast<size_t>(4 + triggerIdx)];
 				}
 			}
 			else
@@ -308,6 +316,26 @@ void Wolf::InputHandler::getJoystickSpeedForGamepad(uint8_t gamepadIdx, uint8_t 
 		Debug::sendMessageOnce("Requesting joystick speed for an inactive controller", Debug::Severity::WARNING, this);
 		outX = 0.0f;
 		outY = 0.0f;
+	}
+}
+
+float Wolf::InputHandler::getTriggerValueForGamepad(uint8_t gamepadIdx, uint8_t triggerIdx, const void* instancePtr)
+{
+	GamepadCache* gamepadCache = nullptr;
+
+	if (instancePtr)
+		gamepadCache = &m_dataCache.at(instancePtr).first.m_gamepadCaches[gamepadIdx];
+	else
+		gamepadCache = &m_data.m_gamepadCaches[gamepadIdx];
+
+	if (gamepadCache->isActive)
+	{
+		return gamepadCache->triggerEvents[triggerIdx];
+	}
+	else
+	{
+		Debug::sendMessageOnce("Requesting trigger value for an inactive controller", Debug::Severity::WARNING, this);
+		return 0.0f;
 	}
 }
 
