@@ -42,6 +42,7 @@ namespace Wolf
 		void getScroll(float& outX, float& outY) const;
 
 		void getJoystickSpeedForGamepad(uint8_t gamepadIdx, uint8_t joystickIdx, float& outX, float& outY, const void* instancePtr = nullptr);
+		float getTriggerValueForGamepad(uint8_t gamepadIdx, uint8_t triggerIdx, const void* instancePtr = nullptr);
 
 		// Callbacks
 		void inputHandlerKeyCallback(GLFWwindow* window, int key, int scancode, int action, int mods);
@@ -116,6 +117,7 @@ namespace Wolf
 		};
 
 		static constexpr uint32_t GAMEPAD_JOYSTICK_COUNT = 2;
+		static constexpr uint32_t GAMEPAD_TRIGGER_COUNT = 2;
 		static constexpr float GAMEPAD_JOYSTICK_DEAD_ZONE_SIZE = 0.15f;
 		struct GamepadCache
 		{
@@ -129,12 +131,15 @@ namespace Wolf
 			};
 			JoystickEvent joystickEvent[GAMEPAD_JOYSTICK_COUNT];
 
+			float triggerEvents[GAMEPAD_TRIGGER_COUNT];
+
 			void clear()
 			{
 				if (!isActive)
 					return;
 
 				joystickEvent[0] = joystickEvent[1] = {0.0f, 0.0f};
+				triggerEvents[0] = triggerEvents[1] = 0.0f;
 			}
 
 			void concatenate(const GamepadCache& other)
@@ -148,6 +153,11 @@ namespace Wolf
 				{
 					joystickEvent[i].offsetX += other.joystickEvent[i].offsetX;
 					joystickEvent[i].offsetY += other.joystickEvent[i].offsetY;
+				}
+
+				for (uint32_t i = 0; i < GAMEPAD_TRIGGER_COUNT; ++i)
+				{
+					triggerEvents[i] += other.triggerEvents[i];
 				}
 			}
 			

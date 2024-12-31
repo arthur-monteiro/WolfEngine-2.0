@@ -467,6 +467,7 @@ void Wolf::ModelLoader::loadTextureSet(const tinyobj::material_t& material, cons
 
 	TextureSetLoader::OutputLayout outputLayout;
 	outputLayout.albedoCompression = ImageCompression::Compression::BC1;
+	outputLayout.normalCompression = ImageCompression::Compression::BC5;
 
 	TextureSetLoader materialLoader(materialFileInfo, outputLayout, m_useCache);
 	for (uint32_t i = 0; i < MaterialsGPUManager::TEXTURE_COUNT_PER_MATERIAL; ++i)
