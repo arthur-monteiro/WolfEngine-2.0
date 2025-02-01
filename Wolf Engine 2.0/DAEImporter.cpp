@@ -433,6 +433,7 @@ Wolf::DAEImporter::DAEImporter(ModelData& outputModel, ModelLoadingInfo& modelLo
 			maxPos.z = vertex.pos.z;
 
 		vertex.normal = glm::vec3(0.0f, 1.0f, 0.0f); // TODO: read normals
+		vertex.tangent = glm::vec3(1.0f, 0.0f, 0.0f);
 		vertex.texCoords = glm::vec2(texCoords[index.z].x, 1.0f - texCoords[index.z].y);
 		vertex.bonesIds = glm::ivec4(-1, -1, -1, -1);
 		vertex.bonesWeights = glm::vec4(0.0f);

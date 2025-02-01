@@ -111,6 +111,8 @@ namespace Wolf
 		[[nodiscard]] const T& operator*() const noexcept requires(!std::is_void_v<T>) { return *m_resource; }
 		[[nodiscard]] T& operator*() requires(!std::is_void_v<T>) { return *m_resource; }
 
+		[[nodiscard]] bool isSame(T* resource) const { return m_resource == resource; }
+
 		~ResourceNonOwner();
 
 	private:
