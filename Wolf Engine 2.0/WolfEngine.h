@@ -19,6 +19,7 @@
 #include "InputHandler.h"
 #include "LightManager.h"
 #include "MaterialsGPUManager.h"
+#include "PhysicsManager.h"
 #include "RenderMeshList.h"
 #include "ResourceUniqueOwner.h"
 #include "ShaderList.h"
@@ -85,6 +86,7 @@ namespace Wolf
 		[[nodiscard]] ResourceNonOwner<MaterialsGPUManager> getMaterialsManager() { return m_materialsManager.createNonOwnerResource(); }
 		[[nodiscard]] const std::vector<std::string>& getSavedUICommands() const { return m_savedUICommands; }
 		[[nodiscard]] const Timer& getGlobalTimer() const { return m_globalTimer; }
+		[[nodiscard]] ResourceNonOwner<Physics::PhysicsManager> getPhysicsManager() { return m_physicsManager.createNonOwnerResource(); }
 
 	private:
 		void fillInitializeContext(InitializationContext& context) const;
@@ -107,6 +109,7 @@ namespace Wolf
 		ResourceUniqueOwner<UltraLight> m_ultraLight;
 		//std::unique_ptr<OVR> m_ovr;
 #endif
+		ResourceUniqueOwner<Physics::PhysicsManager> m_physicsManager;
 
 		// Frame counter
 		uint32_t m_currentFrame = 0;

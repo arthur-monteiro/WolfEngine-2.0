@@ -9,6 +9,7 @@
 #include "CodeFileHashes.h"
 #include "DAEImporter.h"
 #include "ImageFileLoader.h"
+#include "JSONReader.h"
 #include "TextureSetLoader.h"
 #include "MaterialsGPUManager.h"
 #include "MipMapGenerator.h"
@@ -27,6 +28,35 @@ void Wolf::ModelLoader::loadObject(ModelData& outputModel, ModelLoadingInfo& mod
 	else
 	{
 		Debug::sendCriticalError("Unhandled filename extension");
+	}
+
+	// Load physics
+	std::string physicsConfigFilename = modelLoadingInfo.filename + ".physics.json";
+	if (std::filesystem::exists(physicsConfigFilename))
+	{
+		JSONReader physicsJSONReader(JSONReader::FileReadInfo{ physicsConfigFilename });
+
+		uint32_t physicsMeshesCount = static_cast<uint32_t>(physicsJSONReader.getRoot()->getPropertyFloat("physicsMeshesCount"));
+		outputModel.physicsShapes.resize(physicsMeshesCount);
+
+		for (uint32_t i = 0; i < physicsMeshesCount; ++i)
+		{
+			JSONReader::JSONObjectInterface* physicsMeshObject = physicsJSONReader.getRoot()->getArrayObjectItem("physicsMeshes", i);
+			std::string type = physicsMeshObject->getPropertyString("type");
+
+			if (type == "Rectangle")
+			{
+				glm::vec3 p0 = glm::vec3(physicsMeshObject->getPropertyFloat("defaultP0X"), physicsMeshObject->getPropertyFloat("defaultP0Y"), physicsMeshObject->getPropertyFloat("defaultP0Z"));
+				glm::vec3 s1 = glm::vec3(physicsMeshObject->getPropertyFloat("defaultS1X"), physicsMeshObject->getPropertyFloat("defaultS1Y"), physicsMeshObject->getPropertyFloat("defaultS1Z"));
+				glm::vec3 s2 = glm::vec3(physicsMeshObject->getPropertyFloat("defaultS2X"), physicsMeshObject->getPropertyFloat("defaultS2Y"), physicsMeshObject->getPropertyFloat("defaultS2Z"));
+
+				outputModel.physicsShapes[i].reset(new Physics::Rectangle(physicsMeshObject->getPropertyString("name"), p0, s1, s2));
+			}
+			else
+			{
+				Debug::sendError("Unhandled physics mesh type");
+			}
+		}
 	}
 }
 

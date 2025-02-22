@@ -14,9 +14,9 @@ namespace Wolf
 	public:
 		DynamicStableArray();
 
-		void push_back(const T& element);
+		void push_back(const T&& element);
 		template <class ... Args>
-		void emplace_back(Args&&... args);
+		T& emplace_back(Args&&... args);
 		void resize(size_t newSize);
 		void clear();
 
@@ -51,7 +51,7 @@ namespace Wolf
 	}
 
 	template <class T, size_t BatchSize>
-	void DynamicStableArray<T, BatchSize>::push_back(const T& element)
+	void DynamicStableArray<T, BatchSize>::push_back(const T&& element)
 	{
 		lockAccessElements();
 
@@ -65,7 +65,7 @@ namespace Wolf
 
 	template <class T, size_t BatchSize>
 	template <class ... Args>
-	void DynamicStableArray<T, BatchSize>::emplace_back(Args&&... args)
+	T& DynamicStableArray<T, BatchSize>::emplace_back(Args&&... args)
 	{
 		lockAccessElements();
 
@@ -82,6 +82,8 @@ namespace Wolf
 		}
 
 		unlockAccessElements();
+
+		return back();
 	}
 
 	template <class T, size_t BatchSize>
