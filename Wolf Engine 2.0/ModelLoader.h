@@ -13,6 +13,7 @@
 #include "ImageCompression.h"
 #include "TextureSetLoader.h"
 #include "Mesh.h"
+#include "PhysicShapes.h"
 #include "ResourceUniqueOwner.h"
 
 namespace Wolf
@@ -117,6 +118,7 @@ namespace Wolf
 		std::vector<MaterialsGPUManager::TextureSetInfo> textureSets;
 
 		std::unique_ptr<AnimationData> animationData;
+		std::vector<ResourceUniqueOwner<Physics::Shape>> physicsShapes;
 	};
 
 	class ModelLoader

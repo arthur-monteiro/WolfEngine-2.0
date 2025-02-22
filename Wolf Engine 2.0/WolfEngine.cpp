@@ -121,6 +121,7 @@ Wolf::WolfEngine::WolfEngine(const WolfInstanceCreateInfo& createInfo) : m_globa
 
 	m_lightManager.reset(new LightManager);
 	m_renderMeshList.reset(new RenderMeshList(m_shaderList));
+	m_physicsManager.reset(new Physics::PhysicsManager);
 }
 
 void Wolf::WolfEngine::initializePass(const ResourceNonOwner<CommandRecordBase>& pass) const

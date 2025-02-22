@@ -303,6 +303,7 @@
     <ClCompile Include="InputHandler.cpp" />
     <ClCompile Include="JSONReader.cpp" />
     <ClCompile Include="LightManager.cpp" />
+    <ClCompile Include="PhysicsManager.cpp" />
     <ClCompile Include="TextureSetLoader.cpp" />
     <ClCompile Include="MaterialsGPUManager.cpp" />
     <ClCompile Include="Mesh.cpp" />
@@ -347,6 +348,8 @@
     <ClInclude Include="JSONReader.h" />
     <ClInclude Include="LazyInitSharedResource.h" />
     <ClInclude Include="LightManager.h" />
+    <ClInclude Include="PhysicShapes.h" />
+    <ClInclude Include="PhysicsManager.h" />
     <ClInclude Include="TextureSetLoader.h" />
     <ClInclude Include="MaterialsGPUManager.h" />
     <ClInclude Include="Mesh.h" />
