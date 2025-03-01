@@ -227,6 +227,12 @@ Wolf::ModelLoader::ModelLoader(ModelData& outputModel, ModelLoadingInfo& modelLo
 
 	if (modelLoadingInfo.textureSetLayout != TextureSetLoader::InputTextureSetLayout::NO_MATERIAL)
 	{
+		// Special case when there's no material (obj loader creates a 'none' one)
+		if (materials.size() == 1 && materials[0].diffuse_texname.empty())
+		{
+			materials.clear();
+		}
+
 		m_outputModel->textureSets.resize(materials.size());
 		m_imagesData.resize(materials.size() * MaterialsGPUManager::TEXTURE_COUNT_PER_MATERIAL); // is kept empty if no cache is used
 		uint32_t indexMaterial = 0;
