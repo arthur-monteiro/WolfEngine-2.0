@@ -2,6 +2,8 @@
 
 #include <vector>
 
+#include <Pipeline.h>
+
 #include "DescriptorLayout.h"
 
 namespace Wolf
@@ -9,13 +11,13 @@ namespace Wolf
 	class DescriptorSetLayoutGenerator
 	{
 	public:
-		void addUniformBuffer(VkShaderStageFlags accessibility, uint32_t binding);
-		void addCombinedImageSampler(VkShaderStageFlags accessibility, uint32_t binding);
-		void addStorageBuffer(VkShaderStageFlags accessibility, uint32_t binding);
-		void addStorageImage(VkShaderStageFlags accessibility, uint32_t binding);
-		void addSampler(VkShaderStageFlags accessibility, uint32_t binding);
-		void addImages(VkDescriptorType descriptorType, VkShaderStageFlags accessibility, uint32_t binding, uint32_t count, VkDescriptorBindingFlags bindingFlags = 0);
-		void addAccelerationStructure(VkShaderStageFlags accessibility, uint32_t binding);
+		void addUniformBuffer(ShaderStageFlags accessibility, uint32_t binding);
+		void addCombinedImageSampler(ShaderStageFlags accessibility, uint32_t binding);
+		void addStorageBuffer(ShaderStageFlags accessibility, uint32_t binding);
+		void addStorageImage(ShaderStageFlags accessibility, uint32_t binding);
+		void addSampler(ShaderStageFlags accessibility, uint32_t binding);
+		void addImages(VkDescriptorType descriptorType, ShaderStageFlags accessibility, uint32_t binding, uint32_t count, VkDescriptorBindingFlags bindingFlags = 0);
+		void addAccelerationStructure(ShaderStageFlags accessibility, uint32_t binding);
 
 		[[nodiscard]] const std::vector<DescriptorLayout>& getDescriptorLayouts() const { return m_descriptorLayouts; }
 

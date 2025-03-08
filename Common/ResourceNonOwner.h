@@ -10,8 +10,12 @@
 
 namespace Wolf
 {
+#ifdef RESOURCE_TRACKING
 	template <typename T>
 	class ResourceUniqueOwner;
+
+	template <typename T>
+	class NullableResourceNonOwner;
 
 	template <typename T>
 	class ResourceNonOwner
@@ -77,6 +81,12 @@ namespace Wolf
 #endif
 			);
 		}
+
+		ResourceNonOwner(const NullableResourceNonOwner<T>& nullableResource
+#ifdef RESOURCE_DEBUG
+			, const std::source_location& sourceLocation = std::source_location::current()
+#endif
+		);
 
 		[[nodiscard]] T* operator->() const { return m_resource; }
 		ResourceNonOwner<T>& operator=(const ResourceNonOwner<T>& other)
@@ -145,13 +155,16 @@ namespace Wolf
 		NullableResourceNonOwner(const ResourceNonOwner<T>& resource) : m_resource(resource)
 		{
 		}
+		NullableResourceNonOwner(const NullableResourceNonOwner<T>& other) : m_resource(other.m_resource)
+		{
+		}
 		NullableResourceNonOwner() : m_resource(static_cast<T*>(nullptr),
 #ifdef RESOURCE_DEBUG
 			[](ResourceNonOwner<T>* instance) {}, [](ResourceNonOwner<T>* instance) {}, std::source_location::current()
 #else
 			[]{}, [] {}
 #endif
-			)
+		)
 		{
 		}
 
@@ -172,9 +185,58 @@ namespace Wolf
 			}
 			return *m_resource;
 		}
+		[[nodiscard]] T* operator->() const
+		{
+			if (!m_resource)
+			{
+				Debug::sendCriticalError("Trying to get reference of nullptr");
+			}
+			return m_resource.operator->();
+		}
 
 	private:
+		friend ResourceNonOwner<T>;
+
 		ResourceNonOwner<T> m_resource;
 	};
+
+	template <typename T>
+	ResourceNonOwner<T>::ResourceNonOwner(const NullableResourceNonOwner<T>& nullableResource
+#ifdef RESOURCE_DEBUG
+		, const std::source_location& sourceLocation
+#endif
+	) : ResourceNonOwner(nullableResource.m_resource
+#ifdef RESOURCE_DEBUG
+		, sourceLocation
+#endif
+	)
+	{
+		if (!nullableResource)
+		{
+			Debug::sendCriticalError("Trying to create a ResourceNonOwner with nullptr");
+		}
+	}
+#else
+	template<class T>
+	class ResourceNonOwner
+	{
+	public:
+		ResourceNonOwner(T* ptr = nullptr) : m_ptr(ptr) {}
+
+		template <typename U = T>
+		[[nodiscard]] U* operator->() const { return static_cast<U*>(m_ptr); }
+
+		[[nodiscard]] const T& operator*() const noexcept requires(!std::is_void_v<T>) { return *m_ptr; }
+		[[nodiscard]] T& operator*() requires(!std::is_void_v<T>) { return *m_ptr; }
+
+		[[nodiscard]] bool isSame(T* resource) const { return m_ptr == resource; }
+		[[nodiscard]] operator bool() const { return m_ptr != nullptr; }
+
+	private:
+		T* m_ptr = nullptr;
+	};
+
+	template<class T> using NullableResourceNonOwner = ResourceNonOwner<T>;
+#endif
 }
 

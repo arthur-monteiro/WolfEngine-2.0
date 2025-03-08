@@ -45,10 +45,10 @@ void Wolf::UltraLight::processFrameJobs()
     {
         m_ultraLightImplementation->submitCopyImageCommandBuffer();
 
+        m_mutex.unlock();
         m_needUpdate = true;
         m_updateCondition.notify_all();
 
-        m_mutex.unlock();
         m_copySubmittedThisFrame = true;
     }
     else

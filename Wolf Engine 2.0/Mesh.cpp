@@ -1,7 +1,6 @@
 #include "Mesh.h"
 
 #include "CameraInterface.h"
-#include "ProfilerCommon.h"
 #include "RenderMeshList.h"
 
 void Wolf::Mesh::addSubMesh(uint32_t indicesOffset, uint32_t indexCount, AABB aabb)

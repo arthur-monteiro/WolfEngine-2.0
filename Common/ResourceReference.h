@@ -7,6 +7,7 @@
 
 namespace Wolf
 {
+#ifdef RESOURCE_TRACKING
 	template <typename T>
 	class ResourceReference
 	{
@@ -38,7 +39,7 @@ namespace Wolf
 				case ResourceContainerType::RAW: 
 					return static_cast<U*>(m_resourcePtr);
 					break;
-				case ResourceContainerType::RESOURCE_NON_OWNER: 
+				case ResourceContainerType::RESOURCE_NON_OWNER:
 					return static_cast<U*>(m_resourceNonOwner->operator->());
 					break;
 				default: 
@@ -71,4 +72,21 @@ namespace Wolf
 
 		enum class ResourceContainerType { RAW, RESOURCE_NON_OWNER } m_resourceContainerType;
 	};
+#else
+	template<class T> 
+	class ResourceReference
+	{
+	public:
+		ResourceReference(T* ptr) : m_ptr(ptr) {}
+		ResourceReference(ResourceNonOwner<T> resource) : m_ptr(resource.template operator-><T>()) {}
+
+		template <typename U = T>
+		[[nodiscard]] U* operator->() const { return static_cast<U*>(m_ptr); }
+
+		bool isNull() const { return m_ptr == nullptr; }
+
+	private:
+		T* m_ptr = nullptr;
+	};
+#endif
 }

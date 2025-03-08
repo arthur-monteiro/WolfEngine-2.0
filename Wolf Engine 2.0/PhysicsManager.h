@@ -28,6 +28,7 @@ namespace Wolf
 				void* instance = nullptr;
 			};
 			[[nodiscard]] RayCastResult rayCastAnyHit(const glm::vec3& rayOrigin, const glm::vec3& rayEnd);
+			[[nodiscard]] RayCastResult rayCastClosestHit(const glm::vec3& rayOrigin, const glm::vec3& rayEnd);
 
 		private:
 			struct StaticShape

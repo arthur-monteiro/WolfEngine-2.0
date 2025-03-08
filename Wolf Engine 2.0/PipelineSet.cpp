@@ -118,12 +118,12 @@ const Wolf::Pipeline* Wolf::PipelineSet::getOrCreatePipeline(uint32_t idx, Rende
 				shaderCodeChanged(shaderParser);
 			});
 			addShaderInfo.cameraDescriptorSlot = pipelineInfo.cameraDescriptorSlot;
-			addShaderInfo.bindlessDescriptorSlot = pipelineInfo.shaderInfos[i].stage == VK_SHADER_STAGE_FRAGMENT_BIT ? pipelineInfo.bindlessDescriptorSlot : -1;
-			addShaderInfo.lightDescriptorSlot = pipelineInfo.shaderInfos[i].stage == VK_SHADER_STAGE_FRAGMENT_BIT ? pipelineInfo.lightDescriptorSlot : -1;
+			addShaderInfo.bindlessDescriptorSlot = pipelineInfo.shaderInfos[i].stage == ShaderStageFlagBits::FRAGMENT ? pipelineInfo.bindlessDescriptorSlot : -1;
+			addShaderInfo.lightDescriptorSlot = pipelineInfo.shaderInfos[i].stage == ShaderStageFlagBits::FRAGMENT ? pipelineInfo.lightDescriptorSlot : -1;
 			addShaderInfo.materialFetchProcedure = pipelineInfo.shaderInfos[i].materialFetchProcedure;
 			if (!addShaderInfo.materialFetchProcedure.codeString.empty())
 			{
-				if (pipelineInfo.shaderInfos[i].stage != VK_SHADER_STAGE_FRAGMENT_BIT)
+				if (pipelineInfo.shaderInfos[i].stage != ShaderStageFlagBits::FRAGMENT)
 					Debug::sendError("Material fetch procedure is only supported for fragment shaders");
 			}
 

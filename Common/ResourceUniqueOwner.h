@@ -22,6 +22,7 @@ namespace Wolf
 		object.release();
 	};
 
+#ifdef RESOURCE_TRACKING
 	template <typename T>
 	class ResourceUniqueOwner
 	{
@@ -254,4 +255,27 @@ namespace Wolf
 			Debug::sendError("Deleting a resource currently used by others");
 		}
 	}
+#else
+	template <typename T>
+	class ResourceUniqueOwner
+	{
+	public:
+		ResourceUniqueOwner(T* ptr = nullptr) : m_ptr(ptr) {}
+
+		template <typename U = T>
+		ResourceNonOwner<U> createNonOwnerResource() { return ResourceNonOwner<U>(dynamic_cast<U*>(m_ptr.get())); }
+		ResourceNonOwner<const T> createConstNonOwnerResource() { return ResourceNonOwner<const T>(m_ptr.get()); }
+
+		void reset(T* resource) { m_ptr.reset(resource); }
+		T* release() { return m_ptr.release(); }
+
+		[[nodiscard]] explicit operator bool() const { return m_ptr != nullptr; }
+		[[nodiscard]] T* operator->() const { return m_ptr.get(); }
+		[[nodiscard]] const T& operator*() const { return *m_ptr; }
+		[[nodiscard]] T& operator*() { return *m_ptr; }
+
+	private:
+		std::unique_ptr<T> m_ptr;
+	};
+#endif
 }

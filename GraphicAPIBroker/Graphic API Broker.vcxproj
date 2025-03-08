@@ -43,6 +43,7 @@
     <ClInclude Include="Private\Vulkan\RenderPassVulkan.h" />
     <ClInclude Include="Private\Vulkan\SamplerVulkan.h" />
     <ClInclude Include="Private\Vulkan\SemaphoreVulkan.h" />
+    <ClInclude Include="Private\Vulkan\ShaderStagesVulkan.h" />
     <ClInclude Include="Private\Vulkan\ShadingRateSymbols.h" />
     <ClInclude Include="Private\Vulkan\SwapChainSupportDetails.h" />
     <ClInclude Include="Private\Vulkan\SwapChainVulkan.h" />
@@ -57,6 +58,7 @@
     <ClInclude Include="Public\DescriptorSet.h" />
     <ClInclude Include="Public\DescriptorSetLayout.h" />
     <ClInclude Include="Public\Enums.h" />
+    <ClInclude Include="Public\Extents.h" />
     <ClInclude Include="Public\Fence.h" />
     <ClInclude Include="Public\FrameBuffer.h" />
     <ClInclude Include="Public\GraphicAPIManager.h" />
@@ -67,6 +69,7 @@
     <ClInclude Include="Public\Sampler.h" />
     <ClInclude Include="Public\Semaphore.h" />
     <ClInclude Include="Public\ShaderBindingTable.h" />
+    <ClInclude Include="Public\ShaderStages.h" />
     <ClInclude Include="Public\Structs.h" />
     <ClInclude Include="Public\SwapChain.h" />
     <ClInclude Include="Public\TopLevelAccelerationStructure.h" />
@@ -225,7 +228,7 @@
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>_DEBUG;_CONSOLE;WOLF_VULKAN;RESOURCE_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>_DEBUG;_CONSOLE;WOLF_VULKAN;RESOURCE_DEBUG;RESOURCE_TRACKING;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <AdditionalIncludeDirectories>..\Common;..\ThirdParty\vulkan\Include;..\ThirdParty\GLFW\include;..\ThirdParty\glm;..\ThirdParty\OVR\Include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp20</LanguageStandard>

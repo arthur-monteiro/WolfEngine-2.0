@@ -3,10 +3,9 @@
 #include <glm/glm.hpp>
 
 #include <Buffer.h>
+#include <DescriptorSet.h>
+#include <DescriptorSetLayout.h>
 
-#include "CameraInterface.h"
-#include "DescriptorSet.h"
-#include "DescriptorSetLayout.h"
 #include "DescriptorSetLayoutGenerator.h"
 #include "LazyInitSharedResource.h"
 
@@ -15,6 +14,8 @@ namespace Wolf
 	class GraphicCameraInterface
 	{
 	public:
+		virtual ~GraphicCameraInterface() = default;
+
 		[[nodiscard]] virtual const glm::mat4& getViewMatrix() const = 0;
 		[[nodiscard]] virtual const glm::mat4& getPreviousViewMatrix() const = 0;
 		[[nodiscard]] virtual const glm::mat4& getProjectionMatrix() const = 0;

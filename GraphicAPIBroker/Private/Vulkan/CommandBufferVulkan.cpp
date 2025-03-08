@@ -117,7 +117,7 @@ void Wolf::CommandBufferVulkan::beginRenderPass(const RenderPass& renderPass, co
 	renderPassInfo.renderPass = static_cast<const RenderPassVulkan*>(&renderPass)->getRenderPass();
 	renderPassInfo.framebuffer = static_cast<const FrameBufferVulkan*>(&frameBuffer)->getFrameBuffer();
 	renderPassInfo.renderArea.offset = { 0, 0 };
-	renderPassInfo.renderArea.extent = renderPass.getExtent();
+	renderPassInfo.renderArea.extent = { renderPass.getExtent().width, renderPass.getExtent().height };
 
 	renderPassInfo.clearValueCount = static_cast<uint32_t>(clearValues.size());
 	renderPassInfo.pClearValues = clearValues.data();
@@ -179,12 +179,13 @@ VkFragmentShadingRateCombinerOpKHR fragmentShadingRateCombinerOpToVkType(Wolf::F
 	return VK_FRAGMENT_SHADING_RATE_COMBINER_OP_MAX_ENUM_KHR;
 }
 
-void Wolf::CommandBufferVulkan::setFragmentShadingRate(FragmentShadingRateCombinerOp fragmentShadingRateCombinerOps[2], const VkExtent2D& fragmentExtent) const
+void Wolf::CommandBufferVulkan::setFragmentShadingRate(FragmentShadingRateCombinerOp fragmentShadingRateCombinerOps[2], const Extent2D& fragmentExtent) const
 {
 	VkFragmentShadingRateCombinerOpKHR combiners[2];
 	combiners[0] = fragmentShadingRateCombinerOpToVkType(fragmentShadingRateCombinerOps[0]);
 	combiners[1] = fragmentShadingRateCombinerOpToVkType(fragmentShadingRateCombinerOps[1]);
-	vkCmdSetFragmentShadingRateKHR(m_commandBuffer, &fragmentExtent, combiners);
+	VkExtent2D vkExtent{ fragmentExtent.width, fragmentExtent.height };
+	vkCmdSetFragmentShadingRateKHR(m_commandBuffer, &vkExtent, combiners);
 }
 
 void Wolf::CommandBufferVulkan::setViewport(const Viewport& viewport) const

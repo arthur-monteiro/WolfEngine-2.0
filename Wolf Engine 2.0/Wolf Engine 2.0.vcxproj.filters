@@ -87,9 +87,6 @@
     <ClCompile Include="DebugMarker.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="ShadingRateSymbols.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="InputHandler.cpp">
       <Filter>Helpers</Filter>
     </ClCompile>
@@ -162,6 +159,9 @@
     <ClCompile Include="PhysicsManager.cpp">
       <Filter>Physics</Filter>
     </ClCompile>
+    <ClCompile Include="BoundingSphere.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="WolfEngine.h">
@@ -213,9 +213,6 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="DebugMarker.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="ShadingRateSymbols.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="ShadingRatePalette.h">
@@ -310,6 +307,9 @@
     </ClInclude>
     <ClInclude Include="PhysicsManager.h">
       <Filter>Physics</Filter>
+    </ClInclude>
+    <ClInclude Include="BoundingSphere.h">
+      <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

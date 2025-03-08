@@ -1,7 +1,8 @@
 #pragma once
 
 #include <vector>
-#include <vulkan/vulkan.h>
+
+#include <Extents.h>
 
 #include "ImageCompression.h"
 
@@ -10,7 +11,7 @@ namespace Wolf
 	class MipMapGenerator
 	{
 	public:
-		MipMapGenerator(const unsigned char* firstMipPixels, VkExtent2D extent, VkFormat format, int mipCount = -1);
+		MipMapGenerator(const unsigned char* firstMipPixels, Extent2D extent, VkFormat format, int mipCount = -1);
 		MipMapGenerator(const MipMapGenerator&) = delete;
 
 		uint32_t getMipLevelCount() const { return static_cast<uint32_t>(m_mipLevels.size()) + 1; }

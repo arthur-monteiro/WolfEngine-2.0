@@ -134,6 +134,11 @@ void Wolf::InputHandler::moveToNextFrame()
 				{
 					gamepadCache.triggerEvents[triggerIdx] = state.axes[static_cast<size_t>(4 + triggerIdx)];
 				}
+
+				for (uint8_t buttonIdx = 0; buttonIdx < GAMEPAD_BUTTON_COUNT; ++buttonIdx)
+				{
+					gamepadCache.buttons[buttonIdx] = state.buttons[buttonIdx] == GLFW_PRESS ? GamepadCache::GamepadButtonState::PRESSED : GamepadCache::GamepadButtonState::RELEASED;
+				}
 			}
 			else
 			{
@@ -336,6 +341,26 @@ float Wolf::InputHandler::getTriggerValueForGamepad(uint8_t gamepadIdx, uint8_t 
 	{
 		Debug::sendMessageOnce("Requesting trigger value for an inactive controller", Debug::Severity::WARNING, this);
 		return 0.0f;
+	}
+}
+
+bool Wolf::InputHandler::isGamepadButtonPressed(uint8_t gamepadIdx, uint8_t buttonIdx, const void* instancePtr)
+{
+	GamepadCache* gamepadCache = nullptr;
+
+	if (instancePtr)
+		gamepadCache = &m_dataCache.at(instancePtr).first.m_gamepadCaches[gamepadIdx];
+	else
+		gamepadCache = &m_data.m_gamepadCaches[gamepadIdx];
+
+	if (gamepadCache->isActive)
+	{
+		return gamepadCache->buttons[buttonIdx] == GamepadCache::GamepadButtonState::PRESSED;
+	}
+	else
+	{
+		Debug::sendMessageOnce("Requesting button value for an inactive controller", Debug::Severity::WARNING, this);
+		return false;
 	}
 }
 

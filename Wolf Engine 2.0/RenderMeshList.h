@@ -8,7 +8,7 @@
 
 #include "CommandBuffer.h"
 #include "DescriptorSetBindInfo.h"
-#include "DescriptorSetLayout.h"
+#include "Mesh.h"
 #include "PipelineSet.h"
 #include "ResourceNonOwner.h"
 
@@ -66,6 +66,9 @@ namespace Wolf
 		struct InternalMesh
 		{
 			MeshToRender meshToRender;
+
+			InternalMesh() = default;
+			InternalMesh(MeshToRender meshToRender) : meshToRender(std::move(meshToRender)) {}
 		};
 		std::vector<InternalMesh> m_meshes;
 		std::vector<InternalMesh> m_transientMeshesCurrentFrame;
@@ -84,6 +87,9 @@ namespace Wolf
 			void buildOffsetAndCounts();
 
 			std::vector<bool> activatedInstances;
+
+			InternalInstancedMesh() = default;
+			InternalInstancedMesh(InstancedMesh instancedMesh) : instancedMesh(std::move(instancedMesh)) {}
 		};
 		std::vector<InternalInstancedMesh> m_instancedMeshes;
 		std::vector<InternalInstancedMesh> m_transientInstancedMeshesCurrentFrame;

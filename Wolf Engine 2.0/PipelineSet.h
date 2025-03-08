@@ -31,7 +31,7 @@ namespace Wolf
 				std::string shaderFilename;
 				std::vector<std::string> conditionBlocksToInclude;
 				std::string entryPointName = defaultEntryPointName;
-				VkShaderStageFlagBits stage;
+				ShaderStageFlagBits stage;
 
 				ShaderParser::MaterialFetchProcedure materialFetchProcedure;
 			};
@@ -56,7 +56,7 @@ namespace Wolf
 			std::array<float, 2> viewportOffset = { 0.0f, 0.0f };
 
 			// Rasterization
-			VkPolygonMode polygonMode = VK_POLYGON_MODE_FILL;
+			PolygonMode polygonMode = PolygonMode::FILL;
 			VkCullModeFlags cullMode = VK_CULL_MODE_BACK_BIT;
 			bool enableConservativeRasterization = false;
 			float maxExtraPrimitiveOverestimationSize = 0.75f;

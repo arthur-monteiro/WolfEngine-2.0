@@ -1,7 +1,6 @@
 #include "WolfEngine.h"
 
 #include <limits>
-#include <Tracy.hpp>
 
 #ifdef __ANDROID__
 #include <android/native_window.h>
@@ -17,12 +16,12 @@
 const Wolf::GraphicAPIManager* Wolf::g_graphicAPIManagerInstance = nullptr;
 
 #ifndef __ANDROID__
-VkExtent2D chooseExtent(GLFWwindow* window)
+Wolf::Extent2D chooseExtent(GLFWwindow* window)
 {
 	int width, height;
 	glfwGetWindowSize(window, &width, &height);
 
-	return VkExtent2D { static_cast<uint32_t>(width), static_cast<uint32_t>(height) };
+	return Wolf::Extent2D { static_cast<uint32_t>(width), static_cast<uint32_t>(height) };
 }
 #endif
 
@@ -65,9 +64,9 @@ Wolf::WolfEngine::WolfEngine(const WolfInstanceCreateInfo& createInfo) : m_globa
 #ifdef __ANDROID__
 	int32_t width = ANativeWindow_getWidth(createInfo.androidWindow);
 	int32_t height = 2340; // ANativeWindow_getHeight(createInfo.androidWindow);
-	VkExtent2D extent = { static_cast<uint32_t>(width), static_cast<uint32_t>(height) };
+	Extent2D extent = { static_cast<uint32_t>(width), static_cast<uint32_t>(height) };
 #else
-	VkExtent2D extent = chooseExtent(m_window->getWindow());
+	Extent2D extent = chooseExtent(m_window->getWindow());
 #endif
 	
 	m_swapChain.reset(SwapChain::createSwapChain(extent));

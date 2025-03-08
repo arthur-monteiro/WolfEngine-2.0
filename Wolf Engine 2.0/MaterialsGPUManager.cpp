@@ -1,7 +1,8 @@
 #include "MaterialsGPUManager.h"
 
-#include "Buffer.h"
-#include "CommandBuffer.h"
+#include <Buffer.h>
+#include <CommandBuffer.h>
+
 #include "DescriptorSetLayoutGenerator.h"
 
 Wolf::MaterialsGPUManager::MaterialsGPUManager(const std::vector<DescriptorSetGenerator::ImageDescription>& firstImages)
@@ -9,11 +10,11 @@ Wolf::MaterialsGPUManager::MaterialsGPUManager(const std::vector<DescriptorSetGe
 	DescriptorSetLayoutGenerator descriptorSetLayoutGenerator;
 
 	descriptorSetLayoutGenerator.reset();
-	descriptorSetLayoutGenerator.addImages(VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, VK_SHADER_STAGE_FRAGMENT_BIT, BINDING_SLOT, MAX_IMAGES,
+	descriptorSetLayoutGenerator.addImages(VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, ShaderStageFlagBits::FRAGMENT, BINDING_SLOT, MAX_IMAGES,
 		VK_DESCRIPTOR_BINDING_PARTIALLY_BOUND_BIT | VK_DESCRIPTOR_BINDING_UPDATE_AFTER_BIND_BIT);
-	descriptorSetLayoutGenerator.addSampler(VK_SHADER_STAGE_FRAGMENT_BIT, BINDING_SLOT + 1);
-	descriptorSetLayoutGenerator.addStorageBuffer(VK_SHADER_STAGE_FRAGMENT_BIT, BINDING_SLOT + 2); // Texture sets
-	descriptorSetLayoutGenerator.addStorageBuffer(VK_SHADER_STAGE_FRAGMENT_BIT, BINDING_SLOT + 3); // Materials
+	descriptorSetLayoutGenerator.addSampler(ShaderStageFlagBits::FRAGMENT, BINDING_SLOT + 1);
+	descriptorSetLayoutGenerator.addStorageBuffer(ShaderStageFlagBits::FRAGMENT, BINDING_SLOT + 2); // Texture sets
+	descriptorSetLayoutGenerator.addStorageBuffer(ShaderStageFlagBits::FRAGMENT, BINDING_SLOT + 3); // Materials
 
 	m_sampler.reset(Sampler::createSampler(VK_SAMPLER_ADDRESS_MODE_REPEAT, 11, VK_FILTER_LINEAR));
 

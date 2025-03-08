@@ -4,6 +4,7 @@
 #include <memory>
 
 #include "AABB.h"
+#include "BoundingSphere.h"
 #include "Buffer.h"
 #include "CommandBuffer.h"
 #include "Debug.h"
@@ -17,7 +18,7 @@ namespace Wolf
 	{
 	public:
 		template <typename T>
-		Mesh(const std::vector<T>& vertices, const std::vector<uint32_t>& indices, AABB aabb = {}, VkBufferUsageFlags additionalVertexBufferUsages = 0, VkBufferUsageFlags additionalIndexBufferUsages = 0, VkFormat vertexFormat = VK_FORMAT_UNDEFINED);
+		Mesh(const std::vector<T>& vertices, const std::vector<uint32_t>& indices, AABB aabb = {}, BoundingSphere boundingSphere = {}, VkBufferUsageFlags additionalVertexBufferUsages = 0, VkBufferUsageFlags additionalIndexBufferUsages = 0, VkFormat vertexFormat = VK_FORMAT_UNDEFINED);
 		Mesh(const Mesh&) = delete;
 
 		void addSubMesh(uint32_t indicesOffset, uint32_t indexCount, AABB aabb = {});
@@ -38,6 +39,7 @@ namespace Wolf
 		[[nodiscard]] const Buffer& getVertexBuffer() const { return *m_vertexBuffer; }
 		[[nodiscard]] const Buffer& getIndexBuffer() const { return *m_indexBuffer; }
 		[[nodiscard]] const AABB& getAABB() const { return m_AABB; }
+		[[nodiscard]] const BoundingSphere& getBoundingSphere() const { return m_boundingSphere; }
 
 		void cullForCamera(uint32_t cameraIdx, const CameraInterface* camera, const glm::mat4& transform, bool isInstanced);
 		void draw(const CommandBuffer& commandBuffer, uint32_t cameraIdx, uint32_t instanceCount = 1, uint32_t firstInstance = 0) const;
@@ -52,6 +54,7 @@ namespace Wolf
 		uint32_t m_indexCount;
 
 		AABB m_AABB;
+		BoundingSphere m_boundingSphere;
 
 		std::vector<std::unique_ptr<SubMesh>> m_subMeshes;
 
@@ -64,7 +67,7 @@ namespace Wolf
 	};
 
 	template<typename T>
-	Mesh::Mesh(const std::vector<T>& vertices, const std::vector<uint32_t>& indices, AABB aabb, VkBufferUsageFlags additionalVertexBufferUsages, VkBufferUsageFlags additionalIndexBufferUsages, VkFormat vertexFormat)
+	Mesh::Mesh(const std::vector<T>& vertices, const std::vector<uint32_t>& indices, AABB aabb, BoundingSphere boundingSphere, VkBufferUsageFlags additionalVertexBufferUsages, VkBufferUsageFlags additionalIndexBufferUsages, VkFormat vertexFormat)
 	{
 		m_vertexBuffer.reset(Buffer::createBuffer(sizeof(T) * vertices.size(), VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | additionalVertexBufferUsages, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT));
 		m_vertexBuffer->transferCPUMemoryWithStagingBuffer(static_cast<const void*>(vertices.data()), sizeof(T) * vertices.size());
@@ -78,6 +81,7 @@ namespace Wolf
 		m_indexCount = static_cast<uint32_t>(indices.size());
 
 		m_AABB = aabb;
+		m_boundingSphere = boundingSphere;
 	}
 }
 

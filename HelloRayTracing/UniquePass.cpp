@@ -44,7 +44,7 @@ void UniquePass::initializeResources(const InitializationContext& context)
 	};
 
 	const VkBufferUsageFlags rayTracingFlags = VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT | VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_BUILD_INPUT_READ_ONLY_BIT_KHR | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
-	m_triangle.reset(new Mesh(vertices, indices, {}, rayTracingFlags, rayTracingFlags, VK_FORMAT_R32G32_SFLOAT));
+	m_triangle.reset(new Mesh(vertices, indices, {}, {}, rayTracingFlags, rayTracingFlags, VK_FORMAT_R32G32_SFLOAT));
 
 	BottomLevelAccelerationStructureCreateInfo blasCreateInfo;
 	blasCreateInfo.buildFlags = VK_BUILD_ACCELERATION_STRUCTURE_PREFER_FAST_TRACE_BIT_KHR;
@@ -135,11 +135,11 @@ void UniquePass::createPipeline()
 
 	std::vector<ShaderCreateInfo> shaders(3);
 	shaders[0].shaderCode = rayGenShaderCode;
-	shaders[0].stage = VK_SHADER_STAGE_RAYGEN_BIT_KHR;
+	shaders[0].stage = RAYGEN;
 	shaders[1].shaderCode = rayMissShaderCode;
-	shaders[1].stage = VK_SHADER_STAGE_MISS_BIT_KHR;
+	shaders[1].stage = MISS;
 	shaders[2].shaderCode = closestHitShaderCode;
-	shaders[2].stage = VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR;
+	shaders[2].stage = CLOSEST_HIT;
 	pipelineCreateInfo.shaderCreateInfos = shaders;
 
 	pipelineCreateInfo.shaderGroupsCreateInfos = shaderGroupGenerator.getShaderGroups();

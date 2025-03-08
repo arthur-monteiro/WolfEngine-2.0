@@ -15,13 +15,13 @@ namespace Wolf
 		static RenderPass* createRenderPass(const std::vector<Attachment>& attachments);
 		virtual ~RenderPass() = default;
 
-		[[nodiscard]] const VkExtent2D& getExtent() const { return m_extent; }
+		[[nodiscard]] const Extent2D& getExtent() const { return m_extent; }
 
-		void setExtent(const VkExtent2D& extent);
+		void setExtent(const Extent2D& extent);
 		void registerNewExtentChangedCallback(const std::function<void(const RenderPass*)>& callback) { m_callbackWhenExtentChanged.push_back(callback); }
 
 	protected:
 		std::vector<std::function<void(const RenderPass*)>> m_callbackWhenExtentChanged;
-		VkExtent2D m_extent;
+		Extent2D m_extent;
 	};
 }

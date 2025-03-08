@@ -4,6 +4,7 @@
 
 #include <Debug.h>
 
+#include "ShaderStagesVulkan.h"
 #include "Vulkan.h"
 
 Wolf::DescriptorSetLayoutVulkan::DescriptorSetLayoutVulkan(const std::span<const DescriptorLayout> descriptorLayouts, VkDescriptorSetLayoutCreateFlags flags)
@@ -17,7 +18,7 @@ Wolf::DescriptorSetLayoutVulkan::DescriptorSetLayoutVulkan(const std::span<const
 		descriptorSetLayoutBinding.binding = descriptorLayout.binding;
 		descriptorSetLayoutBinding.descriptorType = descriptorLayout.descriptorType;
 		descriptorSetLayoutBinding.descriptorCount = descriptorLayout.count;
-		descriptorSetLayoutBinding.stageFlags = descriptorLayout.accessibility;
+		descriptorSetLayoutBinding.stageFlags = wolfStageFlagsToVkStageFlags(descriptorLayout.accessibility);
 		descriptorSetLayoutBinding.pImmutableSamplers = nullptr;
 
 		bindings.push_back(descriptorSetLayoutBinding);

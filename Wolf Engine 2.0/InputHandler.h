@@ -43,6 +43,8 @@ namespace Wolf
 
 		void getJoystickSpeedForGamepad(uint8_t gamepadIdx, uint8_t joystickIdx, float& outX, float& outY, const void* instancePtr = nullptr);
 		float getTriggerValueForGamepad(uint8_t gamepadIdx, uint8_t triggerIdx, const void* instancePtr = nullptr);
+		// idx 0 -> A, 1 -> B, 2 -> X, 3 -> Y
+		bool isGamepadButtonPressed(uint8_t gamepadIdx, uint8_t buttonIdx, const void* instancePtr = nullptr);
 
 		// Callbacks
 		void inputHandlerKeyCallback(GLFWwindow* window, int key, int scancode, int action, int mods);
@@ -119,6 +121,7 @@ namespace Wolf
 		static constexpr uint32_t GAMEPAD_JOYSTICK_COUNT = 2;
 		static constexpr uint32_t GAMEPAD_TRIGGER_COUNT = 2;
 		static constexpr float GAMEPAD_JOYSTICK_DEAD_ZONE_SIZE = 0.15f;
+		static constexpr uint32_t GAMEPAD_BUTTON_COUNT = 15;
 		struct GamepadCache
 		{
 			bool isActiveNextFrame = false;
@@ -133,6 +136,9 @@ namespace Wolf
 
 			float triggerEvents[GAMEPAD_TRIGGER_COUNT];
 
+			enum class GamepadButtonState { RELEASED = 0, PRESSED = 1 };
+			GamepadButtonState buttons[GAMEPAD_BUTTON_COUNT];
+
 			void clear()
 			{
 				if (!isActive)
@@ -140,6 +146,10 @@ namespace Wolf
 
 				joystickEvent[0] = joystickEvent[1] = {0.0f, 0.0f};
 				triggerEvents[0] = triggerEvents[1] = 0.0f;
+				for (GamepadButtonState& buttonState : buttons)
+				{
+					buttonState = GamepadButtonState::RELEASED;
+				}
 			}
 
 			void concatenate(const GamepadCache& other)
@@ -158,6 +168,11 @@ namespace Wolf
 				for (uint32_t i = 0; i < GAMEPAD_TRIGGER_COUNT; ++i)
 				{
 					triggerEvents[i] += other.triggerEvents[i];
+				}
+
+				for (uint8_t buttonIdx = 0; buttonIdx < GAMEPAD_BUTTON_COUNT; ++buttonIdx)
+				{
+					buttons[buttonIdx] = std::max(buttons[buttonIdx], other.buttons[buttonIdx]);
 				}
 			}
 			

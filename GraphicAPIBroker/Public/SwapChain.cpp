@@ -6,7 +6,7 @@
 #include "../Private/Vulkan/SwapChainVulkan.h"
 #endif
 
-Wolf::SwapChain* Wolf::SwapChain::createSwapChain(VkExtent2D extent)
+Wolf::SwapChain* Wolf::SwapChain::createSwapChain(Extent2D extent)
 {
 #ifdef WOLF_VULKAN
 	return new SwapChainVulkan(extent);

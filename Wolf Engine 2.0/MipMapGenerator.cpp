@@ -5,7 +5,7 @@
 #include "Debug.h"
 #include "ImageCompression.h"
 
-Wolf::MipMapGenerator::MipMapGenerator(const unsigned char* firstMipPixels, VkExtent2D extent, VkFormat format, int mipCount)
+Wolf::MipMapGenerator::MipMapGenerator(const unsigned char* firstMipPixels, Extent2D extent, VkFormat format, int mipCount)
 {
 	if(mipCount < 0)
 		mipCount = static_cast<uint32_t>(std::floor(std::log2(std::max(extent.width, extent.height)))) - 1; // remove 2 mip levels as min size must be 4x4
