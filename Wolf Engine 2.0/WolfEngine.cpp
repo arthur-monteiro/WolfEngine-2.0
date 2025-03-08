@@ -1,7 +1,6 @@
 #include "WolfEngine.h"
 
 #include <limits>
-#include <Tracy.hpp>
 
 #ifdef __ANDROID__
 #include <android/native_window.h>

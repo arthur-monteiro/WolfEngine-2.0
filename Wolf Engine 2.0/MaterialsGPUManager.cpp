@@ -1,7 +1,8 @@
 #include "MaterialsGPUManager.h"
 
-#include "Buffer.h"
-#include "CommandBuffer.h"
+#include <Buffer.h>
+#include <CommandBuffer.h>
+
 #include "DescriptorSetLayoutGenerator.h"
 
 Wolf::MaterialsGPUManager::MaterialsGPUManager(const std::vector<DescriptorSetGenerator::ImageDescription>& firstImages)

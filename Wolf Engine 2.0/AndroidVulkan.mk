@@ -8,15 +8,14 @@ LOCAL_MODULE := wolf-engine_vulkan
 LOCAL_SRC_FILES := AndroidCacheHelper.cpp \
 	CameraList.cpp \
 	CommandRecordBase.cpp \
+	DAEImporter.cpp \
 	DescriptorSetGenerator.cpp \
 	DescriptorSetLayoutGenerator.cpp \
 	ImageCompression.cpp \
 	ImageFileLoader.cpp \
 	MaterialsGPUManager.cpp \
-	MaterialLoader.cpp \
 	Mesh.cpp \
 	MipMapGenerator.cpp \
-	ModelBase.cpp \
 	ModelLoader.cpp \
 	PipelineSet.cpp \
 	RenderMeshList.cpp \

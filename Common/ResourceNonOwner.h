@@ -10,6 +10,7 @@
 
 namespace Wolf
 {
+#ifdef RESOURCE_TRACKING
 	template <typename T>
 	class ResourceUniqueOwner;
 
@@ -163,7 +164,7 @@ namespace Wolf
 #else
 			[]{}, [] {}
 #endif
-			)
+		)
 		{
 		}
 
@@ -204,12 +205,38 @@ namespace Wolf
 #ifdef RESOURCE_DEBUG
 		, const std::source_location& sourceLocation
 #endif
-	) : ResourceNonOwner(nullableResource.m_resource, sourceLocation)
+	) : ResourceNonOwner(nullableResource.m_resource
+#ifdef RESOURCE_DEBUG
+		, sourceLocation
+#endif
+	)
 	{
 		if (!nullableResource)
 		{
 			Debug::sendCriticalError("Trying to create a ResourceNonOwner with nullptr");
 		}
 	}
+#else
+	template<class T>
+	class ResourceNonOwner
+	{
+	public:
+		ResourceNonOwner(T* ptr = nullptr) : m_ptr(ptr) {}
+
+		template <typename U = T>
+		[[nodiscard]] U* operator->() const { return static_cast<U*>(m_ptr); }
+
+		[[nodiscard]] const T& operator*() const noexcept requires(!std::is_void_v<T>) { return *m_ptr; }
+		[[nodiscard]] T& operator*() requires(!std::is_void_v<T>) { return *m_ptr; }
+
+		[[nodiscard]] bool isSame(T* resource) const { return m_ptr == resource; }
+		[[nodiscard]] operator bool() const { return m_ptr != nullptr; }
+
+	private:
+		T* m_ptr = nullptr;
+	};
+
+	template<class T> using NullableResourceNonOwner = ResourceNonOwner<T>;
+#endif
 }
 

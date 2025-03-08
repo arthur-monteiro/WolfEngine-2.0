@@ -203,7 +203,7 @@
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>_DEBUG;_CONSOLE;_CRT_SECURE_NO_WARNINGS;IMMEDIATE_DELETE;WOLF_VULKAN;MATERIAL_DEBUG;TRACY_ENABLE;TRACY_ON_DEMAND;RESOURCE_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>_DEBUG;_CONSOLE;_CRT_SECURE_NO_WARNINGS;IMMEDIATE_DELETE;WOLF_VULKAN;MATERIAL_DEBUG;TRACY_ENABLE;TRACY_ON_DEMAND;RESOURCE_DEBUG;RESOURCE_TRACKING;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp20</LanguageStandard>
       <ScanSourceForModuleDependencies>true</ScanSourceForModuleDependencies>

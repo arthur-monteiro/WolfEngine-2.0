@@ -6,6 +6,7 @@
 #include <ResourceNonOwner.h>
 
 #include <DescriptorSet.h>
+#include <DescriptorSetLayout.h>
 
 namespace Wolf
 {

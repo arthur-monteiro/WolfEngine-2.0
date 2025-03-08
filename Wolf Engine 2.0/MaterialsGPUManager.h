@@ -2,7 +2,12 @@
 
 #include <mutex>
 
-#include "BindlessDescriptor.h"
+#include <glm/glm.hpp>
+
+#include <DescriptorSetLayout.h>
+
+#include "DescriptorSetGenerator.h"
+#include "LazyInitSharedResource.h"
 #include "ResourceUniqueOwner.h"
 
 namespace Wolf

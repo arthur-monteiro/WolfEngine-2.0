@@ -1,6 +1,8 @@
 #pragma once
 
+#ifdef TRACY_ENABLE
 #include <Tracy.hpp>
+#endif
 
 namespace Wolf
 {

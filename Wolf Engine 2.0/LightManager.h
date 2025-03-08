@@ -6,6 +6,7 @@
 
 #include <Buffer.h>
 #include <DescriptorSet.h>
+#include <DescriptorSetLayout.h>
 
 #include "DescriptorSetLayoutGenerator.h"
 #include "LazyInitSharedResource.h"

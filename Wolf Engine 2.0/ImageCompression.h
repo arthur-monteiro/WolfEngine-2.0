@@ -42,14 +42,16 @@ namespace Wolf
 #pragma pack(push, 1) 
             struct BC5Channel
             {
+                struct Data
+                {
+                    uint8_t refs[2];
+                    uint32_t bitmap0;
+                    uint16_t bitmap1;
+                };
+
 	            union 
 	            {
-					struct Data
-					{
-                        uint8_t refs[2];
-                        uint32_t bitmap0;
-                        uint16_t bitmap1;
-					} data;
+                    Data data;
                     uint64_t bitmap;
 	            };
 
