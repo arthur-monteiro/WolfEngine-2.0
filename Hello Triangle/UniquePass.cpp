@@ -141,9 +141,9 @@ void UniquePass::createPipeline(uint32_t width, uint32_t height)
 	// Programming stages
 	pipelineCreateInfo.shaderCreateInfos.resize(2);
 	m_vertexShaderParser->readCompiledShader(pipelineCreateInfo.shaderCreateInfos[0].shaderCode);
-	pipelineCreateInfo.shaderCreateInfos[0].stage = VK_SHADER_STAGE_VERTEX_BIT;
+	pipelineCreateInfo.shaderCreateInfos[0].stage = VERTEX;
 	m_fragmentShaderParser->readCompiledShader(pipelineCreateInfo.shaderCreateInfos[1].shaderCode);
-	pipelineCreateInfo.shaderCreateInfos[1].stage = VK_SHADER_STAGE_FRAGMENT_BIT;
+	pipelineCreateInfo.shaderCreateInfos[1].stage = FRAGMENT;
 
 	// IA
 	std::vector<VkVertexInputAttributeDescription> attributeDescriptions;

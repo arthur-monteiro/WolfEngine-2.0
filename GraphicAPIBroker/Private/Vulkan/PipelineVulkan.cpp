@@ -4,6 +4,7 @@
 
 #include "DescriptorSetLayoutVulkan.h"
 #include "RenderPassVulkan.h"
+#include "ShaderStagesVulkan.h"
 #include "Vulkan.h"
 
 Wolf::PipelineVulkan::PipelineVulkan(const RenderingPipelineCreateInfo& renderingPipelineCreateInfo)
@@ -35,7 +36,8 @@ Wolf::PipelineVulkan::PipelineVulkan(const RenderingPipelineCreateInfo& renderin
 		// Add stage
 		VkPipelineShaderStageCreateInfo shaderStageInfo = {};
 		shaderStageInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
-		shaderStageInfo.stage = shaderCreateInfo.stage;
+
+		shaderStageInfo.stage = wolfStageBitToVkStageBit(shaderCreateInfo.stage);
 		shaderStageInfo.module = shaderModules.back();
 		shaderStageInfo.pName = shaderCreateInfo.entryPointName.data();
 
@@ -67,7 +69,7 @@ Wolf::PipelineVulkan::PipelineVulkan(const RenderingPipelineCreateInfo& renderin
 
 	VkRect2D scissor = {};
 	scissor.offset = { 0, 0 };
-	scissor.extent = renderingPipelineCreateInfo.extent;
+	scissor.extent = { renderingPipelineCreateInfo.extent.width, renderingPipelineCreateInfo.extent.height };
 
 	VkPipelineViewportStateCreateInfo viewportState = {};
 	viewportState.sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
@@ -81,7 +83,21 @@ Wolf::PipelineVulkan::PipelineVulkan(const RenderingPipelineCreateInfo& renderin
 	rasterizer.sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
 	rasterizer.depthClampEnable = VK_FALSE;
 	rasterizer.rasterizerDiscardEnable = VK_FALSE;
-	rasterizer.polygonMode = renderingPipelineCreateInfo.polygonMode;
+	VkPolygonMode polygonMode;
+	switch (renderingPipelineCreateInfo.polygonMode) {
+		case PolygonMode::FILL:
+			polygonMode = VK_POLYGON_MODE_FILL;
+			break;
+		case PolygonMode::LINE:
+			polygonMode = VK_POLYGON_MODE_LINE;
+			break;
+		case PolygonMode::POINT:
+			polygonMode = VK_POLYGON_MODE_POINT;
+			break;
+		default:
+			Wolf::Debug::sendCriticalError("Unhandled polygon mode");
+	}
+	rasterizer.polygonMode = polygonMode;
 	rasterizer.lineWidth = 1.0f;
 	rasterizer.cullMode = renderingPipelineCreateInfo.cullMode;
 	rasterizer.frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE;
@@ -273,7 +289,7 @@ Wolf::PipelineVulkan::PipelineVulkan(const RayTracingPipelineCreateInfo& rayTrac
 		// Add stage
 		VkPipelineShaderStageCreateInfo shaderStageInfo = {};
 		shaderStageInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
-		shaderStageInfo.stage = shaderCreateInfo.stage;
+		shaderStageInfo.stage = wolfStageBitToVkStageBit(shaderCreateInfo.stage);
 		shaderStageInfo.module = shaderModules.back();
 		shaderStageInfo.pName = shaderCreateInfo.entryPointName.data();
 

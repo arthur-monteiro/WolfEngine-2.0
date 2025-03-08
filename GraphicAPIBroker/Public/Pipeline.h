@@ -8,7 +8,9 @@
 // TEMP
 #include <vulkan/vulkan.h>
 
+#include "Extents.h"
 #include "ResourceReference.h"
+#include "ShaderStages.h"
 
 namespace Wolf
 {
@@ -16,11 +18,13 @@ namespace Wolf
 	class RenderPass;
 	static const std::string defaultEntryPointName = "main";
 
+	enum class PolygonMode { FILL, LINE, POINT };
+
 	struct ShaderCreateInfo
 	{
 		std::vector<char> shaderCode;
 		const std::string& entryPointName = defaultEntryPointName;
-		VkShaderStageFlagBits stage;
+		ShaderStageFlagBits stage;
 	};
 
 	struct RenderingPipelineCreateInfo
@@ -40,12 +44,12 @@ namespace Wolf
 		std::vector<ResourceReference<const DescriptorSetLayout>> descriptorSetLayouts;
 
 		// Viewport
-		VkExtent2D extent = { 0, 0 };
+		Extent2D extent = { 0, 0 };
 		std::array<float, 2> viewportScale = { 1.0f, 1.0f };
 		std::array<float, 2> viewportOffset = { 0.0f, 0.0f };
 
 		// Rasterization
-		VkPolygonMode polygonMode = VK_POLYGON_MODE_FILL;
+		PolygonMode polygonMode = PolygonMode::FILL;
 		VkCullModeFlags cullMode = VK_CULL_MODE_BACK_BIT;
 		bool enableConservativeRasterization = false;
 		float maxExtraPrimitiveOverestimationSize = 0.75f;

@@ -8,6 +8,8 @@
 
 #include <Debug.h>
 
+#include "Extents.h"
+
 namespace Wolf
 {
     class ImageCompression
@@ -167,7 +169,7 @@ namespace Wolf
         static void compressBC3(const VkExtent3D& extent, const std::vector<RGBA8>& pixels, std::vector<BC3>& outBlocks);
         static void compressBC5(const VkExtent3D& extent, const std::vector<RG32F>& pixels, std::vector<BC5>& outBlocks);
 
-        static void uncompressImage(Compression compression, const unsigned char* data, VkExtent2D extent, std::vector<RGBA8>& outPixels);
-        static void uncompressImage(Compression compression, const unsigned char* data, VkExtent2D extent, std::vector<RG8>& outPixels);
+        static void uncompressImage(Compression compression, const unsigned char* data, Extent2D extent, std::vector<RGBA8>& outPixels);
+        static void uncompressImage(Compression compression, const unsigned char* data, Extent2D extent, std::vector<RG8>& outPixels);
     };
 }

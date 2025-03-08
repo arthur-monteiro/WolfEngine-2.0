@@ -183,7 +183,22 @@ Wolf::ModelLoader::ModelLoader(ModelData& outputModel, ModelLoadingInfo& modelLo
 	if (hasEncounteredAnInvalidMaterialId)
 		Debug::sendError("Loading model " + modelLoadingInfo.filename + ", invalid material ID found. Switching to default (0)");
 
+	glm::vec3 center = (maxPos + minPos) * 0.5f;
+	if (glm::length(center) > glm::length(maxPos) * 0.1f)
+	{
+		Debug::sendWarning("Model " + modelLoadingInfo.filename + " is not centered");
+
+		for (Vertex3D& vertex : vertices)
+		{
+			vertex.pos -= center;
+		}
+
+		maxPos -= center;
+		minPos -= center;
+	}
+
 	AABB aabb(minPos, maxPos);
+	BoundingSphere boundingSphere(glm::vec3(0.0f), glm::max(glm::length(minPos), glm::length(maxPos)));
 
 	std::array<Vertex3D, 3> tempTriangle{};
 	for (size_t i(0); i <= indices.size(); ++i)
@@ -213,7 +228,7 @@ Wolf::ModelLoader::ModelLoader(ModelData& outputModel, ModelLoadingInfo& modelLo
 		tempTriangle[i % 3] = vertices[indices[i]];
 	}
 
-	m_outputModel->mesh.reset(new Mesh(vertices, indices, aabb, modelLoadingInfo.additionalVertexBufferUsages, modelLoadingInfo.additionalIndexBufferUsages));
+	m_outputModel->mesh.reset(new Mesh(vertices, indices, aabb, boundingSphere, modelLoadingInfo.additionalVertexBufferUsages, modelLoadingInfo.additionalIndexBufferUsages));
 
 	for (uint32_t shapeIdx = 0; shapeIdx < shapeInfos.size(); ++shapeIdx)
 	{
@@ -352,9 +367,13 @@ bool Wolf::ModelLoader::loadCache(ModelLoadingInfo& modelLoadingInfo) const
 		AABB aabb{};
 		input.read(reinterpret_cast<char*>(&aabb), sizeof(AABB));
 
+		glm::vec3 minPos = aabb.getMin();
+		glm::vec3 maxPos = aabb.getMax();
+		BoundingSphere boundingSphere((minPos + maxPos) * 0.5f, glm::distance(minPos, maxPos) * 0.5f);
+
 		if (modelLoadingInfo.vulkanQueueLock)
 			modelLoadingInfo.vulkanQueueLock->lock();
-		m_outputModel->mesh.reset(new Mesh(vertices, indices, aabb, modelLoadingInfo.additionalVertexBufferUsages, modelLoadingInfo.additionalIndexBufferUsages, VK_FORMAT_R32G32B32_SFLOAT));
+		m_outputModel->mesh.reset(new Mesh(vertices, indices, aabb, boundingSphere, modelLoadingInfo.additionalVertexBufferUsages, modelLoadingInfo.additionalIndexBufferUsages, VK_FORMAT_R32G32B32_SFLOAT));
 		if (modelLoadingInfo.vulkanQueueLock)
 			modelLoadingInfo.vulkanQueueLock->unlock();
 

@@ -465,8 +465,16 @@ Wolf::DAEImporter::DAEImporter(ModelData& outputModel, ModelLoadingInfo& modelLo
 
 		m_indices.push_back(uniqueVertices[vertex]);
 	}
+
+	glm::vec3 center = (maxPos + minPos) * 0.5f;
+	if (glm::length(center) > glm::length(maxPos) * 0.1f)
+	{
+		Debug::sendWarning("Model " + modelLoadingInfo.filename + " is not centered");
+	}
+
 	AABB aabb(minPos, maxPos);
-	m_outputModel->mesh.reset(new Mesh(m_vertices, m_indices, aabb, modelLoadingInfo.additionalVertexBufferUsages, modelLoadingInfo.additionalIndexBufferUsages));
+	BoundingSphere boundingSphere(glm::vec3(0.0f), glm::max(glm::length(minPos), glm::length(maxPos)));
+	m_outputModel->mesh.reset(new Mesh(m_vertices, m_indices, aabb, boundingSphere, modelLoadingInfo.additionalVertexBufferUsages, modelLoadingInfo.additionalIndexBufferUsages));
 
 	// Animation
 

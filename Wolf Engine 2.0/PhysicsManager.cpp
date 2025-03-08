@@ -62,3 +62,54 @@ Wolf::Physics::PhysicsManager::RayCastResult Wolf::Physics::PhysicsManager::rayC
 	rayCastResult.collision = false;
 	return rayCastResult;
 }
+
+Wolf::Physics::PhysicsManager::RayCastResult Wolf::Physics::PhysicsManager::rayCastClosestHit(const glm::vec3& rayOrigin, const glm::vec3& rayEnd)
+{
+	float distance = glm::distance(rayEnd, rayOrigin);
+	RayCastResult result;
+	result.collision = false;
+
+	for (StaticShape& staticShape : m_staticShapes)
+	{
+		Shape::ShapeRayCastResult shapeRayCastResult = staticShape.shape->rayCast(rayOrigin, rayEnd);
+		if (shapeRayCastResult.collision)
+		{
+			RayCastResult rayCastResult;
+			rayCastResult.collision = true;
+			rayCastResult.shape = staticShape.shape.createNonOwnerResource();
+			rayCastResult.hitPoint = shapeRayCastResult.hitPoint;
+
+			float distanceWithOrigin = glm::distance(rayCastResult.hitPoint, rayOrigin);
+			if (distanceWithOrigin < distance)
+			{
+				result = rayCastResult;
+				distance = distanceWithOrigin;
+			}
+		}
+	}
+
+	for (uint32_t i = 0; i < m_dynamicShapes.size(); ++i)
+	{
+		DynamicShape& dynamicShape = m_dynamicShapes[i];
+
+		Shape::ShapeRayCastResult shapeRayCastResult = dynamicShape.shape->rayCast(rayOrigin, rayEnd);
+		if (shapeRayCastResult.collision)
+		{
+			RayCastResult rayCastResult;
+			rayCastResult.collision = true;
+			rayCastResult.shape = dynamicShape.shape.createNonOwnerResource();
+			rayCastResult.hitPoint = shapeRayCastResult.hitPoint;
+			rayCastResult.dynamicShapeId = i;
+			rayCastResult.instance = dynamicShape.instance;
+
+			float distanceWithOrigin = glm::distance(rayCastResult.hitPoint, rayOrigin);
+			if (distanceWithOrigin < distance)
+			{
+				result = rayCastResult;
+				distance = distanceWithOrigin;
+			}
+		}
+	}
+
+	return result;
+}

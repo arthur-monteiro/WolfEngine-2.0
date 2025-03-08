@@ -24,7 +24,7 @@ void UniquePass::initializeResources(const InitializationContext& context)
 		m_depthImage->getDefaultImageView());
 	Attachment color({ context.swapChainWidth, context.swapChainHeight }, context.swapChainFormat, VK_SAMPLE_COUNT_1_BIT, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR, VK_ATTACHMENT_STORE_OP_STORE, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, nullptr);
 
-	VkExtent2D vrsImageExtent = { static_cast<uint32_t>(std::ceil(static_cast<float>(context.swapChainWidth) / 16.0f)),static_cast<uint32_t>(std::ceil(static_cast<float>(context.swapChainHeight) / 16.0f)) };
+	Extent2D vrsImageExtent = { static_cast<uint32_t>(std::ceil(static_cast<float>(context.swapChainWidth) / 16.0f)),static_cast<uint32_t>(std::ceil(static_cast<float>(context.swapChainHeight) / 16.0f)) };
 
 	CreateImageInfo shadingRateImageInfo{};
 	shadingRateImageInfo.extent = { vrsImageExtent.width, vrsImageExtent.height, 1 };
@@ -153,7 +153,7 @@ void UniquePass::record(const RecordContext& context)
 	m_commandBuffer->bindPipeline(m_pipeline.get());
 	m_commandBuffer->bindDescriptorSet(m_descriptorSet.get(), 0, *m_pipeline);
 
-	const VkExtent2D fragmentExtent{ 1, 1 };
+	const Extent2D fragmentExtent{ 1, 1 };
 	FragmentShadingRateCombinerOp combiners[2];
 	combiners[0] = FragmentShadingRateCombinerOp::MAX;
 	combiners[1] = FragmentShadingRateCombinerOp::MAX;
@@ -204,9 +204,9 @@ void UniquePass::createPipeline(uint32_t width, uint32_t height)
 	// Programming stages
 	pipelineCreateInfo.shaderCreateInfos.resize(2);
 	m_vertexShaderParser->readCompiledShader(pipelineCreateInfo.shaderCreateInfos[0].shaderCode);
-	pipelineCreateInfo.shaderCreateInfos[0].stage = VK_SHADER_STAGE_VERTEX_BIT;
+	pipelineCreateInfo.shaderCreateInfos[0].stage = VERTEX;
 	m_fragmentShaderParser->readCompiledShader(pipelineCreateInfo.shaderCreateInfos[1].shaderCode);
-	pipelineCreateInfo.shaderCreateInfos[1].stage = VK_SHADER_STAGE_FRAGMENT_BIT;
+	pipelineCreateInfo.shaderCreateInfos[1].stage = FRAGMENT;
 
 	// IA
 	std::vector<VkVertexInputAttributeDescription> attributeDescriptions;

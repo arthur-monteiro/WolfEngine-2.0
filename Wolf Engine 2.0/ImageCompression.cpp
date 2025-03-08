@@ -2,7 +2,7 @@
 
 #include <glm/glm.hpp>
 
-#include "Debug.h"
+#include <Debug.h>
 
 uint64_t Wolf::ImageCompression::BC5::BC5Channel::toUInt64() const
 {
@@ -330,7 +330,7 @@ void Wolf::ImageCompression::compressBC5(const VkExtent3D& extent, const std::ve
     }
 }
 
-void Wolf::ImageCompression::uncompressImage(Compression compression, const unsigned char* data, VkExtent2D extent, std::vector<RGBA8>& outPixels)
+void Wolf::ImageCompression::uncompressImage(Compression compression, const unsigned char* data, Extent2D extent, std::vector<RGBA8>& outPixels)
 {
     if (compression != Compression::BC1 && compression != Compression::BC3)
     {
@@ -514,7 +514,7 @@ void Wolf::ImageCompression::uncompressImage(Compression compression, const unsi
     }
 }
 
-void Wolf::ImageCompression::uncompressImage(Compression compression, const unsigned char* data, VkExtent2D extent, std::vector<RG8>& outPixels)
+void Wolf::ImageCompression::uncompressImage(Compression compression, const unsigned char* data, Extent2D extent, std::vector<RG8>& outPixels)
 {
     if (compression != Compression::BC5)
     {

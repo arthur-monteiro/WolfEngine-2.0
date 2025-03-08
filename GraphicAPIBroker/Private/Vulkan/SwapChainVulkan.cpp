@@ -40,9 +40,9 @@ VkPresentModeKHR choosePresentMode(const std::vector<VkPresentModeKHR>& availabl
 	return bestMode;
 }
 
-Wolf::SwapChainVulkan::SwapChainVulkan(VkExtent2D extent)
+Wolf::SwapChainVulkan::SwapChainVulkan(Extent2D extent)
 {
-	initialize(extent);
+	initialize({ extent.width, extent.height });
 }
 
 void Wolf::SwapChainVulkan::initialize(VkExtent2D extent)
@@ -188,11 +188,11 @@ void Wolf::SwapChainVulkan::present(const Semaphore* waitSemaphore, uint32_t ima
 }
 
 
-void Wolf::SwapChainVulkan::recreate(VkExtent2D extent)
+void Wolf::SwapChainVulkan::recreate(Extent2D extent)
 {
 	vkDestroySwapchainKHR(g_vulkanInstance->getDevice(), m_swapChain, nullptr);
 	m_images.clear();
 	m_frameFences.clear();
 	
-	initialize(extent);
+	initialize({ extent.width, extent.height });
 }

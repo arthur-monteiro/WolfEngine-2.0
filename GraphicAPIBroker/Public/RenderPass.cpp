@@ -13,7 +13,7 @@ Wolf::RenderPass* Wolf::RenderPass::createRenderPass(const std::vector<Attachmen
 #endif
 }
 
-void Wolf::RenderPass::setExtent(const VkExtent2D& extent)
+void Wolf::RenderPass::setExtent(const Extent2D& extent)
 {
 	m_extent = extent;
 	for (const auto& callback : m_callbackWhenExtentChanged)

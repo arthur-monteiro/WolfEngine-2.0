@@ -8,6 +8,7 @@
 
 #include "Buffer.h"
 #include "Enums.h"
+#include "Extents.h"
 #include "Fence.h"
 #include "ResourceReference.h"
 #include "Structs.h"
@@ -48,7 +49,7 @@ namespace Wolf
 		virtual void bindDescriptorSet(const ResourceReference<const DescriptorSet>& descriptorSet, uint32_t slot, const Pipeline& pipeline) const = 0;
 
 		// Params
-		virtual void setFragmentShadingRate(FragmentShadingRateCombinerOp fragmentShadingRateCombinerOps[2], const VkExtent2D& fragmentExtent) const = 0;
+		virtual void setFragmentShadingRate(FragmentShadingRateCombinerOp fragmentShadingRateCombinerOps[2], const Extent2D& fragmentExtent) const = 0;
 		virtual void setViewport(const Viewport& viewport) const = 0;
 
 		// Commands

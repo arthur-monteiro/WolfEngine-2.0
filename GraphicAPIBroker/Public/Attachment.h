@@ -2,13 +2,14 @@
 
 #include <vulkan/vulkan_core.h>
 
+#include "Extents.h"
 #include "ImageView.h"
 
 namespace Wolf
 {
 	struct Attachment
 	{
-		VkExtent2D extent = { 0, 0 };
+		Extent2D extent = { 0, 0 };
 		VkFormat format;
 		VkSampleCountFlagBits sampleCount;
 		VkImageLayout initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
@@ -19,7 +20,7 @@ namespace Wolf
 
 		VkImageUsageFlags usageType{};
 
-		Attachment(VkExtent2D extent, VkFormat format, VkSampleCountFlagBits sampleCount, VkImageLayout finalLayout,
+		Attachment(Extent2D extent, VkFormat format, VkSampleCountFlagBits sampleCount, VkImageLayout finalLayout,
 			VkAttachmentStoreOp storeOperation, VkImageUsageFlags usageType, ImageView imageView)
 		{
 			this->extent = extent;

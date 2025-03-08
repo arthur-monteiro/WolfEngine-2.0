@@ -156,6 +156,15 @@
     <ClInclude Include="Public\Structs.h">
       <Filter>Global</Filter>
     </ClInclude>
+    <ClInclude Include="Public\ShaderStages.h">
+      <Filter>API Elements</Filter>
+    </ClInclude>
+    <ClInclude Include="Public\Extents.h">
+      <Filter>API Elements</Filter>
+    </ClInclude>
+    <ClInclude Include="Private\Vulkan\ShaderStagesVulkan.h">
+      <Filter>Vulkan</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Private\Vulkan\CommandPool.cpp">

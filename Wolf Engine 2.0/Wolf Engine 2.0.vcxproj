@@ -286,6 +286,7 @@
   <ItemGroup>
     <ClCompile Include="..\ThirdParty\Tracy\TracyClient.cpp" />
     <ClCompile Include="AndroidCacheHelper.cpp" />
+    <ClCompile Include="BoundingSphere.cpp" />
     <ClCompile Include="CameraInterface.cpp" />
     <ClCompile Include="CameraList.cpp" />
     <ClCompile Include="DAEImporter.cpp" />
@@ -316,7 +317,6 @@
     <ClCompile Include="RenderMeshList.cpp" />
     <ClCompile Include="ShaderList.cpp" />
     <ClCompile Include="ShaderParser.cpp" />
-    <ClCompile Include="ShadingRateSymbols.cpp" />
     <ClCompile Include="SubMesh.cpp" />
     <ClCompile Include="Timer.cpp" />
     <ClCompile Include="UltraLight.cpp" />
@@ -328,6 +328,7 @@
   <ItemGroup>
     <ClInclude Include="AABB.h" />
     <ClInclude Include="AndroidCacheHelper.h" />
+    <ClInclude Include="BoundingSphere.h" />
     <ClInclude Include="CameraInterface.h" />
     <ClInclude Include="CameraList.h" />
     <ClInclude Include="CodeFileHashes.h" />
@@ -366,7 +367,6 @@
     <ClInclude Include="ShaderCommon.h" />
     <ClInclude Include="ShaderParser.h" />
     <ClInclude Include="ShadingRatePalette.h" />
-    <ClInclude Include="ShadingRateSymbols.h" />
     <ClInclude Include="SubMesh.h" />
     <ClInclude Include="SwapChainSupportDetails.h" />
     <ClInclude Include="Timer.h" />

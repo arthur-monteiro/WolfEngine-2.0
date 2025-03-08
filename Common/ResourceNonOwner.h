@@ -14,6 +14,9 @@ namespace Wolf
 	class ResourceUniqueOwner;
 
 	template <typename T>
+	class NullableResourceNonOwner;
+
+	template <typename T>
 	class ResourceNonOwner
 	{
 	public:
@@ -77,6 +80,12 @@ namespace Wolf
 #endif
 			);
 		}
+
+		ResourceNonOwner(const NullableResourceNonOwner<T>& nullableResource
+#ifdef RESOURCE_DEBUG
+			, const std::source_location& sourceLocation = std::source_location::current()
+#endif
+		);
 
 		[[nodiscard]] T* operator->() const { return m_resource; }
 		ResourceNonOwner<T>& operator=(const ResourceNonOwner<T>& other)
@@ -145,6 +154,9 @@ namespace Wolf
 		NullableResourceNonOwner(const ResourceNonOwner<T>& resource) : m_resource(resource)
 		{
 		}
+		NullableResourceNonOwner(const NullableResourceNonOwner<T>& other) : m_resource(other.m_resource)
+		{
+		}
 		NullableResourceNonOwner() : m_resource(static_cast<T*>(nullptr),
 #ifdef RESOURCE_DEBUG
 			[](ResourceNonOwner<T>* instance) {}, [](ResourceNonOwner<T>* instance) {}, std::source_location::current()
@@ -172,9 +184,32 @@ namespace Wolf
 			}
 			return *m_resource;
 		}
+		[[nodiscard]] T* operator->() const
+		{
+			if (!m_resource)
+			{
+				Debug::sendCriticalError("Trying to get reference of nullptr");
+			}
+			return m_resource.operator->();
+		}
 
 	private:
+		friend ResourceNonOwner<T>;
+
 		ResourceNonOwner<T> m_resource;
 	};
+
+	template <typename T>
+	ResourceNonOwner<T>::ResourceNonOwner(const NullableResourceNonOwner<T>& nullableResource
+#ifdef RESOURCE_DEBUG
+		, const std::source_location& sourceLocation
+#endif
+	) : ResourceNonOwner(nullableResource.m_resource, sourceLocation)
+	{
+		if (!nullableResource)
+		{
+			Debug::sendCriticalError("Trying to create a ResourceNonOwner with nullptr");
+		}
+	}
 }
 

@@ -12,9 +12,12 @@
 #include <Ultralight/Ultralight.h>
 #include <Ultralight/platform/Logger.h>
 
-#include "CommandBuffer.h"
-#include "Fence.h"
-#include "ResourceNonOwner.h"
+#include <ResourceNonOwner.h>
+
+#include <CommandBuffer.h>
+#include <Extents.h>
+#include <Fence.h>
+
 #include "UltraLightSurface.h"
 #include "UltralightViewListener.h"
 
@@ -53,7 +56,7 @@ namespace Wolf
         bool m_stopThreadRequested = false;
         std::mutex m_evaluateScriptRequestsMutex;
         std::vector<std::string> m_evaluateScriptRequests;
-        VkExtent2D m_resizeRequest = { 0, 0 };
+        Extent2D m_resizeRequest = { 0, 0 };
 
         class UltraLightImplementation : public ultralight::LoadListener, public ultralight::Logger
         {

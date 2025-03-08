@@ -2,8 +2,8 @@
 
 #include <memory>
 #include <vector>
-// TEMP
-#include <vulkan/vulkan_core.h>
+
+#include "Extents.h"
 
 struct GLFWwindow;
 
@@ -16,7 +16,7 @@ namespace Wolf
 	class SwapChain
 	{
 	public:
-		static SwapChain* createSwapChain(VkExtent2D extent);
+		static SwapChain* createSwapChain(Extent2D extent);
 		virtual ~SwapChain() = default;
 
 		void synchroniseCPUFromGPU(uint32_t currentFrameGPU) const;
@@ -24,7 +24,7 @@ namespace Wolf
 		virtual void present(const Semaphore* waitSemaphore, uint32_t imageIndex) const = 0;
 
 
-		virtual void recreate(VkExtent2D extent) = 0;
+		virtual void recreate(Extent2D extent) = 0;
 		
 		[[nodiscard]] Image* getImage(uint32_t index) const { return m_images[index].get(); }
 		[[nodiscard]] uint32_t getImageCount() const { return static_cast<uint32_t>(m_images.size()); }

@@ -91,7 +91,7 @@ void UniquePass::createPipeline(uint32_t width, uint32_t height)
 
 	ShaderCreateInfo computeShaderCreateInfo;
 	computeShaderCreateInfo.shaderCode = computeShaderCode;
-	computeShaderCreateInfo.stage = VK_SHADER_STAGE_COMPUTE_BIT;
+	computeShaderCreateInfo.stage = COMPUTE;
 
 	std::vector<ResourceReference<const DescriptorSetLayout>> descriptorSetLayouts;
 	descriptorSetLayouts.emplace_back(m_descriptorSetLayout.get());
