@@ -120,9 +120,18 @@ void Wolf::SwapChainVulkan::initialize(VkExtent2D extent)
 		//surfaceFormat.format = VK_FORMAT_R8G8B8A8_UNORM;
 	}
 
+	Format wolfFormat = Format::UNDEFINED;
+	switch (surfaceFormat.format)
+	{
+		case VK_FORMAT_B8G8R8A8_UNORM:
+			wolfFormat = Format::B8G8R8A8_UNORM;
+			break;
+		default:
+			Debug::sendError("Unhandled format");
+	}
 	for (size_t i(0); i < imageCount; ++i)
 	{
-		m_images[i].reset(new ImageVulkan(temporarySwapChainImages[i], surfaceFormat.format, VK_IMAGE_ASPECT_COLOR_BIT, extent));
+		m_images[i].reset(new ImageVulkan(temporarySwapChainImages[i], wolfFormat, VK_IMAGE_ASPECT_COLOR_BIT, extent));
 	}
 
 	m_imageAvailableSemaphores.resize(imageCount);

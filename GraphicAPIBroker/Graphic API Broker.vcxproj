@@ -36,6 +36,7 @@
     <ClInclude Include="Private\Vulkan\DescriptorSetLayoutVulkan.h" />
     <ClInclude Include="Private\Vulkan\DescriptorSetVulkan.h" />
     <ClInclude Include="Private\Vulkan\FenceVulkan.h" />
+    <ClInclude Include="Private\Vulkan\FormatsVulkan.h" />
     <ClInclude Include="Private\Vulkan\FrameBufferVulkan.h" />
     <ClInclude Include="Private\Vulkan\ImageVulkan.h" />
     <ClInclude Include="Private\Vulkan\PipelineVulkan.h" />
@@ -60,6 +61,7 @@
     <ClInclude Include="Public\Enums.h" />
     <ClInclude Include="Public\Extents.h" />
     <ClInclude Include="Public\Fence.h" />
+    <ClInclude Include="Public\Formats.h" />
     <ClInclude Include="Public\FrameBuffer.h" />
     <ClInclude Include="Public\GraphicAPIManager.h" />
     <ClInclude Include="Public\Image.h" />

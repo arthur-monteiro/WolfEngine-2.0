@@ -254,7 +254,7 @@ void Wolf::ImageFileLoader::loadDDS(const std::string& fullFilePath)
     {
     case D3DFMT_DXT1:
         m_compression = ImageCompression::Compression::BC1;
-        m_format = VK_FORMAT_BC1_RGB_SRGB_BLOCK;
+        m_format = Format::BC1_RGB_SRGB_BLOCK;
         break;
     case D3DFMT_DXT2:
     case D3DFMT_DXT3:
@@ -278,10 +278,10 @@ void Wolf::ImageFileLoader::loadDDS(const std::string& fullFilePath)
         switch (dxt10Header.dxgiFormat)
         {
 			case DXGI_FORMAT_R8G8B8A8_UNORM:
-                m_format = VK_FORMAT_R8G8B8A8_UNORM;
+                m_format = Format::R8G8B8A8_UNORM;
 				break;
         	case DXGI_FORMAT_R8G8B8A8_UNORM_SRGB:
-                m_format = VK_FORMAT_R8G8B8A8_SRGB;
+                m_format = Format::R8G8B8A8_SRGB;
                 break;
 	        case DXGI_FORMAT_BC5_UNORM:
 	            m_compression = ImageCompression::Compression::BC5;

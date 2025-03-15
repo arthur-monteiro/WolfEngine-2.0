@@ -15,6 +15,8 @@
 
 #endif
 
+#include "Formats.h"
+
 struct GLFWwindow;
 
 namespace Wolf
@@ -34,6 +36,6 @@ namespace Wolf
 		virtual void waitIdle() const = 0;
 
 		virtual bool isRayTracingAvailable() const = 0;
-		virtual VkFormat getDepthFormat() const = 0;
+		virtual Format getDepthFormat() const = 0;
 	};
 }

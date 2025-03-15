@@ -6,13 +6,15 @@
 #include "CommandBufferVulkan.h"
 #include "BufferVulkan.h"
 #include "FenceVulkan.h"
+#include "FormatsVulkan.h"
 #include "Vulkan.h"
 #include "VulkanHelper.h"
 
 Wolf::ImageVulkan::ImageVulkan(const CreateImageInfo& createImageInfo)
 {
 	m_imageFormat = createImageInfo.format;
-	m_extent = createImageInfo.extent;
+	m_vkImageFormat = wolfFormatToVkFormat(createImageInfo.format);
+	m_extent = { createImageInfo.extent.width, createImageInfo.extent.height, createImageInfo.extent.depth };
 	m_sampleCount = createImageInfo.sampleCount;
 	if (createImageInfo.mipLevelCount == UINT32_MAX)
 	{
@@ -41,10 +43,10 @@ Wolf::ImageVulkan::ImageVulkan(const CreateImageInfo& createImageInfo)
 	imageInfo.extent.depth = m_extent.depth;
 	imageInfo.mipLevels = m_mipLevelCount;
 	imageInfo.arrayLayers = m_arrayLayerCount;
-	imageInfo.format = m_imageFormat;
+	imageInfo.format = m_vkImageFormat;
 	imageInfo.tiling = createImageInfo.imageTiling;
 	imageInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-	imageInfo.usage = createImageInfo.usage;
+	imageInfo.usage = wolfImageUsageFlagsToVkImageUsageFlags(createImageInfo.usage);
 	imageInfo.samples = m_sampleCount;
 	imageInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
 	imageInfo.flags = m_arrayLayerCount == 6 ? VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT : 0;
@@ -85,11 +87,12 @@ Wolf::ImageVulkan::ImageVulkan(const CreateImageInfo& createImageInfo)
 	GPUMemoryDebug::registerNewResource(GPUMemoryDebug::TYPE::TEXTURE, 0, totalRequestedSize, memRequirements.size);
 }
 
-Wolf::ImageVulkan::ImageVulkan(VkImage image, VkFormat format, VkImageAspectFlags aspect, VkExtent2D extent)
+Wolf::ImageVulkan::ImageVulkan(VkImage image, Format format, VkImageAspectFlags aspect, VkExtent2D extent)
 {
 	m_image = image;
 	m_imageMemory = VK_NULL_HANDLE;
 	m_imageFormat = format;
+	m_vkImageFormat = wolfFormatToVkFormat(format);
 	m_extent = { extent.width, extent.height, 1 };
 	m_mipLevelCount = 1;
 	m_aspectFlags = aspect;
@@ -234,12 +237,12 @@ void Wolf::ImageVulkan::exportToBuffer(std::vector<uint8_t>& outBuffer) const
 	}
 
 	CreateImageInfo stagingCreateImageInfo{};
-	stagingCreateImageInfo.extent = m_extent;
+	stagingCreateImageInfo.extent = { m_extent.width, m_extent.height, m_extent.depth };
 	stagingCreateImageInfo.format = m_imageFormat;
 	stagingCreateImageInfo.arrayLayerCount = m_arrayLayerCount;
 	stagingCreateImageInfo.aspect = m_aspectFlags;
 	stagingCreateImageInfo.sampleCount = m_sampleCount;
-	stagingCreateImageInfo.usage = VK_IMAGE_USAGE_TRANSFER_DST_BIT;
+	stagingCreateImageInfo.usage = TRANSFER_DST;
 	stagingCreateImageInfo.memoryProperties = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
 	stagingCreateImageInfo.imageTiling = VK_IMAGE_TILING_LINEAR;
 	stagingCreateImageInfo.mipLevelCount = 1;
@@ -273,7 +276,7 @@ void Wolf::ImageVulkan::exportToBuffer(std::vector<uint8_t>& outBuffer) const
 	};
 	ImageOutputPixel* outputPixels = new ImageOutputPixel[static_cast<size_t>(m_extent.width) * m_extent.height];
 
-	switch (m_imageFormat)
+	switch (m_vkImageFormat)
 	{
 	case VK_FORMAT_R32_SFLOAT:
 	{
@@ -345,13 +348,13 @@ void Wolf::ImageVulkan::createImageView(VkFormat format)
 	if (vkCreateImageView(g_vulkanInstance->getDevice(), &viewInfo, nullptr, &imageView) != VK_SUCCESS)
 		Debug::sendError("Error : create image view");
 
-	const uint32_t hash = computeImageViewHash(m_imageFormat);
+	const uint32_t hash = computeImageViewHash(m_vkImageFormat);
 	m_imageViews[hash] = imageView;
 }
 
 void Wolf::ImageVulkan::setBPP()
 {
-	switch (m_imageFormat)
+	switch (m_vkImageFormat)
 	{
 	case VK_FORMAT_R32G32B32A32_SFLOAT:
 		m_bpp = 16.0f;
@@ -383,12 +386,52 @@ void Wolf::ImageVulkan::setBPP()
 	}
 }
 
-Wolf::ImageView Wolf::ImageVulkan::getImageView(VkFormat format)
+VkImageUsageFlagBits Wolf::ImageVulkan::wolfImageUsageFlagBitsToVkImageUsageFlagBits(ImageUsageFlagBits imageUsageFlagBits)
 {
-	const uint32_t hash = computeImageViewHash(format);
+	switch (imageUsageFlagBits)
+	{
+		case SAMPLED:
+			return VK_IMAGE_USAGE_SAMPLED_BIT;
+		case TRANSFER_SRC:
+			return VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
+		case TRANSFER_DST:
+			return VK_IMAGE_USAGE_TRANSFER_DST_BIT;
+		case DEPTH_STENCIL_ATTACHMENT:
+			return VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
+		case COLOR_ATTACHMENT:
+			return VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
+		case TRANSIENT_ATTACHMENT:
+			return VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT;
+		case FRAGMENT_SHADING_RATE_ATTACHMENT:
+			return VK_IMAGE_USAGE_FRAGMENT_SHADING_RATE_ATTACHMENT_BIT_KHR;
+		case STORAGE:
+			return VK_IMAGE_USAGE_STORAGE_BIT;
+		default: 
+			Debug::sendError("Unhandled image usage");
+			return VK_IMAGE_USAGE_FLAG_BITS_MAX_ENUM;
+	}
+}
+
+VkImageUsageFlags Wolf::ImageVulkan::wolfImageUsageFlagsToVkImageUsageFlags(ImageUsageFlags imageUsageFlags)
+{
+	VkImageUsageFlags vkImageUsageFlags = 0;
+
+#define ADD_FLAG_IF_PRESENT(flag) if (imageUsageFlags & (flag)) vkImageUsageFlags |= wolfImageUsageFlagBitsToVkImageUsageFlagBits(flag)
+
+	for (uint32_t flag = 1; flag < IMAGE_USAGE_MAX; flag <<= 1)
+		ADD_FLAG_IF_PRESENT(static_cast<ImageUsageFlagBits>(flag));
+
+#undef ADD_FLAG_IF_PRESENT
+
+	return vkImageUsageFlags;
+}
+
+Wolf::ImageView Wolf::ImageVulkan::getImageView(Format format)
+{
+	const uint32_t hash = computeImageViewHash(wolfFormatToVkFormat(format));
 	if (m_imageViews.find(hash) == m_imageViews.end())
 	{
-		createImageView(format);
+		createImageView(wolfFormatToVkFormat(format));
 	}
 
 	return m_imageViews[hash];
@@ -435,7 +478,7 @@ void Wolf::ImageVulkan::transitionImageLayout(const CommandBuffer& commandBuffer
 	barrier.subresourceRange.baseArrayLayer = 0;
 	barrier.subresourceRange.layerCount = 1;
 
-	if (bool depth = hasDepthComponent(m_imageFormat), stencil = hasStencilComponent(m_imageFormat); depth || stencil)
+	if (bool depth = hasDepthComponent(m_vkImageFormat), stencil = hasStencilComponent(m_vkImageFormat); depth || stencil)
 	{
 		if(depth)
 			barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT;

@@ -1,6 +1,7 @@
 #include "VulkanHelper.h"
 
 #include "Debug.h"
+#include "FormatsVulkan.h"
 
 void Wolf::querySwapChainSupport(SwapChainSupportDetails& details, VkPhysicalDevice physicalDevice, VkSurfaceKHR surface)
 {
@@ -54,20 +55,20 @@ uint32_t Wolf::findMemoryType(VkPhysicalDevice physicalDevice, uint32_t typeFilt
 	return memoryType;
 }
 
-VkFormat Wolf::findDepthFormat(VkPhysicalDevice physicalDevice)
+Wolf::Format Wolf::findDepthFormat(VkPhysicalDevice physicalDevice)
 {
-	return findSupportedFormat({ VK_FORMAT_D32_SFLOAT, VK_FORMAT_D32_SFLOAT_S8_UINT, VK_FORMAT_D24_UNORM_S8_UINT },
+	return findSupportedFormat({ Format::D32_SFLOAT, Format::D32_SFLOAT_S8_UINT, Format::D24_UNORM_S8_UINT },
 		VK_IMAGE_TILING_OPTIMAL,
 		VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT,
 		physicalDevice);
 }
 
-VkFormat Wolf::findSupportedFormat(const std::vector<VkFormat>& candidates, VkImageTiling tiling, VkFormatFeatureFlags features, VkPhysicalDevice physicalDevice)
+Wolf::Format Wolf::findSupportedFormat(const std::vector<Format>& candidates, VkImageTiling tiling, VkFormatFeatureFlags features, VkPhysicalDevice physicalDevice)
 {
-	for (const VkFormat format : candidates)
+	for (const Format format : candidates)
 	{
 		VkFormatProperties props;
-		vkGetPhysicalDeviceFormatProperties(physicalDevice, format, &props);
+		vkGetPhysicalDeviceFormatProperties(physicalDevice, wolfFormatToVkFormat(format), &props);
 
 		if (tiling == VK_IMAGE_TILING_LINEAR && (props.linearTilingFeatures & features) == features)
 			return format;
@@ -76,7 +77,7 @@ VkFormat Wolf::findSupportedFormat(const std::vector<VkFormat>& candidates, VkIm
 	}
 
 	Debug::sendError("Error : no format found");
-	return VK_FORMAT_UNDEFINED;
+	return Format::UNDEFINED;
 }
 
 bool Wolf::hasDepthComponent(VkFormat format)

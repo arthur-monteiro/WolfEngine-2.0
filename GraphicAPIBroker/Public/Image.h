@@ -7,6 +7,8 @@
 // TEMP
 #include <vulkan/vulkan_core.h>
 
+#include "Extents.h"
+#include "Formats.h"
 #include "ImageView.h"
 
 namespace Wolf
@@ -14,11 +16,25 @@ namespace Wolf
 	class CommandBuffer;
 	class Buffer;
 
+	enum ImageUsageFlagBits : uint32_t
+	{
+		SAMPLED = 1 << 0,
+		TRANSFER_SRC = 1 << 1,
+		TRANSFER_DST = 1 << 2,
+		DEPTH_STENCIL_ATTACHMENT = 1 << 3,
+		COLOR_ATTACHMENT = 1 << 4,
+		TRANSIENT_ATTACHMENT = 1 << 5,
+		FRAGMENT_SHADING_RATE_ATTACHMENT = 1 << 6,
+		STORAGE = 1 << 7,
+		IMAGE_USAGE_MAX = 1 << 8
+	};
+	using ImageUsageFlags = uint32_t;
+
 	struct CreateImageInfo
 	{
-		VkExtent3D extent = { 0, 0, 0 };
-		VkImageUsageFlags usage = VK_IMAGE_USAGE_SAMPLED_BIT;
-		VkFormat format = VK_FORMAT_UNDEFINED;
+		Extent3D extent = { 0, 0, 0 };
+		ImageUsageFlags usage = ImageUsageFlagBits::SAMPLED;
+		Format format = Format::UNDEFINED;
 		VkSampleCountFlagBits sampleCount = VK_SAMPLE_COUNT_1_BIT;
 		VkImageAspectFlags aspect = VK_IMAGE_ASPECT_COLOR_BIT;
 #define MAX_MIP_COUNT UINT32_MAX
@@ -65,12 +81,12 @@ namespace Wolf
 
 		float getBPP() const { return m_bpp; }
 
-		virtual ImageView getImageView(VkFormat format) = 0;
+		virtual ImageView getImageView(Format format) = 0;
 		virtual ImageView getDefaultImageView() = 0;
 
-		[[nodiscard]] virtual VkFormat getFormat() const = 0;
+		[[nodiscard]] virtual Format getFormat() const = 0;
 		[[nodiscard]] virtual VkSampleCountFlagBits getSampleCount() const = 0;
-		[[nodiscard]] virtual VkExtent3D getExtent() const = 0;
+		[[nodiscard]] virtual Extent3D getExtent() const = 0;
 		[[nodiscard]] virtual VkImageLayout getImageLayout(uint32_t mipLevel = 0) const = 0;
 		[[nodiscard]] virtual uint32_t getMipLevelCount() const = 0;
 

@@ -165,11 +165,11 @@ namespace Wolf
         };
 
         template <typename CompressionType, typename PixelType>
-        static void compress(const VkExtent3D& extent, const std::vector<PixelType>& pixels, std::vector<CompressionType>& outBlocks);
+        static void compress(const Extent3D& extent, const std::vector<PixelType>& pixels, std::vector<CompressionType>& outBlocks);
 
-        static void compressBC1(const VkExtent3D& extent, const std::vector<RGBA8>& pixels, std::vector<BC1>& outBlocks);
-        static void compressBC3(const VkExtent3D& extent, const std::vector<RGBA8>& pixels, std::vector<BC3>& outBlocks);
-        static void compressBC5(const VkExtent3D& extent, const std::vector<RG32F>& pixels, std::vector<BC5>& outBlocks);
+        static void compressBC1(const Extent3D& extent, const std::vector<RGBA8>& pixels, std::vector<BC1>& outBlocks);
+        static void compressBC3(const Extent3D& extent, const std::vector<RGBA8>& pixels, std::vector<BC3>& outBlocks);
+        static void compressBC5(const Extent3D& extent, const std::vector<RG32F>& pixels, std::vector<BC5>& outBlocks);
 
         static void uncompressImage(Compression compression, const unsigned char* data, Extent2D extent, std::vector<RGBA8>& outPixels);
         static void uncompressImage(Compression compression, const unsigned char* data, Extent2D extent, std::vector<RG8>& outPixels);

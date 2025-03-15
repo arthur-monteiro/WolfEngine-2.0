@@ -1,5 +1,7 @@
 #include "BottomLevelAccelerationStructureVulkan.h"
 
+#include "FormatsVulkan.h"
+
 #if !defined(__ANDROID__) or __ANDROID_MIN_SDK_VERSION__ > 30
 
 #include <Debug.h>
@@ -30,7 +32,7 @@ Wolf::BottomLevelAccelerationStructureVulkan::BottomLevelAccelerationStructureVu
 		geometry.geometry.triangles.maxVertex = geometryInfo.mesh.vertexCount;
 		geometry.geometry.triangles.vertexStride = geometryInfo.mesh.vertexSize;
 		// Limitation to 3xfloat32 for vertices
-		geometry.geometry.triangles.vertexFormat = geometryInfo.mesh.vertexFormat;
+		geometry.geometry.triangles.vertexFormat = wolfFormatToVkFormat(geometryInfo.mesh.vertexFormat);
 		geometry.geometry.triangles.indexData.deviceAddress = static_cast<const BufferVulkan*>(geometryInfo.mesh.indexBuffer)->getBufferDeviceAddress();
 		// Limitation to 32-bit indices
 		geometry.geometry.triangles.indexType = VK_INDEX_TYPE_UINT32;

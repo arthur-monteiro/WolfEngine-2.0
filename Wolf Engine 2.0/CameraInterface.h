@@ -7,11 +7,9 @@
 #include <GLFW/glfw3.h>
 #endif
 
-// TEMP for VkExtent3D
-#include <vulkan/vulkan.h>
+#include <Extents.h>
 
 #include "ResourceNonOwner.h"
-
 
 namespace Wolf
 {
@@ -26,7 +24,7 @@ namespace Wolf
 #endif
 		const void* gameContext = nullptr;
 		uint32_t frameIdx = 0;
-		VkExtent3D swapChainExtent = {};
+		Extent3D swapChainExtent = {};
 
 #ifndef  __ANDROID__
 		CameraUpdateContext(const ResourceNonOwner<const InputHandler>& inputHandler) : inputHandler(inputHandler) {}

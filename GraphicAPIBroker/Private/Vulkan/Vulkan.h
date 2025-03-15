@@ -47,7 +47,7 @@ namespace Wolf
 		[[nodiscard]] const VkPhysicalDeviceFragmentShadingRatePropertiesKHR& getVRSProperties() const { return m_shadingRateProperties; }
 
 		[[nodiscard]] bool isRayTracingAvailable() const override { return m_availableFeatures.rayTracing; }
-		[[nodiscard]] VkFormat getDepthFormat() const override;
+		[[nodiscard]] Format getDepthFormat() const override;
 
 	private:
 		/* Main Loading Functions */
@@ -102,7 +102,7 @@ namespace Wolf
 			bool variableShadingRate = false;
 		} m_availableFeatures;
 		VkPhysicalDeviceConservativeRasterizationPropertiesEXT m_conservativeRasterProps{};
-		VkFormat m_depthFormat;
+		Format m_depthFormat;
 
 		/* VR */
 #ifndef __ANDROID__

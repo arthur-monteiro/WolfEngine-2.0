@@ -3,11 +3,14 @@
 #include <map>
 #include <memory>
 
+#include <Debug.h>
+
+#include <Buffer.h>
+#include <CommandBuffer.h>
+#include <Formats.h>
+
 #include "AABB.h"
 #include "BoundingSphere.h"
-#include "Buffer.h"
-#include "CommandBuffer.h"
-#include "Debug.h"
 #include "SubMesh.h"
 
 namespace Wolf
@@ -18,7 +21,7 @@ namespace Wolf
 	{
 	public:
 		template <typename T>
-		Mesh(const std::vector<T>& vertices, const std::vector<uint32_t>& indices, AABB aabb = {}, BoundingSphere boundingSphere = {}, VkBufferUsageFlags additionalVertexBufferUsages = 0, VkBufferUsageFlags additionalIndexBufferUsages = 0, VkFormat vertexFormat = VK_FORMAT_UNDEFINED);
+		Mesh(const std::vector<T>& vertices, const std::vector<uint32_t>& indices, AABB aabb = {}, BoundingSphere boundingSphere = {}, VkBufferUsageFlags additionalVertexBufferUsages = 0, VkBufferUsageFlags additionalIndexBufferUsages = 0, Format vertexFormat = Format::UNDEFINED);
 		Mesh(const Mesh&) = delete;
 
 		void addSubMesh(uint32_t indicesOffset, uint32_t indexCount, AABB aabb = {});
@@ -26,9 +29,9 @@ namespace Wolf
 		[[nodiscard]] uint32_t getVertexCount() const { return m_vertexCount; }
 		[[nodiscard]] uint32_t getVertexSize() const { return m_vertexSize; }
 
-		[[nodiscard]] VkFormat getVertexFormat() const
+		[[nodiscard]] Format getVertexFormat() const
 		{ 
-			if (m_vertexFormat == VK_FORMAT_UNDEFINED)
+			if (m_vertexFormat == Format::UNDEFINED)
 			{
 				Debug::sendError("Format is undefined");
 			}
@@ -50,7 +53,7 @@ namespace Wolf
 
 		uint32_t m_vertexCount;
 		uint32_t m_vertexSize;
-		VkFormat m_vertexFormat;
+		Format m_vertexFormat;
 		uint32_t m_indexCount;
 
 		AABB m_AABB;
@@ -67,7 +70,7 @@ namespace Wolf
 	};
 
 	template<typename T>
-	Mesh::Mesh(const std::vector<T>& vertices, const std::vector<uint32_t>& indices, AABB aabb, BoundingSphere boundingSphere, VkBufferUsageFlags additionalVertexBufferUsages, VkBufferUsageFlags additionalIndexBufferUsages, VkFormat vertexFormat)
+	Mesh::Mesh(const std::vector<T>& vertices, const std::vector<uint32_t>& indices, AABB aabb, BoundingSphere boundingSphere, VkBufferUsageFlags additionalVertexBufferUsages, VkBufferUsageFlags additionalIndexBufferUsages, Format vertexFormat)
 	{
 		m_vertexBuffer.reset(Buffer::createBuffer(sizeof(T) * vertices.size(), VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | additionalVertexBufferUsages, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT));
 		m_vertexBuffer->transferCPUMemoryWithStagingBuffer(static_cast<const void*>(vertices.data()), sizeof(T) * vertices.size());

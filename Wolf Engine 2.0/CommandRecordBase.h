@@ -6,6 +6,7 @@
 #include <vulkan/vulkan_core.h>
 
 #include <CommandBuffer.h>
+#include <Formats.h>
 #include <GraphicAPIManager.h>
 #include <Semaphore.h>
 
@@ -13,39 +14,42 @@ struct GLFWwindow;
 
 namespace Wolf
 {
-	class LightManager;
 	class CameraList;
 	class DescriptorSet;
 	class Image;
+	class LightManager;
 	class RenderMeshList;
+	class Timer;
 
 	struct InitializationContext
 	{
-		uint32_t swapChainWidth;
-		uint32_t swapChainHeight;
-		VkFormat swapChainFormat;
-		VkFormat depthFormat;
-		uint32_t swapChainImageCount;
+		uint32_t swapChainWidth = 0;
+		uint32_t swapChainHeight = 0;
+		Format swapChainFormat = Format::UNDEFINED;
+		Format depthFormat = Format::UNDEFINED;
+		uint32_t swapChainImageCount = 0;
 		std::vector<Image*> swapChainImages;
-		Image* userInterfaceImage;
+		Image* userInterfaceImage = nullptr;
 	};
 
 	struct RecordContext
 	{
-		uint32_t currentFrameIdx;
-		uint32_t commandBufferIdx; 
-		uint32_t swapChainImageIdx;
-		Image* swapchainImage;
+		uint32_t currentFrameIdx = 0;
+		uint32_t commandBufferIdx = 0;
+		uint32_t swapChainImageIdx = 0;
+		Image* swapchainImage = nullptr;
 #ifndef __ANDROID__
-		GLFWwindow* glfwWindow;
+		GLFWwindow* glfwWindow = nullptr;
 #endif
-		CameraList* cameraList;
-		const void* gameContext;
+		CameraList* cameraList = nullptr;
+		const void* gameContext = nullptr;
 		ResourceNonOwner<RenderMeshList> renderMeshList;
-		const DescriptorSet* bindlessDescriptorSet;
+		const DescriptorSet* bindlessDescriptorSet = nullptr;
 		ResourceNonOwner<LightManager> lightManager;
+		const Timer* globalTimer = nullptr;
 
-		RecordContext(const ResourceNonOwner<LightManager>& lightManager, const ResourceNonOwner<RenderMeshList>& renderMeshList) : lightManager(lightManager), renderMeshList(renderMeshList) {}
+		RecordContext(const ResourceNonOwner<LightManager>& lightManager, const ResourceNonOwner<RenderMeshList>& renderMeshList)
+			: renderMeshList(renderMeshList), lightManager(lightManager) {}
 	};
 
 	struct SubmitContext

@@ -143,7 +143,7 @@ std::vector<const char*> getRequiredExtensions()
 	return extensions;
 }
 
-VkFormat Wolf::Vulkan::getDepthFormat() const
+Wolf::Format Wolf::Vulkan::getDepthFormat() const
 {
 	return m_depthFormat;
 }

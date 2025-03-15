@@ -2,6 +2,8 @@
 
 #include <string>
 
+#include <Formats.h>
+
 #include "ImageCompression.h"
 
 namespace Wolf
@@ -18,7 +20,7 @@ namespace Wolf
 		[[nodiscard]] uint32_t getHeight() const { return m_height; }
 		[[nodiscard]] uint32_t getChannelCount() const { return m_channels; }
 		[[nodiscard]] ImageCompression::Compression getCompression() const { return m_compression; }
-		[[nodiscard]] VkFormat getFormat() const { return m_format; }
+		[[nodiscard]] Format getFormat() const { return m_format; }
 		[[nodiscard]] const std::vector<std::vector<uint8_t>>& getMipPixels() const { return m_mipPixels; }
 
 	private:
@@ -30,6 +32,6 @@ namespace Wolf
 
 		// DDS related
 		std::vector<std::vector<uint8_t>> m_mipPixels;
-		VkFormat m_format = VK_FORMAT_UNDEFINED;
+		Format m_format = Format::UNDEFINED;
 	};
 }

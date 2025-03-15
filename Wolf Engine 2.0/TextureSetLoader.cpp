@@ -39,7 +39,7 @@ Wolf::TextureSetLoader::TextureSetLoader(const TextureSetFileInfoGGX& textureSet
 
 	std::vector<ImageCompression::RGBA8> combinedRoughnessMetalnessAOAniso;
 	std::vector<std::vector<ImageCompression::RGBA8>> combinedRoughnessMetalnessAOMipLevels;
-	VkExtent3D combinedRoughnessMetalnessAOExtent = { 1, 1, 1};
+	Extent3D combinedRoughnessMetalnessAOExtent = { 1, 1, 1};
 	combinedRoughnessMetalnessAOAniso.resize(1);
 
 	// Roughness
@@ -50,7 +50,7 @@ Wolf::TextureSetLoader::TextureSetLoader(const TextureSetFileInfoGGX& textureSet
 
 		std::vector<ImageCompression::RGBA8> pixels;
 		std::vector<std::vector<ImageCompression::RGBA8>> mipLevels;
-		loadImageFile(textureSet.roughness, VK_FORMAT_R8G8B8A8_UNORM, pixels, mipLevels, combinedRoughnessMetalnessAOExtent);
+		loadImageFile(textureSet.roughness, Format::R8G8B8A8_UNORM, pixels, mipLevels, combinedRoughnessMetalnessAOExtent);
 
 		combinedRoughnessMetalnessAOAniso.resize(pixels.size());
 		for (uint32_t i = 0; i < pixels.size(); ++i)
@@ -76,8 +76,8 @@ Wolf::TextureSetLoader::TextureSetLoader(const TextureSetFileInfoGGX& textureSet
 
 		std::vector<ImageCompression::RGBA8> pixels;
 		std::vector<std::vector<ImageCompression::RGBA8>> mipLevels;
-		VkExtent3D extent;
-		loadImageFile(textureSet.metalness, VK_FORMAT_R8G8B8A8_UNORM, pixels, mipLevels, extent);
+		Extent3D extent;
+		loadImageFile(textureSet.metalness, Format::R8G8B8A8_UNORM, pixels, mipLevels, extent);
 
 		if (extent.width != combinedRoughnessMetalnessAOExtent.width || extent.height != combinedRoughnessMetalnessAOExtent.height)
 		{
@@ -107,8 +107,8 @@ Wolf::TextureSetLoader::TextureSetLoader(const TextureSetFileInfoGGX& textureSet
 
 		std::vector<ImageCompression::RGBA8> pixels;
 		std::vector<std::vector<ImageCompression::RGBA8>> mipLevels;
-		VkExtent3D extent;
-		loadImageFile(textureSet.ao, VK_FORMAT_R8G8B8A8_UNORM, pixels, mipLevels, extent);
+		Extent3D extent;
+		loadImageFile(textureSet.ao, Format::R8G8B8A8_UNORM, pixels, mipLevels, extent);
 
 		if (extent.width != combinedRoughnessMetalnessAOExtent.width || extent.height != combinedRoughnessMetalnessAOExtent.height)
 		{
@@ -138,8 +138,8 @@ Wolf::TextureSetLoader::TextureSetLoader(const TextureSetFileInfoGGX& textureSet
 
 		std::vector<ImageCompression::RGBA8> pixels;
 		std::vector<std::vector<ImageCompression::RGBA8>> mipLevels;
-		VkExtent3D extent;
-		loadImageFile(textureSet.anisoStrength, VK_FORMAT_R8G8B8A8_UNORM, pixels, mipLevels, extent);
+		Extent3D extent;
+		loadImageFile(textureSet.anisoStrength, Format::R8G8B8A8_UNORM, pixels, mipLevels, extent);
 
 		if (extent.width != combinedRoughnessMetalnessAOExtent.width || extent.height != combinedRoughnessMetalnessAOExtent.height)
 		{
@@ -171,7 +171,7 @@ Wolf::TextureSetLoader::TextureSetLoader(const TextureSetFileInfoGGX& textureSet
 		{
 			mipsData[i] = reinterpret_cast<const unsigned char*>(combinedRoughnessMetalnessAOMipLevels[i].data());
 		}
-		createImageFromData(combinedRoughnessMetalnessAOExtent, VK_FORMAT_R8G8B8A8_UNORM, reinterpret_cast<const unsigned char*>(combinedRoughnessMetalnessAOAniso.data()), mipsData, 2);
+		createImageFromData(combinedRoughnessMetalnessAOExtent, Format::R8G8B8A8_UNORM, reinterpret_cast<const unsigned char*>(combinedRoughnessMetalnessAOAniso.data()), mipsData, 2);
 	}
 }
 
@@ -181,30 +181,30 @@ Wolf::TextureSetLoader::TextureSetLoader(const TextureSetFileInfoSixWayLighting&
 	{
 		std::vector<ImageCompression::RGBA8> pixels;
 		std::vector<std::vector<ImageCompression::RGBA8>> mipLevels;
-		VkExtent3D extent;
-		loadImageFile(textureSet.tex0, VK_FORMAT_R8G8B8A8_UNORM, pixels, mipLevels, extent);
+		Extent3D extent;
+		loadImageFile(textureSet.tex0, Format::R8G8B8A8_UNORM, pixels, mipLevels, extent);
 
 		std::vector<const unsigned char*> mipsData(mipLevels.size());
 		for (uint32_t i = 0; i < mipLevels.size(); ++i)
 		{
 			mipsData[i] = reinterpret_cast<const unsigned char*>(mipLevels[i].data());
 		}
-		createImageFromData(extent, VK_FORMAT_R8G8B8A8_UNORM, reinterpret_cast<const unsigned char*>(pixels.data()), mipsData, 0);
+		createImageFromData(extent, Format::R8G8B8A8_UNORM, reinterpret_cast<const unsigned char*>(pixels.data()), mipsData, 0);
 	}
 
 	if (!textureSet.tex1.empty())
 	{
 		std::vector<ImageCompression::RGBA8> pixels;
 		std::vector<std::vector<ImageCompression::RGBA8>> mipLevels;
-		VkExtent3D extent;
-		loadImageFile(textureSet.tex1, VK_FORMAT_R8G8B8A8_UNORM, pixels, mipLevels, extent);
+		Extent3D extent;
+		loadImageFile(textureSet.tex1, Format::R8G8B8A8_UNORM, pixels, mipLevels, extent);
 
 		std::vector<const unsigned char*> mipsData(mipLevels.size());
 		for (uint32_t i = 0; i < mipLevels.size(); ++i)
 		{
 			mipsData[i] = reinterpret_cast<const unsigned char*>(mipLevels[i].data());
 		}
-		createImageFromData(extent, VK_FORMAT_R8G8B8A8_UNORM, reinterpret_cast<const unsigned char*>(pixels.data()), mipsData, 1);
+		createImageFromData(extent, Format::R8G8B8A8_UNORM, reinterpret_cast<const unsigned char*>(pixels.data()), mipsData, 1);
 	}
 }
 
@@ -218,7 +218,7 @@ void Wolf::TextureSetLoader::assignCache(uint32_t idx, std::vector<unsigned char
 	output = std::move(m_imagesData[idx]);
 }
 
-void Wolf::TextureSetLoader::loadImageFile(const std::string& filename, VkFormat format, std::vector<ImageCompression::RGBA8>& pixels, std::vector<std::vector<ImageCompression::RGBA8>>& mipLevels, VkExtent3D& outExtent) const
+void Wolf::TextureSetLoader::loadImageFile(const std::string& filename, Format format, std::vector<ImageCompression::RGBA8>& pixels, std::vector<std::vector<ImageCompression::RGBA8>>& mipLevels, Extent3D& outExtent) const
 {
 	const ImageFileLoader imageFileLoader(filename);
 
@@ -263,7 +263,7 @@ void Wolf::TextureSetLoader::loadImageFile(const std::string& filename, VkFormat
 	outExtent = { (imageFileLoader.getWidth()), (imageFileLoader.getHeight()), 1 };
 }
 
-void Wolf::TextureSetLoader::loadImageFile(const std::string& filename, VkFormat format, std::vector<ImageCompression::RG32F>& pixels, std::vector<std::vector<ImageCompression::RG32F>>& mipLevels, VkExtent3D& outExtent) const
+void Wolf::TextureSetLoader::loadImageFile(const std::string& filename, Format format, std::vector<ImageCompression::RG32F>& pixels, std::vector<std::vector<ImageCompression::RG32F>>& mipLevels, Extent3D& outExtent) const
 {
 	const ImageFileLoader imageFileLoader(filename, false);
 
@@ -322,7 +322,7 @@ bool Wolf::TextureSetLoader::createImageFileFromCache(const std::string& filenam
 			return false;
 		}
 
-		VkExtent3D extent;
+		Extent3D extent;
 		input.read(reinterpret_cast<char*>(&extent), sizeof(extent));
 
 		uint32_t dataBytesCount;
@@ -345,13 +345,13 @@ bool Wolf::TextureSetLoader::createImageFileFromCache(const std::string& filenam
 			mipsDataPtr[i] = mipsData[i].data();
 		}
 
-		VkFormat compressedFormat = VK_FORMAT_UNDEFINED;
+		Format compressedFormat = Format::UNDEFINED;
 		if (compression == ImageCompression::Compression::BC1)
-			compressedFormat = sRGB ? VK_FORMAT_BC1_RGB_SRGB_BLOCK : VK_FORMAT_BC1_RGBA_UNORM_BLOCK;
+			compressedFormat = sRGB ? Format::BC1_RGB_SRGB_BLOCK : Format::BC1_RGBA_UNORM_BLOCK;
 		else if (compression == ImageCompression::Compression::BC3)
-			compressedFormat = sRGB ? VK_FORMAT_BC3_SRGB_BLOCK : VK_FORMAT_BC3_UNORM_BLOCK;
+			compressedFormat = sRGB ? Format::BC3_SRGB_BLOCK : Format::BC3_UNORM_BLOCK;
 		else if (compression == ImageCompression::Compression::BC5)
-			compressedFormat = VK_FORMAT_BC5_UNORM_BLOCK;
+			compressedFormat = Format::BC5_UNORM_BLOCK;
 
 		createImageFromData(extent, compressedFormat, data.data(), mipsDataPtr, imageIdx);
 
@@ -361,8 +361,8 @@ bool Wolf::TextureSetLoader::createImageFileFromCache(const std::string& filenam
 	{
 		const ImageFileLoader imageFileLoader(filename, false);
 
-		VkExtent3D extent = { imageFileLoader.getWidth(), imageFileLoader.getHeight(), 1 };
-		VkFormat format = imageFileLoader.getFormat();
+		Extent3D extent = { imageFileLoader.getWidth(), imageFileLoader.getHeight(), 1 };
+		Format format = imageFileLoader.getFormat();
 
 		const std::vector<std::vector<uint8_t>> mipPixels = imageFileLoader.getMipPixels();
 		std::vector<const unsigned char*> mipPtrs(mipPixels.size());
@@ -382,17 +382,17 @@ bool Wolf::TextureSetLoader::createImageFileFromCache(const std::string& filenam
 template <typename PixelType>
 void Wolf::TextureSetLoader::createImageFileFromSource(const std::string& filename, bool sRGB, ImageCompression::Compression compression, uint32_t imageIdx)
 {
-	VkFormat format = VK_FORMAT_UNDEFINED;
+	Format format = Format::UNDEFINED;
 	if (compression == ImageCompression::Compression::BC1 || compression == ImageCompression::Compression::BC3)
-		format = sRGB ? VK_FORMAT_R8G8B8A8_SRGB : VK_FORMAT_R8G8B8A8_UNORM;
+		format = sRGB ? Format::R8G8B8A8_SRGB : Format::R8G8B8A8_UNORM;
 	else if (compression == ImageCompression::Compression::BC5)
-		format = VK_FORMAT_R32G32_SFLOAT;
+		format = Format::R32G32_SFLOAT;
 	else
 		Debug::sendCriticalError("Unhandled case");
 
 	std::vector<PixelType> pixels;
 	std::vector<std::vector<PixelType>> mipLevels;
-	VkExtent3D extent;
+	Extent3D extent;
 	loadImageFile(filename, format, pixels, mipLevels, extent);
 
 	if (pixels.size() < 4)
@@ -416,25 +416,25 @@ void Wolf::TextureSetLoader::createImageFileFromSource(const std::string& filena
 	outCacheFile.write(reinterpret_cast<char*>(&extent), sizeof(extent));
 
 	if (compression == ImageCompression::Compression::BC1)
-		compressAndCreateImage<ImageCompression::BC1>(mipLevels, pixels, extent, VK_FORMAT_BC1_RGB_SRGB_BLOCK, filename, outCacheFile, imageIdx);
+		compressAndCreateImage<ImageCompression::BC1>(mipLevels, pixels, extent, Format::BC1_RGB_SRGB_BLOCK, filename, outCacheFile, imageIdx);
 	else if (compression == ImageCompression::Compression::BC3)
-		compressAndCreateImage<ImageCompression::BC3>(mipLevels, pixels, extent, VK_FORMAT_BC3_SRGB_BLOCK, filename, outCacheFile, imageIdx);
+		compressAndCreateImage<ImageCompression::BC3>(mipLevels, pixels, extent, Format::BC3_SRGB_BLOCK, filename, outCacheFile, imageIdx);
 	else if (compression == ImageCompression::Compression::BC5)
-		compressAndCreateImage<ImageCompression::BC5>(mipLevels, pixels, extent, VK_FORMAT_BC5_UNORM_BLOCK, filename, outCacheFile, imageIdx);
+		compressAndCreateImage<ImageCompression::BC5>(mipLevels, pixels, extent, Format::BC5_UNORM_BLOCK, filename, outCacheFile, imageIdx);
 	else
 		Debug::sendError("Requested compression is not available");
 
 	outCacheFile.close();
 }
 
-void Wolf::TextureSetLoader::createImageFromData(VkExtent3D extent, VkFormat format, const unsigned char* pixels, const std::vector<const unsigned char*>& mipLevels, uint32_t idx)
+void Wolf::TextureSetLoader::createImageFromData(Extent3D extent, Format format, const unsigned char* pixels, const std::vector<const unsigned char*>& mipLevels, uint32_t idx)
 {
 	CreateImageInfo createImageInfo;
 	createImageInfo.extent = extent;
 	createImageInfo.aspect = VK_IMAGE_ASPECT_COLOR_BIT;
 	createImageInfo.format = format;
 	createImageInfo.mipLevelCount = static_cast<uint32_t>(mipLevels.size()) + 1;
-	createImageInfo.usage = VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
+	createImageInfo.usage = ImageUsageFlagBits::TRANSFER_DST | ImageUsageFlagBits::SAMPLED;
 	m_outputs[idx].reset(Image::createImage(createImageInfo));
 	m_outputs[idx]->copyCPUBuffer(pixels, Image::SampledInFragmentShader());
 
@@ -445,9 +445,9 @@ void Wolf::TextureSetLoader::createImageFromData(VkExtent3D extent, VkFormat for
 
 	if (m_useCache)
 	{
-		auto computeImageSize = [](VkExtent3D extent, float bpp, uint32_t mipLevel)
+		auto computeImageSize = [](Extent3D extent, float bpp, uint32_t mipLevel)
 			{
-				const VkExtent3D adjustedExtent = { extent.width >> mipLevel, extent.height >> mipLevel, extent.depth };
+				const Extent3D adjustedExtent = { extent.width >> mipLevel, extent.height >> mipLevel, extent.depth };
 				return static_cast<VkDeviceSize>(static_cast<float>(adjustedExtent.width) * static_cast<float>(adjustedExtent.height) * static_cast<float>(adjustedExtent.depth) * bpp);
 			};
 
@@ -472,7 +472,7 @@ void Wolf::TextureSetLoader::createImageFromData(VkExtent3D extent, VkFormat for
 }
 
 template <typename CompressionType, typename PixelType>
-void Wolf::TextureSetLoader::compressAndCreateImage(std::vector<std::vector<PixelType>>& mipLevels, const std::vector<PixelType>& pixels, VkExtent3D& extent, VkFormat format, const std::string& filename,
+void Wolf::TextureSetLoader::compressAndCreateImage(std::vector<std::vector<PixelType>>& mipLevels, const std::vector<PixelType>& pixels, Extent3D& extent, Format format, const std::string& filename,
 	std::fstream& outCacheFile, uint32_t imageIdx)
 {
 	std::vector<CompressionType> compressedBlocks;
