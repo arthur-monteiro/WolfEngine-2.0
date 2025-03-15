@@ -20,17 +20,17 @@ void UniquePass::initializeResources(const InitializationContext& context)
 {
 	createDepthImage(context);
 
-	Attachment depth({ context.swapChainWidth, context.swapChainHeight }, context.depthFormat, VK_SAMPLE_COUNT_1_BIT, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL, VK_ATTACHMENT_STORE_OP_DONT_CARE, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT,
+	Attachment depth({ context.swapChainWidth, context.swapChainHeight }, context.depthFormat, VK_SAMPLE_COUNT_1_BIT, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL, VK_ATTACHMENT_STORE_OP_DONT_CARE, Wolf::ImageUsageFlagBits::DEPTH_STENCIL_ATTACHMENT,
 		m_depthImage->getDefaultImageView());
-	Attachment color({ context.swapChainWidth, context.swapChainHeight }, context.swapChainFormat, VK_SAMPLE_COUNT_1_BIT, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR, VK_ATTACHMENT_STORE_OP_STORE, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, nullptr);
+	Attachment color({ context.swapChainWidth, context.swapChainHeight }, context.swapChainFormat, VK_SAMPLE_COUNT_1_BIT, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR, VK_ATTACHMENT_STORE_OP_STORE, Wolf::ImageUsageFlagBits::COLOR_ATTACHMENT, nullptr);
 
 	Extent2D vrsImageExtent = { static_cast<uint32_t>(std::ceil(static_cast<float>(context.swapChainWidth) / 16.0f)),static_cast<uint32_t>(std::ceil(static_cast<float>(context.swapChainHeight) / 16.0f)) };
 
 	CreateImageInfo shadingRateImageInfo{};
 	shadingRateImageInfo.extent = { vrsImageExtent.width, vrsImageExtent.height, 1 };
 	shadingRateImageInfo.aspect = VK_IMAGE_ASPECT_COLOR_BIT;
-	shadingRateImageInfo.usage = VK_IMAGE_USAGE_FRAGMENT_SHADING_RATE_ATTACHMENT_BIT_KHR | VK_IMAGE_USAGE_TRANSFER_DST_BIT;
-	shadingRateImageInfo.format = VK_FORMAT_R8_UINT;
+	shadingRateImageInfo.usage = Wolf::ImageUsageFlagBits::FRAGMENT_SHADING_RATE_ATTACHMENT | Wolf::ImageUsageFlagBits::TRANSFER_DST;
+	shadingRateImageInfo.format = Format::R8_UINT;
 	shadingRateImageInfo.mipLevelCount = 1;
 	m_shadingRateImage.reset(Image::createImage(shadingRateImageInfo));
 
@@ -56,7 +56,7 @@ void UniquePass::initializeResources(const InitializationContext& context)
 		VK_PIPELINE_STAGE_FRAGMENT_SHADING_RATE_ATTACHMENT_BIT_KHR, 0, 1 });
 
 	Attachment vrsAttachment(vrsImageExtent, shadingRateImageInfo.format, VK_SAMPLE_COUNT_1_BIT, VK_IMAGE_LAYOUT_FRAGMENT_SHADING_RATE_ATTACHMENT_OPTIMAL_KHR, VK_ATTACHMENT_STORE_OP_STORE, 
-		VK_IMAGE_USAGE_FRAGMENT_SHADING_RATE_ATTACHMENT_BIT_KHR, m_shadingRateImage->getDefaultImageView());
+		Wolf::ImageUsageFlagBits::FRAGMENT_SHADING_RATE_ATTACHMENT, m_shadingRateImage->getDefaultImageView());
 	vrsAttachment.loadOperation = VK_ATTACHMENT_LOAD_OP_LOAD;
 	vrsAttachment.initialLayout = VK_IMAGE_LAYOUT_FRAGMENT_SHADING_RATE_ATTACHMENT_OPTIMAL_KHR;
 
@@ -81,9 +81,9 @@ void UniquePass::initializeResources(const InitializationContext& context)
 	CreateImageInfo createImageInfo;
 	createImageInfo.extent = { (uint32_t)imageFileLoader.getWidth(), (uint32_t)imageFileLoader.getHeight(), 1 };
 	createImageInfo.aspect = VK_IMAGE_ASPECT_COLOR_BIT;
-	createImageInfo.format = VK_FORMAT_R8G8B8A8_UNORM;
+	createImageInfo.format = Format::R8G8B8A8_UNORM;
 	createImageInfo.mipLevelCount = 1;
-	createImageInfo.usage = VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
+	createImageInfo.usage = Wolf::ImageUsageFlagBits::TRANSFER_DST | Wolf::ImageUsageFlagBits::SAMPLED;
 	m_texture.reset(Image::createImage(createImageInfo));
 	m_texture->copyCPUBuffer(imageFileLoader.getPixels(), Image::SampledInFragmentShader());
 
@@ -126,9 +126,9 @@ void UniquePass::resize(const InitializationContext& context)
 	m_frameBuffers.clear();
 	m_frameBuffers.resize(context.swapChainImageCount);
 
-	Attachment depth({ context.swapChainWidth, context.swapChainHeight }, context.depthFormat, VK_SAMPLE_COUNT_1_BIT, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL, VK_ATTACHMENT_STORE_OP_DONT_CARE, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT,
+	Attachment depth({ context.swapChainWidth, context.swapChainHeight }, context.depthFormat, VK_SAMPLE_COUNT_1_BIT, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL, VK_ATTACHMENT_STORE_OP_DONT_CARE, Wolf::ImageUsageFlagBits::DEPTH_STENCIL_ATTACHMENT,
 		m_depthImage->getDefaultImageView());
-	Attachment color({ context.swapChainWidth, context.swapChainHeight }, context.swapChainFormat, VK_SAMPLE_COUNT_1_BIT, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR, VK_ATTACHMENT_STORE_OP_STORE, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, nullptr);
+	Attachment color({ context.swapChainWidth, context.swapChainHeight }, context.swapChainFormat, VK_SAMPLE_COUNT_1_BIT, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR, VK_ATTACHMENT_STORE_OP_STORE, Wolf::ImageUsageFlagBits::COLOR_ATTACHMENT, nullptr);
 	for (uint32_t i = 0; i < context.swapChainImageCount; ++i)
 	{
 		color.imageView = context.swapChainImages[i]->getDefaultImageView();
@@ -192,7 +192,7 @@ void UniquePass::createDepthImage(const InitializationContext& context)
 	depthImageCreateInfo.extent.depth = 1;
 	depthImageCreateInfo.mipLevelCount = 1;
 	depthImageCreateInfo.aspect = VK_IMAGE_ASPECT_DEPTH_BIT;
-	depthImageCreateInfo.usage = VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
+	depthImageCreateInfo.usage = Wolf::ImageUsageFlagBits::DEPTH_STENCIL_ATTACHMENT;
 	m_depthImage.reset(Image::createImage(depthImageCreateInfo));
 }
 

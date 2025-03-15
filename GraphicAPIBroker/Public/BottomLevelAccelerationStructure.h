@@ -6,6 +6,8 @@
 // TEMP
 #include <vulkan/vulkan_core.h>
 
+#include "Formats.h"
+
 namespace Wolf
 {
 	class Buffer;
@@ -17,7 +19,7 @@ namespace Wolf
 			const Buffer* vertexBuffer;
 			uint32_t vertexCount;
 			uint32_t vertexSize;
-			VkFormat vertexFormat;
+			Format vertexFormat;
 
 			const Buffer* indexBuffer;
 			uint32_t indexCount;

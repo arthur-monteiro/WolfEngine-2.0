@@ -308,8 +308,8 @@ Wolf::ModelLoader::ModelLoader(ModelData& outputModel, ModelLoadingInfo& modelLo
 			{
 				ResourceUniqueOwner<Image>& currentImage = currentTextureSet.images[imageIdx];
 
-				VkExtent3D extent = currentImage->getExtent();
-				outCacheFile.write(reinterpret_cast<char*>(&extent), sizeof(VkExtent3D));
+				Extent3D extent = currentImage->getExtent();
+				outCacheFile.write(reinterpret_cast<char*>(&extent), sizeof(Extent3D));
 				const std::vector<unsigned char>& imageData = m_imagesData[textureSetIdx * MaterialsGPUManager::TEXTURE_COUNT_PER_MATERIAL + imageIdx];
 				outCacheFile.write(reinterpret_cast<const char*>(imageData.data()), static_cast<uint32_t>(imageData.size()));
 			}
@@ -373,7 +373,7 @@ bool Wolf::ModelLoader::loadCache(ModelLoadingInfo& modelLoadingInfo) const
 
 		if (modelLoadingInfo.vulkanQueueLock)
 			modelLoadingInfo.vulkanQueueLock->lock();
-		m_outputModel->mesh.reset(new Mesh(vertices, indices, aabb, boundingSphere, modelLoadingInfo.additionalVertexBufferUsages, modelLoadingInfo.additionalIndexBufferUsages, VK_FORMAT_R32G32B32_SFLOAT));
+		m_outputModel->mesh.reset(new Mesh(vertices, indices, aabb, boundingSphere, modelLoadingInfo.additionalVertexBufferUsages, modelLoadingInfo.additionalIndexBufferUsages, Format::R32G32B32_SFLOAT));
 		if (modelLoadingInfo.vulkanQueueLock)
 			modelLoadingInfo.vulkanQueueLock->unlock();
 
@@ -424,7 +424,7 @@ bool Wolf::ModelLoader::loadCache(ModelLoadingInfo& modelLoadingInfo) const
 					startTimer = std::chrono::steady_clock::now();
 				}
 
-				VkExtent3D extent;
+				Extent3D extent;
 				input.read(reinterpret_cast<char*>(&extent), sizeof(extent));
 
 				ResourceUniqueOwner<Image>& currentImage = m_outputModel->textureSets[textureSetIdx].images[imageIdx];
@@ -432,14 +432,14 @@ bool Wolf::ModelLoader::loadCache(ModelLoadingInfo& modelLoadingInfo) const
 				CreateImageInfo createImageInfo;
 				createImageInfo.extent = { (extent.width), (extent.height), 1 };
 				createImageInfo.aspect = VK_IMAGE_ASPECT_COLOR_BIT;
-				createImageInfo.format = imageIdx == 0 ? VK_FORMAT_BC1_RGB_SRGB_BLOCK : VK_FORMAT_R8G8B8A8_UNORM;
+				createImageInfo.format = imageIdx == 0 ? Format::BC1_RGB_SRGB_BLOCK : Format::R8G8B8A8_UNORM;
 				createImageInfo.mipLevelCount = MAX_MIP_COUNT;
-				createImageInfo.usage = VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
+				createImageInfo.usage = ImageUsageFlagBits::TRANSFER_DST | ImageUsageFlagBits::SAMPLED;
 				currentImage.reset(Image::createImage(createImageInfo));
 
-				auto computeImageSize = [](VkExtent3D extent, float bpp, uint32_t mipLevel)
+				auto computeImageSize = [](Extent3D extent, float bpp, uint32_t mipLevel)
 					{
-						const VkExtent3D adjustedExtent = { extent.width >> mipLevel, extent.height >> mipLevel, extent.depth };
+						const Extent3D adjustedExtent = { extent.width >> mipLevel, extent.height >> mipLevel, extent.depth };
 						return static_cast<VkDeviceSize>(static_cast<float>(adjustedExtent.width) * static_cast<float>(adjustedExtent.height) * static_cast<float>(adjustedExtent.depth) * bpp);
 					};
 

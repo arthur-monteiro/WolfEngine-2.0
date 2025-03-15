@@ -5,7 +5,7 @@
 #include "Debug.h"
 #include "ImageCompression.h"
 
-Wolf::MipMapGenerator::MipMapGenerator(const unsigned char* firstMipPixels, Extent2D extent, VkFormat format, int mipCount)
+Wolf::MipMapGenerator::MipMapGenerator(const unsigned char* firstMipPixels, Extent2D extent, Format format, int mipCount)
 {
 	if(mipCount < 0)
 		mipCount = static_cast<uint32_t>(std::floor(std::log2(std::max(extent.width, extent.height)))) - 1; // remove 2 mip levels as min size must be 4x4
@@ -22,7 +22,7 @@ Wolf::MipMapGenerator::MipMapGenerator(const unsigned char* firstMipPixels, Exte
 
 	for (uint32_t mipLevel = 1; mipLevel < static_cast<uint32_t>(mipCount); ++mipLevel)
 	{
-		if (format == VK_FORMAT_R8G8B8A8_UNORM || format == VK_FORMAT_R8G8B8A8_SRGB)
+		if (format == Format::R8G8B8A8_UNORM || format == Format::R8G8B8A8_SRGB)
 		{
 			const ImageCompression::RGBA8* previousMip = reinterpret_cast<const ImageCompression::RGBA8*>(firstMipPixels);
 			if (mipLevel > 1)
@@ -32,7 +32,7 @@ Wolf::MipMapGenerator::MipMapGenerator(const unsigned char* firstMipPixels, Exte
 
 			createMipLevel(previousMip, reinterpret_cast<ImageCompression::RGBA8*>(m_mipLevels[mipLevel - 1].data()), extent.width >> (mipLevel - 1), extent.height >> (mipLevel - 1));
 		}
-		else if (format == VK_FORMAT_R32G32_SFLOAT)
+		else if (format == Format::R32G32_SFLOAT)
 		{
 			const ImageCompression::RG32F * previousMip = reinterpret_cast<const ImageCompression::RG32F*>(firstMipPixels);
 			if (mipLevel > 1)

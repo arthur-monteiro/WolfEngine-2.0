@@ -2,8 +2,6 @@
 
 #include <cstdint>
 
-#include <Debug.h>
-
 namespace Wolf
 {
 	enum ShaderStageFlagBits : uint32_t {
@@ -19,7 +17,7 @@ namespace Wolf
 		ANY_HIT = 1 << 9,
 		CLOSEST_HIT = 1 << 10,
 		MISS = 1 << 11,
-		MAX = 1 << 12
+		SHADER_STAGE_MAX = 1 << 12
 	};
 	using ShaderStageFlags = uint32_t;
 }

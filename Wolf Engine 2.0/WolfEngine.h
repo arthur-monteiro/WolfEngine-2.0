@@ -74,7 +74,7 @@ namespace Wolf
 #ifndef __ANDROID__
 		[[nodiscard]] ResourceNonOwner<InputHandler> getInputHandler() { return m_inputHandler.createNonOwnerResource(); }
 #endif
-		[[nodiscard]] VkExtent3D getSwapChainExtent() const { return m_swapChain->getImage(0)->getExtent(); }
+		[[nodiscard]] Extent3D getSwapChainExtent() const { return m_swapChain->getImage(0)->getExtent(); }
 
 		[[nodiscard]] bool isRayTracingAvailable() const { return m_graphicAPIManager->isRayTracingAvailable(); }
 

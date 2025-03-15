@@ -251,7 +251,7 @@ void Wolf::CommandBufferVulkan::dispatch(uint32_t groupCountX, uint32_t groupCou
 }
 
 #if !defined(__ANDROID__) or __ANDROID_MIN_SDK_VERSION__ > 30
-void Wolf::CommandBufferVulkan::traceRays(const ResourceReference<const ShaderBindingTable>& shaderBindingTable, const VkExtent3D& extent) const
+void Wolf::CommandBufferVulkan::traceRays(const ResourceReference<const ShaderBindingTable>& shaderBindingTable, const Extent3D& extent) const
 {
 	VkDeviceAddress sbtBufferAddress = static_cast<const BufferVulkan&>(shaderBindingTable->getBuffer()).getBufferDeviceAddress();
 

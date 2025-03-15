@@ -15,9 +15,9 @@ void Wolf::UltraLightSurface::Resize(uint32_t width, uint32_t height)
 	CreateImageInfo createImageInfo;
 	createImageInfo.extent = { width, height, 1 };
 	createImageInfo.aspect = VK_IMAGE_ASPECT_COLOR_BIT;
-	createImageInfo.format = VK_FORMAT_R8G8B8A8_UNORM;
+	createImageInfo.format = Format::R8G8B8A8_UNORM;
 	createImageInfo.mipLevelCount = 1;
-	createImageInfo.usage = VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
+	createImageInfo.usage = ImageUsageFlagBits::TRANSFER_SRC;
 	createImageInfo.imageTiling = VK_IMAGE_TILING_LINEAR;
 	createImageInfo.memoryProperties = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
 	m_image.reset(Image::createImage(createImageInfo));

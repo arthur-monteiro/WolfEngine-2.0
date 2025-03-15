@@ -165,6 +165,12 @@
     <ClInclude Include="Private\Vulkan\ShaderStagesVulkan.h">
       <Filter>Vulkan</Filter>
     </ClInclude>
+    <ClInclude Include="Public\Formats.h">
+      <Filter>API Elements</Filter>
+    </ClInclude>
+    <ClInclude Include="Private\Vulkan\FormatsVulkan.h">
+      <Filter>Vulkan</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Private\Vulkan\CommandPool.cpp">

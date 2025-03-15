@@ -47,7 +47,7 @@ namespace Wolf
 		case ShaderStageFlagBits::MISS:
 			shaderStage = VK_SHADER_STAGE_MISS_BIT_KHR;
 			break;
-		case ShaderStageFlagBits::MAX:
+		case ShaderStageFlagBits::SHADER_STAGE_MAX:
 		default:
 			Debug::sendCriticalError("Unhandled shader stage");
 		}
@@ -61,7 +61,7 @@ namespace Wolf
 
 #define ADD_FLAG_IF_PRESENT(flag) if (flags & (flag)) vkShaderStageFlags |= wolfStageBitToVkStageBit(flag)
 
-		for (uint32_t flag = 1; flag < MAX; flag <<= 1)
+		for (uint32_t flag = 1; flag < SHADER_STAGE_MAX; flag <<= 1)
 			ADD_FLAG_IF_PRESENT(static_cast<ShaderStageFlagBits>(flag));
 
 #undef ADD_FLAG_IF_PRESENT

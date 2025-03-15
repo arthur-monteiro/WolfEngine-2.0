@@ -95,14 +95,14 @@ Wolf::WolfEngine::WolfEngine(const WolfInstanceCreateInfo& createInfo) : m_globa
 		for (uint32_t i = 0; i < defaultImageFilename.size(); ++i)
 		{
 			const ImageFileLoader imageFileLoader(defaultImageFilename[i]);
-			const MipMapGenerator mipmapGenerator(imageFileLoader.getPixels(), { imageFileLoader.getWidth(), imageFileLoader.getHeight() }, VK_FORMAT_R8G8B8A8_SRGB);
+			const MipMapGenerator mipmapGenerator(imageFileLoader.getPixels(), { imageFileLoader.getWidth(), imageFileLoader.getHeight() }, Format::R8G8B8A8_SRGB);
 
 			CreateImageInfo createImageInfo;
 			createImageInfo.extent = { imageFileLoader.getWidth(), imageFileLoader.getHeight(), 1 };
 			createImageInfo.aspect = VK_IMAGE_ASPECT_COLOR_BIT;
-			createImageInfo.format = VK_FORMAT_R8G8B8A8_SRGB;
+			createImageInfo.format = Format::R8G8B8A8_SRGB;
 			createImageInfo.mipLevelCount = mipmapGenerator.getMipLevelCount();
-			createImageInfo.usage = VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
+			createImageInfo.usage = ImageUsageFlagBits::TRANSFER_DST | ImageUsageFlagBits::SAMPLED;
 			m_defaultImages[i].reset(Image::createImage(createImageInfo));
 			m_defaultImages[i]->copyCPUBuffer(imageFileLoader.getPixels(), Image::SampledInFragmentShader());
 
@@ -230,6 +230,7 @@ void Wolf::WolfEngine::frame(const std::span<ResourceNonOwner<CommandRecordBase>
 		recordContext.gameContext = m_gameContexts[recordContext.commandBufferIdx];
 		if (m_materialsManager)
 			recordContext.bindlessDescriptorSet = m_materialsManager->getDescriptorSet();
+		recordContext.globalTimer = &m_globalTimer;
 
 		for (const ResourceNonOwner<CommandRecordBase>& pass : passes)
 		{

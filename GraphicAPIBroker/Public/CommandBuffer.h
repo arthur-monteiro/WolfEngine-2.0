@@ -61,7 +61,7 @@ namespace Wolf
 		virtual void drawIndexed(uint32_t indexCount, uint32_t instanceCount, uint32_t firstIndex, int32_t vertexOffset, uint32_t firstInstance) const = 0;
 		virtual void dispatch(uint32_t groupCountX, uint32_t groupCountY, uint32_t groupCountZ) const = 0;
 #if !defined(__ANDROID__) or __ANDROID_MIN_SDK_VERSION__ > 30
-		virtual void traceRays(const ResourceReference<const ShaderBindingTable>& shaderBindingTable, const VkExtent3D& extent) const = 0;
+		virtual void traceRays(const ResourceReference<const ShaderBindingTable>& shaderBindingTable, const Extent3D& extent) const = 0;
 #endif
 
 		virtual void debugMarkerInsert(const DebugMarkerInfo& debugMarkerInfo) const = 0;

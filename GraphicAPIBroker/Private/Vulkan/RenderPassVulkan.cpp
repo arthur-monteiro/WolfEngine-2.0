@@ -2,6 +2,8 @@
 
 #include <Debug.h>
 
+#include "../../Public/Image.h"
+#include "FormatsVulkan.h"
 #include "Vulkan.h"
 
 Wolf::RenderPassVulkan::RenderPassVulkan(const std::vector<Attachment>& attachments)
@@ -30,7 +32,7 @@ Wolf::RenderPassVulkan::RenderPassVulkan(const std::vector<Attachment>& attachme
 #ifdef WOLF_VULKAN_1_2
 		attachmentDescriptions[i].sType = VK_STRUCTURE_TYPE_ATTACHMENT_DESCRIPTION_2;
 #endif
-		attachmentDescriptions[i].format = attachments[i].format;
+		attachmentDescriptions[i].format = wolfFormatToVkFormat(attachments[i].format);
 		attachmentDescriptions[i].samples = attachments[i].sampleCount;
 		attachmentDescriptions[i].loadOp = attachments[i].loadOperation;
 		attachmentDescriptions[i].storeOp = attachments[i].storeOperation;
@@ -51,7 +53,7 @@ Wolf::RenderPassVulkan::RenderPassVulkan(const std::vector<Attachment>& attachme
 		
 		ref.attachment = i;
 
-		if ((attachments[i].usageType & VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT) && (attachments[i].usageType & VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT))
+		if ((attachments[i].usageType & ImageUsageFlagBits::COLOR_ATTACHMENT) && (attachments[i].usageType & ImageUsageFlagBits::TRANSIENT_ATTACHMENT))
 		{
 #ifdef WOLF_VULKAN_1_2
 			ref.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
@@ -59,7 +61,7 @@ Wolf::RenderPassVulkan::RenderPassVulkan(const std::vector<Attachment>& attachme
 			ref.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
 			resolveAttachmentRefs.push_back(ref);
 		}
-		else if (attachments[i].usageType & VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT)
+		else if (attachments[i].usageType & ImageUsageFlagBits::COLOR_ATTACHMENT)
 		{
 #ifdef WOLF_VULKAN_1_2
 			ref.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
@@ -67,7 +69,7 @@ Wolf::RenderPassVulkan::RenderPassVulkan(const std::vector<Attachment>& attachme
 			ref.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
 			colorAttachmentRefs.push_back(ref);
 		}
-		else if (attachments[i].usageType & VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT)
+		else if (attachments[i].usageType & ImageUsageFlagBits::DEPTH_STENCIL_ATTACHMENT)
 		{
 #ifdef WOLF_VULKAN_1_2
 			ref.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT;
@@ -77,7 +79,7 @@ Wolf::RenderPassVulkan::RenderPassVulkan(const std::vector<Attachment>& attachme
 			useDepthAttachment = true;
 		}
 #ifdef WOLF_VULKAN_1_2
-		else if(attachments[i].usageType & VK_IMAGE_USAGE_FRAGMENT_SHADING_RATE_ATTACHMENT_BIT_KHR)
+		else if(attachments[i].usageType & ImageUsageFlagBits::FRAGMENT_SHADING_RATE_ATTACHMENT)
 		{
 			ref.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
 			ref.layout = VK_IMAGE_LAYOUT_FRAGMENT_SHADING_RATE_ATTACHMENT_OPTIMAL_KHR;
