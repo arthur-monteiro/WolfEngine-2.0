@@ -116,7 +116,7 @@ void UniquePass::record(const RecordContext& context)
 
 	m_commandBuffer->beginCommandBuffer();
 
-	std::vector<VkClearValue> clearValues(2);
+	std::vector<ClearValue> clearValues(2);
 	clearValues[0] = {{{1.0f}}};
 	clearValues[1] = {{{0.1f, 0.1f, 0.1f, 1.0f}}};
 	m_commandBuffer->beginRenderPass(*m_renderPass, *m_frameBuffers[frameBufferIdx], clearValues);
