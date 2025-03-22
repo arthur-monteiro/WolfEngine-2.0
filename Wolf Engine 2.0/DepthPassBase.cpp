@@ -34,7 +34,7 @@ void Wolf::DepthPassBase::record(const RecordContext& context)
 {
 	const CommandBuffer& commandBuffer = getCommandBuffer(context);
 
-	std::vector<VkClearValue> clearValues(1);
+	std::vector<ClearValue> clearValues(1);
 	clearValues[0] = {{{1.0f}}};
 	commandBuffer.beginRenderPass(*m_renderPass, *m_frameBuffer, clearValues);
 

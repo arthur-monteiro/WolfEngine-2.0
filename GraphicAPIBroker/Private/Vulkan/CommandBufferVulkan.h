@@ -21,7 +21,7 @@ namespace Wolf
 		void endCommandBuffer() const override;
 		void submit(const std::vector<const Semaphore*>& waitSemaphores, const std::vector<const Semaphore*>& signalSemaphores, const ResourceReference<const Fence>& fence) const override;
 
-		void beginRenderPass(const RenderPass& renderPass, const FrameBuffer& frameBuffer, const std::vector<VkClearValue>& clearValues) const override;
+		void beginRenderPass(const RenderPass& renderPass, const FrameBuffer& frameBuffer, const std::vector<ClearValue>& clearValues) const override;
 		void endRenderPass() const override;
 
 		void bindVertexBuffer(const Buffer& buffer, uint32_t bindingIdx = 0) const override;

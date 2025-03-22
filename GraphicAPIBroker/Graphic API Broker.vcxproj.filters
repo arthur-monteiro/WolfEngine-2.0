@@ -171,6 +171,9 @@
     <ClInclude Include="Private\Vulkan\FormatsVulkan.h">
       <Filter>Vulkan</Filter>
     </ClInclude>
+    <ClInclude Include="Public\ClearValue.h">
+      <Filter>API Elements</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Private\Vulkan\CommandPool.cpp">

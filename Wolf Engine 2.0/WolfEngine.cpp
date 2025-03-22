@@ -178,6 +178,8 @@ void Wolf::WolfEngine::updateBeforeFrame()
 
 void Wolf::WolfEngine::frame(const std::span<ResourceNonOwner<CommandRecordBase>>& passes, const Semaphore* frameEndedSemaphore)
 {
+	PROFILE_FUNCTION
+
 	if (passes.empty())
 		Debug::sendError("No pass sent to frame");
 

@@ -115,6 +115,7 @@ namespace Wolf
 	struct ModelData
 	{
 		ResourceUniqueOwner<Mesh> mesh;
+		bool isMeshCentered;
 		std::vector<MaterialsGPUManager::TextureSetInfo> textureSets;
 
 		std::unique_ptr<AnimationData> animationData;
@@ -136,7 +137,7 @@ namespace Wolf
 		bool loadCache(ModelLoadingInfo& modelLoadingInfo) const;
 
 		// Materials
-		void loadTextureSet(const tinyobj::material_t& material, const std::string& mtlFolder, TextureSetLoader::InputTextureSetLayout textureSetLayout, uint32_t indexMaterial);
+		void loadTextureSet(const tinyobj::material_t& material, const std::string& mtlFolder, uint32_t indexMaterial);
 		
 		bool m_useCache;
 		std::vector<std::vector<unsigned char>> m_imagesData;

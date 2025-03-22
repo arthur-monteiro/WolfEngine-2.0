@@ -54,6 +54,7 @@
     <ClInclude Include="Public\Attachment.h" />
     <ClInclude Include="Public\BottomLevelAccelerationStructure.h" />
     <ClInclude Include="Public\Buffer.h" />
+    <ClInclude Include="Public\ClearValue.h" />
     <ClInclude Include="Public\CommandBuffer.h" />
     <ClInclude Include="Public\DescriptorLayout.h" />
     <ClInclude Include="Public\DescriptorSet.h" />
@@ -156,7 +157,7 @@
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
-    <ConfigurationType>Application</ConfigurationType>
+    <ConfigurationType>StaticLibrary</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
     <PlatformToolset>v143</PlatformToolset>
     <WholeProgramOptimization>true</WholeProgramOptimization>
@@ -264,8 +265,10 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>NDEBUG;_CONSOLE;WOLF_VULKAN;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
+      <AdditionalIncludeDirectories>..\Common;..\ThirdParty\vulkan\Include;..\ThirdParty\GLFW\include;..\ThirdParty\glm;..\ThirdParty\OVR\Include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <LanguageStandard>stdcpp20</LanguageStandard>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>

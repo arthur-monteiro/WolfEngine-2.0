@@ -7,6 +7,7 @@
 #include "Configuration.h"
 #include "Debug.h"
 #include "InputHandler.h"
+#include "ProfilerCommon.h"
 #include "Semaphore.h"
 #include "Timer.h"
 #include "Window.h"
@@ -37,23 +38,30 @@ void Wolf::UltraLight::waitInitializationDone() const
 
 void Wolf::UltraLight::processFrameJobs()
 {
+    PROFILE_FUNCTION
+
     m_inputHandler->lockCache(m_ultraLightImplementation.get());
     m_inputHandler->pushDataToCache(m_ultraLightImplementation.get());
     m_inputHandler->unlockCache(m_ultraLightImplementation.get());
 
+    m_copySubmittedThisFrame = false;
     if (m_mutex.try_lock())
     {
-        m_ultraLightImplementation->submitCopyImageCommandBuffer();
+        if (m_tryToRequestCopyThisFrame)
+        {
+            m_ultraLightImplementation->submitCopyImageCommandBuffer();
+            m_copySubmittedThisFrame = true;
+            m_needUpdate = false;
+            m_mutex.unlock();
+        }
+        else
+        {
+            m_mutex.unlock();
+            m_needUpdate = true;
+            m_updateCondition.notify_all();
+        }
 
-        m_mutex.unlock();
-        m_needUpdate = true;
-        m_updateCondition.notify_all();
-
-        m_copySubmittedThisFrame = true;
-    }
-    else
-    {
-        m_copySubmittedThisFrame = false;
+        m_tryToRequestCopyThisFrame = !m_tryToRequestCopyThisFrame;
     }
 }
 
@@ -107,7 +115,13 @@ void Wolf::UltraLight::processImplementation(const char* htmlURL, const std::fun
     for (;;)
     {
         std::unique_lock<std::mutex> lock(m_mutex);
-        m_updateCondition.wait(lock, [&] { return m_needUpdate; });
+        {
+            PROFILE_SCOPED("Ultralight wait")
+
+            m_updateCondition.wait(lock, [&] { return m_needUpdate; });
+        }
+
+        PROFILE_SCOPED("Ultralight process")
 
         if (m_stopThreadRequested)
         {
@@ -143,8 +157,6 @@ void Wolf::UltraLight::processImplementation(const char* htmlURL, const std::fun
         }
         m_evaluateScriptRequestsMutex.unlock();
 
-        m_ultraLightImplementation->waitForCopyFence();
-
         m_ultraLightImplementation->update(m_inputHandler);
         m_ultraLightImplementation->render();
         
@@ -177,19 +189,29 @@ Wolf::UltraLight::UltraLightImplementation::UltraLightImplementation(uint32_t wi
     m_view->LoadURL(absoluteURL.c_str());
     m_view->Focus();
 
-    while (!m_done)
+    UltraLightSurface* surface = dynamic_cast<UltraLightSurface*>(m_view->surface());
+    uint32_t i = 0;
+    while (!m_done && i < UltraLightSurface::IMAGE_COUNT)
     {
-        std::this_thread::sleep_for(std::chrono::milliseconds(10));
+        if (i >= UltraLightSurface::IMAGE_COUNT)
+        {
+            std::this_thread::sleep_for(std::chrono::milliseconds(10));
+        }
+
         m_renderer->Update();
         m_renderer->Render();
+
+        surface->moveToNextFrame();
     }
 
-    m_copyImageCommandBuffer.reset(CommandBuffer::createCommandBuffer(QueueType::TRANSFER, false));
+    for (ResourceUniqueOwner<CommandBuffer>& commandBuffer : m_copyImageCommandBuffers)
+    {
+        commandBuffer.reset(CommandBuffer::createCommandBuffer(QueueType::TRANSFER, false));
+    }
 
     createOutputAndRecordCopyCommandBuffer(width, height);
 
     m_copyImageSemaphore.reset(Semaphore::createSemaphore(VK_PIPELINE_STAGE_TRANSFER_BIT));
-    m_copyImageFence.reset(Fence::createFence(false));
 }
 
 void Wolf::UltraLight::UltraLightImplementation::OnFinishLoading(View* caller, uint64_t frame_id, bool is_main_frame, const String& url)
@@ -238,12 +260,6 @@ void Wolf::UltraLight::UltraLightImplementation::getJSObject(JSObject& outObject
 void Wolf::UltraLight::UltraLightImplementation::evaluateScript(const std::string& script) const
 {
     m_view->EvaluateScript(script.c_str());
-}
-
-void Wolf::UltraLight::UltraLightImplementation::waitForCopyFence() const
-{
-    m_copyImageFence->waitForFence();
-    m_copyImageFence->resetFence();
 }
 
 bool Wolf::UltraLight::UltraLightImplementation::reloadIfModified()
@@ -367,7 +383,15 @@ void Wolf::UltraLight::UltraLightImplementation::update(const ResourceNonOwner<I
 
 void Wolf::UltraLight::UltraLightImplementation::render() const
 {
-    m_renderer->Render();
+    UltraLightSurface* surface = dynamic_cast<UltraLightSurface*>(m_view->surface());
+    surface->beforeRender();
+
+    {
+        PROFILE_SCOPED("Ultralight render")
+        m_renderer->Render();
+    }
+
+    surface->moveToNextFrame();
 }
 
 void Wolf::UltraLight::UltraLightImplementation::resize(uint32_t width, uint32_t height) const
@@ -379,9 +403,12 @@ void Wolf::UltraLight::UltraLightImplementation::resize(uint32_t width, uint32_t
 
 void Wolf::UltraLight::UltraLightImplementation::submitCopyImageCommandBuffer() const
 {
+    const UltraLightSurface* surface = dynamic_cast<UltraLightSurface*>(m_view->surface());
+    uint32_t imageIdx = surface->getReadyImageIdx();
+
     const std::vector<const Semaphore*> waitSemaphores{ };
     const std::vector<const Semaphore*> signalSemaphores{ m_copyImageSemaphore.get() };
-    m_copyImageCommandBuffer->submit(waitSemaphores, signalSemaphores, m_copyImageFence.get());
+    m_copyImageCommandBuffers[imageIdx]->submit(waitSemaphores, signalSemaphores, nullptr);
 }
 
 void Wolf::UltraLight::UltraLightImplementation::createOutputAndRecordCopyCommandBuffer(uint32_t width, uint32_t height)
@@ -395,29 +422,35 @@ void Wolf::UltraLight::UltraLightImplementation::createOutputAndRecordCopyComman
     createImageInfo.imageTiling = VK_IMAGE_TILING_LINEAR;
     createImageInfo.memoryProperties = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
     m_userInterfaceImage.reset(Image::createImage(createImageInfo));
+    m_userInterfaceImage->setImageLayout({ VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_ACCESS_SHADER_READ_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, 0, 1 });
 
-    m_copyImageCommandBuffer->beginCommandBuffer();
+    for (uint32_t i = 0; i < m_copyImageCommandBuffers.size(); ++i)
+    {
+        ResourceUniqueOwner<CommandBuffer>& commandBuffer = m_copyImageCommandBuffers[i];
 
-    VkImageCopy copyRegion{};
+        commandBuffer->beginCommandBuffer();
 
-    copyRegion.srcSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-    copyRegion.srcSubresource.baseArrayLayer = 0;
-    copyRegion.srcSubresource.mipLevel = 0;
-    copyRegion.srcSubresource.layerCount = 1;
-    copyRegion.srcOffset = { 0, 0, 0 };
+        VkImageCopy copyRegion{};
 
-    copyRegion.dstSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-    copyRegion.dstSubresource.baseArrayLayer = 0;
-    copyRegion.dstSubresource.mipLevel = 0;
-    copyRegion.dstSubresource.layerCount = 1;
-    copyRegion.dstOffset = { 0, 0, 0 };
+        copyRegion.srcSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+        copyRegion.srcSubresource.baseArrayLayer = 0;
+        copyRegion.srcSubresource.mipLevel = 0;
+        copyRegion.srcSubresource.layerCount = 1;
+        copyRegion.srcOffset = { 0, 0, 0 };
 
-    copyRegion.extent = { width, height, 1 };
+        copyRegion.dstSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+        copyRegion.dstSubresource.baseArrayLayer = 0;
+        copyRegion.dstSubresource.mipLevel = 0;
+        copyRegion.dstSubresource.layerCount = 1;
+        copyRegion.dstOffset = { 0, 0, 0 };
 
-    const UltraLightSurface* surface = dynamic_cast<UltraLightSurface*>(m_view->surface());
-    m_userInterfaceImage->transitionImageLayout(*m_copyImageCommandBuffer, { VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_ACCESS_TRANSFER_WRITE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, 0, 1 });
-    m_userInterfaceImage->recordCopyGPUImage(surface->getImage(), copyRegion, *m_copyImageCommandBuffer);
-    m_userInterfaceImage->transitionImageLayout(*m_copyImageCommandBuffer, { VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_ACCESS_SHADER_READ_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, 0, 1 });
+        copyRegion.extent = { width, height, 1 };
 
-    m_copyImageCommandBuffer->endCommandBuffer();
+        const UltraLightSurface* surface = dynamic_cast<UltraLightSurface*>(m_view->surface());
+        m_userInterfaceImage->transitionImageLayout(*commandBuffer, { VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_ACCESS_TRANSFER_WRITE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, 0, 1 });
+        m_userInterfaceImage->recordCopyGPUImage(surface->getImage(i), copyRegion, *commandBuffer);
+        m_userInterfaceImage->transitionImageLayout(*commandBuffer, { VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_ACCESS_SHADER_READ_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, 0, 1 });
+
+        commandBuffer->endCommandBuffer();
+    }
 }

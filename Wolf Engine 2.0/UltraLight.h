@@ -49,6 +49,7 @@ namespace Wolf
         std::mutex m_mutex;
         std::condition_variable m_updateCondition;
         std::function<void()> m_bindUltralightCallbacks;
+        bool m_tryToRequestCopyThisFrame = false;
         bool m_copySubmittedThisFrame = false;
         ResourceNonOwner<InputHandler> m_inputHandler;
 
@@ -73,7 +74,6 @@ namespace Wolf
             static void getJSObject(ultralight::JSObject& outObject);
             void evaluateScript(const std::string& script) const;
 
-            void waitForCopyFence() const;
             bool reloadIfModified();
             void update(const ResourceNonOwner<InputHandler>& inputHandler) const;
             void render() const;
@@ -97,9 +97,8 @@ namespace Wolf
 
             // Copy to used UI image
             std::unique_ptr<Image> m_userInterfaceImage;
-            std::unique_ptr<CommandBuffer> m_copyImageCommandBuffer;
+            std::array<ResourceUniqueOwner<CommandBuffer>, UltraLightSurface::IMAGE_COUNT> m_copyImageCommandBuffers;
             std::unique_ptr<Semaphore> m_copyImageSemaphore;
-            std::unique_ptr<Fence> m_copyImageFence;
         };
 
         std::unique_ptr<UltraLightImplementation> m_ultraLightImplementation;

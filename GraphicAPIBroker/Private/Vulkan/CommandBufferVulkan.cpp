@@ -21,14 +21,14 @@ Wolf::CommandBufferVulkan::CommandBufferVulkan(QueueType queueType, bool oneTime
 	allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
 
 	VkCommandPool commandPool = VK_NULL_HANDLE;
-	if (queueType == QueueType::GRAPHIC || queueType == QueueType::TRANSFER)
+	if (queueType == QueueType::GRAPHIC || queueType == QueueType::TRANSFER || queueType == QueueType::COMPUTE || queueType == QueueType::RAY_TRACING)
 	{
 		if (oneTimeSubmit)
 			commandPool = g_vulkanInstance->getGraphicsTransientCommandPool()->getCommandPool();
 		else
 			commandPool = g_vulkanInstance->getGraphicsCommandPool()->getCommandPool();
 	}
-	else if (queueType == QueueType::COMPUTE || queueType == QueueType::RAY_TRACING)
+	else if (queueType == QueueType::ASYNC_COMPUTE)
 	{
 		if (oneTimeSubmit)
 			commandPool = g_vulkanInstance->getComputeTransientCommandPool()->getCommandPool();
@@ -71,7 +71,7 @@ void Wolf::CommandBufferVulkan::endCommandBuffer() const
 void Wolf::CommandBufferVulkan::submit(const std::vector<const Semaphore*>& waitSemaphores, const std::vector<const Semaphore*>& signalSemaphores, const ResourceReference<const Fence>& fence) const
 {
 	VkQueue queue;
-	if (m_queueType == QueueType::GRAPHIC || m_queueType == QueueType::TRANSFER)
+	if (m_queueType == QueueType::GRAPHIC || m_queueType == QueueType::TRANSFER || m_queueType == QueueType::COMPUTE || m_queueType == QueueType::RAY_TRACING)
 		queue = g_vulkanInstance->getGraphicsQueue();
 	else
 		queue = g_vulkanInstance->getComputeQueue();
@@ -109,8 +109,7 @@ void Wolf::CommandBufferVulkan::submit(const std::vector<const Semaphore*>& wait
 	}
 }
 
-void Wolf::CommandBufferVulkan::beginRenderPass(const RenderPass& renderPass, const FrameBuffer& frameBuffer,
-	const std::vector<VkClearValue>& clearValues) const
+void Wolf::CommandBufferVulkan::beginRenderPass(const RenderPass& renderPass, const FrameBuffer& frameBuffer, const std::vector<ClearValue>& clearValues) const
 {
 	VkRenderPassBeginInfo renderPassInfo = {};
 	renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
@@ -119,8 +118,15 @@ void Wolf::CommandBufferVulkan::beginRenderPass(const RenderPass& renderPass, co
 	renderPassInfo.renderArea.offset = { 0, 0 };
 	renderPassInfo.renderArea.extent = { renderPass.getExtent().width, renderPass.getExtent().height };
 
-	renderPassInfo.clearValueCount = static_cast<uint32_t>(clearValues.size());
-	renderPassInfo.pClearValues = clearValues.data();
+	std::vector<VkClearValue> vkClearValues(clearValues.size());
+	for (uint32_t i = 0; i < vkClearValues.size(); ++i)
+	{
+		static_assert(sizeof(VkClearValue) == sizeof(ClearValue));
+		memcpy(&vkClearValues[i], &clearValues[i], sizeof(VkClearValue));
+	}
+
+	renderPassInfo.clearValueCount = static_cast<uint32_t>(vkClearValues.size());
+	renderPassInfo.pClearValues = vkClearValues.data();
 
 	vkCmdBeginRenderPass(m_commandBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
 }

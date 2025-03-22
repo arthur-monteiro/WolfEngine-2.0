@@ -271,9 +271,9 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>NDEBUG;_CONSOLE;_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>NDEBUG;_CONSOLE;_CRT_SECURE_NO_WARNINGS;IMMEDIATE_DELETE;WOLF_VULKAN;TRACY_ENABLE;TRACY_ON_DEMAND;MATERIAL_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>..\ThirdParty\FrustumCull;..\ThirdParty\glm;..\ThirdParty\vulkan\Include;..\ThirdParty\stb_image;..\ThirdParty\tiny_obj;..\ThirdParty\GLFW\include;..\ThirdParty\OVR\Include;..\ThirdParty\UltraLight\include;..\ThirdParty\xxh64;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\Common;..\GraphicAPIBroker\Public;..\ThirdParty\FrustumCull;..\ThirdParty\glm;..\ThirdParty\vulkan\Include;..\ThirdParty\stb_image;..\ThirdParty\tiny_obj;..\ThirdParty\GLFW\include;..\ThirdParty\OVR\Include;..\ThirdParty\UltraLight\include;..\ThirdParty\xxh64;..\ThirdParty\Tracy\tracy;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp20</LanguageStandard>
     </ClCompile>
     <Link>
@@ -282,6 +282,9 @@
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
     </Link>
+    <PreBuildEvent>
+      <Command>"../x64/Debug/GenerateCodeFileHashes.exe"</Command>
+    </PreBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="..\ThirdParty\Tracy\TracyClient.cpp" />
