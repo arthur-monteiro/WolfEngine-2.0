@@ -171,10 +171,11 @@ void Wolf::SwapChainVulkan::present(const Semaphore* waitSemaphore, uint32_t ima
 	VkPresentInfoKHR presentInfo = {};
 	presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
 
+	VkSemaphore semaphore = VK_NULL_HANDLE;
 	if (waitSemaphore)
 	{
+		semaphore = static_cast<const SemaphoreVulkan*>(waitSemaphore)->getSemaphore();
 		presentInfo.waitSemaphoreCount = 1;
-		const VkSemaphore semaphore = static_cast<const SemaphoreVulkan*>(waitSemaphore)->getSemaphore();
 		presentInfo.pWaitSemaphores = &semaphore;
 	}
 	else

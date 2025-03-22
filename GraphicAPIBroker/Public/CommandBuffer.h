@@ -3,10 +3,11 @@
 #include <cstdint>
 #include <vector>
 
-// TEMP
+// TEMP VkImageLayout + VkImageSubresourceRange
 #include <vulkan/vulkan_core.h>
 
 #include "Buffer.h"
+#include "ClearValue.h"
 #include "Enums.h"
 #include "Extents.h"
 #include "Fence.h"
@@ -23,7 +24,7 @@ namespace Wolf
 	class FrameBuffer;
 	class Semaphore;
 
-	enum class QueueType { GRAPHIC, COMPUTE, TRANSFER, RAY_TRACING };
+	enum class QueueType { GRAPHIC, COMPUTE, TRANSFER, RAY_TRACING, ASYNC_COMPUTE };
 
 	class CommandBuffer
 	{
@@ -37,7 +38,7 @@ namespace Wolf
 		virtual void endCommandBuffer() const = 0;
 		virtual void submit(const std::vector<const Semaphore*>& waitSemaphores, const std::vector<const Semaphore*>& signalSemaphores, const ResourceReference<const Fence>& fence) const = 0;
 
-		virtual void beginRenderPass(const RenderPass& renderPass, const FrameBuffer& frameBuffer, const std::vector<VkClearValue>& clearValues) const = 0;
+		virtual void beginRenderPass(const RenderPass& renderPass, const FrameBuffer& frameBuffer, const std::vector<ClearValue>& clearValues) const = 0;
 		virtual void endRenderPass() const = 0;
 
 		// Binds

@@ -72,7 +72,7 @@ Wolf::ModelLoader::ModelLoader(ModelData& outputModel, ModelLoadingInfo& modelLo
 
 	Debug::sendInfo("Start loading " + modelLoadingInfo.filename);
 
-	if (modelLoadingInfo.useCache)
+	if (false && modelLoadingInfo.useCache) // TODO: fix cache: instead of writing texture data, just write texture filenames and load with 'loadTextureSet'
 	{
 		if (loadCache(modelLoadingInfo))
 			return;
@@ -187,14 +187,11 @@ Wolf::ModelLoader::ModelLoader(ModelData& outputModel, ModelLoadingInfo& modelLo
 	if (glm::length(center) > glm::length(maxPos) * 0.1f)
 	{
 		Debug::sendWarning("Model " + modelLoadingInfo.filename + " is not centered");
-
-		for (Vertex3D& vertex : vertices)
-		{
-			vertex.pos -= center;
-		}
-
-		maxPos -= center;
-		minPos -= center;
+		m_outputModel->isMeshCentered = false;
+	}
+	else
+	{
+		m_outputModel->isMeshCentered = true;
 	}
 
 	AABB aabb(minPos, maxPos);
@@ -263,7 +260,7 @@ Wolf::ModelLoader::ModelLoader(ModelData& outputModel, ModelLoadingInfo& modelLo
 			if (materialIdx == static_cast<int32_t>(materials.size()))
 				continue; // the submesh probably don't have a material
 
-			loadTextureSet(materials[materialIdx], modelLoadingInfo.mtlFolder, modelLoadingInfo.textureSetLayout, indexMaterial);
+			loadTextureSet(materials[materialIdx], modelLoadingInfo.mtlFolder, indexMaterial);
 			indexMaterial++;
 		}
 	}
@@ -311,6 +308,8 @@ Wolf::ModelLoader::ModelLoader(ModelData& outputModel, ModelLoadingInfo& modelLo
 				Extent3D extent = currentImage->getExtent();
 				outCacheFile.write(reinterpret_cast<char*>(&extent), sizeof(Extent3D));
 				const std::vector<unsigned char>& imageData = m_imagesData[textureSetIdx * MaterialsGPUManager::TEXTURE_COUNT_PER_MATERIAL + imageIdx];
+				uint32_t imageDataSize = static_cast<uint32_t>(imageData.size());
+				outCacheFile.write(reinterpret_cast<char*>(&imageDataSize), sizeof(uint32_t));
 				outCacheFile.write(reinterpret_cast<const char*>(imageData.data()), static_cast<uint32_t>(imageData.size()));
 			}
 
@@ -443,6 +442,11 @@ bool Wolf::ModelLoader::loadCache(ModelLoadingInfo& modelLoadingInfo) const
 						return static_cast<VkDeviceSize>(static_cast<float>(adjustedExtent.width) * static_cast<float>(adjustedExtent.height) * static_cast<float>(adjustedExtent.depth) * bpp);
 					};
 
+				uint32_t imageDataSize;
+				input.read(reinterpret_cast<char*>(&imageDataSize), sizeof(uint32_t));
+
+				uint32_t totalReadByteCount = 0;
+
 				for (uint32_t mipLevel = 0; mipLevel < currentImage->getMipLevelCount(); ++mipLevel)
 				{
 					VkDeviceSize imageSize = computeImageSize(extent, currentImage->getBPP(), mipLevel);
@@ -450,7 +454,15 @@ bool Wolf::ModelLoader::loadCache(ModelLoadingInfo& modelLoadingInfo) const
 					std::vector<unsigned char> pixels(imageSize);
 					input.read(reinterpret_cast<char*>(pixels.data()), pixels.size());
 
+					totalReadByteCount += static_cast<uint32_t>(pixels.size());
+
 					currentImage->copyCPUBuffer(pixels.data(), Image::SampledInFragmentShader(mipLevel), mipLevel);
+				}
+
+				if (totalReadByteCount != imageDataSize)
+				{
+					Debug::sendError("Wrong image data size");
+					return false;
 				}
 			}
 
@@ -495,7 +507,7 @@ inline std::string getTexName(const std::string& texName, const std::string& fol
 }
 
 
-void Wolf::ModelLoader::loadTextureSet(const tinyobj::material_t& material, const std::string& mtlFolder, TextureSetLoader::InputTextureSetLayout textureSetLayout, uint32_t indexMaterial)
+void Wolf::ModelLoader::loadTextureSet(const tinyobj::material_t& material, const std::string& mtlFolder, uint32_t indexMaterial)
 {
 	TextureSetLoader::TextureSetFileInfoGGX materialFileInfo{};
 	materialFileInfo.name = material.name;

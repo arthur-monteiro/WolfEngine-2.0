@@ -232,6 +232,8 @@ namespace Wolf
 		[[nodiscard]] bool isSame(T* resource) const { return m_ptr == resource; }
 		[[nodiscard]] operator bool() const { return m_ptr != nullptr; }
 
+		[[nodiscard]] bool operator==(const ResourceNonOwner& other) const { return m_ptr == other.m_ptr; }
+
 	private:
 		T* m_ptr = nullptr;
 	};
