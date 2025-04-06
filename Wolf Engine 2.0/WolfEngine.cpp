@@ -7,7 +7,9 @@
 #include <android/native_window_jni.h>
 #endif
 
-#include "Configuration.h"
+#include <Configuration.h>
+#include <RuntimeContext.h>
+
 #include "Dump.h"
 #include "ImageFileLoader.h"
 #include "MipMapGenerator.h"
@@ -40,6 +42,9 @@ Wolf::WolfEngine::WolfEngine(const WolfInstanceCreateInfo& createInfo) : m_globa
     m_configuration.reset(new Configuration(createInfo.configFilename, createInfo.assetManager));
 #endif
 	g_configuration = m_configuration.get();
+
+	m_runtimeContext.reset(new RuntimeContext());
+	g_runtimeContext = m_runtimeContext.get();
 
 	if(m_configuration->getUseRenderDoc())
 	{
@@ -114,13 +119,16 @@ Wolf::WolfEngine::WolfEngine(const WolfInstanceCreateInfo& createInfo) : m_globa
 			defaultImageDescription[i].imageView = m_defaultImages[i]->getDefaultImageView();
 			defaultImageDescription[i].imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 		}
-		
+
 		m_materialsManager.reset(new MaterialsGPUManager(defaultImageDescription));
 	}
 
 	m_lightManager.reset(new LightManager);
 	m_renderMeshList.reset(new RenderMeshList(m_shaderList));
 	m_physicsManager.reset(new Physics::PhysicsManager);
+
+	m_multiThreadTaskManager.reset(new MultiThreadTaskManager);
+	m_beforeFrameAndRecordThreadGroupId = m_multiThreadTaskManager->createThreadGroup(createInfo.threadCountBeforeFrameAndRecord, "Before frame and record");
 }
 
 void Wolf::WolfEngine::initializePass(const ResourceNonOwner<CommandRecordBase>& pass) const
@@ -144,6 +152,18 @@ void Wolf::WolfEngine::updateBeforeFrame()
 {
 	PROFILE_FUNCTION
 
+	m_multiThreadTaskManager->executeJobsForThreadGroup(m_beforeFrameAndRecordThreadGroupId);
+	std::this_thread::sleep_for(std::chrono::microseconds(10)); // let some time to the threads to lock
+	m_multiThreadTaskManager->waitForThreadGroup(m_beforeFrameAndRecordThreadGroupId);
+
+	for (MultiThreadTaskManager::Job& job : m_jobsToExecuteAfterMTJobs)
+	{
+		job();
+	}
+	m_jobsToExecuteAfterMTJobs.clear();
+
+	uint32_t currentFrame = g_runtimeContext->getCurrentCPUFrameNumber();
+
 #ifndef __ANDROID__
 	m_window->pollEvents();
 #endif
@@ -158,8 +178,7 @@ void Wolf::WolfEngine::updateBeforeFrame()
 #else
 	{};
 #endif
-	context.gameContext = m_gameContexts[m_currentFrame % g_configuration->getMaxCachedFrames()];
-	context.frameIdx = m_currentFrame;
+	context.frameIdx = currentFrame;
 	context.swapChainExtent = m_swapChain->getImage(0)->getExtent();
 	m_cameraList.moveToNextFrame(context);
 	
@@ -179,6 +198,20 @@ void Wolf::WolfEngine::updateBeforeFrame()
 void Wolf::WolfEngine::frame(const std::span<ResourceNonOwner<CommandRecordBase>>& passes, const Semaphore* frameEndedSemaphore)
 {
 	PROFILE_FUNCTION
+
+	uint32_t currentFrame = g_runtimeContext->getCurrentCPUFrameNumber();
+
+	const uint32_t currentSwapChainImageIndex = m_swapChain->getCurrentImage(currentFrame);
+	if (currentSwapChainImageIndex == SwapChain::NO_IMAGE_IDX)
+	{
+		std::this_thread::sleep_for(std::chrono::milliseconds(7)); // window is probably not visible, let the PC sleep a bit
+
+		waitIdle();
+		m_swapChain->resetAllFences();
+		g_runtimeContext->reset();
+
+		return;
+	}
 
 	if (passes.empty())
 		Debug::sendError("No pass sent to frame");
@@ -215,21 +248,18 @@ void Wolf::WolfEngine::frame(const std::span<ResourceNonOwner<CommandRecordBase>
 		m_resizeIsNeeded = false;
 	}
 
-	const uint32_t currentSwapChainImageIndex = m_swapChain->getCurrentImage(m_currentFrame);
-
 	{
 		PROFILE_SCOPED("Record GPU passes")
 
 		RecordContext recordContext(m_lightManager.createNonOwnerResource(), m_renderMeshList.createNonOwnerResource());
-		recordContext.currentFrameIdx = m_currentFrame;
-		recordContext.commandBufferIdx = m_currentFrame % g_configuration->getMaxCachedFrames();
+		recordContext.currentFrameIdx = currentFrame;
 		recordContext.swapChainImageIdx = currentSwapChainImageIndex;
 		recordContext.swapchainImage = m_swapChain->getImage(currentSwapChainImageIndex);
 #ifndef __ANDROID__
 		recordContext.glfwWindow = m_window->getWindow();
 #endif
 		recordContext.cameraList = &m_cameraList;
-		recordContext.gameContext = m_gameContexts[recordContext.commandBufferIdx];
+		recordContext.gameContext = m_gameContexts[currentFrame % g_configuration->getMaxCachedFrames()];
 		if (m_materialsManager)
 			recordContext.bindlessDescriptorSet = m_materialsManager->getDescriptorSet();
 		recordContext.globalTimer = &m_globalTimer;
@@ -244,15 +274,14 @@ void Wolf::WolfEngine::frame(const std::span<ResourceNonOwner<CommandRecordBase>
 		PROFILE_SCOPED("Submit GPU passes")
 
 		SubmitContext submitContext{};
-		submitContext.currentFrameIdx = m_currentFrame;
-		submitContext.commandBufferIdx = m_currentFrame % g_configuration->getMaxCachedFrames();
-		submitContext.swapChainImageAvailableSemaphore = m_swapChain->getImageAvailableSemaphore(m_currentFrame % m_swapChain->getImageCount()); // we use the semaphore used to acquire image
+		submitContext.currentFrameIdx = currentFrame;
+		submitContext.swapChainImageAvailableSemaphore = m_swapChain->getImageAvailableSemaphore(currentFrame % m_swapChain->getImageCount()); // we use the semaphore used to acquire image
 #ifdef __ANDROID__
 		submitContext.userInterfaceImageAvailableSemaphore = nullptr;
 #else
 		submitContext.userInterfaceImageAvailableSemaphore = m_ultraLight ? m_ultraLight->getImageCopySemaphore() : nullptr;
 #endif
-		submitContext.frameFence = m_swapChain->getFrameFence(m_currentFrame % g_configuration->getMaxCachedFrames());
+		submitContext.frameFence = m_swapChain->getFrameFence(currentFrame % g_configuration->getMaxCachedFrames());
 		submitContext.graphicAPIManager = m_graphicAPIManager.get();
 
 		for (const ResourceNonOwner<CommandRecordBase>& pass : passes)
@@ -262,12 +291,26 @@ void Wolf::WolfEngine::frame(const std::span<ResourceNonOwner<CommandRecordBase>
 	}
 
 	m_swapChain->present(frameEndedSemaphore, currentSwapChainImageIndex);
+
+	if (currentFrame >= g_configuration->getMaxCachedFrames() - 1)
 	{
 		PROFILE_SCOPED("Wait for GPU frame to end")
-		m_swapChain->synchroniseCPUFromGPU(m_currentFrame); // don't update UBs while a frame is being rendered
+		m_swapChain->synchroniseCPUFromGPU(currentFrame + g_configuration->getMaxCachedFrames() - 1); // don't update UBs while a frame is being rendered
 	}
 
-	m_currentFrame++;
+	g_runtimeContext->incrementCPUFrameNumber();
+}
+
+void Wolf::WolfEngine::addJobBeforeFrame(const MultiThreadTaskManager::Job& job, bool runAfterAllJobs)
+{
+	if (runAfterAllJobs)
+	{
+		m_jobsToExecuteAfterMTJobs.emplace_back(job);
+	}
+	else
+	{
+		m_multiThreadTaskManager->addJobToThreadGroup(m_beforeFrameAndRecordThreadGroupId, job);
+	}
 }
 
 void Wolf::WolfEngine::waitIdle() const

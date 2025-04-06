@@ -10,7 +10,11 @@ void Wolf::Debug::sendMessageOnce(const std::string& message, Severity severity,
 	const uint64_t hash = messageHash | severityHash | instancePtrHash;
 	if (std::find(m_alreadySentHashes.begin(), m_alreadySentHashes.end(), hash) == m_alreadySentHashes.end())
 	{
+		m_callbackMutex.lock();
+
 		m_callback(severity, Type::WOLF, message);
 		m_alreadySentHashes.push_back(hash);
+
+		m_callbackMutex.unlock();
 	}
 }

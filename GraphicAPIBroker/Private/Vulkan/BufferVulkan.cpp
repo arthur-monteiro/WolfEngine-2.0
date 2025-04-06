@@ -72,9 +72,9 @@ void Wolf::BufferVulkan::transferGPUMemoryImmediate(const Buffer& bufferSrc, con
 	fence.waitForFence();
 }
 
-void Wolf::BufferVulkan::recordTransferGPUMemory(CommandBuffer* commandBuffer, const Buffer& bufferSrc, const BufferCopy& copyRegion) const
+void Wolf::BufferVulkan::recordTransferGPUMemory(const CommandBuffer* commandBuffer, const Buffer& bufferSrc, const BufferCopy& copyRegion) const
 {
-	CommandBufferVulkan* commandBufferVulkan = static_cast<CommandBufferVulkan*>(commandBuffer);
+	const CommandBufferVulkan* commandBufferVulkan = static_cast<const CommandBufferVulkan*>(commandBuffer);
 	const BufferVulkan* srcAsBufferVulkan = static_cast<const BufferVulkan*>(&bufferSrc);
 
 	VkBufferCopy vkCopyRegion;

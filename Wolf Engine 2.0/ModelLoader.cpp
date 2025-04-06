@@ -7,6 +7,7 @@
 
 #include "AndroidCacheHelper.h"
 #include "CodeFileHashes.h"
+#include "ConfigurationHelper.h"
 #include "DAEImporter.h"
 #include "ImageFileLoader.h"
 #include "JSONReader.h"
@@ -16,6 +17,10 @@
 
 void Wolf::ModelLoader::loadObject(ModelData& outputModel, ModelLoadingInfo& modelLoadingInfo)
 {
+#ifdef MATERIAL_DEBUG
+	outputModel.originFilepath = modelLoadingInfo.filename;
+#endif
+
 	std::string filenameExtension = modelLoadingInfo.filename.substr(modelLoadingInfo.filename.find_last_of(".") + 1);
 	if (filenameExtension == "obj")
 	{
@@ -181,13 +186,30 @@ Wolf::ModelLoader::ModelLoader(ModelData& outputModel, ModelLoadingInfo& modelLo
 	}
 
 	if (hasEncounteredAnInvalidMaterialId)
-		Debug::sendError("Loading model " + modelLoadingInfo.filename + ", invalid material ID found. Switching to default (0)");
+		Debug::sendWarning("Loading model " + modelLoadingInfo.filename + ", invalid material ID found. Switching to default (0)");
 
 	glm::vec3 center = (maxPos + minPos) * 0.5f;
 	if (glm::length(center) > glm::length(maxPos) * 0.1f)
 	{
-		Debug::sendWarning("Model " + modelLoadingInfo.filename + " is not centered");
-		m_outputModel->isMeshCentered = false;
+		if (ConfigurationHelper::readInfoFromFile(modelLoadingInfo.filename + ".config", "forceCenter") == "true")
+		{
+			Debug::sendInfo("Mesh is forced to be centered");
+
+			for (Vertex3D& vertex : vertices)
+			{
+				vertex.pos -= center;
+			}
+
+			maxPos -= center;
+			minPos -= center;
+
+			m_outputModel->isMeshCentered = true;
+		}
+		else
+		{
+			Debug::sendWarning("Model " + modelLoadingInfo.filename + " is not centered");
+			m_outputModel->isMeshCentered = false;
+		}
 	}
 	else
 	{
@@ -541,6 +563,6 @@ void Wolf::ModelLoader::loadTextureSet(const tinyobj::material_t& material, cons
 	{
 		if (m_useCache)
 			materialLoader.assignCache(i, m_imagesData[indexMaterial * MaterialsGPUManager::TEXTURE_COUNT_PER_MATERIAL + i]);
-		m_outputModel->textureSets[indexMaterial].images[i].reset(materialLoader.releaseImage(i));
+		materialLoader.transferImageTo(i, m_outputModel->textureSets[indexMaterial].images[i]);
 	}
 }

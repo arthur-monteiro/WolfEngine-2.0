@@ -4,6 +4,7 @@
 #include <memory>
 
 #include <Debug.h>
+#include <ResourceUniqueOwner.h>
 
 #include <Buffer.h>
 #include <CommandBuffer.h>
@@ -40,6 +41,7 @@ namespace Wolf
 
 		[[nodiscard]] uint32_t getIndexCount() const { return m_indexCount; }
 		[[nodiscard]] const Buffer& getVertexBuffer() const { return *m_vertexBuffer; }
+		[[nodiscard]] ResourceNonOwner<Buffer> getVertexBuffer() { return m_vertexBuffer.createNonOwnerResource(); }
 		[[nodiscard]] const Buffer& getIndexBuffer() const { return *m_indexBuffer; }
 		[[nodiscard]] const AABB& getAABB() const { return m_AABB; }
 		[[nodiscard]] const BoundingSphere& getBoundingSphere() const { return m_boundingSphere; }
@@ -48,7 +50,7 @@ namespace Wolf
 		void draw(const CommandBuffer& commandBuffer, uint32_t cameraIdx, uint32_t instanceCount = 1, uint32_t firstInstance = 0) const;
 
 	private:
-		std::unique_ptr<Buffer> m_vertexBuffer;
+		ResourceUniqueOwner<Buffer> m_vertexBuffer;
 		std::unique_ptr<Buffer> m_indexBuffer;
 
 		uint32_t m_vertexCount;

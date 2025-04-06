@@ -22,7 +22,6 @@ namespace Wolf
 #ifndef __ANDROID__
 		const ResourceNonOwner<const InputHandler> inputHandler;
 #endif
-		const void* gameContext = nullptr;
 		uint32_t frameIdx = 0;
 		Extent3D swapChainExtent = {};
 

@@ -93,8 +93,6 @@ std::vector<const Wolf::PipelineSet::PipelineInfo*> Wolf::PipelineSet::retrieveA
 
 const Wolf::Pipeline* Wolf::PipelineSet::getOrCreatePipeline(uint32_t idx, RenderPass* renderPass, const std::vector<DescriptorSetBindInfo>& meshDescriptorSetsBindInfo, const std::vector<DescriptorSetBindInfo>& additionalDescriptorSetsBindInfo, ShaderList& shaderList) const
 {
-	PROFILE_FUNCTION
-
 	if (!m_infoForPipelines[idx]->getPipelines().contains(renderPass))
 	{
 		renderPass->registerNewExtentChangedCallback([this](const RenderPass* paramRenderPass)

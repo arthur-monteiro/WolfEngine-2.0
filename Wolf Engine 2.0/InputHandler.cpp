@@ -2,7 +2,9 @@
 
 #include <glm/detail/func_common.hpp>
 
-#include "Debug.h"
+#include <Debug.h>
+
+#include "ProfilerCommon.h"
 
 #ifndef __ANDROID__
 
@@ -61,6 +63,8 @@ Wolf::InputHandler::~InputHandler()
 
 void Wolf::InputHandler::moveToNextFrame()
 {
+	PROFILE_FUNCTION
+
 	auto moveInputToNextFrame = [&](InputCache& inputCache)
 	{
 		// Release key released

@@ -6,6 +6,7 @@
 #include "CodeFileHashes.h"
 #include "ImageFileLoader.h"
 #include "MipMapGenerator.h"
+#include "PushDataToGPU.h"
 #include "Timer.h"
 
 Wolf::TextureSetLoader::TextureSetLoader(const TextureSetFileInfoGGX& textureSet, const OutputLayout& outputLayout, bool useCache) : m_useCache(useCache)
@@ -208,9 +209,9 @@ Wolf::TextureSetLoader::TextureSetLoader(const TextureSetFileInfoSixWayLighting&
 	}
 }
 
-Wolf::Image* Wolf::TextureSetLoader::releaseImage(uint32_t idx)
+void Wolf::TextureSetLoader::transferImageTo(uint32_t idx, ResourceUniqueOwner<Image>& output)
 {
-	return m_outputs[idx].release();
+	return output.transferFrom(m_outputs[idx]);
 }
 
 void Wolf::TextureSetLoader::assignCache(uint32_t idx, std::vector<unsigned char>& output)
@@ -436,11 +437,11 @@ void Wolf::TextureSetLoader::createImageFromData(Extent3D extent, Format format,
 	createImageInfo.mipLevelCount = static_cast<uint32_t>(mipLevels.size()) + 1;
 	createImageInfo.usage = ImageUsageFlagBits::TRANSFER_DST | ImageUsageFlagBits::SAMPLED;
 	m_outputs[idx].reset(Image::createImage(createImageInfo));
-	m_outputs[idx]->copyCPUBuffer(pixels, Image::SampledInFragmentShader());
+	pushDataToGPUImage(pixels, m_outputs[idx].createNonOwnerResource(), Image::SampledInFragmentShader());
 
 	for (uint32_t mipLevel = 1; mipLevel < mipLevels.size() + 1; ++mipLevel)
 	{
-		m_outputs[idx]->copyCPUBuffer(mipLevels[mipLevel - 1], Image::SampledInFragmentShader(mipLevel), mipLevel);
+		pushDataToGPUImage(mipLevels[mipLevel - 1], m_outputs[idx].createNonOwnerResource(), Image::SampledInFragmentShader(mipLevel), mipLevel);
 	}
 
 	if (m_useCache)

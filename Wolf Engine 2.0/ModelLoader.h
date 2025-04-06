@@ -115,6 +115,9 @@ namespace Wolf
 	struct ModelData
 	{
 		ResourceUniqueOwner<Mesh> mesh;
+#ifdef MATERIAL_DEBUG
+		std::string originFilepath;
+#endif
 		bool isMeshCentered;
 		std::vector<MaterialsGPUManager::TextureSetInfo> textureSets;
 

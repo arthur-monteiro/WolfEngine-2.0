@@ -11,6 +11,8 @@
 
 void Wolf::RenderMeshList::moveToNextFrame()
 {
+	PROFILE_FUNCTION
+
 	m_transientMeshesCurrentFrame.clear();
 	m_transientMeshesCurrentFrame.swap(m_transientMeshesNextFrame);
 
@@ -78,10 +80,14 @@ void Wolf::RenderMeshList::draw(const RecordContext& context, const CommandBuffe
 	PROFILE_FUNCTION
 
 	ResourceReference<const DescriptorSet> lightDescriptorSet(context.lightManager->getDescriptorSet().createConstNonOwnerResource());
+	std::vector<DescriptorSetBindInfo> descriptorSetsBindInfo;
 
 	const Pipeline* currentPipeline = nullptr;
+	NullableResourceNonOwner<const PipelineSet> currentPipelineSet;
 	for (uint32_t i = 0; i < m_transientMeshesCurrentFrame.size() + m_meshes.size() + m_transientInstancedMeshesCurrentFrame.size() + m_instancedMeshes.size(); ++i)
 	{
+		PROFILE_SCOPED("Draw mesh")
+
 		const MeshToRender* meshToRender = nullptr;
 		const InternalInstancedMesh* internalInstancedMesh = nullptr;
 
@@ -103,19 +109,26 @@ void Wolf::RenderMeshList::draw(const RecordContext& context, const CommandBuffe
 		if (meshToRender->pipelineSet->getPipelineHash(pipelineIdx) == 0)
 			continue;
 
-		std::vector<DescriptorSetBindInfo> descriptorSetsBindInfo;
-		descriptorSetsBindInfo.reserve(descriptorSetsToBind.size());
-
-		for (const AdditionalDescriptorSet& additionalDescriptorSet : descriptorSetsToBind)
+		if (meshToRender->pipelineSet != currentPipelineSet)
 		{
-			if (additionalDescriptorSet.mask == 0 || additionalDescriptorSet.mask & meshToRender->pipelineSet->getCustomMask(pipelineIdx))
+			currentPipelineSet = meshToRender->pipelineSet;
+
+			descriptorSetsBindInfo.clear();
+			descriptorSetsBindInfo.reserve(descriptorSetsToBind.size());
+
+			for (const AdditionalDescriptorSet& additionalDescriptorSet : descriptorSetsToBind)
 			{
-				descriptorSetsBindInfo.push_back(additionalDescriptorSet.descriptorSetBindInfo);
+				if (additionalDescriptorSet.mask == 0 || additionalDescriptorSet.mask & meshToRender->pipelineSet->getCustomMask(pipelineIdx))
+				{
+					descriptorSetsBindInfo.push_back(additionalDescriptorSet.descriptorSetBindInfo);
+				}
 			}
 		}
 
 		if (const Pipeline* meshPipeline = meshToRender->pipelineSet->getOrCreatePipeline(pipelineIdx, renderPass, meshToRender->perPipelineDescriptorSets[pipelineIdx], descriptorSetsBindInfo, *m_shaderList); meshPipeline != currentPipeline)
 		{
+			PROFILE_SCOPED("Bind pipeline and default descriptor sets")
+
 			commandBuffer.bindPipeline(meshPipeline);
 			currentPipeline = meshPipeline;
 
@@ -144,13 +157,18 @@ void Wolf::RenderMeshList::draw(const RecordContext& context, const CommandBuffe
 			}
 		}
 
-		for (const DescriptorSetBindInfo& descriptorSetBindInfo : meshToRender->perPipelineDescriptorSets[pipelineIdx])
+		// Bind custom descriptor sets
 		{
-			commandBuffer.bindDescriptorSet(descriptorSetBindInfo.getDescriptorSet(), descriptorSetBindInfo.getBindingSlot(), *currentPipeline);
+			for (const DescriptorSetBindInfo& descriptorSetBindInfo : meshToRender->perPipelineDescriptorSets[pipelineIdx])
+			{
+				commandBuffer.bindDescriptorSet(descriptorSetBindInfo.getDescriptorSet(), descriptorSetBindInfo.getBindingSlot(), *currentPipeline);
+			}
 		}
 
 		if (internalInstancedMesh)
 		{
+			PROFILE_SCOPED("Draw instanced command")
+
 			if (internalInstancedMesh->instancedMesh.instanceBuffer)
 			{
 				commandBuffer.bindVertexBuffer(*internalInstancedMesh->instancedMesh.instanceBuffer, 1);
@@ -163,6 +181,8 @@ void Wolf::RenderMeshList::draw(const RecordContext& context, const CommandBuffe
 		}
 		else
 		{
+			PROFILE_SCOPED("Draw command")
+
 			meshToRender->mesh->draw(commandBuffer, cameraIdx, 1);
 		}
 	}

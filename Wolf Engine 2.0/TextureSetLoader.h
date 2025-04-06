@@ -46,7 +46,7 @@ namespace Wolf
 		};
 		TextureSetLoader(const TextureSetFileInfoSixWayLighting& textureSet, bool useCache);
 
-		Image* releaseImage(uint32_t idx);
+		void transferImageTo(uint32_t idx, ResourceUniqueOwner<Image>& output);
 		void assignCache(uint32_t idx, std::vector<unsigned char>& output);
 
 	private:

@@ -51,7 +51,7 @@ void UniquePass::initializeResources(const InitializationContext& context)
 
 	std::vector<GeometryInfo> geometries(1);
 	GeometryInfo& geometryInfo = geometries.back();
-	geometryInfo.mesh.vertexBuffer = &m_triangle->getVertexBuffer();
+	geometryInfo.mesh.vertexBuffer = &*m_triangle->getVertexBuffer();
 	geometryInfo.mesh.vertexCount = m_triangle->getVertexCount();
 	geometryInfo.mesh.vertexSize = m_triangle->getVertexSize();
 	geometryInfo.mesh.vertexFormat = m_triangle->getVertexFormat();
@@ -159,7 +159,7 @@ void UniquePass::createDescriptorSets(const InitializationContext& context)
 		DescriptorSetGenerator descriptorSetGenerator(m_descriptorSetLayoutGenerator.getDescriptorLayouts());
 		descriptorSetGenerator.setAccelerationStructure(0, *m_tlas);
 		descriptorSetGenerator.setImage(1, image);
-		descriptorSetGenerator.setBuffer(2, m_triangle->getVertexBuffer());
+		descriptorSetGenerator.setBuffer(2, *m_triangle->getVertexBuffer());
 		descriptorSetGenerator.setBuffer(3, m_triangle->getIndexBuffer());
 
 		if (!m_descriptorSets[i])

@@ -19,9 +19,11 @@
 #include "InputHandler.h"
 #include "LightManager.h"
 #include "MaterialsGPUManager.h"
+#include "MultiThreadTaskManager.h"
 #include "PhysicsManager.h"
 #include "RenderMeshList.h"
 #include "ResourceUniqueOwner.h"
+#include "RuntimeContext.h"
 #include "ShaderList.h"
 #include "SwapChain.h"
 #include "UltraLight.h"
@@ -47,6 +49,8 @@ namespace Wolf
 		std::function<void(Debug::Severity, Debug::Type, const std::string&)> debugCallback;
 		std::function<void(uint32_t, uint32_t)> resizeCallback;
 
+		uint32_t threadCountBeforeFrameAndRecord = 1;
+
 #ifdef __ANDROID__
         ANativeWindow* androidWindow;
 		AAssetManager* assetManager;
@@ -64,14 +68,13 @@ namespace Wolf
 		void updateBeforeFrame();
 		void frame(const std::span<ResourceNonOwner<CommandRecordBase>>& passes, const Semaphore* frameEndedSemaphore);
 
+		void addJobBeforeFrame(const MultiThreadTaskManager::Job& job, bool runAfterAllJobs = false);
+
 		void waitIdle() const;
 
 #ifndef __ANDROID__
 		void getUserInterfaceJSObject(ultralight::JSObject& outObject) const;
 		void evaluateUserInterfaceScript(const std::string& script);
-#endif
-		[[nodiscard]] uint32_t getCurrentFrame() const { return m_currentFrame; }
-#ifndef __ANDROID__
 		[[nodiscard]] ResourceNonOwner<InputHandler> getInputHandler() { return m_inputHandler.createNonOwnerResource(); }
 #endif
 		[[nodiscard]] Extent3D getSwapChainExtent() const { return m_swapChain->getImage(0)->getExtent(); }
@@ -99,6 +102,7 @@ namespace Wolf
 
 	private:
 		std::unique_ptr<Configuration> m_configuration;
+		std::unique_ptr<RuntimeContext> m_runtimeContext;
 		std::unique_ptr<GraphicAPIManager> m_graphicAPIManager;
 #ifndef __ANDROID__
 		ResourceUniqueOwner<Window> m_window;
@@ -111,8 +115,7 @@ namespace Wolf
 #endif
 		ResourceUniqueOwner<Physics::PhysicsManager> m_physicsManager;
 
-		// Frame counter
-		uint32_t m_currentFrame = 0;
+		// Timer
 		Timer m_globalTimer;
 
 		// Gameplay
@@ -131,6 +134,11 @@ namespace Wolf
 
 		// Saves
 		std::vector<std::string> m_savedUICommands;
+
+		// Job executions
+		ResourceUniqueOwner<MultiThreadTaskManager> m_multiThreadTaskManager;
+		MultiThreadTaskManager::ThreadGroupId m_beforeFrameAndRecordThreadGroupId;
+		std::vector<MultiThreadTaskManager::Job> m_jobsToExecuteAfterMTJobs;
 	};
 
 	extern const GraphicAPIManager* g_graphicAPIManagerInstance;

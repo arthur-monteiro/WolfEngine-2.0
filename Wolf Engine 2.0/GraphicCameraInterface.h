@@ -2,9 +2,9 @@
 
 #include <glm/glm.hpp>
 
-#include <Buffer.h>
 #include <DescriptorSet.h>
 #include <DescriptorSetLayout.h>
+#include <UniformBuffer.h>
 
 #include "DescriptorSetLayoutGenerator.h"
 #include "LazyInitSharedResource.h"
@@ -53,6 +53,6 @@ namespace Wolf
 		};
 
 		std::unique_ptr<DescriptorSet> m_descriptorSet;
-		std::unique_ptr<Buffer> m_matricesUniformBuffer;
+		std::unique_ptr<UniformBuffer> m_matricesUniformBuffer;
 	};
 }

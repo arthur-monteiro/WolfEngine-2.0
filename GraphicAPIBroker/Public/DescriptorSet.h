@@ -2,9 +2,6 @@
 
 #include <vector>
 
-// TEMP
-#include <vulkan/vulkan_core.h>
-
 #include "DescriptorLayout.h"
 #include "ImageView.h"
 
@@ -19,6 +16,8 @@ namespace Wolf
 	{
 		struct DescriptorBuffer
 		{
+			bool isForMultipleSets = false; // set to true to define a different buffer for different descriptor set (used for uniform buffer as it's doubled to not update a currently-in-use buffer)
+
 			std::vector<const Buffer*> buffers;
 			DescriptorLayout descriptorLayout;
 		};

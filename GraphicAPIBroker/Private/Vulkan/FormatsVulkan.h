@@ -43,4 +43,29 @@ namespace Wolf
 				return VK_FORMAT_UNDEFINED;
 		}
 	}
+
+	inline VkSampleCountFlagBits wolfSampleCountFlagBitsToVkSampleCountFlagBits(SampleCountFlagBits vkSampleCountFlagBits)
+	{
+		switch (vkSampleCountFlagBits)
+		{
+			case SAMPLE_COUNT_1:
+				return VK_SAMPLE_COUNT_1_BIT;
+			case SAMPLE_COUNT_2:
+				return VK_SAMPLE_COUNT_2_BIT;
+			case SAMPLE_COUNT_4:
+				return VK_SAMPLE_COUNT_4_BIT;
+			case SAMPLE_COUNT_8:
+				return VK_SAMPLE_COUNT_8_BIT;
+			case SAMPLE_COUNT_16:
+				return VK_SAMPLE_COUNT_16_BIT;
+			case SAMPLE_COUNT_32:
+				return VK_SAMPLE_COUNT_32_BIT;
+			case SAMPLE_COUNT_64:
+				return VK_SAMPLE_COUNT_64_BIT;
+			case SAMPLE_COUNT_MAX:
+			default:
+				return VK_SAMPLE_COUNT_FLAG_BITS_MAX_ENUM;
+		}
+	}
+
 }

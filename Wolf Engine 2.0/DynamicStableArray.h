@@ -19,6 +19,7 @@ namespace Wolf
 		T& emplace_back(Args&&... args);
 		void resize(size_t newSize);
 		void clear();
+		void swap(DynamicStableArray<T, BatchSize>& other) noexcept;
 
 		size_t size() const;
 		bool empty() const;
@@ -67,21 +68,21 @@ namespace Wolf
 	template <class ... Args>
 	T& DynamicStableArray<T, BatchSize>::emplace_back(Args&&... args)
 	{
-		lockAccessElements();
-
 		if constexpr (hasResetFunction<T>)
 		{
+			lockAccessElements();
+
 			beforeAddingNewElement();
 
 			std::unique_ptr<Page>& lastBatch = m_pages.back();
 			lastBatch->elements[lastBatch->count++].reset(args...);
+
+			unlockAccessElements();
 		}
 		else
 		{
 			push_back(T(args...));
 		}
-
-		unlockAccessElements();
 
 		return back();
 	}
@@ -129,6 +130,12 @@ namespace Wolf
 		resizePages(1);
 
 		unlockAccessElements();
+	}
+
+	template <class T, size_t BatchSize>
+	void DynamicStableArray<T, BatchSize>::swap(DynamicStableArray<T, BatchSize>& other) noexcept
+	{
+		m_pages.swap(other.m_pages);
 	}
 
 	template <class T, size_t BatchSize>

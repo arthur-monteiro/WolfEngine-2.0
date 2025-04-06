@@ -1,5 +1,7 @@
 #include "CameraList.h"
 
+#include "ProfilerCommon.h"
+
 void Wolf::CameraList::addCameraForThisFrame(CameraInterface* camera, uint32_t idx)
 {
 	if (idx >= m_nextFrameCameras.size())
@@ -18,6 +20,8 @@ const Wolf::CameraInterface* Wolf::CameraList::getCamera(uint32_t idx) const
 
 void Wolf::CameraList::moveToNextFrame(const CameraUpdateContext& context)
 {
+	PROFILE_FUNCTION
+
 	m_currentCameras.clear();
 	m_nextFrameCameras.swap(m_currentCameras);
 

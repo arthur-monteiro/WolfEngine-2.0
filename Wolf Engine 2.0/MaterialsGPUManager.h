@@ -4,7 +4,9 @@
 
 #include <glm/glm.hpp>
 
+#include <Buffer.h>
 #include <DescriptorSetLayout.h>
+#include <Sampler.h>
 
 #include "DescriptorSetGenerator.h"
 #include "LazyInitSharedResource.h"
@@ -60,6 +62,12 @@ namespace Wolf
 		void addNewMaterial(const MaterialInfo& material);
 		void pushMaterialsToGPU();
 
+		void lockTextureSets();
+		void unlockTextureSets();
+
+		void lockMaterials();
+		void unlockMaterials();
+
 		void bind(const CommandBuffer& commandBuffer, const Pipeline& pipeline, uint32_t descriptorSlot) const;
 		[[nodiscard]] static ResourceUniqueOwner<DescriptorSetLayout>& getDescriptorSetLayout() { return LazyInitSharedResource<DescriptorSetLayout, MaterialsGPUManager>::getResource(); }
 		[[nodiscard]] const DescriptorSet* getDescriptorSet() const { return m_descriptorSet.get(); }
@@ -68,9 +76,9 @@ namespace Wolf
 		uint32_t getCurrentTextureSetCount() const { return m_currentTextureSetCount + static_cast<uint32_t>(m_newTextureSetsInfo.size()); }
 
 #ifdef MATERIAL_DEBUG
-		void changeMaterialShadingModeBeforeFrame(uint32_t materialIdx, uint32_t newShadingMode) const;
-		void changeTextureSetIdxBeforeFrame(uint32_t materialIdx, uint32_t indexOfTextureSetInMaterial, uint32_t newTextureSetIdx) const;
-		void changeStrengthBeforeFrame(uint32_t materialIdx, uint32_t indexOfTextureSetInMaterial, float newStrength) const;
+		void changeMaterialShadingModeBeforeFrame(uint32_t materialIdx, uint32_t newShadingMode);
+		void changeTextureSetIdxBeforeFrame(uint32_t materialIdx, uint32_t indexOfTextureSetInMaterial, uint32_t newTextureSetIdx);
+		void changeStrengthBeforeFrame(uint32_t materialIdx, uint32_t indexOfTextureSetInMaterial, float newStrength);
 
 		struct TextureSetCacheInfo
 		{
@@ -87,8 +95,8 @@ namespace Wolf
 		};
 		std::vector<TextureSetCacheInfo>& getTextureSetsCacheInfo() { return m_textureSetsCacheInfo; }
 		void changeExistingTextureSetBeforeFrame(TextureSetCacheInfo& textureSetCacheInfo, const TextureSetInfo& textureSetInfo);
-		void changeSamplingModeBeforeFrame(uint32_t textureSetIdx, TextureSetInfo::SamplingMode newSamplingMode) const;
-		void changeScaleBeforeFrame(uint32_t textureSetIdx, glm::vec3 newScale) const;
+		void changeSamplingModeBeforeFrame(uint32_t textureSetIdx, TextureSetInfo::SamplingMode newSamplingMode);
+		void changeScaleBeforeFrame(uint32_t textureSetIdx, glm::vec3 newScale);
 #endif
 
 	private:
@@ -127,7 +135,9 @@ namespace Wolf
 
 		// Info to add
 		std::vector<TextureSetGPUInfo> m_newTextureSetsInfo;
+		std::mutex m_textureSetsMutex;
 		std::vector<MaterialGPUInfo> m_newMaterialInfo;
+		std::mutex m_materialsMutex;
 
 		// GPU resources
 		ResourceUniqueOwner<Buffer> m_textureSetsBuffer;

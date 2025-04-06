@@ -6,11 +6,12 @@
 #include "DescriptorSet.h"
 #include "Image.h"
 #include "ImageView.h"
-#include "Sampler.h"
-#include "TopLevelAccelerationStructure.h"
 
 namespace Wolf
 {
+	class Buffer;
+	class UniformBuffer;
+
 	class DescriptorSetGenerator
 	{
 	public:
@@ -18,6 +19,7 @@ namespace Wolf
 		DescriptorSetGenerator(const DescriptorSetGenerator&) = delete;
 
 		void setBuffer(uint32_t binding, const Buffer& buffer);
+		void setUniformBuffer(uint32_t binding, const UniformBuffer& buffer);
 		void setCombinedImageSampler(uint32_t binding, VkImageLayout imageLayout, ImageView imageView, const Sampler& sampler);
 		struct ImageDescription
 		{
@@ -37,7 +39,7 @@ namespace Wolf
 	private:
 		DescriptorSetUpdateInfo m_descriptorSetCreateInfo;
 
-		enum class DescriptorType { BUFFER, IMAGE, ACCELERATION_STRUCTURE };
+		enum class DescriptorType { BUFFER, UNIFORM_BUFFER, IMAGE, ACCELERATION_STRUCTURE };
 		std::map<uint32_t /* binding */, std::pair<DescriptorType, uint32_t /* descriptor index */>> m_mapBindingCreateInfo;
 	};
 }

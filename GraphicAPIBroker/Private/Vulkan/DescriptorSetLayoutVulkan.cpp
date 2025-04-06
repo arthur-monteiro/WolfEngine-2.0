@@ -14,6 +14,11 @@ Wolf::DescriptorSetLayoutVulkan::DescriptorSetLayoutVulkan(const std::span<const
 
 	for (const auto descriptorLayout : descriptorLayouts)
 	{
+		if (descriptorLayout.descriptorType == VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER)
+		{
+			m_containsUniformBuffer = true;
+		}
+
 		VkDescriptorSetLayoutBinding descriptorSetLayoutBinding = {};
 		descriptorSetLayoutBinding.binding = descriptorLayout.binding;
 		descriptorSetLayoutBinding.descriptorType = descriptorLayout.descriptorType;

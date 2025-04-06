@@ -60,15 +60,15 @@ def runProcessTest(folder, processFullName, processShortName, windowTitle):
 
 @app.route("/graphictests")
 def runGraphicTest():
-    runProcessTest('../Hello Triangle', '"../x64/Debug/Hello Triangle.exe"', "Hello Triangle.exe", "Hello Triangle")
+    runProcessTest('../Hello Triangle', '"../x64/Debug - Graphic Tests/Hello Triangle.exe"', "Hello Triangle.exe", "Hello Triangle")
     if screenshotComparisonResult == False:
         return "1"
     
-    runProcessTest('../Compute Pass', '"../x64/Debug/Compute Pass.exe"', "Compute Pass.exe", "Compute Pass")
+    runProcessTest('../Compute Pass', '"../x64/Debug - Graphic Tests/Compute Pass.exe"', "Compute Pass.exe", "Compute Pass")
     if screenshotComparisonResult == False:
         return "1"
     
-    runProcessTest('../Variable Rate Shading', '"../x64/Debug/Variable Rate Shading.exe"', "Variable Rate Shading.exe", "Variable Rate Shading")
+    runProcessTest('../Variable Rate Shading', '"../x64/Debug - Graphic Tests/Variable Rate Shading.exe"', "Variable Rate Shading.exe", "Variable Rate Shading")
     if screenshotComparisonResult == False:
         return "1"
 
