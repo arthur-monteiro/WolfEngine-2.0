@@ -206,7 +206,7 @@ Wolf::UltraLight::UltraLightImplementation::UltraLightImplementation(uint32_t wi
 
     for (ResourceUniqueOwner<CommandBuffer>& commandBuffer : m_copyImageCommandBuffers)
     {
-        commandBuffer.reset(CommandBuffer::createCommandBuffer(QueueType::TRANSFER, false));
+        commandBuffer.reset(CommandBuffer::createCommandBuffer(QueueType::TRANSFER, false, true));
     }
 
     createOutputAndRecordCopyCommandBuffer(width, height);

@@ -1,9 +1,10 @@
 #include "MaterialsGPUManager.h"
 
-#include <Buffer.h>
 #include <CommandBuffer.h>
 
 #include "DescriptorSetLayoutGenerator.h"
+#include "ProfilerCommon.h"
+#include "PushDataToGPU.h"
 
 Wolf::MaterialsGPUManager::MaterialsGPUManager(const std::vector<DescriptorSetGenerator::ImageDescription>& firstImages)
 {
@@ -101,42 +102,66 @@ void Wolf::MaterialsGPUManager::addNewMaterial(const MaterialInfo& material)
 
 void Wolf::MaterialsGPUManager::pushMaterialsToGPU()
 {
+	PROFILE_FUNCTION
+
 	if (!m_newTextureSetsInfo.empty())
 	{
-		m_textureSetsBuffer->transferCPUMemoryWithStagingBuffer(m_newTextureSetsInfo.data(), m_newTextureSetsInfo.size() * sizeof(TextureSetGPUInfo), 0, m_currentTextureSetCount * sizeof(TextureSetGPUInfo));
+		pushDataToGPUBuffer(m_newTextureSetsInfo.data(), static_cast<uint32_t>(m_newTextureSetsInfo.size()) * sizeof(TextureSetGPUInfo), m_textureSetsBuffer.createNonOwnerResource(),
+			m_currentTextureSetCount * sizeof(TextureSetGPUInfo));
 		m_currentTextureSetCount += static_cast<uint32_t>(m_newTextureSetsInfo.size());
 		m_newTextureSetsInfo.clear();
 	}
 
 	if (!m_newMaterialInfo.empty())
 	{
-		m_materialsBuffer->transferCPUMemoryWithStagingBuffer(m_newMaterialInfo.data(), m_newMaterialInfo.size() * sizeof(MaterialGPUInfo), 0, m_currentMaterialCount * sizeof(MaterialGPUInfo));
+		pushDataToGPUBuffer(m_newMaterialInfo.data(), static_cast<uint32_t>(m_newMaterialInfo.size()) * sizeof(MaterialGPUInfo), m_materialsBuffer.createNonOwnerResource(), 
+			m_currentMaterialCount * sizeof(MaterialGPUInfo));
 		m_currentMaterialCount += static_cast<uint32_t>(m_newMaterialInfo.size());
 		m_newMaterialInfo.clear();
 	}
 }
 
-#ifdef MATERIAL_DEBUG
-void Wolf::MaterialsGPUManager::changeMaterialShadingModeBeforeFrame(uint32_t materialIdx, uint32_t newShadingMode) const
+void Wolf::MaterialsGPUManager::lockTextureSets()
 {
-	m_materialsBuffer->transferCPUMemoryWithStagingBuffer(&newShadingMode, sizeof(uint32_t), 0, materialIdx * sizeof(MaterialGPUInfo) + offsetof(MaterialGPUInfo, shadingMode));
+	m_textureSetsMutex.lock();
 }
 
-void Wolf::MaterialsGPUManager::changeTextureSetIdxBeforeFrame(uint32_t materialIdx,uint32_t indexOfTextureSetInMaterial, uint32_t newTextureSetIdx) const
+void Wolf::MaterialsGPUManager::unlockTextureSets()
 {
-	m_materialsBuffer->transferCPUMemoryWithStagingBuffer(&newTextureSetIdx, sizeof(uint32_t), 0, 
+	m_textureSetsMutex.unlock();
+}
+
+void Wolf::MaterialsGPUManager::lockMaterials()
+{
+	m_materialsMutex.lock();
+}
+
+void Wolf::MaterialsGPUManager::unlockMaterials()
+{
+	m_materialsMutex.unlock();
+}
+
+#ifdef MATERIAL_DEBUG
+void Wolf::MaterialsGPUManager::changeMaterialShadingModeBeforeFrame(uint32_t materialIdx, uint32_t newShadingMode)
+{
+	pushDataToGPUBuffer(&newShadingMode, sizeof(uint32_t), m_materialsBuffer.createNonOwnerResource(), materialIdx * sizeof(MaterialGPUInfo) + offsetof(MaterialGPUInfo, shadingMode));
+}
+
+void Wolf::MaterialsGPUManager::changeTextureSetIdxBeforeFrame(uint32_t materialIdx,uint32_t indexOfTextureSetInMaterial, uint32_t newTextureSetIdx)
+{
+	pushDataToGPUBuffer(&newTextureSetIdx, sizeof(uint32_t), m_materialsBuffer.createNonOwnerResource(),
 		materialIdx * sizeof(MaterialGPUInfo) + offsetof(MaterialGPUInfo, textureSetIndices) + indexOfTextureSetInMaterial * sizeof(uint32_t));
 }
 
-void Wolf::MaterialsGPUManager::changeStrengthBeforeFrame(uint32_t materialIdx, uint32_t indexOfTextureSetInMaterial,
-	float newStrength) const
+void Wolf::MaterialsGPUManager::changeStrengthBeforeFrame(uint32_t materialIdx, uint32_t indexOfTextureSetInMaterial, float newStrength)
 {
-	m_materialsBuffer->transferCPUMemoryWithStagingBuffer(&newStrength, sizeof(float), 0,
+	pushDataToGPUBuffer(&newStrength, sizeof(float), m_materialsBuffer.createNonOwnerResource(),
 		materialIdx * sizeof(MaterialGPUInfo) + offsetof(MaterialGPUInfo, strengths) + indexOfTextureSetInMaterial * sizeof(float));
 }
 
 void Wolf::MaterialsGPUManager::changeExistingTextureSetBeforeFrame(TextureSetCacheInfo& textureSetCacheInfo, const TextureSetInfo& textureSetInfo)
 {
+
 	if (textureSetCacheInfo.textureSetIdx == 0)
 		return;
 
@@ -145,7 +170,8 @@ void Wolf::MaterialsGPUManager::changeExistingTextureSetBeforeFrame(TextureSetCa
 		if (textureSetCacheInfo.albedoIdx == 0)
 		{
 			textureSetCacheInfo.albedoIdx = m_currentBindlessCount++;
-			m_textureSetsBuffer->transferCPUMemoryWithStagingBuffer(&textureSetCacheInfo.albedoIdx, sizeof(uint32_t), 0, textureSetCacheInfo.textureSetIdx * sizeof(TextureSetGPUInfo) + offsetof(TextureSetGPUInfo, albedoIdx));
+			pushDataToGPUBuffer(&textureSetCacheInfo.albedoIdx, sizeof(uint32_t), m_textureSetsBuffer.createNonOwnerResource(), 
+				textureSetCacheInfo.textureSetIdx * sizeof(TextureSetGPUInfo) + offsetof(TextureSetGPUInfo, albedoIdx));
 		}
 
 		DescriptorSetGenerator::ImageDescription imageToUpdate{ VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, textureSetInfo.images[0]->getDefaultImageView() };
@@ -157,7 +183,8 @@ void Wolf::MaterialsGPUManager::changeExistingTextureSetBeforeFrame(TextureSetCa
 		if (textureSetCacheInfo.normalIdx == 1)
 		{
 			textureSetCacheInfo.normalIdx = m_currentBindlessCount++;
-			m_textureSetsBuffer->transferCPUMemoryWithStagingBuffer(&textureSetCacheInfo.normalIdx, sizeof(uint32_t), 0, textureSetCacheInfo.textureSetIdx * sizeof(TextureSetGPUInfo) + offsetof(TextureSetGPUInfo, normalIdx));
+			pushDataToGPUBuffer(&textureSetCacheInfo.normalIdx, sizeof(uint32_t), m_textureSetsBuffer.createNonOwnerResource(),
+				textureSetCacheInfo.textureSetIdx * sizeof(TextureSetGPUInfo) + offsetof(TextureSetGPUInfo, normalIdx));
 		}
 
 		DescriptorSetGenerator::ImageDescription imageToUpdate{ VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, textureSetInfo.images[1]->getDefaultImageView() };
@@ -169,7 +196,8 @@ void Wolf::MaterialsGPUManager::changeExistingTextureSetBeforeFrame(TextureSetCa
 		if (textureSetCacheInfo.roughnessMetalnessAOIdx == 2)
 		{
 			textureSetCacheInfo.roughnessMetalnessAOIdx = m_currentBindlessCount++;
-			m_textureSetsBuffer->transferCPUMemoryWithStagingBuffer(&textureSetCacheInfo.roughnessMetalnessAOIdx, sizeof(uint32_t), 0, textureSetCacheInfo.textureSetIdx * sizeof(TextureSetGPUInfo) + offsetof(TextureSetGPUInfo, roughnessMetalnessAOIdx));
+			pushDataToGPUBuffer(&textureSetCacheInfo.roughnessMetalnessAOIdx, sizeof(uint32_t), m_textureSetsBuffer.createNonOwnerResource(),
+				textureSetCacheInfo.textureSetIdx * sizeof(TextureSetGPUInfo) + offsetof(TextureSetGPUInfo, roughnessMetalnessAOIdx));
 		}
 
 		DescriptorSetGenerator::ImageDescription imageToUpdate{ VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, textureSetInfo.images[2]->getDefaultImageView() };
@@ -177,15 +205,15 @@ void Wolf::MaterialsGPUManager::changeExistingTextureSetBeforeFrame(TextureSetCa
 	}
 }
 
-void Wolf::MaterialsGPUManager::changeSamplingModeBeforeFrame(uint32_t textureSetIdx, TextureSetInfo::SamplingMode newSamplingMode) const
+void Wolf::MaterialsGPUManager::changeSamplingModeBeforeFrame(uint32_t textureSetIdx, TextureSetInfo::SamplingMode newSamplingMode)
 {
 	uint32_t newSamplingModeUInt = static_cast<uint32_t>(newSamplingMode);
-	m_textureSetsBuffer->transferCPUMemoryWithStagingBuffer(&newSamplingModeUInt, sizeof(uint32_t), 0, textureSetIdx * sizeof(TextureSetGPUInfo) + offsetof(TextureSetGPUInfo, samplingMode));
+	pushDataToGPUBuffer(&newSamplingModeUInt, sizeof(uint32_t), m_textureSetsBuffer.createNonOwnerResource(), textureSetIdx * sizeof(TextureSetGPUInfo) + offsetof(TextureSetGPUInfo, samplingMode));
 }
 
-void Wolf::MaterialsGPUManager::changeScaleBeforeFrame(uint32_t textureSetIdx, glm::vec3 newScale) const
+void Wolf::MaterialsGPUManager::changeScaleBeforeFrame(uint32_t textureSetIdx, glm::vec3 newScale)
 {
-	m_textureSetsBuffer->transferCPUMemoryWithStagingBuffer(&newScale, sizeof(glm::vec3), 0, textureSetIdx * sizeof(TextureSetGPUInfo) + offsetof(TextureSetGPUInfo, scale));
+	pushDataToGPUBuffer(&newScale, sizeof(glm::vec3), m_textureSetsBuffer.createNonOwnerResource(), textureSetIdx * sizeof(TextureSetGPUInfo) + offsetof(TextureSetGPUInfo, scale));
 }
 #endif
 

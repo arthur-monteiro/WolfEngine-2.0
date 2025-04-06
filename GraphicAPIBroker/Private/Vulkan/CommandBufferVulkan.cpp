@@ -1,8 +1,9 @@
 #ifdef WOLF_VULKAN
-
 #include "CommandBufferVulkan.h"
 
+#include <Configuration.h>
 #include <Debug.h>
+#include <RuntimeContext.h>
 
 #include "../../Public/ShaderBindingTable.h"
 #include "BufferVulkan.h"
@@ -15,22 +16,24 @@
 #include "SemaphoreVulkan.h"
 #include "Vulkan.h"
 
-Wolf::CommandBufferVulkan::CommandBufferVulkan(QueueType queueType, bool oneTimeSubmit)
+Wolf::CommandBufferVulkan::CommandBufferVulkan(QueueType queueType, bool isTransient, bool preRecord)
 {
+	m_commandBuffers.resize((isTransient || preRecord) ? 1 : g_configuration->getMaxCachedFrames());
+
 	VkCommandBufferAllocateInfo allocInfo = {};
 	allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
 
 	VkCommandPool commandPool = VK_NULL_HANDLE;
 	if (queueType == QueueType::GRAPHIC || queueType == QueueType::TRANSFER || queueType == QueueType::COMPUTE || queueType == QueueType::RAY_TRACING)
 	{
-		if (oneTimeSubmit)
+		if (isTransient)
 			commandPool = g_vulkanInstance->getGraphicsTransientCommandPool()->getCommandPool();
 		else
 			commandPool = g_vulkanInstance->getGraphicsCommandPool()->getCommandPool();
 	}
 	else if (queueType == QueueType::ASYNC_COMPUTE)
 	{
-		if (oneTimeSubmit)
+		if (isTransient)
 			commandPool = g_vulkanInstance->getComputeTransientCommandPool()->getCommandPool();
 		else
 			commandPool = g_vulkanInstance->getComputeCommandPool()->getCommandPool();
@@ -38,33 +41,34 @@ Wolf::CommandBufferVulkan::CommandBufferVulkan(QueueType queueType, bool oneTime
 
 	allocInfo.commandPool = commandPool;
 	allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-	allocInfo.commandBufferCount = 1;
+	allocInfo.commandBufferCount = static_cast<uint32_t>(m_commandBuffers.size());
 
-	if (vkAllocateCommandBuffers(g_vulkanInstance->getDevice(), &allocInfo, &m_commandBuffer) != VK_SUCCESS)
+	if (vkAllocateCommandBuffers(g_vulkanInstance->getDevice(), &allocInfo, m_commandBuffers.data()) != VK_SUCCESS)
 		Debug::sendError("Error : command buffer allocation");
 
 	m_usedCommandPool = commandPool;
 	m_queueType = queueType;
-	m_oneTimeSubmit = oneTimeSubmit;
+	m_isTransient = isTransient;
+	m_isPreRecorded = preRecord;
 }
 
 Wolf::CommandBufferVulkan::~CommandBufferVulkan()
 {
-	vkFreeCommandBuffers(g_vulkanInstance->getDevice(), m_usedCommandPool, 1, &m_commandBuffer);
+	vkFreeCommandBuffers(g_vulkanInstance->getDevice(), m_usedCommandPool, static_cast<uint32_t>(m_commandBuffers.size()), m_commandBuffers.data());
 }
 
 void Wolf::CommandBufferVulkan::beginCommandBuffer() const
 {
 	VkCommandBufferBeginInfo beginInfo = {};
 	beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-	beginInfo.flags = m_oneTimeSubmit ? VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT : VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT;
+	beginInfo.flags = m_isPreRecorded ? VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT : VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
 
-	vkBeginCommandBuffer(m_commandBuffer, &beginInfo);
+	vkBeginCommandBuffer(getCommandBuffer(), &beginInfo);
 }
 
 void Wolf::CommandBufferVulkan::endCommandBuffer() const
 {
-	if (vkEndCommandBuffer(m_commandBuffer) != VK_SUCCESS)
+	if (vkEndCommandBuffer(getCommandBuffer()) != VK_SUCCESS)
 		Debug::sendError("Error : end command buffer");
 }
 
@@ -85,7 +89,7 @@ void Wolf::CommandBufferVulkan::submit(const std::vector<const Semaphore*>& wait
 		vkSignalSemaphores[i] = static_cast<const SemaphoreVulkan*>(signalSemaphores[i])->getSemaphore();
 	submitInfo.pSignalSemaphores = vkSignalSemaphores.data();
 
-	const VkCommandBuffer commandBuffer = m_commandBuffer;
+	const VkCommandBuffer commandBuffer = getCommandBuffer();
 	submitInfo.pCommandBuffers = &commandBuffer;
 	submitInfo.commandBufferCount = 1;
 
@@ -128,12 +132,12 @@ void Wolf::CommandBufferVulkan::beginRenderPass(const RenderPass& renderPass, co
 	renderPassInfo.clearValueCount = static_cast<uint32_t>(vkClearValues.size());
 	renderPassInfo.pClearValues = vkClearValues.data();
 
-	vkCmdBeginRenderPass(m_commandBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
+	vkCmdBeginRenderPass(getCommandBuffer(), &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
 }
 
 void Wolf::CommandBufferVulkan::endRenderPass() const
 {
-	vkCmdEndRenderPass(m_commandBuffer);
+	vkCmdEndRenderPass(getCommandBuffer());
 }
 
 void Wolf::CommandBufferVulkan::bindVertexBuffer(const Buffer& buffer, uint32_t bindingIdx) const
@@ -141,7 +145,7 @@ void Wolf::CommandBufferVulkan::bindVertexBuffer(const Buffer& buffer, uint32_t 
 	const VkBuffer vkBuffer = static_cast<const BufferVulkan&>(buffer).getBuffer();
 	constexpr VkDeviceSize offsets[1] = { 0 };
 
-	vkCmdBindVertexBuffers(m_commandBuffer, bindingIdx, 1, &vkBuffer, offsets);
+	vkCmdBindVertexBuffers(getCommandBuffer(), bindingIdx, 1, &vkBuffer, offsets);
 }
 
 void Wolf::CommandBufferVulkan::bindIndexBuffer(const Buffer& buffer, IndexType indexType) const
@@ -157,18 +161,18 @@ void Wolf::CommandBufferVulkan::bindIndexBuffer(const Buffer& buffer, IndexType 
 		break;
 	}
 
-	vkCmdBindIndexBuffer(m_commandBuffer, static_cast<const BufferVulkan&>(buffer).getBuffer(), 0, vkIndexType);
+	vkCmdBindIndexBuffer(getCommandBuffer(), static_cast<const BufferVulkan&>(buffer).getBuffer(), 0, vkIndexType);
 }
 
 void Wolf::CommandBufferVulkan::bindPipeline(const ResourceReference<const Pipeline>& pipeline) const
 {
-	vkCmdBindPipeline(m_commandBuffer, pipeline.operator-><const PipelineVulkan>()->getPipelineBindPoint(), pipeline.operator-><const PipelineVulkan>()->getPipeline());
+	vkCmdBindPipeline(getCommandBuffer(), pipeline.operator-><const PipelineVulkan>()->getPipelineBindPoint(), pipeline.operator-><const PipelineVulkan>()->getPipeline());
 }
 
 void Wolf::CommandBufferVulkan::bindDescriptorSet(const ResourceReference<const DescriptorSet>& descriptorSet, uint32_t slot, const Pipeline& pipeline) const
 {
-	vkCmdBindDescriptorSets(m_commandBuffer, static_cast<const PipelineVulkan*>(&pipeline)->getPipelineBindPoint(), static_cast<const PipelineVulkan*>(&pipeline)->getPipelineLayout(), slot, 1, descriptorSet.operator-><const DescriptorSetVulkan>()->getDescriptorSet(),
-	                        0, nullptr);
+	vkCmdBindDescriptorSets(getCommandBuffer(), static_cast<const PipelineVulkan*>(&pipeline)->getPipelineBindPoint(), static_cast<const PipelineVulkan*>(&pipeline)->getPipelineLayout(), slot, 1, 
+		&descriptorSet.operator-><const DescriptorSetVulkan>()->getDescriptorSet(), 0, nullptr);
 }
 
 VkFragmentShadingRateCombinerOpKHR fragmentShadingRateCombinerOpToVkType(Wolf::FragmentShadingRateCombinerOp in)
@@ -191,7 +195,7 @@ void Wolf::CommandBufferVulkan::setFragmentShadingRate(FragmentShadingRateCombin
 	combiners[0] = fragmentShadingRateCombinerOpToVkType(fragmentShadingRateCombinerOps[0]);
 	combiners[1] = fragmentShadingRateCombinerOpToVkType(fragmentShadingRateCombinerOps[1]);
 	VkExtent2D vkExtent{ fragmentExtent.width, fragmentExtent.height };
-	vkCmdSetFragmentShadingRateKHR(m_commandBuffer, &vkExtent, combiners);
+	vkCmdSetFragmentShadingRateKHR(getCommandBuffer(), &vkExtent, combiners);
 }
 
 void Wolf::CommandBufferVulkan::setViewport(const Viewport& viewport) const
@@ -204,18 +208,18 @@ void Wolf::CommandBufferVulkan::setViewport(const Viewport& viewport) const
 	vkViewport.minDepth = viewport.minDepth;
 	vkViewport.maxDepth = viewport.maxDepth;
 
-	vkCmdSetViewport(m_commandBuffer, 0, 1, &vkViewport);
+	vkCmdSetViewport(getCommandBuffer(), 0, 1, &vkViewport);
 }
 
 void Wolf::CommandBufferVulkan::clearColorImage(const Image& image, VkImageLayout imageLayout, ColorFloat clearColor, const VkImageSubresourceRange& range) const
 {
 	const VkClearColorValue color = { clearColor.components[0], clearColor.components[1], clearColor.components[2], clearColor.components[3] };
-	vkCmdClearColorImage(m_commandBuffer, static_cast<const ImageVulkan*>(&image)->getImage(), imageLayout, &color, 1, &range);
+	vkCmdClearColorImage(getCommandBuffer(), static_cast<const ImageVulkan*>(&image)->getImage(), imageLayout, &color, 1, &range);
 }
 
 void Wolf::CommandBufferVulkan::fillBuffer(const Buffer& buffer, uint64_t dstOffset, uint64_t size, uint32_t data) const
 {
-	vkCmdFillBuffer(m_commandBuffer, static_cast<const BufferVulkan*>(&buffer)->getBuffer(), dstOffset, size, data);
+	vkCmdFillBuffer(getCommandBuffer(), static_cast<const BufferVulkan*>(&buffer)->getBuffer(), dstOffset, size, data);
 }
 
 void Wolf::CommandBufferVulkan::imageCopy(const Image& imageSrc, VkImageLayout srcImageLayout, const Image& imageDst,
@@ -237,23 +241,23 @@ void Wolf::CommandBufferVulkan::imageCopy(const Image& imageSrc, VkImageLayout s
 
 	copyRegion.extent = { imageCopyInfo.extent.x, imageCopyInfo.extent.y, imageCopyInfo.extent.z };
 
-	vkCmdCopyImage(m_commandBuffer, static_cast<const ImageVulkan*>(&imageSrc)->getImage(), srcImageLayout, static_cast<const ImageVulkan*>(&imageDst)->getImage(), dstImageLayout, 1, &copyRegion);
+	vkCmdCopyImage(getCommandBuffer(), static_cast<const ImageVulkan*>(&imageSrc)->getImage(), srcImageLayout, static_cast<const ImageVulkan*>(&imageDst)->getImage(), dstImageLayout, 1, &copyRegion);
 }
 
 void Wolf::CommandBufferVulkan::draw(uint32_t vertexCount, uint32_t instanceCount, uint32_t firstVertex, uint32_t firstInstance) const
 {
-	vkCmdDraw(m_commandBuffer, vertexCount, instanceCount, firstVertex, firstInstance);
+	vkCmdDraw(getCommandBuffer(), vertexCount, instanceCount, firstVertex, firstInstance);
 }
 
 void Wolf::CommandBufferVulkan::drawIndexed(uint32_t indexCount, uint32_t instanceCount, uint32_t firstIndex,
                                             int32_t vertexOffset, uint32_t firstInstance) const
 {
-	vkCmdDrawIndexed(m_commandBuffer, indexCount, instanceCount, firstIndex, vertexOffset, firstInstance);
+	vkCmdDrawIndexed(getCommandBuffer(), indexCount, instanceCount, firstIndex, vertexOffset, firstInstance);
 }
 
 void Wolf::CommandBufferVulkan::dispatch(uint32_t groupCountX, uint32_t groupCountY, uint32_t groupCountZ) const
 {
-	vkCmdDispatch(m_commandBuffer, groupCountX, groupCountY, groupCountZ);
+	vkCmdDispatch(getCommandBuffer(), groupCountX, groupCountY, groupCountZ);
 }
 
 #if !defined(__ANDROID__) or __ANDROID_MIN_SDK_VERSION__ > 30
@@ -278,7 +282,7 @@ void Wolf::CommandBufferVulkan::traceRays(const ResourceReference<const ShaderBi
 
 	const VkStridedDeviceAddressRegionKHR callRegion{};
 
-	vkCmdTraceRaysKHR(m_commandBuffer, &rgenRegion,
+	vkCmdTraceRaysKHR(getCommandBuffer(), &rgenRegion,
 		&rmissRegion,
 		&rhitRegion,
 		&callRegion, extent.width, extent.height, extent.depth);
@@ -292,7 +296,7 @@ void Wolf::CommandBufferVulkan::debugMarkerInsert(const DebugMarkerInfo& debugMa
 	markerInfo.sType = VK_STRUCTURE_TYPE_DEBUG_MARKER_MARKER_INFO_EXT;
 	memcpy(markerInfo.color, &debugMarkerInfo.color, sizeof(float) * 4);
 	markerInfo.pMarkerName = debugMarkerInfo.name.c_str();
-	vkCmdDebugMarkerInsertEXT(m_commandBuffer, &markerInfo);
+	vkCmdDebugMarkerInsertEXT(getCommandBuffer(), &markerInfo);
 #endif
 }
 
@@ -303,15 +307,22 @@ void Wolf::CommandBufferVulkan::debugMarkerBegin(const DebugMarkerInfo& debugMar
 	markerInfo.sType = VK_STRUCTURE_TYPE_DEBUG_MARKER_MARKER_INFO_EXT;
 	memcpy(markerInfo.color, &debugMarkerInfo.color, sizeof(float) * 4);
 	markerInfo.pMarkerName = debugMarkerInfo.name.c_str();
-	vkCmdDebugMarkerBeginEXT(m_commandBuffer, &markerInfo);
+	vkCmdDebugMarkerBeginEXT(getCommandBuffer(), &markerInfo);
 #endif
 }
 
 void Wolf::CommandBufferVulkan::debugMarkerEnd() const
 {
 #if !defined(__ANDROID__) or __ANDROID_MIN_SDK_VERSION__ > 30
-	vkCmdDebugMarkerEndEXT(m_commandBuffer);
+	vkCmdDebugMarkerEndEXT(getCommandBuffer());
 #endif
+}
+
+VkCommandBuffer Wolf::CommandBufferVulkan::getCommandBuffer() const
+{
+	uint32_t bufferIdx = (m_isTransient || m_isPreRecorded) ? 0 : (g_runtimeContext->getCurrentCPUFrameNumber() % g_configuration->getMaxCachedFrames());
+
+	return m_commandBuffers[bufferIdx];
 }
 
 #endif

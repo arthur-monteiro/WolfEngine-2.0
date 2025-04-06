@@ -21,7 +21,8 @@ namespace Wolf
 		~ImageVulkan() override;
 
 		void copyCPUBuffer(const unsigned char* pixels, const TransitionLayoutInfo& finalLayout, uint32_t mipLevel = 0) override;
-		void copyGPUBuffer(const Buffer& bufferSrc, const VkBufferImageCopy& copyRegion, const TransitionLayoutInfo& finalLayout) override;
+		void copyGPUBuffer(const Buffer& bufferSrc, const BufferImageCopy& copyRegion, const TransitionLayoutInfo& finalLayout) override;
+		void recordCopyGPUBuffer(const CommandBuffer& commandBuffer, const Buffer& bufferSrc, const BufferImageCopy& copyRegion, const TransitionLayoutInfo& finalLayout) override;
 		void copyGPUImage(const Image& imageSrc, const VkImageCopy& imageCopy) override;
 		void recordCopyGPUImage(const Image& imageSrc, const VkImageCopy& imageCopy, const CommandBuffer& commandBuffer) override;
 
@@ -49,6 +50,7 @@ namespace Wolf
 		void setBPP();
 		static VkImageUsageFlagBits wolfImageUsageFlagBitsToVkImageUsageFlagBits(ImageUsageFlagBits imageUsageFlagBits);
 		static VkImageUsageFlags wolfImageUsageFlagsToVkImageUsageFlags(ImageUsageFlags imageUsageFlags);
+		static VkBufferImageCopy wolfBufferImageCopyToVkBufferImageCopy(const BufferImageCopy& bufferImageCopy);
 
 	private:
 		VkImage m_image;

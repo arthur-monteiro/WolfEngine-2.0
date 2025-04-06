@@ -35,7 +35,6 @@ namespace Wolf
 	struct RecordContext
 	{
 		uint32_t currentFrameIdx = 0;
-		uint32_t commandBufferIdx = 0;
 		uint32_t swapChainImageIdx = 0;
 		Image* swapchainImage = nullptr;
 #ifndef __ANDROID__
@@ -55,7 +54,6 @@ namespace Wolf
 	struct SubmitContext
 	{
 		uint32_t currentFrameIdx;
-		uint32_t commandBufferIdx;
 		const Semaphore* swapChainImageAvailableSemaphore;
 		const Semaphore* userInterfaceImageAvailableSemaphore;
 		Fence* frameFence;

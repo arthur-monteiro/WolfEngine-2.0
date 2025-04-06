@@ -131,7 +131,7 @@ void Wolf::ImageVulkan::copyCPUBuffer(const unsigned char* pixels, const Transit
 	std::memcpy(mappedData, pixels, imageSize);
 	vkUnmapMemory(g_vulkanInstance->getDevice(), stagingBuffer.getBufferMemory());
 
-	VkBufferImageCopy copyRegion;
+	BufferImageCopy copyRegion;
 	copyRegion.bufferOffset = 0;
 	copyRegion.bufferRowLength = extent.width;
 	copyRegion.bufferImageHeight = extent.height;
@@ -142,18 +142,19 @@ void Wolf::ImageVulkan::copyCPUBuffer(const unsigned char* pixels, const Transit
 	copyRegion.imageSubresource.layerCount = 1;
 
 	copyRegion.imageOffset = { 0, 0, 0 };
-	copyRegion.imageExtent = extent;
+	copyRegion.imageExtent = { extent.width, extent.height, extent.depth };
 
 	copyGPUBuffer(stagingBuffer, copyRegion, finalLayout);
 }
 
-void Wolf::ImageVulkan::copyGPUBuffer(const Buffer& bufferSrc, const VkBufferImageCopy& copyRegion, const TransitionLayoutInfo& finalLayout)
+void Wolf::ImageVulkan::copyGPUBuffer(const Buffer& bufferSrc, const BufferImageCopy& copyRegion, const TransitionLayoutInfo& finalLayout)
 {
 	const CommandBufferVulkan commandBuffer(QueueType::TRANSFER, true);
 	commandBuffer.beginCommandBuffer();
 
 	transitionImageLayout(commandBuffer, { VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_ACCESS_TRANSFER_WRITE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, copyRegion.imageSubresource.mipLevel, 1 });
-	vkCmdCopyBufferToImage(commandBuffer.getCommandBuffer(), static_cast<const BufferVulkan*>(&bufferSrc)->getBuffer(), m_image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,	1, &copyRegion);
+	VkBufferImageCopy vkBufferImageCopy = wolfBufferImageCopyToVkBufferImageCopy(copyRegion);
+	vkCmdCopyBufferToImage(commandBuffer.getCommandBuffer(), static_cast<const BufferVulkan*>(&bufferSrc)->getBuffer(), m_image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,	1, &vkBufferImageCopy);
 	transitionImageLayout(commandBuffer, finalLayout);
 
 	commandBuffer.endCommandBuffer();
@@ -163,6 +164,19 @@ void Wolf::ImageVulkan::copyGPUBuffer(const Buffer& bufferSrc, const VkBufferIma
 	const FenceVulkan fence(0);
 	commandBuffer.submit(waitSemaphores, signalSemaphores, &fence);
 	fence.waitForFence();
+}
+
+void Wolf::ImageVulkan::recordCopyGPUBuffer(const CommandBuffer& commandBuffer, const Buffer& bufferSrc, const BufferImageCopy& copyRegion, const TransitionLayoutInfo& finalLayout)
+{
+	const CommandBufferVulkan* commandBufferVulkan = static_cast<const CommandBufferVulkan*>(&commandBuffer);
+	const BufferVulkan* srcAsBufferVulkan = static_cast<const BufferVulkan*>(&bufferSrc);
+
+	transitionImageLayout(commandBuffer, { VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_ACCESS_TRANSFER_WRITE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, copyRegion.imageSubresource.mipLevel, 1 });
+
+	VkBufferImageCopy vkBufferImageCopy = wolfBufferImageCopyToVkBufferImageCopy(copyRegion);
+	vkCmdCopyBufferToImage(commandBufferVulkan->getCommandBuffer(), srcAsBufferVulkan->getBuffer(), m_image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &vkBufferImageCopy);
+
+	transitionImageLayout(commandBuffer, finalLayout);
 }
 
 void Wolf::ImageVulkan::copyGPUImage(const Image& imageSrc, const VkImageCopy& imageCopy)
@@ -424,6 +438,22 @@ VkImageUsageFlags Wolf::ImageVulkan::wolfImageUsageFlagsToVkImageUsageFlags(Imag
 #undef ADD_FLAG_IF_PRESENT
 
 	return vkImageUsageFlags;
+}
+
+VkBufferImageCopy Wolf::ImageVulkan::wolfBufferImageCopyToVkBufferImageCopy(const BufferImageCopy& bufferImageCopy)
+{
+	VkBufferImageCopy vkBufferImageCopy{};
+	vkBufferImageCopy.bufferOffset = bufferImageCopy.bufferOffset;
+	vkBufferImageCopy.bufferRowLength = bufferImageCopy.bufferRowLength;
+	vkBufferImageCopy.bufferImageHeight = bufferImageCopy.bufferImageHeight;
+	vkBufferImageCopy.imageSubresource = bufferImageCopy.imageSubresource;
+	vkBufferImageCopy.imageOffset.x = bufferImageCopy.imageOffset.x;
+	vkBufferImageCopy.imageOffset.y = bufferImageCopy.imageOffset.y;
+	vkBufferImageCopy.imageOffset.z = bufferImageCopy.imageOffset.z;
+	vkBufferImageCopy.imageExtent.width = bufferImageCopy.imageExtent.width;
+	vkBufferImageCopy.imageExtent.height = bufferImageCopy.imageExtent.height;
+	vkBufferImageCopy.imageExtent.depth = bufferImageCopy.imageExtent.depth;
+	return vkBufferImageCopy;
 }
 
 Wolf::ImageView Wolf::ImageVulkan::getImageView(Format format)

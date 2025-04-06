@@ -13,12 +13,12 @@ namespace Wolf
 
 		void update(const DescriptorSetUpdateInfo& descriptorSetCreateInfo) const override;
 
-		[[nodiscard]] const VkDescriptorSet* getDescriptorSet(uint32_t idx = 0) const { return &m_descriptorSet; }
+		[[nodiscard]] const VkDescriptorSet& getDescriptorSet() const;
 
 	private:
 		void initDescriptorSet(const DescriptorSetLayout& descriptorSetLayout);
 
-		VkDescriptorSet m_descriptorSet;
+		std::vector<VkDescriptorSet> m_descriptorSets;
 	};
 }
 

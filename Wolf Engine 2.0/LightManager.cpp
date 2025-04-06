@@ -3,10 +3,11 @@
 #include <DescriptorSetLayout.h>
 
 #include "DescriptorSetGenerator.h"
+#include "ProfilerCommon.h"
 
 Wolf::LightManager::LightManager()
 {
-	m_uniformBuffer.reset(Wolf::Buffer::createBuffer(sizeof(LightsUBData), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT));
+	m_uniformBuffer.reset(new UniformBuffer(sizeof(LightsUBData)));
 
 	m_descriptorSetLayoutGenerator.addUniformBuffer(ShaderStageFlagBits::FRAGMENT, 0);
 
@@ -16,7 +17,7 @@ Wolf::LightManager::LightManager()
 		}));
 
 	Wolf::DescriptorSetGenerator descriptorSetGenerator(m_descriptorSetLayoutGenerator.getDescriptorLayouts());
-	descriptorSetGenerator.setBuffer(0, *m_uniformBuffer);
+	descriptorSetGenerator.setUniformBuffer(0, *m_uniformBuffer);
 
 	m_descriptorSet.reset(Wolf::DescriptorSet::createDescriptorSet(*m_descriptorSetLayout->getResource()));
 	m_descriptorSet->update(descriptorSetGenerator.getDescriptorSetCreateInfo());
@@ -24,7 +25,9 @@ Wolf::LightManager::LightManager()
 
 void Wolf::LightManager::addPointLightForNextFrame(const PointLightInfo& pointLightInfo)
 {
+	m_pointLightsMutex.lock();
 	m_nextFramePointLights.emplace_back(pointLightInfo);
+	m_pointLightsMutex.unlock();
 }
 
 void Wolf::LightManager::addSunLightInfoForNextFrame(const SunLightInfo& sunLightInfo)
@@ -34,6 +37,8 @@ void Wolf::LightManager::addSunLightInfoForNextFrame(const SunLightInfo& sunLigh
 
 void Wolf::LightManager::updateBeforeFrame()
 {
+	PROFILE_FUNCTION
+
 	m_currentPointLights.swap(m_nextFramePointLights);
 	m_nextFramePointLights.clear();
 

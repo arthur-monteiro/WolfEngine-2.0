@@ -20,10 +20,11 @@ namespace Wolf
 		virtual ~SwapChain() = default;
 
 		void synchroniseCPUFromGPU(uint32_t currentFrameGPU) const;
+		static constexpr uint32_t NO_IMAGE_IDX = static_cast<uint32_t>(-1);
 		virtual uint32_t getCurrentImage(uint32_t currentFrameGPU) const = 0;
 		virtual void present(const Semaphore* waitSemaphore, uint32_t imageIndex) const = 0;
 
-
+		virtual void resetAllFences() = 0;
 		virtual void recreate(Extent2D extent) = 0;
 		
 		[[nodiscard]] Image* getImage(uint32_t index) const { return m_images[index].get(); }

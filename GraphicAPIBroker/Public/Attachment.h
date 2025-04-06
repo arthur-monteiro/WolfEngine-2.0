@@ -9,21 +9,35 @@
 
 namespace Wolf
 {
+	enum class AttachmentLoadOp
+	{
+		LOAD = 0,
+		CLEAR = 1,
+		DONT_CARE = 2
+	};
+
+	enum class AttachmentStoreOp
+	{
+		STORE = 0,
+		DONT_CARE = 1,
+		NONE = 2,
+	};
+
 	struct Attachment
 	{
 		Extent2D extent = { 0, 0 };
 		Format format;
-		VkSampleCountFlagBits sampleCount;
+		SampleCountFlagBits sampleCount;
 		VkImageLayout initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
 		VkImageLayout finalLayout;
-		VkAttachmentLoadOp loadOperation = VK_ATTACHMENT_LOAD_OP_CLEAR;
-		VkAttachmentStoreOp storeOperation;
+		AttachmentLoadOp loadOperation = AttachmentLoadOp::CLEAR;
+		AttachmentStoreOp storeOperation;
 		ImageView imageView;
 
 		ImageUsageFlags usageType;
 
-		Attachment(Extent2D extent, Format format, VkSampleCountFlagBits sampleCount, VkImageLayout finalLayout,
-			VkAttachmentStoreOp storeOperation, ImageUsageFlags usageType, ImageView imageView)
+		Attachment(Extent2D extent, Format format, SampleCountFlagBits sampleCount, VkImageLayout finalLayout,
+			AttachmentStoreOp storeOperation, ImageUsageFlags usageType, ImageView imageView)
 		{
 			this->extent = extent;
 			this->format = format;

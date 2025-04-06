@@ -24,4 +24,18 @@ namespace Wolf
 		D32_SFLOAT_S8_UINT,
 		D24_UNORM_S8_UINT
 	};
+
+
+	enum SampleCountFlagBits : uint32_t
+	{
+		SAMPLE_COUNT_1 = 1 << 0,
+		SAMPLE_COUNT_2 = 1 << 1,
+		SAMPLE_COUNT_4 = 1 << 2,
+		SAMPLE_COUNT_8 = 1 << 3,
+		SAMPLE_COUNT_16 = 1 << 4,
+		SAMPLE_COUNT_32 = 1 << 5,
+		SAMPLE_COUNT_64 = 1 << 6,
+		SAMPLE_COUNT_MAX = 1 << 7
+	};
+	using SampleCountFlags = uint32_t;
 }

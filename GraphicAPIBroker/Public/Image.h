@@ -62,7 +62,18 @@ namespace Wolf
 		};
 
 		virtual void copyCPUBuffer(const unsigned char* pixels, const TransitionLayoutInfo& finalLayout, uint32_t mipLevel = 0) = 0;
-		virtual void copyGPUBuffer(const Buffer& bufferSrc, const VkBufferImageCopy& copyRegion, const TransitionLayoutInfo& finalLayout) = 0;
+
+		typedef struct BufferImageCopy {
+			uint32_t bufferOffset;
+			uint32_t bufferRowLength;
+			uint32_t bufferImageHeight;
+			VkImageSubresourceLayers imageSubresource;
+			Offset3D imageOffset;
+			Extent3D imageExtent;
+		} BufferImageCopy;
+		virtual void copyGPUBuffer(const Buffer& bufferSrc, const BufferImageCopy& copyRegion, const TransitionLayoutInfo& finalLayout) = 0;
+		virtual void recordCopyGPUBuffer(const CommandBuffer& commandBuffer, const Buffer& bufferSrc, const BufferImageCopy& copyRegion, const TransitionLayoutInfo& finalLayout) = 0;
+
 		virtual void copyGPUImage(const Image& imageSrc, const VkImageCopy& imageCopy) = 0;
 		virtual void recordCopyGPUImage(const Image& imageSrc, const VkImageCopy& imageCopy, const CommandBuffer& commandBuffer) = 0;
 

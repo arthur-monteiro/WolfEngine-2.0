@@ -18,8 +18,8 @@ Wolf::GraphicCameraInterface::GraphicCameraInterface()
 
 	m_descriptorSet.reset(DescriptorSet::createDescriptorSet(*m_descriptorSetLayout->getResource()));
 	DescriptorSetGenerator descriptorSetGenerator(m_descriptorSetLayoutGenerator->getResource()->getDescriptorLayouts());
-	m_matricesUniformBuffer.reset(Buffer::createBuffer(sizeof(UniformBufferData), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT));
-	descriptorSetGenerator.setBuffer(0, *m_matricesUniformBuffer);
+	m_matricesUniformBuffer.reset(new UniformBuffer(sizeof(UniformBufferData)));
+	descriptorSetGenerator.setUniformBuffer(0, *m_matricesUniformBuffer);
 	m_descriptorSet->update(descriptorSetGenerator.getDescriptorSetCreateInfo());
 }
 

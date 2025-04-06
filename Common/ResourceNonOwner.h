@@ -117,6 +117,7 @@ namespace Wolf
 
 		[[nodiscard]] operator bool() const { return m_resource != nullptr; }
 		[[nodiscard]] bool operator==(const ResourceNonOwner& other) const { return m_resource == other.m_resource; }
+		[[nodiscard]] bool operator==(const NullableResourceNonOwner<T>& other) const { return operator==(other.m_resource); }
 
 		[[nodiscard]] const T& operator*() const noexcept requires(!std::is_void_v<T>) { return *m_resource; }
 		[[nodiscard]] T& operator*() requires(!std::is_void_v<T>) { return *m_resource; }
@@ -126,6 +127,8 @@ namespace Wolf
 		~ResourceNonOwner();
 
 	private:
+		friend ResourceUniqueOwner<T>;
+
 		T* m_resource;
 
 #ifdef RESOURCE_DEBUG

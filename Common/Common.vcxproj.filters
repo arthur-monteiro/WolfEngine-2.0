@@ -30,6 +30,9 @@
     <ClCompile Include="ResourceUniqueOwner.cpp">
       <Filter>Containers</Filter>
     </ClCompile>
+    <ClCompile Include="RuntimeContext.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Debug.h">
@@ -48,6 +51,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="GPUMemoryDebug.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="RuntimeContext.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

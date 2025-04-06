@@ -5,6 +5,8 @@
 #include <source_location>
 #endif
 
+#include <mutex>
+
 #include "Debug.h"
 #include "ResourceNonOwner.h"
 
@@ -47,6 +49,7 @@ namespace Wolf
 		~ResourceUniqueOwner();
 
 		void reset(T* resource);
+		void transferFrom(ResourceUniqueOwner<T>& src);
 		T* release();
 
 		template <typename U = T>
@@ -67,8 +70,11 @@ namespace Wolf
 		[[nodiscard]] T& operator*() { return *m_resource; }
 
 	private:
+		friend ResourceUniqueOwner<T>;
+
 		std::unique_ptr<T> m_resource;
 
+		std::mutex m_nonOwnerResourceMutex;
 		uint32_t m_nonOwnedResourceCount = 0;
 
 		void nonOwnerResourceDeleteCommon(
@@ -119,8 +125,24 @@ namespace Wolf
 	}
 
 	template <typename T>
+	void ResourceUniqueOwner<T>::transferFrom(ResourceUniqueOwner<T>& src)
+	{
+		reset(src.m_resource.release());
+		m_nonOwnerResources.swap(src.m_nonOwnerResources);
+		m_nonOwnedResourceCount = static_cast<uint32_t>(m_nonOwnerResources.size());
+		src.m_nonOwnedResourceCount = 0;
+
+		for (ResourceNonOwner<T>* nonOwnerResource : m_nonOwnerResources)
+		{
+			nonOwnerResource->m_onDelete = [this](ResourceNonOwner<T>* instance) { nonOwnerResourceDeleteTracked(instance); };
+			nonOwnerResource->m_onDuplicate = [this](ResourceNonOwner<T>* instance) { addNonOwnerResourceTracked(instance); };
+		}
+	}
+
+	template <typename T>
 	T* ResourceUniqueOwner<T>::release()
 	{
+		checksBeforeDelete();
 		return m_resource.release();
 	}
 
@@ -183,6 +205,8 @@ namespace Wolf
 #endif
 	)
 	{
+		m_nonOwnerResourceMutex.lock();
+
 		if (m_nonOwnedResourceCount == 0)
 			Debug::sendCriticalError("Wrong resource count");
 		m_nonOwnedResourceCount--;
@@ -197,6 +221,8 @@ namespace Wolf
 			}
 		}
 #endif
+
+		m_nonOwnerResourceMutex.unlock();
 	}
 
 #ifdef RESOURCE_DEBUG
@@ -222,10 +248,14 @@ namespace Wolf
 #endif
 	)
 	{
+		m_nonOwnerResourceMutex.lock();
+
 		m_nonOwnedResourceCount++;
 #ifdef RESOURCE_DEBUG
 		m_nonOwnerResources.push_back(instance);
 #endif
+
+		m_nonOwnerResourceMutex.unlock();
 	}
 
 #ifdef RESOURCE_DEBUG
@@ -268,6 +298,8 @@ namespace Wolf
 
 		void reset(T* resource) { m_ptr.reset(resource); }
 		T* release() { return m_ptr.release(); }
+
+		void transferFrom(ResourceUniqueOwner<T>& src) { reset(src.release()); }
 
 		[[nodiscard]] explicit operator bool() const { return m_ptr != nullptr; }
 		[[nodiscard]] T* operator->() const { return m_ptr.get(); }

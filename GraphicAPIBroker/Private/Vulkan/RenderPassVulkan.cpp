@@ -33,9 +33,9 @@ Wolf::RenderPassVulkan::RenderPassVulkan(const std::vector<Attachment>& attachme
 		attachmentDescriptions[i].sType = VK_STRUCTURE_TYPE_ATTACHMENT_DESCRIPTION_2;
 #endif
 		attachmentDescriptions[i].format = wolfFormatToVkFormat(attachments[i].format);
-		attachmentDescriptions[i].samples = attachments[i].sampleCount;
-		attachmentDescriptions[i].loadOp = attachments[i].loadOperation;
-		attachmentDescriptions[i].storeOp = attachments[i].storeOperation;
+		attachmentDescriptions[i].samples = wolfSampleCountFlagBitsToVkSampleCountFlagBits(attachments[i].sampleCount);
+		attachmentDescriptions[i].loadOp = wolfAttachmentLoadOpToVkAttachmentLoadOp(attachments[i].loadOperation);
+		attachmentDescriptions[i].storeOp = wolfAttachmentStoreOpToVkAttachmentStoreOp(attachments[i].storeOperation);
 		attachmentDescriptions[i].stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
 		attachmentDescriptions[i].stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
 		attachmentDescriptions[i].initialLayout = attachments[i].initialLayout;
@@ -157,4 +157,35 @@ Wolf::RenderPassVulkan::RenderPassVulkan(const std::vector<Attachment>& attachme
 Wolf::RenderPassVulkan::~RenderPassVulkan()
 {
 	vkDestroyRenderPass(g_vulkanInstance->getDevice(), m_renderPass, nullptr);
+}
+
+VkAttachmentLoadOp Wolf::RenderPassVulkan::wolfAttachmentLoadOpToVkAttachmentLoadOp(AttachmentLoadOp attachmentLoadOp)
+{
+	switch (attachmentLoadOp)
+	{
+		case AttachmentLoadOp::LOAD:
+			return VK_ATTACHMENT_LOAD_OP_LOAD;
+		case AttachmentLoadOp::CLEAR:
+			return VK_ATTACHMENT_LOAD_OP_CLEAR;
+		case AttachmentLoadOp::DONT_CARE:
+			return VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+		default:
+			Debug::sendCriticalError("Unhandled attachment load op");
+			return VK_ATTACHMENT_LOAD_OP_MAX_ENUM;
+	}
+}
+
+VkAttachmentStoreOp Wolf::RenderPassVulkan::wolfAttachmentStoreOpToVkAttachmentStoreOp(AttachmentStoreOp attachmentStoreOp)
+{
+	switch (attachmentStoreOp) {
+		case AttachmentStoreOp::STORE:
+			return VK_ATTACHMENT_STORE_OP_STORE;
+		case AttachmentStoreOp::DONT_CARE:
+			return VK_ATTACHMENT_STORE_OP_DONT_CARE;
+		case AttachmentStoreOp::NONE:
+			return VK_ATTACHMENT_STORE_OP_NONE;
+		default:
+			Debug::sendCriticalError("Unhandled attachment store op");
+			return VK_ATTACHMENT_STORE_OP_MAX_ENUM;
+	}
 }

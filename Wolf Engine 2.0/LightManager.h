@@ -4,9 +4,9 @@
 #include <glm/glm.hpp>
 #include <vector>
 
-#include <Buffer.h>
 #include <DescriptorSet.h>
 #include <DescriptorSetLayout.h>
+#include <UniformBuffer.h>
 
 #include "DescriptorSetLayoutGenerator.h"
 #include "LazyInitSharedResource.h"
@@ -46,6 +46,7 @@ namespace Wolf
 	private:
 		std::vector<PointLightInfo> m_currentPointLights;
 		std::vector<PointLightInfo> m_nextFramePointLights;
+		std::mutex m_pointLightsMutex;
 
 		std::vector<SunLightInfo> m_currentSunLights;
 		std::vector<SunLightInfo> m_nextFrameSunLights;
@@ -75,7 +76,7 @@ namespace Wolf
 			uint32_t sunLightsCount;
 			glm::vec3 padding2;
 		};
-		ResourceUniqueOwner<Buffer> m_uniformBuffer;
+		ResourceUniqueOwner<UniformBuffer> m_uniformBuffer;
 
 		DescriptorSetLayoutGenerator m_descriptorSetLayoutGenerator;
 		ResourceUniqueOwner<DescriptorSet> m_descriptorSet;

@@ -158,7 +158,11 @@ uint32_t Wolf::SwapChainVulkan::getCurrentImage(uint32_t currentFrame) const
 	const VkResult result = vkAcquireNextImageKHR(g_vulkanInstance->getDevice(), m_swapChain, std::numeric_limits<uint64_t>::max(), 
 		static_cast<const SemaphoreVulkan*>(m_imageAvailableSemaphores[currentFrame % m_imageAvailableSemaphores.size()].get())->getSemaphore(), VK_NULL_HANDLE, &imageIndex);
 
-	if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR)
+	if (result == VK_ERROR_OUT_OF_DATE_KHR)
+	{
+		return NO_IMAGE_IDX;
+	}
+	else if (result != VK_SUCCESS)
 	{
 		Debug::sendCriticalError("Error : can't acquire image");
 	}
@@ -191,12 +195,21 @@ void Wolf::SwapChainVulkan::present(const Semaphore* waitSemaphore, uint32_t ima
 
 	const VkResult result = vkQueuePresentKHR(g_vulkanInstance->getPresentQueue(), &presentInfo);
 
-	/*if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR)
-		recreateSwapChain();
-	else */if (result != VK_SUCCESS)
+	if (result == VK_ERROR_OUT_OF_DATE_KHR)
+	{
+		// It's most likely that window is not visible
+	}
+	else if (result != VK_SUCCESS)
 		Debug::sendCriticalError("Can't present image");
 }
 
+void Wolf::SwapChainVulkan::resetAllFences()
+{
+	for (std::unique_ptr<Fence>& frameFence : m_frameFences)
+	{
+		frameFence->resetFence();
+	}
+}
 
 void Wolf::SwapChainVulkan::recreate(Extent2D extent)
 {

@@ -14,8 +14,10 @@ namespace Wolf
 		~DescriptorSetLayoutVulkan() override;
 
 		[[nodiscard]] VkDescriptorSetLayout getDescriptorSetLayout() const { return m_descriptorSetLayout; }
+		[[nodiscard]] bool needsMultipleDescriptorSets() const override { return m_containsUniformBuffer; }
 
 	private:
 		VkDescriptorSetLayout m_descriptorSetLayout;
+		bool m_containsUniformBuffer = false;
 	};
 }

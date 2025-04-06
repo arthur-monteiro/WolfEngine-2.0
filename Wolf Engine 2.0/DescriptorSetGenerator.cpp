@@ -1,6 +1,9 @@
 #include "DescriptorSetGenerator.h"
 
+#include <Configuration.h>
 #include <Debug.h>
+
+#include "UniformBuffer.h"
 
 Wolf::DescriptorSetGenerator::DescriptorSetGenerator(const std::span<const DescriptorLayout> descriptorLayouts)
 {
@@ -12,7 +15,8 @@ Wolf::DescriptorSetGenerator::DescriptorSetGenerator(const std::span<const Descr
 			descriptorBuffer.descriptorLayout = descriptorLayout;
 
 			m_descriptorSetCreateInfo.descriptorBuffers.push_back(descriptorBuffer);
-			m_mapBindingCreateInfo[descriptorLayout.binding] = { DescriptorType::BUFFER, static_cast<uint32_t>(m_descriptorSetCreateInfo.descriptorBuffers.size()) - 1 };
+			m_mapBindingCreateInfo[descriptorLayout.binding] = { descriptorLayout.descriptorType == VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER ? DescriptorType::UNIFORM_BUFFER : DescriptorType::BUFFER,
+				static_cast<uint32_t>(m_descriptorSetCreateInfo.descriptorBuffers.size()) - 1 };
 		}
 		else if (descriptorLayout.descriptorType == VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER || descriptorLayout.descriptorType == VK_DESCRIPTOR_TYPE_STORAGE_IMAGE ||
 			descriptorLayout.descriptorType == VK_DESCRIPTOR_TYPE_SAMPLER || descriptorLayout.descriptorType == VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE)
@@ -47,6 +51,21 @@ void Wolf::DescriptorSetGenerator::setBuffer(uint32_t binding, const Buffer& buf
 
 	m_descriptorSetCreateInfo.descriptorBuffers[descriptor.second].buffers.resize(1);
 	m_descriptorSetCreateInfo.descriptorBuffers[descriptor.second].buffers[0] = &buffer;
+}
+
+void Wolf::DescriptorSetGenerator::setUniformBuffer(uint32_t binding, const UniformBuffer& buffer)
+{
+	const std::pair<DescriptorType, uint32_t /* descriptor index */>& descriptor = m_mapBindingCreateInfo[binding];
+
+	if (descriptor.first != DescriptorType::UNIFORM_BUFFER)
+		Debug::sendError("Binding provided is not a uniform buffer");
+
+	m_descriptorSetCreateInfo.descriptorBuffers[descriptor.second].isForMultipleSets = true;
+	m_descriptorSetCreateInfo.descriptorBuffers[descriptor.second].buffers.resize(g_configuration->getMaxCachedFrames());
+	for (uint32_t i = 0; i < g_configuration->getMaxCachedFrames(); ++i)
+	{
+		m_descriptorSetCreateInfo.descriptorBuffers[descriptor.second].buffers[i] = &buffer.getBuffer(i);
+	}
 }
 
 void Wolf::DescriptorSetGenerator::setCombinedImageSampler(uint32_t binding, VkImageLayout imageLayout, ImageView imageView, const Sampler& sampler)

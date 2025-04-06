@@ -29,7 +29,7 @@ namespace Wolf
 	class CommandBuffer
 	{
 	public:
-		static CommandBuffer* createCommandBuffer(QueueType queueType, bool isTransient);
+		static CommandBuffer* createCommandBuffer(QueueType queueType, bool isTransient, bool preRecord = false /* use when a command buffer is not recorded every frame (but still submitted) */);
 
 		virtual ~CommandBuffer() = default;
 

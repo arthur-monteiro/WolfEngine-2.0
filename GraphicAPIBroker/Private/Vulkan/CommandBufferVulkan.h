@@ -1,4 +1,5 @@
 #pragma once
+#include <mutex>
 
 #ifdef WOLF_VULKAN
 
@@ -14,7 +15,7 @@ namespace Wolf
 	class CommandBufferVulkan : public CommandBuffer
 	{
 	public:
-		CommandBufferVulkan(QueueType queueType, bool isTransient);
+		CommandBufferVulkan(QueueType queueType, bool isTransient, bool preRecord = false);
 		~CommandBufferVulkan() override;
 
 		void beginCommandBuffer() const override;
@@ -49,13 +50,14 @@ namespace Wolf
 		void debugMarkerBegin(const DebugMarkerInfo& debugMarkerInfo) const override;
 		void debugMarkerEnd() const override;
 
-		[[nodiscard]] VkCommandBuffer getCommandBuffer() const { return m_commandBuffer; }
+		[[nodiscard]] VkCommandBuffer getCommandBuffer() const;
 
 	private:
-		VkCommandBuffer m_commandBuffer;
+		std::vector<VkCommandBuffer> m_commandBuffers;
 		VkCommandPool m_usedCommandPool;
 		QueueType m_queueType;
-		bool m_oneTimeSubmit;
+		bool m_isTransient;
+		bool m_isPreRecorded;
 	};
 }
 
