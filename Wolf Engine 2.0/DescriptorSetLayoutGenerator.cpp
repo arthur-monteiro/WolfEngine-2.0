@@ -5,7 +5,7 @@ void Wolf::DescriptorSetLayoutGenerator::addUniformBuffer(ShaderStageFlags acces
 	DescriptorLayout descriptorLayout;
 	descriptorLayout.accessibility = accessibility;
 	descriptorLayout.binding = binding;
-	descriptorLayout.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+	descriptorLayout.descriptorType = DescriptorType::UNIFORM_BUFFER;
 
 	m_descriptorLayouts.push_back(descriptorLayout);
 }
@@ -15,7 +15,7 @@ void Wolf::DescriptorSetLayoutGenerator::addCombinedImageSampler(ShaderStageFlag
 	DescriptorLayout descriptorLayout;
 	descriptorLayout.accessibility = accessibility;
 	descriptorLayout.binding = binding;
-	descriptorLayout.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+	descriptorLayout.descriptorType = DescriptorType::COMBINED_IMAGE_SAMPLER;
 
 	m_descriptorLayouts.push_back(descriptorLayout);
 }
@@ -25,7 +25,7 @@ void Wolf::DescriptorSetLayoutGenerator::addStorageBuffer(ShaderStageFlags acces
 	DescriptorLayout descriptorLayout;
 	descriptorLayout.accessibility = accessibility;
 	descriptorLayout.binding = binding;
-	descriptorLayout.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+	descriptorLayout.descriptorType = DescriptorType::STORAGE_BUFFER;
 
 	m_descriptorLayouts.push_back(descriptorLayout);
 }
@@ -35,7 +35,7 @@ void Wolf::DescriptorSetLayoutGenerator::addStorageImage(ShaderStageFlags access
 	DescriptorLayout descriptorLayout;
 	descriptorLayout.accessibility = accessibility;
 	descriptorLayout.binding = binding;
-	descriptorLayout.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
+	descriptorLayout.descriptorType = DescriptorType::STORAGE_IMAGE;
 
 	m_descriptorLayouts.push_back(descriptorLayout);
 }
@@ -45,12 +45,12 @@ void Wolf::DescriptorSetLayoutGenerator::addSampler(ShaderStageFlags accessibili
 	DescriptorLayout descriptorLayout;
 	descriptorLayout.accessibility = accessibility;
 	descriptorLayout.binding = binding;
-	descriptorLayout.descriptorType = VK_DESCRIPTOR_TYPE_SAMPLER;
+	descriptorLayout.descriptorType = DescriptorType::SAMPLER;
 
 	m_descriptorLayouts.push_back(descriptorLayout);
 }
 
-void Wolf::DescriptorSetLayoutGenerator::addImages(VkDescriptorType descriptorType, ShaderStageFlags accessibility, uint32_t binding, uint32_t count, VkDescriptorBindingFlags bindingFlags)
+void Wolf::DescriptorSetLayoutGenerator::addImages(DescriptorType descriptorType, ShaderStageFlags accessibility, uint32_t binding, uint32_t count, VkDescriptorBindingFlags bindingFlags)
 {
 	DescriptorLayout descriptorLayout;
 	descriptorLayout.accessibility = accessibility;
@@ -67,7 +67,7 @@ void Wolf::DescriptorSetLayoutGenerator::addAccelerationStructure(ShaderStageFla
 	DescriptorLayout descriptorLayout;
 	descriptorLayout.accessibility = accessibility;
 	descriptorLayout.binding = binding;
-	descriptorLayout.descriptorType = VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR;
+	descriptorLayout.descriptorType = DescriptorType::ACCELERATION_STRUCTURE;
 
 	m_descriptorLayouts.push_back(descriptorLayout);
 }

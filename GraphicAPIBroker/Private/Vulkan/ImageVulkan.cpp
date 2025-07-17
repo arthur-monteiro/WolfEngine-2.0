@@ -1,5 +1,7 @@
 #include "ImageVulkan.h"
 
+#include <cstring>
+
 #include <Debug.h>
 #include <GPUMemoryDebug.h>
 

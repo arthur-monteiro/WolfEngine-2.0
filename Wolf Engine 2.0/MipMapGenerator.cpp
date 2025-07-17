@@ -5,10 +5,15 @@
 #include "Debug.h"
 #include "ImageCompression.h"
 
+uint32_t Wolf::MipMapGenerator::computeMipCount(Extent2D extent)
+{
+	return static_cast<uint32_t>(std::floor(std::log2(std::max(extent.width, extent.height)))) - 1; // remove 2 mip levels as min size must be 4x4
+}
+
 Wolf::MipMapGenerator::MipMapGenerator(const unsigned char* firstMipPixels, Extent2D extent, Format format, int mipCount)
 {
 	if(mipCount < 0)
-		mipCount = static_cast<uint32_t>(std::floor(std::log2(std::max(extent.width, extent.height)))) - 1; // remove 2 mip levels as min size must be 4x4
+		mipCount = computeMipCount(extent);
 
 	if (mipCount < 0)
 	{

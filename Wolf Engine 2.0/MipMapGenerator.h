@@ -12,6 +12,8 @@ namespace Wolf
 	class MipMapGenerator
 	{
 	public:
+		static uint32_t computeMipCount(Extent2D extent);
+
 		MipMapGenerator(const unsigned char* firstMipPixels, Extent2D extent, Format format, int mipCount = -1);
 		MipMapGenerator(const MipMapGenerator&) = delete;
 

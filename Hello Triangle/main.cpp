@@ -27,7 +27,6 @@ void debugCallback(Wolf::Debug::Severity severity, Wolf::Debug::Type type, const
 
 int main(int argc, char* argv[])
 {
-
 	Wolf::WolfInstanceCreateInfo wolfInstanceCreateInfo;
 	wolfInstanceCreateInfo.configFilename = "config/config.ini";
 	wolfInstanceCreateInfo.debugCallback = debugCallback;

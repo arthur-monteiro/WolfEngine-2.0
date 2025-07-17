@@ -7,6 +7,30 @@
 #include "ShaderStagesVulkan.h"
 #include "Vulkan.h"
 
+VkDescriptorType Wolf::wolfDescriptorTypeToVkDescriptorType(DescriptorType descriptorLayout)
+{
+	switch (descriptorLayout)
+	{
+		case DescriptorType::SAMPLER:
+			return VK_DESCRIPTOR_TYPE_SAMPLER;
+		case DescriptorType::UNIFORM_BUFFER:
+			return VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+		case DescriptorType::STORAGE_BUFFER:
+			return VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+		case DescriptorType::STORAGE_IMAGE:
+			return VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
+		case DescriptorType::SAMPLED_IMAGE:
+			return VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE;
+		case DescriptorType::COMBINED_IMAGE_SAMPLER:
+			return VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+		case DescriptorType::ACCELERATION_STRUCTURE:
+			return VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR;
+		default:
+			Debug::sendCriticalError("Unhandled descriptor layout");
+			return VK_DESCRIPTOR_TYPE_MAX_ENUM;
+	}
+}
+
 Wolf::DescriptorSetLayoutVulkan::DescriptorSetLayoutVulkan(const std::span<const DescriptorLayout> descriptorLayouts, VkDescriptorSetLayoutCreateFlags flags)
 {
 	std::vector<VkDescriptorSetLayoutBinding> bindings;
@@ -14,14 +38,14 @@ Wolf::DescriptorSetLayoutVulkan::DescriptorSetLayoutVulkan(const std::span<const
 
 	for (const auto descriptorLayout : descriptorLayouts)
 	{
-		if (descriptorLayout.descriptorType == VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER)
+		if (descriptorLayout.descriptorType == DescriptorType::UNIFORM_BUFFER)
 		{
 			m_containsUniformBuffer = true;
 		}
 
 		VkDescriptorSetLayoutBinding descriptorSetLayoutBinding = {};
 		descriptorSetLayoutBinding.binding = descriptorLayout.binding;
-		descriptorSetLayoutBinding.descriptorType = descriptorLayout.descriptorType;
+		descriptorSetLayoutBinding.descriptorType = wolfDescriptorTypeToVkDescriptorType(descriptorLayout.descriptorType);
 		descriptorSetLayoutBinding.descriptorCount = descriptorLayout.count;
 		descriptorSetLayoutBinding.stageFlags = wolfStageFlagsToVkStageFlags(descriptorLayout.accessibility);
 		descriptorSetLayoutBinding.pImmutableSamplers = nullptr;

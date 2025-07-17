@@ -287,7 +287,7 @@ Wolf::ModelLoader::ModelLoader(ModelData& outputModel, ModelLoadingInfo& modelLo
 		}
 	}
 
-	if (modelLoadingInfo.useCache)
+	if (modelLoadingInfo.useCache && false /* deactivated as cache needs to be redefined */)
 	{
 		Debug::sendInfo("Creating new cache");
 
@@ -523,7 +523,7 @@ bool Wolf::ModelLoader::loadCache(ModelLoadingInfo& modelLoadingInfo) const
 	return false;
 }
 
-inline std::string getTexName(const std::string& texName, const std::string& folder, const std::string& defaultTexture = "Textures/white_pixel.jpg")
+inline std::string getTexName(const std::string& texName, const std::string& folder, const std::string& defaultTexture = "Textures\\white_pixel.jpg")
 {
 	return !texName.empty() ? folder + "/" + texName : defaultTexture;
 }
@@ -533,7 +533,7 @@ void Wolf::ModelLoader::loadTextureSet(const tinyobj::material_t& material, cons
 {
 	TextureSetLoader::TextureSetFileInfoGGX materialFileInfo{};
 	materialFileInfo.name = material.name;
-	materialFileInfo.albedo = getTexName(material.diffuse_texname, mtlFolder, "Textures/no_texture_albedo.png");
+	materialFileInfo.albedo = getTexName(material.diffuse_texname, mtlFolder, "Textures\\no_texture_albedo.png");
 	materialFileInfo.normal = getTexName(material.bump_texname, mtlFolder);
 	materialFileInfo.roughness = getTexName(material.specular_highlight_texname, mtlFolder);
 	materialFileInfo.metalness = getTexName(material.specular_texname, mtlFolder);
@@ -564,5 +564,6 @@ void Wolf::ModelLoader::loadTextureSet(const tinyobj::material_t& material, cons
 		if (m_useCache)
 			materialLoader.assignCache(i, m_imagesData[indexMaterial * MaterialsGPUManager::TEXTURE_COUNT_PER_MATERIAL + i]);
 		materialLoader.transferImageTo(i, m_outputModel->textureSets[indexMaterial].images[i]);
+		m_outputModel->textureSets[indexMaterial].slicesFolders[i] = materialLoader.getOutputSlicesFolder(i);
 	}
 }

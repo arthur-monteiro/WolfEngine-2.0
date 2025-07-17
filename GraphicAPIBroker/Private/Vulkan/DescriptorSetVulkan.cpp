@@ -54,7 +54,7 @@ void Wolf::DescriptorSetVulkan::update(const DescriptorSetUpdateInfo& descriptor
 			descriptorWrite.dstSet = m_descriptorSets[descriptorSetIdx];
 			descriptorWrite.dstBinding = descriptorBuffer.descriptorLayout.binding;
 			descriptorWrite.dstArrayElement = 0;
-			descriptorWrite.descriptorType = descriptorBuffer.descriptorLayout.descriptorType;
+			descriptorWrite.descriptorType = wolfDescriptorTypeToVkDescriptorType(descriptorBuffer.descriptorLayout.descriptorType);
 			descriptorWrite.descriptorCount = static_cast<uint32_t>(descriptorBufferInfos[i].size());
 			descriptorWrite.pBufferInfo = descriptorBufferInfos[i].data();
 			descriptorWrite.pNext = nullptr;
@@ -83,7 +83,7 @@ void Wolf::DescriptorSetVulkan::update(const DescriptorSetUpdateInfo& descriptor
 			descriptorWrite.dstSet = m_descriptorSets[descriptorSetIdx];
 			descriptorWrite.dstBinding = descriptorImage.descriptorLayout.binding;
 			descriptorWrite.dstArrayElement = descriptorImage.descriptorLayout.arrayIndex;
-			descriptorWrite.descriptorType = descriptorImage.descriptorLayout.descriptorType;
+			descriptorWrite.descriptorType = wolfDescriptorTypeToVkDescriptorType(descriptorImage.descriptorLayout.descriptorType);
 			descriptorWrite.descriptorCount = static_cast<uint32_t>(descriptorImageInfos[i].size());
 			descriptorWrite.pImageInfo = descriptorImageInfos[i].data();
 			descriptorWrite.pNext = nullptr;
@@ -99,7 +99,7 @@ void Wolf::DescriptorSetVulkan::update(const DescriptorSetUpdateInfo& descriptor
 			descriptorWrite.dstSet = m_descriptorSets[descriptorSetIdx];
 			descriptorWrite.dstBinding = descriptorSetCreateInfo.descriptorAccelerationStructures[i].descriptorLayout.binding;
 			descriptorWrite.dstArrayElement = 0;
-			descriptorWrite.descriptorType = descriptorSetCreateInfo.descriptorAccelerationStructures[i].descriptorLayout.descriptorType;
+			descriptorWrite.descriptorType = wolfDescriptorTypeToVkDescriptorType(descriptorSetCreateInfo.descriptorAccelerationStructures[i].descriptorLayout.descriptorType);
 			descriptorWrite.descriptorCount = 1; // static_cast<uint32_t>(descriptorSetCreateInfo.descriptorAccelerationStructures.size());
 			descriptorWrite.pImageInfo = nullptr;
 

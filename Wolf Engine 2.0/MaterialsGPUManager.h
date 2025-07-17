@@ -11,6 +11,7 @@
 #include "DescriptorSetGenerator.h"
 #include "LazyInitSharedResource.h"
 #include "ResourceUniqueOwner.h"
+#include "VirtualTextureManager.h"
 
 namespace Wolf
 {
@@ -26,6 +27,7 @@ namespace Wolf
 		struct TextureSetInfo
 		{
 			std::array<ResourceUniqueOwner<Image>, TEXTURE_COUNT_PER_MATERIAL> images;
+			std::array<std::string, TEXTURE_COUNT_PER_MATERIAL> slicesFolders;
 
 			enum class SamplingMode { TEXTURE_COORDS = 0, TRIPLANAR = 1 };
 			SamplingMode samplingMode = SamplingMode::TEXTURE_COORDS;
@@ -60,7 +62,7 @@ namespace Wolf
 			ShadingMode shadingMode = ShadingMode::GGX;
 		};
 		void addNewMaterial(const MaterialInfo& material);
-		void pushMaterialsToGPU();
+		void updateBeforeFrame();
 
 		void lockTextureSets();
 		void unlockTextureSets();
@@ -102,6 +104,22 @@ namespace Wolf
 	private:
 		uint32_t addImagesToBindless(const std::vector<DescriptorSetGenerator::ImageDescription>& images);
 		void updateImageInBindless(const DescriptorSetGenerator::ImageDescription& image, uint32_t bindlessOffset) const;
+		static uint32_t computeSliceCount(uint32_t textureWidth, uint32_t textureHeight);
+
+		struct TextureCPUInfo
+		{
+			std::string m_slicesFolder;
+
+			enum class TextureType { ALBEDO, NORMAL, COMBINED_ROUGHNESS_METALNESS_AO, UNDEFINED };
+			TextureType m_textureType = TextureType::UNDEFINED;
+
+			uint32_t m_width;
+			uint32_t m_height;
+
+			uint32_t virtualTextureIndirectionOffset;
+		};
+		std::vector<TextureCPUInfo> m_texturesCPUInfo;
+		void addSlicedImage(const std::string& folder, TextureCPUInfo::TextureType textureType);
 
 		// Bindless resources
 		static constexpr uint32_t MAX_IMAGES = 1000;
@@ -110,7 +128,17 @@ namespace Wolf
 		uint32_t m_currentBindlessCount = 0;
 
 		// Material layout
-		static constexpr uint32_t MAX_TEXTURE_SET_COUNT = 1024;
+		static constexpr uint32_t MAX_MATERIAL_COUNT = 1024;
+		struct MaterialGPUInfo
+		{
+			std::array<uint32_t, MaterialInfo::MAX_TEXTURE_SET_PER_MATERIAL> textureSetIndices;
+			std::array<float, MaterialInfo::MAX_TEXTURE_SET_PER_MATERIAL> strengths;
+			uint32_t shadingMode = 0;
+		};
+		uint32_t m_currentMaterialCount = 0;
+
+		// Texture set layout
+		static constexpr uint32_t MAX_TEXTURE_SET_COUNT = MAX_MATERIAL_COUNT * MaterialInfo::MAX_TEXTURE_SET_PER_MATERIAL;
 		struct TextureSetGPUInfo
 		{
 			uint32_t albedoIdx = 0;
@@ -123,29 +151,38 @@ namespace Wolf
 		};
 		uint32_t m_currentTextureSetCount = 0;
 
-		// Material set layout
-		static constexpr uint32_t MAX_MATERIAL_COUNT = 1024;
-		struct MaterialGPUInfo
+		// Texture layout (used for virtual texture)
+		static constexpr uint32_t MAX_TEXTURE_COUNT = MAX_TEXTURE_SET_COUNT * TEXTURE_COUNT_PER_MATERIAL;
+		struct TextureGPUInfo
 		{
-			std::array<uint32_t, MaterialInfo::MAX_TEXTURE_SET_PER_MATERIAL> textureSetIndices;
-			std::array<float, MaterialInfo::MAX_TEXTURE_SET_PER_MATERIAL> strengths;
-			uint32_t shadingMode = 0;
+			uint32_t width;
+			uint32_t height;
+
+			uint32_t virtualTextureIndirectionOffset;
 		};
-		uint32_t m_currentMaterialCount = 0;
+		uint32_t m_currentTextureInfoCount = 0;
 
 		// Info to add
-		std::vector<TextureSetGPUInfo> m_newTextureSetsInfo;
-		std::mutex m_textureSetsMutex;
 		std::vector<MaterialGPUInfo> m_newMaterialInfo;
 		std::mutex m_materialsMutex;
+		std::vector<TextureSetGPUInfo> m_newTextureSetsInfo;
+		std::mutex m_textureSetsMutex;
+		std::vector<TextureGPUInfo> m_newTextureInfo;
+		std::mutex m_textureInfoMutex;
 
 		// GPU resources
-		ResourceUniqueOwner<Buffer> m_textureSetsBuffer;
 		ResourceUniqueOwner<Buffer> m_materialsBuffer;
+		ResourceUniqueOwner<Buffer> m_textureSetsBuffer;
+		ResourceUniqueOwner<Buffer> m_texturesInfoBuffer;
 		std::unique_ptr<LazyInitSharedResource<DescriptorSetLayout, MaterialsGPUManager>> m_descriptorSetLayout;
 		std::unique_ptr<DescriptorSet> m_descriptorSet;
 
 		std::unique_ptr<Sampler> m_sampler;
+
+		// Virtual Texture
+		ResourceUniqueOwner<VirtualTextureManager> m_virtualTextureManager;
+		ResourceUniqueOwner<Sampler> m_virtualTextureSampler;
+		VirtualTextureManager::AtlasIndex m_albedoAtlasIdx = -1;
 
 		// Debug cache
 #ifdef MATERIAL_DEBUG

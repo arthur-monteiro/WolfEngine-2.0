@@ -9,14 +9,13 @@
 
 namespace Wolf
 {
-
 	class UniformBuffer
 	{
 	public:
-		UniformBuffer(uint64_t size);
+		explicit UniformBuffer(uint64_t size);
 
 		void transferCPUMemory(const void* data, uint64_t srcSize, uint64_t srcOffset = 0) const;
-		const Buffer& getBuffer(uint32_t idx) const { return *m_buffers[idx]; }
+		[[nodiscard]] const Buffer& getBuffer(uint32_t idx) const { return *m_buffers[idx]; }
 
 	private:
 		std::vector<ResourceUniqueOwner<Buffer>> m_buffers;

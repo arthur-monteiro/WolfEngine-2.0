@@ -39,6 +39,8 @@ Wolf::Configuration::Configuration(const std::string& filePath, AAssetManager* a
 				m_saveUICommands = std::stoi(line);
 			if (token == "enableGPUDebugMarkers")
 				m_enableGPUDebugMarkers = std::stoi(line);
+			if (token == "useVirtualTexture")
+				m_useVirtualTexture = std::stoi(line);
 		}
 	}
 

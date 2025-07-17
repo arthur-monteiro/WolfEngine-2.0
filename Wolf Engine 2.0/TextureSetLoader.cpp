@@ -3,11 +3,15 @@
 #include <filesystem>
 #include <fstream>
 
+#include <Configuration.h>
+
 #include "CodeFileHashes.h"
+#include "ConfigurationHelper.h"
 #include "ImageFileLoader.h"
 #include "MipMapGenerator.h"
 #include "PushDataToGPU.h"
 #include "Timer.h"
+#include "VirtualTextureManager.h"
 
 Wolf::TextureSetLoader::TextureSetLoader(const TextureSetFileInfoGGX& textureSet, const OutputLayout& outputLayout, bool useCache) : m_useCache(useCache)
 {
@@ -20,9 +24,20 @@ Wolf::TextureSetLoader::TextureSetLoader(const TextureSetFileInfoGGX& textureSet
 		Debug::sendInfo("Loading albedo " + textureSet.albedo);
 		Timer albedoTimer("Loading albedo " + textureSet.albedo);
 
-		if (!createImageFileFromCache(textureSet.albedo, true, outputLayout.albedoCompression, 0))
+		if (g_configuration->getUseVirtualTexture())
 		{
-			createImageFileFromSource<ImageCompression::RGBA8>(textureSet.albedo, true, outputLayout.albedoCompression, 0);
+			if (outputLayout.albedoCompression != DEFAULT_ALBEDO_COMPRESSION)
+			{
+				Debug::sendError("Albedo compression must be BC1");
+			}
+			createSlicedCache<ImageCompression::RGBA8, ImageCompression::BC1>(textureSet.albedo, true, outputLayout.albedoCompression, 0);
+		}
+		else
+		{
+			if (!createImageFileFromCache(textureSet.albedo, true, outputLayout.albedoCompression, 0))
+			{
+				createImageFileFromSource<ImageCompression::RGBA8>(textureSet.albedo, true, outputLayout.albedoCompression, 0);
+			}
 		}
 	}
 
@@ -32,9 +47,20 @@ Wolf::TextureSetLoader::TextureSetLoader(const TextureSetFileInfoGGX& textureSet
 		Debug::sendInfo("Loading normal " + textureSet.normal);
 		Timer albedoTimer("Loading normal " + textureSet.normal);
 
-		if (!createImageFileFromCache(textureSet.normal, false, outputLayout.normalCompression, 1))
+		if (g_configuration->getUseVirtualTexture())
 		{
-			createImageFileFromSource<ImageCompression::RG32F>(textureSet.normal, false, outputLayout.normalCompression, 1);
+			if (outputLayout.normalCompression != DEFAULT_NORMAL_COMPRESSION)
+			{
+				Debug::sendError("Normal compression must be BC5");
+			}
+			createSlicedCache<ImageCompression::RG32F, ImageCompression::BC5>(textureSet.normal, false, outputLayout.normalCompression, 1);
+		}
+		else
+		{
+			if (!createImageFileFromCache(textureSet.normal, false, outputLayout.normalCompression, 1))
+			{
+				createImageFileFromSource<ImageCompression::RG32F>(textureSet.normal, false, outputLayout.normalCompression, 1);
+			}
 		}
 	}
 
@@ -211,7 +237,7 @@ Wolf::TextureSetLoader::TextureSetLoader(const TextureSetFileInfoSixWayLighting&
 
 void Wolf::TextureSetLoader::transferImageTo(uint32_t idx, ResourceUniqueOwner<Image>& output)
 {
-	return output.transferFrom(m_outputs[idx]);
+	return output.transferFrom(m_outputImages[idx]);
 }
 
 void Wolf::TextureSetLoader::assignCache(uint32_t idx, std::vector<unsigned char>& output)
@@ -308,6 +334,19 @@ void Wolf::TextureSetLoader::loadImageFile(const std::string& filename, Format f
 	outExtent = { (imageFileLoader.getWidth()), (imageFileLoader.getHeight()), 1 };
 }
 
+Wolf::Format Wolf::TextureSetLoader::findFormatFromCompression(ImageCompression::Compression compression, bool sRGB)
+{
+	if (compression == ImageCompression::Compression::BC1 || compression == ImageCompression::Compression::BC3)
+		return sRGB ? Format::R8G8B8A8_SRGB : Format::R8G8B8A8_UNORM;
+	else if (compression == ImageCompression::Compression::BC5)
+		return Format::R32G32_SFLOAT;
+	else
+	{
+		Debug::sendCriticalError("Unhandled case");
+		return Format::UNDEFINED;
+	}
+}
+
 bool Wolf::TextureSetLoader::createImageFileFromCache(const std::string& filename, bool sRGB, ImageCompression::Compression compression, uint32_t imageIdx)
 {
 	std::string binFilename = filename + ".bin";
@@ -383,13 +422,7 @@ bool Wolf::TextureSetLoader::createImageFileFromCache(const std::string& filenam
 template <typename PixelType>
 void Wolf::TextureSetLoader::createImageFileFromSource(const std::string& filename, bool sRGB, ImageCompression::Compression compression, uint32_t imageIdx)
 {
-	Format format = Format::UNDEFINED;
-	if (compression == ImageCompression::Compression::BC1 || compression == ImageCompression::Compression::BC3)
-		format = sRGB ? Format::R8G8B8A8_SRGB : Format::R8G8B8A8_UNORM;
-	else if (compression == ImageCompression::Compression::BC5)
-		format = Format::R32G32_SFLOAT;
-	else
-		Debug::sendCriticalError("Unhandled case");
+	Format format = findFormatFromCompression(compression, sRGB);
 
 	std::vector<PixelType> pixels;
 	std::vector<std::vector<PixelType>> mipLevels;
@@ -428,6 +461,162 @@ void Wolf::TextureSetLoader::createImageFileFromSource(const std::string& filena
 	outCacheFile.close();
 }
 
+template <typename PixelType, typename CompressionType>
+void Wolf::TextureSetLoader::createSlicedCache(const std::string& filename, bool sRGB, ImageCompression::Compression compression, uint32_t imageIdx)
+{
+	std::string filenameNoExtension = filename.substr(filename.find_last_of("\\") + 1, filename.find_last_of("."));
+	std::string folder = filename.substr(0, filename.find_last_of("\\"));
+	std::string binFolder = folder + '\\' + filenameNoExtension + "_bin" + "\\";
+
+	std::string binFolderFixed;
+	for (const char character : binFolder)
+	{
+		if (character == '/')
+			binFolderFixed += "\\";
+		else
+			binFolderFixed += character;
+	}
+
+	if (!std::filesystem::is_directory(binFolderFixed) || !std::filesystem::exists(binFolderFixed))
+	{
+		std::filesystem::create_directory(binFolderFixed);
+	}
+
+	m_outputFolders[imageIdx] = binFolderFixed;
+
+	// Check 1st file to avoid loading pixels if we don't need
+	std::string binFilename = binFolderFixed + "mip0_sliceX0_sliceY0.bin";
+	if (std::filesystem::exists(binFilename))
+	{
+		std::ifstream input(binFilename, std::ios::in | std::ios::binary);
+
+		uint64_t hash;
+		input.read(reinterpret_cast<char*>(&hash), sizeof(hash));
+		if (hash == (HASH_TEXTURE_SET_LOADER_CPP ^ HASH_VIRTUAL_TEXTURE_MANAGER_H))
+		{
+			return; // we assume cache is ready
+		}
+	}
+
+	Format format = findFormatFromCompression(compression, sRGB);
+
+	std::vector<PixelType> pixels;
+	std::vector<std::vector<PixelType>> mipLevels;
+	Extent3D extent{};
+	loadImageFile(filename, format, pixels, mipLevels, extent);
+
+	if (extent.width % VirtualTextureManager::PAGE_SIZE != 0 || extent.height % VirtualTextureManager::PAGE_SIZE != 0 || extent.depth != 1)
+	{
+		Debug::sendError("Wrong texture extent for virtual texture slicing");
+		//return;
+	}
+
+	ConfigurationHelper::writeInfoToFile(binFolderFixed + "info.txt", "width", extent.width);
+	ConfigurationHelper::writeInfoToFile(binFolderFixed + "info.txt", "height", extent.height);
+
+	Extent3D maxSliceExtent{ VirtualTextureManager::PAGE_SIZE, VirtualTextureManager::PAGE_SIZE, 1 };
+
+	for (uint32_t mipLevel = 0; mipLevel < mipLevels.size() + 1; ++mipLevel)
+	{
+		Extent3D extentForMip = { extent.width >> mipLevel, extent.height >> mipLevel, 1 };
+
+		const uint32_t sliceCountX = std::max(extentForMip.width / maxSliceExtent.width, 1u);
+		const uint32_t sliceCountY = std::max(extentForMip.height / maxSliceExtent.height, 1u);
+
+		for (uint32_t sliceX = 0; sliceX < sliceCountX; ++sliceX)
+		{
+			for (uint32_t sliceY = 0; sliceY < sliceCountY; ++sliceY)
+			{
+				std::string binFilename = binFolderFixed + "mip" + std::to_string(mipLevel) + "_sliceX" + std::to_string(sliceX) + "_sliceY" + std::to_string(sliceY) + ".bin";
+				if (std::filesystem::exists(binFilename))
+				{
+					std::ifstream input(binFilename, std::ios::in | std::ios::binary);
+
+					uint64_t hash;
+					input.read(reinterpret_cast<char*>(&hash), sizeof(hash));
+					if (hash == (HASH_TEXTURE_SET_LOADER_CPP ^ HASH_VIRTUAL_TEXTURE_MANAGER_H))
+					{
+						continue;
+					}
+
+					Debug::sendInfo(binFilename + " found but hash is incorrect");
+				}
+				else
+				{
+					Debug::sendInfo(binFilename + " not found");
+				}
+
+				std::fstream outCacheFile(binFilename, std::ios::out | std::ios::binary);
+
+				/* Hash */
+				uint64_t hash = (HASH_TEXTURE_SET_LOADER_CPP ^ HASH_VIRTUAL_TEXTURE_MANAGER_H);
+				outCacheFile.write(reinterpret_cast<char*>(&hash), sizeof(hash));
+
+				Extent3D pixelsToCompressExtent{ std::min(extentForMip.width, maxSliceExtent.width), std::min(extentForMip.height, maxSliceExtent.height), 1 };
+				pixelsToCompressExtent.width += 2 * VirtualTextureManager::BORDER_SIZE;
+				pixelsToCompressExtent.height += 2 * VirtualTextureManager::BORDER_SIZE;
+				std::vector<PixelType> pixelsToCompress(pixelsToCompressExtent.width * pixelsToCompressExtent.height);
+
+				std::vector<PixelType>& allPixelsSrc = mipLevel == 0 ? pixels : mipLevels[mipLevel - 1];
+				for (uint32_t line = 0; line < pixelsToCompressExtent.height; ++line)
+				{
+					uint32_t srcY = sliceY * maxSliceExtent.width + line - VirtualTextureManager::BORDER_SIZE;
+					if (sliceY == 0 && line < VirtualTextureManager::BORDER_SIZE)
+					{
+						srcY = extentForMip.height - VirtualTextureManager::BORDER_SIZE + line;
+					}
+					else if (sliceY == sliceCountY - 1 && line >= pixelsToCompressExtent.height - VirtualTextureManager::BORDER_SIZE)
+					{
+						srcY = line - std::min(extentForMip.width, maxSliceExtent.width) - VirtualTextureManager::BORDER_SIZE;
+					}
+
+					uint32_t srcX = sliceX * maxSliceExtent.width;
+
+					const PixelType* src = &allPixelsSrc[srcY * extentForMip.width + srcX];
+					PixelType* dst = &pixelsToCompress[line * pixelsToCompressExtent.width + VirtualTextureManager::BORDER_SIZE];
+
+					memcpy(dst, src, std::min(extentForMip.width, maxSliceExtent.width) * sizeof(PixelType)); // copy without left and right border
+
+					// Left border
+					for (uint32_t i = 0; i < VirtualTextureManager::BORDER_SIZE; ++i)
+					{
+						// Left border
+						PixelType& leftBorderPixelSrc = pixelsToCompress[line * pixelsToCompressExtent.width + i];
+						if (sliceX == 0)
+						{
+							leftBorderPixelSrc = allPixelsSrc[srcY * extentForMip.width + extentForMip.width - VirtualTextureManager::BORDER_SIZE + i];
+						}
+						else
+						{
+							leftBorderPixelSrc = allPixelsSrc[srcY * extentForMip.width + srcX - VirtualTextureManager::BORDER_SIZE + i];
+						}
+
+						// Right border
+						PixelType& rightBorderPixelSrc = pixelsToCompress[line * pixelsToCompressExtent.width + pixelsToCompressExtent.width - VirtualTextureManager::BORDER_SIZE + i];
+						if (sliceX == sliceCountX - 1)
+						{
+							rightBorderPixelSrc = allPixelsSrc[srcY * extentForMip.width + i];
+						}
+						else
+						{
+							rightBorderPixelSrc = allPixelsSrc[srcY * extentForMip.width + srcX + maxSliceExtent.width + i];
+						}
+					}
+				}
+
+				std::vector<CompressionType> compressedBlocks;
+				ImageCompression::compress(pixelsToCompressExtent, pixelsToCompress, compressedBlocks);
+
+				uint32_t dataBytesCount = static_cast<uint32_t>(compressedBlocks.size() * sizeof(CompressionType));
+				outCacheFile.write(reinterpret_cast<char*>(&dataBytesCount), sizeof(dataBytesCount));
+				outCacheFile.write(reinterpret_cast<char*>(compressedBlocks.data()), dataBytesCount);
+
+				outCacheFile.close();
+			}
+		}
+	}
+}
+
 void Wolf::TextureSetLoader::createImageFromData(Extent3D extent, Format format, const unsigned char* pixels, const std::vector<const unsigned char*>& mipLevels, uint32_t idx)
 {
 	CreateImageInfo createImageInfo;
@@ -436,12 +625,12 @@ void Wolf::TextureSetLoader::createImageFromData(Extent3D extent, Format format,
 	createImageInfo.format = format;
 	createImageInfo.mipLevelCount = static_cast<uint32_t>(mipLevels.size()) + 1;
 	createImageInfo.usage = ImageUsageFlagBits::TRANSFER_DST | ImageUsageFlagBits::SAMPLED;
-	m_outputs[idx].reset(Image::createImage(createImageInfo));
-	pushDataToGPUImage(pixels, m_outputs[idx].createNonOwnerResource(), Image::SampledInFragmentShader());
+	m_outputImages[idx].reset(Image::createImage(createImageInfo));
+	pushDataToGPUImage(pixels, m_outputImages[idx].createNonOwnerResource(), Image::SampledInFragmentShader());
 
 	for (uint32_t mipLevel = 1; mipLevel < mipLevels.size() + 1; ++mipLevel)
 	{
-		pushDataToGPUImage(mipLevels[mipLevel - 1], m_outputs[idx].createNonOwnerResource(), Image::SampledInFragmentShader(mipLevel), mipLevel);
+		pushDataToGPUImage(mipLevels[mipLevel - 1], m_outputImages[idx].createNonOwnerResource(), Image::SampledInFragmentShader(mipLevel), mipLevel);
 	}
 
 	if (m_useCache)
@@ -454,14 +643,14 @@ void Wolf::TextureSetLoader::createImageFromData(Extent3D extent, Format format,
 
 		VkDeviceSize imageSize = 0;
 		for (uint32_t mipLevel = 0; mipLevel < mipLevels.size() + 1; ++mipLevel)
-			imageSize += computeImageSize(m_outputs[idx]->getExtent(), m_outputs[idx]->getBPP(), mipLevel);
+			imageSize += computeImageSize(m_outputImages[idx]->getExtent(), m_outputImages[idx]->getBPP(), mipLevel);
 
 		m_imagesData[idx].resize(imageSize);
 
 		VkDeviceSize copyOffset = 0;
 		for (uint32_t mipLevel = 0; mipLevel < mipLevels.size() + 1; ++mipLevel)
 		{
-			const VkDeviceSize copySize = computeImageSize(m_outputs[idx]->getExtent(), m_outputs[idx]->getBPP(), mipLevel);
+			const VkDeviceSize copySize = computeImageSize(m_outputImages[idx]->getExtent(), m_outputImages[idx]->getBPP(), mipLevel);
 			const unsigned char* dataPtr = pixels;
 			if (mipLevel > 0)
 				dataPtr = mipLevels[mipLevel - 1];

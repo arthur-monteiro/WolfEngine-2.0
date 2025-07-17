@@ -29,20 +29,20 @@ Wolf::Vulkan::Vulkan(GLFWwindow* glfwWindowPtr, bool useOVR)
 #ifndef __ANDROID__
 	if(useOVR)
 	{
-		constexpr ovrInitParams initParams = { ovrInit_RequestVersion | ovrInit_FocusAware, OVR_MINOR_VERSION, NULL, 0, 0 };
-		ovrResult result = ovr_Initialize(&initParams);
-		if (!OVR_SUCCESS(result))
-		{
-			Debug::sendCriticalError("Failed to initialize OVR");
-			return;
-		}
-
-		result = ovr_Create(&m_session, &m_luid);
-		if (!OVR_SUCCESS(result))
-		{
-			Debug::sendCriticalError("Failed to create OVR");
-			return;
-		}
+		// constexpr ovrInitParams initParams = { ovrInit_RequestVersion | ovrInit_FocusAware, OVR_MINOR_VERSION, NULL, 0, 0 };
+		// ovrResult result = ovr_Initialize(&initParams);
+		// if (!OVR_SUCCESS(result))
+		// {
+		// 	Debug::sendCriticalError("Failed to initialize OVR");
+		// 	return;
+		// }
+		//
+		// result = ovr_Create(&m_session, &m_luid);
+		// if (!OVR_SUCCESS(result))
+		// {
+		// 	Debug::sendCriticalError("Failed to create OVR");
+		// 	return;
+		// }
 	}
 #endif
 
@@ -309,15 +309,15 @@ VkPhysicalDeviceMeshShaderPropertiesNV getPhysicalDeviceMeshShaderProperties(VkP
 void Wolf::Vulkan::pickPhysicalDevice()
 {
 #ifndef __ANDROID__
-	if (m_session)
-	{
-		const ovrResult result = ovr_GetSessionPhysicalDeviceVk(m_session, m_luid, m_instance, &m_physicalDevice);
-		if (!OVR_SUCCESS(result))
-		{
-			Debug::sendCriticalError("Failed to get physical device from OVR");
-		}
-		return;
-	}
+	// if (m_session)
+	// {
+	// 	const ovrResult result = ovr_GetSessionPhysicalDeviceVk(m_session, m_luid, m_instance, &m_physicalDevice);
+	// 	if (!OVR_SUCCESS(result))
+	// 	{
+	// 		Debug::sendCriticalError("Failed to get physical device from OVR");
+	// 	}
+	// 	return;
+	// }
 #endif
 
 	uint32_t deviceCount = 0;

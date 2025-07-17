@@ -76,6 +76,7 @@
     <ClInclude Include="Public\Image.h" />
     <ClInclude Include="Public\ImageView.h" />
     <ClInclude Include="Public\Pipeline.h" />
+    <ClInclude Include="Public\ReadableBuffer.h" />
     <ClInclude Include="Public\RenderPass.h" />
     <ClInclude Include="Public\Sampler.h" />
     <ClInclude Include="Public\Semaphore.h" />
@@ -119,6 +120,7 @@
     <ClCompile Include="Public\Image.cpp" />
     <ClCompile Include="Public\ImageView.cpp" />
     <ClCompile Include="Public\Pipeline.cpp" />
+    <ClCompile Include="Public\ReadableBuffer.cpp" />
     <ClCompile Include="Public\RenderPass.cpp" />
     <ClCompile Include="Public\Sampler.cpp" />
     <ClCompile Include="Public\Semaphore.cpp" />

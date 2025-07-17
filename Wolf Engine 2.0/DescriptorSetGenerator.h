@@ -39,7 +39,6 @@ namespace Wolf
 	private:
 		DescriptorSetUpdateInfo m_descriptorSetCreateInfo;
 
-		enum class DescriptorType { BUFFER, UNIFORM_BUFFER, IMAGE, ACCELERATION_STRUCTURE };
 		std::map<uint32_t /* binding */, std::pair<DescriptorType, uint32_t /* descriptor index */>> m_mapBindingCreateInfo;
 	};
 }

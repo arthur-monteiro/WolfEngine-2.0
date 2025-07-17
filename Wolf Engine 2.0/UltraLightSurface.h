@@ -1,7 +1,9 @@
 #pragma once
 
-#include <AppCore/Platform.h>
+#include <array>
 #include <memory>
+
+#include <AppCore/Platform.h>
 #include <Ultralight/Ultralight.h>
 #include <Ultralight/platform/Logger.h>
 

@@ -177,6 +177,9 @@
     <ClInclude Include="Public\UniformBuffer.h">
       <Filter>API Elements</Filter>
     </ClInclude>
+    <ClInclude Include="Public\ReadableBuffer.h">
+      <Filter>API Elements</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Private\Vulkan\CommandPool.cpp">
@@ -294,6 +297,9 @@
       <Filter>Vulkan</Filter>
     </ClCompile>
     <ClCompile Include="Public\UniformBuffer.cpp">
+      <Filter>API Elements</Filter>
+    </ClCompile>
+    <ClCompile Include="Public\ReadableBuffer.cpp">
       <Filter>API Elements</Filter>
     </ClCompile>
   </ItemGroup>

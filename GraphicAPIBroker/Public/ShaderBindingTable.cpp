@@ -26,8 +26,7 @@ Wolf::ShaderBindingTable::ShaderBindingTable(uint32_t shaderCount, const Pipelin
 		return;
 	}
 
-	void* pData;
-	m_buffer->map(&pData);
+	void* pData = m_buffer->map();
 
 	uint8_t* data = static_cast<uint8_t*>(pData);
 	int index = 0;

@@ -171,6 +171,12 @@
     <ClCompile Include="PushDataToGPU.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="VirtualTextureManager.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="ReadbackDataFromGPU.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="WolfEngine.h">
@@ -329,6 +335,12 @@
     <ClInclude Include="PushDataToGPU.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="VirtualTextureManager.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ReadbackDataFromGPU.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="ShaderCommon.glsl" />
@@ -337,5 +349,7 @@
     </None>
     <None Include="DefaultMaterialFetch.glsl" />
     <None Include="LightInfo.glsl" />
+    <None Include="DefaultTextureSample.glsl" />
+    <None Include="VirtualTextureSample.glsl" />
   </ItemGroup>
 </Project>

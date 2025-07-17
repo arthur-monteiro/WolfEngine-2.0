@@ -72,3 +72,8 @@ void Wolf::ConfigurationHelper::writeInfoToFile(const std::string& filepath, con
 {
 	writeInfoToFile(filepath, token, static_cast<const std::string&>(value ? "true" : "false"));
 }
+
+void Wolf::ConfigurationHelper::writeInfoToFile(const std::string& filepath, const std::string& token, uint32_t value)
+{
+	writeInfoToFile(filepath, token, std::to_string(value));
+}

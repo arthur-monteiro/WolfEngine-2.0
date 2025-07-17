@@ -137,6 +137,11 @@ void Wolf::ShaderParser::parseAndCompile()
         parsedFilename += "_" + std::to_string(m_shaderCodeToAddHash);
     }
 
+    if (g_configuration->getUseVirtualTexture())
+    {
+        parsedFilename += "_virtualTexture";
+    }
+
     std::string compiledFilename = parsedFilename;
     parsedFilename += "Parsed" + extensionFound;
 
@@ -148,6 +153,7 @@ void Wolf::ShaderParser::parseAndCompile()
 
     outFileGLSL << "#version 460\n";
 
+    outFileGLSL << "#define GLSL\n\n";
     if (extensionFound == "Comp")
     {
         outFileGLSL << "#define COMPUTE_SHADER\n";
@@ -335,6 +341,24 @@ void Wolf::ShaderParser::addMaterialFetchCode(std::ofstream& outFileGLSL) const
     outFileGLSL << "\n//------------------\n";
 
     std::string materialFetchCode;
+
+    if (g_configuration->getUseVirtualTexture())
+    {
+        materialFetchCode +=
+            #include "VirtualTextureUtils.glsl"
+        ;
+
+        materialFetchCode +=
+            #include "VirtualTextureSample.glsl"
+        ;
+    }
+    else
+    {
+        materialFetchCode +=
+            #include "DefaultTextureSample.glsl"
+        ;
+    }
+
     if (m_materialFetchProcedure.codeString.empty())
     {
         materialFetchCode += "#define DEFAULT_MATERIAL_FETCH\n";
