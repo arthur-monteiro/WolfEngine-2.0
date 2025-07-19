@@ -7,6 +7,7 @@ namespace Wolf
 		UNDEFINED,
 
 		R8_UINT,
+		R32_UINT,
 		R8G8B8A8_UNORM,
 		R8G8B8A8_SRGB,
 		B8G8R8A8_UNORM,
@@ -24,7 +25,6 @@ namespace Wolf
 		D32_SFLOAT_S8_UINT,
 		D24_UNORM_S8_UINT
 	};
-
 
 	enum SampleCountFlagBits : uint32_t
 	{

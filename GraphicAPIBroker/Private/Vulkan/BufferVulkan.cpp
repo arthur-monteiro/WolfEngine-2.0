@@ -1,9 +1,11 @@
+#include "BufferVulkan.h"
+
 #ifdef WOLF_VULKAN
+#include <cstring>
 
 #include <Debug.h>
 #include <GPUMemoryDebug.h>
 
-#include "BufferVulkan.h"
 #include "CommandBufferVulkan.h"
 #include "FenceVulkan.h"
 #include "SemaphoreVulkan.h"
@@ -27,8 +29,7 @@ Wolf::BufferVulkan::~BufferVulkan()
 
 void Wolf::BufferVulkan::transferCPUMemory(const void* data, uint64_t srcSize, uint64_t srcOffset) const
 {
-	void* pData;
-	map(&pData, srcSize);
+	void* pData = map(srcSize);
 	memcpy(pData, data, srcSize);
 	unmap();
 }
@@ -85,11 +86,22 @@ void Wolf::BufferVulkan::recordTransferGPUMemory(const CommandBuffer* commandBuf
 	vkCmdCopyBuffer(commandBufferVulkan->getCommandBuffer(), srcAsBufferVulkan->getBuffer(), m_buffer, 1, &vkCopyRegion);
 }
 
-void Wolf::BufferVulkan::map(void** pData, VkDeviceSize size) const
+void Wolf::BufferVulkan::recordFillBuffer(const CommandBuffer* commandBuffer, const BufferFill& bufferFill) const
+{
+	const CommandBufferVulkan* commandBufferVulkan = static_cast<const CommandBufferVulkan*>(commandBuffer);
+
+	vkCmdFillBuffer(commandBufferVulkan->getCommandBuffer(), m_buffer, bufferFill.dstOffset, bufferFill.size, bufferFill.data);
+}
+
+void* Wolf::BufferVulkan::map(VkDeviceSize size) const
 {
 	if (size == 0)
 		size = m_bufferSize;
-	vkMapMemory(g_vulkanInstance->getDevice(), m_bufferMemory, 0, size, 0, pData);
+
+	void* mappedData;
+	vkMapMemory(g_vulkanInstance->getDevice(), m_bufferMemory, 0, size, 0, &mappedData);
+
+	return mappedData;
 }
 
 void Wolf::BufferVulkan::unmap() const

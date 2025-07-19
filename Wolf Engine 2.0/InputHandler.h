@@ -5,7 +5,6 @@
 #include <map>
 #include <mutex>
 
-#include "Debug.h"
 #include "ResourceNonOwner.h"
 #include "Window.h"
 

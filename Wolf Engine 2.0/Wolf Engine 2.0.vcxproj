@@ -379,6 +379,7 @@
     <ClCompile Include="MultiThreadTaskManager.cpp" />
     <ClCompile Include="PhysicsManager.cpp" />
     <ClCompile Include="PushDataToGPU.cpp" />
+    <ClCompile Include="ReadbackDataFromGPU.cpp" />
     <ClCompile Include="TextureSetLoader.cpp" />
     <ClCompile Include="MaterialsGPUManager.cpp" />
     <ClCompile Include="Mesh.cpp" />
@@ -396,6 +397,7 @@
     <ClCompile Include="UltraLight.cpp" />
     <ClCompile Include="UltraLightSurface.cpp" />
     <ClCompile Include="UltralightViewListener.cpp" />
+    <ClCompile Include="VirtualTextureManager.cpp" />
     <ClCompile Include="Window.cpp" />
     <ClCompile Include="WolfEngine.cpp" />
   </ItemGroup>
@@ -428,6 +430,7 @@
     <ClInclude Include="PhysicShapes.h" />
     <ClInclude Include="PhysicsManager.h" />
     <ClInclude Include="PushDataToGPU.h" />
+    <ClInclude Include="ReadbackDataFromGPU.h" />
     <ClInclude Include="TextureSetLoader.h" />
     <ClInclude Include="MaterialsGPUManager.h" />
     <ClInclude Include="Mesh.h" />
@@ -450,14 +453,17 @@
     <ClInclude Include="UltraLight.h" />
     <ClInclude Include="UltraLightSurface.h" />
     <ClInclude Include="UltralightViewListener.h" />
+    <ClInclude Include="VirtualTextureManager.h" />
     <ClInclude Include="Window.h" />
     <ClInclude Include="WolfEngine.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Camera.glsl" />
     <None Include="DefaultMaterialFetch.glsl" />
+    <None Include="DefaultTextureSample.glsl" />
     <None Include="LightInfo.glsl" />
     <None Include="ShaderCommon.glsl" />
+    <None Include="VirtualTextureSample.glsl" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

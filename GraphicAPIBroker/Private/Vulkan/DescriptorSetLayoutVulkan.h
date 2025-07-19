@@ -6,10 +6,12 @@
 
 namespace Wolf
 {
+	VkDescriptorType wolfDescriptorTypeToVkDescriptorType(DescriptorType descriptorLayout);
+
 	class DescriptorSetLayoutVulkan : public DescriptorSetLayout
 	{
 	public:
-		DescriptorSetLayoutVulkan(const std::span<const DescriptorLayout> descriptorLayouts, VkDescriptorSetLayoutCreateFlags flags = 0);
+		explicit DescriptorSetLayoutVulkan(std::span<const DescriptorLayout> descriptorLayouts, VkDescriptorSetLayoutCreateFlags flags = 0);
 		DescriptorSetLayoutVulkan(const DescriptorSetLayout&) = delete;
 		~DescriptorSetLayoutVulkan() override;
 
@@ -17,7 +19,7 @@ namespace Wolf
 		[[nodiscard]] bool needsMultipleDescriptorSets() const override { return m_containsUniformBuffer; }
 
 	private:
-		VkDescriptorSetLayout m_descriptorSetLayout;
+		VkDescriptorSetLayout m_descriptorSetLayout = nullptr;
 		bool m_containsUniformBuffer = false;
 	};
 }

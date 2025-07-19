@@ -1,8 +1,13 @@
 #include "MaterialsGPUManager.h"
 
-#include <CommandBuffer.h>
+#include <Configuration.h>
 
+#include <CommandBuffer.h>
+#include <fstream>
+
+#include "ConfigurationHelper.h"
 #include "DescriptorSetLayoutGenerator.h"
+#include "MipMapGenerator.h"
 #include "ProfilerCommon.h"
 #include "PushDataToGPU.h"
 
@@ -11,23 +16,43 @@ Wolf::MaterialsGPUManager::MaterialsGPUManager(const std::vector<DescriptorSetGe
 	DescriptorSetLayoutGenerator descriptorSetLayoutGenerator;
 
 	descriptorSetLayoutGenerator.reset();
-	descriptorSetLayoutGenerator.addImages(VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, ShaderStageFlagBits::FRAGMENT, BINDING_SLOT, MAX_IMAGES,
+	descriptorSetLayoutGenerator.addImages(DescriptorType::SAMPLED_IMAGE, ShaderStageFlagBits::FRAGMENT, BINDING_SLOT, MAX_IMAGES,
 		VK_DESCRIPTOR_BINDING_PARTIALLY_BOUND_BIT | VK_DESCRIPTOR_BINDING_UPDATE_AFTER_BIND_BIT);
 	descriptorSetLayoutGenerator.addSampler(ShaderStageFlagBits::FRAGMENT, BINDING_SLOT + 1);
 	descriptorSetLayoutGenerator.addStorageBuffer(ShaderStageFlagBits::FRAGMENT, BINDING_SLOT + 2); // Texture sets
 	descriptorSetLayoutGenerator.addStorageBuffer(ShaderStageFlagBits::FRAGMENT, BINDING_SLOT + 3); // Materials
+	if (g_configuration->getUseVirtualTexture())
+	{
+		descriptorSetLayoutGenerator.addStorageBuffer(ShaderStageFlagBits::FRAGMENT, BINDING_SLOT + 4); // Textures info
+		descriptorSetLayoutGenerator.addStorageBuffer(ShaderStageFlagBits::FRAGMENT, BINDING_SLOT + 5); // Virtual texture feedbacks
+		descriptorSetLayoutGenerator.addCombinedImageSampler(ShaderStageFlagBits::FRAGMENT, BINDING_SLOT + 6); // Albedo atlas
+		descriptorSetLayoutGenerator.addStorageBuffer(ShaderStageFlagBits::FRAGMENT, BINDING_SLOT + 7); // Albedo atlas
+	}
 
-	m_sampler.reset(Sampler::createSampler(VK_SAMPLER_ADDRESS_MODE_REPEAT, 11, VK_FILTER_LINEAR));
+	m_sampler.reset(Sampler::createSampler(VK_SAMPLER_ADDRESS_MODE_REPEAT, 11, VK_FILTER_LINEAR, 4.0f));
+
+	if (g_configuration->getUseVirtualTexture())
+	{
+		m_virtualTextureManager.reset(new VirtualTextureManager());
+		m_albedoAtlasIdx = m_virtualTextureManager->createAtlas(16, 16, Format::BC1_RGB_SRGB_BLOCK); // note that page count per side is a constant in shader
+
+		m_virtualTextureSampler.reset(Sampler::createSampler(VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE, 1, VK_FILTER_LINEAR));
+	}
+
+	m_materialsBuffer.reset(Buffer::createBuffer(MAX_MATERIAL_COUNT * sizeof(MaterialGPUInfo), VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT));
+	constexpr MaterialGPUInfo initMaterialInfo{ { 0, 0, 0, 0 }, { 1.0f, 0.0f, 0.0f, 0.0}, 0 };
+	m_materialsBuffer->transferCPUMemoryWithStagingBuffer(&initMaterialInfo, sizeof(MaterialGPUInfo), 0, 0);
+	m_currentMaterialCount = 1;
 
 	m_textureSetsBuffer.reset(Buffer::createBuffer(MAX_TEXTURE_SET_COUNT * sizeof(TextureSetGPUInfo), VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT));
 	const TextureSetGPUInfo initTextureSetInfo{ 0, 1, 2, 0, glm::vec4(1.0) };
 	m_textureSetsBuffer->transferCPUMemoryWithStagingBuffer(&initTextureSetInfo, sizeof(TextureSetGPUInfo), 0, 0);
 	m_currentTextureSetCount = 1;
 
-	m_materialsBuffer.reset(Buffer::createBuffer(MAX_MATERIAL_COUNT * sizeof(MaterialGPUInfo), VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT));
-	constexpr MaterialGPUInfo initMaterialInfo{ { 0, 0, 0, 0 }, { 1.0f, 0.0f, 0.0f, 0.0}, 0 };
-	m_materialsBuffer->transferCPUMemoryWithStagingBuffer(&initMaterialInfo, sizeof(MaterialGPUInfo), 0, 0);
-	m_currentMaterialCount = 1;
+	if (g_configuration->getUseVirtualTexture())
+	{
+		m_texturesInfoBuffer.reset(Buffer::createBuffer(MAX_TEXTURE_COUNT * sizeof(TextureGPUInfo), VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT));
+	}
 
 	m_descriptorSetLayout.reset(new LazyInitSharedResource<DescriptorSetLayout, MaterialsGPUManager>([&descriptorSetLayoutGenerator](ResourceUniqueOwner<DescriptorSetLayout>& descriptorSetLayout)
 		{
@@ -40,9 +65,18 @@ Wolf::MaterialsGPUManager::MaterialsGPUManager(const std::vector<DescriptorSetGe
 	descriptorSetGenerator.setSampler(BINDING_SLOT + 1, *m_sampler);
 	descriptorSetGenerator.setBuffer(BINDING_SLOT + 2, *m_textureSetsBuffer);
 	descriptorSetGenerator.setBuffer(BINDING_SLOT + 3, *m_materialsBuffer);
+	if (g_configuration->getUseVirtualTexture())
+	{
+		descriptorSetGenerator.setBuffer(BINDING_SLOT + 4, *m_texturesInfoBuffer);
+		descriptorSetGenerator.setBuffer(BINDING_SLOT + 5, *m_virtualTextureManager->getFeedbackBuffer());
+		descriptorSetGenerator.setCombinedImageSampler(BINDING_SLOT + 6, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, m_virtualTextureManager->getAtlasImage(m_albedoAtlasIdx)->getDefaultImageView(), *m_virtualTextureSampler);
+		descriptorSetGenerator.setBuffer(BINDING_SLOT + 7, *m_virtualTextureManager->getIndirectionBuffer());
+	}
 	m_descriptorSet->update(descriptorSetGenerator.getDescriptorSetCreateInfo());
 
 	m_currentBindlessCount = static_cast<uint32_t>(firstImages.size());
+	m_texturesCPUInfo.resize(firstImages.size()); // needed to increment the indices
+	m_currentTextureInfoCount = static_cast<uint32_t>(m_texturesCPUInfo.size());
 
 	// Idk why, but resizing m_newMaterialInfo sometimes causes a crash in memory delete
 	m_newMaterialInfo.reserve(256);
@@ -55,26 +89,50 @@ void Wolf::MaterialsGPUManager::addNewTextureSet(const TextureSetInfo& textureSe
 		Debug::sendCriticalError("Texture set doesn't have the right number of images");
 	}
 
-	// Clean images to remove nullptr
-	std::vector<DescriptorSetGenerator::ImageDescription> imagesCleaned;
-	imagesCleaned.reserve(textureSetInfo.images.size());
-	for (const ResourceUniqueOwner<Image>& image : textureSetInfo.images)
+	TextureSetGPUInfo& newTextureSetInfo = m_newTextureSetsInfo.emplace_back();
+
+	if (g_configuration->getUseVirtualTexture())
 	{
-		if (image)
+		if (!textureSetInfo.slicesFolders[0].empty())
 		{
-			imagesCleaned.emplace_back(VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, image->getDefaultImageView());
+			newTextureSetInfo.albedoIdx = static_cast<uint32_t>(m_texturesCPUInfo.size());
+			addSlicedImage(textureSetInfo.slicesFolders[0], TextureCPUInfo::TextureType::ALBEDO);
+		}
+
+		if (!textureSetInfo.slicesFolders[1].empty())
+		{
+			newTextureSetInfo.normalIdx = static_cast<uint32_t>(m_texturesCPUInfo.size());
+			addSlicedImage(textureSetInfo.slicesFolders[1], TextureCPUInfo::TextureType::NORMAL);
+		}
+
+		if (!textureSetInfo.slicesFolders[2].empty())
+		{
+			newTextureSetInfo.roughnessMetalnessAOIdx = static_cast<uint32_t>(m_texturesCPUInfo.size());
+			addSlicedImage(textureSetInfo.slicesFolders[2], TextureCPUInfo::TextureType::COMBINED_ROUGHNESS_METALNESS_AO);
 		}
 	}
+	else
+	{
+		// Clean images to remove nullptr
+		std::vector<DescriptorSetGenerator::ImageDescription> imagesCleaned;
+		imagesCleaned.reserve(textureSetInfo.images.size());
+		for (const ResourceUniqueOwner<Image>& image : textureSetInfo.images)
+		{
+			if (image)
+			{
+				imagesCleaned.emplace_back(VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, image->getDefaultImageView());
+			}
+		}
 
-	uint32_t currentBindlessOffset = addImagesToBindless(imagesCleaned);
+		uint32_t currentBindlessOffset = addImagesToBindless(imagesCleaned);
 
-	TextureSetGPUInfo& newTextureSetInfo = m_newTextureSetsInfo.emplace_back();
-	if (textureSetInfo.images[0])
-		newTextureSetInfo.albedoIdx = currentBindlessOffset++;
-	if (textureSetInfo.images[1])
-		newTextureSetInfo.normalIdx = currentBindlessOffset++;
-	if (textureSetInfo.images[2])
-		newTextureSetInfo.roughnessMetalnessAOIdx = currentBindlessOffset++;
+		if (textureSetInfo.images[0])
+			newTextureSetInfo.albedoIdx = currentBindlessOffset++;
+		if (textureSetInfo.images[1])
+			newTextureSetInfo.normalIdx = currentBindlessOffset++;
+		if (textureSetInfo.images[2])
+			newTextureSetInfo.roughnessMetalnessAOIdx = currentBindlessOffset++;
+	}
 
 #ifdef MATERIAL_DEBUG
 	TextureSetCacheInfo& textureSetCacheInfo = m_textureSetsCacheInfo.emplace_back();
@@ -100,9 +158,17 @@ void Wolf::MaterialsGPUManager::addNewMaterial(const MaterialInfo& material)
 	newMaterialInfo.shadingMode = static_cast<uint32_t>(material.shadingMode);
 }
 
-void Wolf::MaterialsGPUManager::pushMaterialsToGPU()
+void Wolf::MaterialsGPUManager::updateBeforeFrame()
 {
 	PROFILE_FUNCTION
+
+	if (!m_newMaterialInfo.empty())
+	{
+		pushDataToGPUBuffer(m_newMaterialInfo.data(), static_cast<uint32_t>(m_newMaterialInfo.size()) * sizeof(MaterialGPUInfo), m_materialsBuffer.createNonOwnerResource(),
+			m_currentMaterialCount * sizeof(MaterialGPUInfo));
+		m_currentMaterialCount += static_cast<uint32_t>(m_newMaterialInfo.size());
+		m_newMaterialInfo.clear();
+	}
 
 	if (!m_newTextureSetsInfo.empty())
 	{
@@ -112,12 +178,88 @@ void Wolf::MaterialsGPUManager::pushMaterialsToGPU()
 		m_newTextureSetsInfo.clear();
 	}
 
-	if (!m_newMaterialInfo.empty())
+	if (!m_newTextureInfo.empty())
 	{
-		pushDataToGPUBuffer(m_newMaterialInfo.data(), static_cast<uint32_t>(m_newMaterialInfo.size()) * sizeof(MaterialGPUInfo), m_materialsBuffer.createNonOwnerResource(), 
-			m_currentMaterialCount * sizeof(MaterialGPUInfo));
-		m_currentMaterialCount += static_cast<uint32_t>(m_newMaterialInfo.size());
-		m_newMaterialInfo.clear();
+		pushDataToGPUBuffer(m_newTextureInfo.data(), static_cast<uint32_t>(m_newTextureInfo.size()) * sizeof(TextureGPUInfo), m_texturesInfoBuffer.createNonOwnerResource(),
+			m_currentTextureInfoCount * sizeof(TextureGPUInfo));
+		m_currentTextureInfoCount += static_cast<uint32_t>(m_newTextureInfo.size());
+		m_newTextureInfo.clear();
+	}
+
+	if (g_configuration->getUseVirtualTexture())
+	{
+		m_virtualTextureManager->updateBeforeFrame();
+
+		std::vector<VirtualTextureManager::FeedbackInfo> requestedSlices;
+		m_virtualTextureManager->getRequestedSlices(requestedSlices, 255);
+
+		for (const VirtualTextureManager::FeedbackInfo& requestedSlice : requestedSlices)
+		{
+			uint16_t textureId = requestedSlice.m_textureId;
+			if (textureId <= 2)
+				continue;
+
+			const std::string& sliceFolder = m_texturesCPUInfo[textureId].m_slicesFolder;
+			uint8_t sliceX = requestedSlice.m_sliceX;
+			uint8_t sliceY = requestedSlice.m_sliceY;
+			uint8_t mipLevel = requestedSlice.m_mipLevel;
+
+			float pixelSizeInBytes = 0.0f;
+			if (m_texturesCPUInfo[textureId].m_textureType == TextureCPUInfo::TextureType::ALBEDO)
+			{
+				pixelSizeInBytes = 0.5f; // BC1
+			}
+			else
+			{
+				continue; // not supported yet
+			}
+
+			std::string binFilename = sliceFolder + "mip" + std::to_string(mipLevel) + "_sliceX" + std::to_string(sliceX) + "_sliceY" + std::to_string(sliceY) + ".bin";
+			std::ifstream input(binFilename, std::ios::in | std::ios::binary);
+			if (!input.is_open())
+			{
+				Debug::sendError("Unable to open file");
+				continue;
+			}
+
+			uint64_t hash;
+			input.read(reinterpret_cast<char*>(&hash), sizeof(hash));
+			// TODO: check hash
+
+			uint32_t dataBytesCount;
+			input.read(reinterpret_cast<char*>(&dataBytesCount), sizeof(dataBytesCount));
+
+			Extent3D maxSliceExtent{ VirtualTextureManager::PAGE_SIZE, VirtualTextureManager::PAGE_SIZE, 1 };
+			Extent3D extentForMip = { m_texturesCPUInfo[textureId].m_width >> mipLevel, m_texturesCPUInfo[textureId].m_height >> mipLevel, 1 };
+			Extent3D sliceExtent{ std::min(extentForMip.width, maxSliceExtent.width) + 2 * VirtualTextureManager::BORDER_SIZE,
+				std::min(extentForMip.height, maxSliceExtent.height) + 2 * VirtualTextureManager::BORDER_SIZE, 1 };
+
+			if (static_cast<float>(sliceExtent.width) * static_cast<float>(sliceExtent.height) * pixelSizeInBytes != static_cast<float>(dataBytesCount))
+			{
+				Debug::sendError("Wrong slice size");
+			}
+
+			std::vector<uint8_t> data(dataBytesCount);
+			input.read(reinterpret_cast<char*>(data.data()), static_cast<std::streamsize>(data.size()));
+
+			input.close();
+
+			if (m_texturesCPUInfo[textureId].m_textureType == TextureCPUInfo::TextureType::ALBEDO)
+			{
+				if (m_texturesCPUInfo[textureId].virtualTextureIndirectionOffset == VirtualTextureManager::INVALID_INDIRECTION_OFFSET)
+				{
+					uint32_t indirectionCount = computeSliceCount(m_texturesCPUInfo[textureId].m_width, m_texturesCPUInfo[textureId].m_height);
+					uint32_t virtualTextureIndirectionOffset = m_virtualTextureManager->createNewIndirection(indirectionCount);
+
+					m_texturesCPUInfo[textureId].virtualTextureIndirectionOffset = virtualTextureIndirectionOffset;
+					pushDataToGPUBuffer(&virtualTextureIndirectionOffset, sizeof(uint32_t), m_texturesInfoBuffer.createNonOwnerResource(), textureId * sizeof(TextureGPUInfo) + offsetof(TextureGPUInfo, virtualTextureIndirectionOffset));
+				}
+
+				uint8_t sliceCountX = m_texturesCPUInfo[textureId].m_height / VirtualTextureManager::PAGE_SIZE;
+				uint8_t sliceCountY = m_texturesCPUInfo[textureId].m_height / VirtualTextureManager::PAGE_SIZE;
+				m_virtualTextureManager->uploadData(m_albedoAtlasIdx, data, sliceExtent, sliceX, sliceY, mipLevel, sliceCountX, sliceCountY, m_texturesCPUInfo[textureId].virtualTextureIndirectionOffset);
+			}
+		}
 	}
 }
 
@@ -161,47 +303,112 @@ void Wolf::MaterialsGPUManager::changeStrengthBeforeFrame(uint32_t materialIdx, 
 
 void Wolf::MaterialsGPUManager::changeExistingTextureSetBeforeFrame(TextureSetCacheInfo& textureSetCacheInfo, const TextureSetInfo& textureSetInfo)
 {
-
 	if (textureSetCacheInfo.textureSetIdx == 0)
 		return;
 
-	if (textureSetInfo.images[0])
+	if (g_configuration->getUseVirtualTexture())
 	{
-		if (textureSetCacheInfo.albedoIdx == 0)
+		auto updateInfo = [this](uint32_t textureIdx, const std::string& slicesFolder)
 		{
-			textureSetCacheInfo.albedoIdx = m_currentBindlessCount++;
-			pushDataToGPUBuffer(&textureSetCacheInfo.albedoIdx, sizeof(uint32_t), m_textureSetsBuffer.createNonOwnerResource(), 
-				textureSetCacheInfo.textureSetIdx * sizeof(TextureSetGPUInfo) + offsetof(TextureSetGPUInfo, albedoIdx));
+			m_texturesCPUInfo[textureIdx].m_slicesFolder = slicesFolder;
+
+			if (!slicesFolder.empty())
+			{
+				uint32_t width = std::stoi(ConfigurationHelper::readInfoFromFile(slicesFolder + "info.txt", "width"));
+				uint32_t height = std::stoi(ConfigurationHelper::readInfoFromFile(slicesFolder + "info.txt", "height"));
+
+				pushDataToGPUBuffer(&width, sizeof(uint32_t), m_texturesInfoBuffer.createNonOwnerResource(), textureIdx * sizeof(TextureGPUInfo) + offsetof(TextureGPUInfo, width));
+				pushDataToGPUBuffer(&height, sizeof(uint32_t), m_texturesInfoBuffer.createNonOwnerResource(), textureIdx * sizeof(TextureGPUInfo) + offsetof(TextureGPUInfo, height));
+			}
+		};
+
+		if (!textureSetInfo.slicesFolders[0].empty())
+		{
+			if (textureSetCacheInfo.albedoIdx == 0)
+			{
+				textureSetCacheInfo.albedoIdx = static_cast<uint32_t>(m_texturesCPUInfo.size());
+				pushDataToGPUBuffer(&textureSetCacheInfo.albedoIdx, sizeof(uint32_t), m_textureSetsBuffer.createNonOwnerResource(),
+						textureSetCacheInfo.textureSetIdx * sizeof(TextureSetGPUInfo) + offsetof(TextureSetGPUInfo, albedoIdx));
+				addSlicedImage(textureSetInfo.slicesFolders[0], TextureCPUInfo::TextureType::ALBEDO);
+			}
+			else
+			{
+				updateInfo(textureSetCacheInfo.albedoIdx, textureSetInfo.slicesFolders[0]);
+			}
 		}
 
-		DescriptorSetGenerator::ImageDescription imageToUpdate{ VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, textureSetInfo.images[0]->getDefaultImageView() };
-		updateImageInBindless(imageToUpdate, textureSetCacheInfo.albedoIdx);
+		if (!textureSetInfo.slicesFolders[1].empty())
+		{
+			if (textureSetCacheInfo.normalIdx == 1)
+			{
+				textureSetCacheInfo.normalIdx = static_cast<uint32_t>(m_texturesCPUInfo.size());
+				pushDataToGPUBuffer(&textureSetCacheInfo.normalIdx, sizeof(uint32_t), m_textureSetsBuffer.createNonOwnerResource(),
+						textureSetCacheInfo.textureSetIdx * sizeof(TextureSetGPUInfo) + offsetof(TextureSetGPUInfo, normalIdx));
+				addSlicedImage(textureSetInfo.slicesFolders[1], TextureCPUInfo::TextureType::NORMAL);
+			}
+			else
+			{
+				updateInfo(textureSetCacheInfo.normalIdx, textureSetInfo.slicesFolders[1]);
+			}
+		}
+
+		if (!textureSetInfo.slicesFolders[2].empty())
+		{
+			if (textureSetCacheInfo.roughnessMetalnessAOIdx == 2)
+			{
+				textureSetCacheInfo.roughnessMetalnessAOIdx = static_cast<uint32_t>(m_texturesCPUInfo.size());
+				pushDataToGPUBuffer(&textureSetCacheInfo.roughnessMetalnessAOIdx, sizeof(uint32_t), m_textureSetsBuffer.createNonOwnerResource(),
+						textureSetCacheInfo.textureSetIdx * sizeof(TextureSetGPUInfo) + offsetof(TextureSetGPUInfo, roughnessMetalnessAOIdx));
+				addSlicedImage(textureSetInfo.slicesFolders[2], TextureCPUInfo::TextureType::COMBINED_ROUGHNESS_METALNESS_AO);
+			}
+			else
+			{
+				updateInfo(textureSetCacheInfo.roughnessMetalnessAOIdx, textureSetInfo.slicesFolders[2]);
+			}
+		}
+
+		// TODO: reload VT where textures are written
 	}
-
-	if (textureSetInfo.images[1])
+	else
 	{
-		if (textureSetCacheInfo.normalIdx == 1)
+		if (textureSetInfo.images[0])
 		{
-			textureSetCacheInfo.normalIdx = m_currentBindlessCount++;
-			pushDataToGPUBuffer(&textureSetCacheInfo.normalIdx, sizeof(uint32_t), m_textureSetsBuffer.createNonOwnerResource(),
-				textureSetCacheInfo.textureSetIdx * sizeof(TextureSetGPUInfo) + offsetof(TextureSetGPUInfo, normalIdx));
+			if (textureSetCacheInfo.albedoIdx == 0)
+			{
+				textureSetCacheInfo.albedoIdx = m_currentBindlessCount++;
+				pushDataToGPUBuffer(&textureSetCacheInfo.albedoIdx, sizeof(uint32_t), m_textureSetsBuffer.createNonOwnerResource(),
+					textureSetCacheInfo.textureSetIdx * sizeof(TextureSetGPUInfo) + offsetof(TextureSetGPUInfo, albedoIdx));
+			}
+
+			DescriptorSetGenerator::ImageDescription imageToUpdate{ VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, textureSetInfo.images[0]->getDefaultImageView() };
+			updateImageInBindless(imageToUpdate, textureSetCacheInfo.albedoIdx);
 		}
 
-		DescriptorSetGenerator::ImageDescription imageToUpdate{ VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, textureSetInfo.images[1]->getDefaultImageView() };
-		updateImageInBindless(imageToUpdate, textureSetCacheInfo.normalIdx);
-	}
-
-	if (textureSetInfo.images[2])
-	{
-		if (textureSetCacheInfo.roughnessMetalnessAOIdx == 2)
+		if (textureSetInfo.images[1])
 		{
-			textureSetCacheInfo.roughnessMetalnessAOIdx = m_currentBindlessCount++;
-			pushDataToGPUBuffer(&textureSetCacheInfo.roughnessMetalnessAOIdx, sizeof(uint32_t), m_textureSetsBuffer.createNonOwnerResource(),
-				textureSetCacheInfo.textureSetIdx * sizeof(TextureSetGPUInfo) + offsetof(TextureSetGPUInfo, roughnessMetalnessAOIdx));
+			if (textureSetCacheInfo.normalIdx == 1)
+			{
+				textureSetCacheInfo.normalIdx = m_currentBindlessCount++;
+				pushDataToGPUBuffer(&textureSetCacheInfo.normalIdx, sizeof(uint32_t), m_textureSetsBuffer.createNonOwnerResource(),
+					textureSetCacheInfo.textureSetIdx * sizeof(TextureSetGPUInfo) + offsetof(TextureSetGPUInfo, normalIdx));
+			}
+
+			DescriptorSetGenerator::ImageDescription imageToUpdate{ VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, textureSetInfo.images[1]->getDefaultImageView() };
+			updateImageInBindless(imageToUpdate, textureSetCacheInfo.normalIdx);
 		}
 
-		DescriptorSetGenerator::ImageDescription imageToUpdate{ VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, textureSetInfo.images[2]->getDefaultImageView() };
-		updateImageInBindless(imageToUpdate, textureSetCacheInfo.roughnessMetalnessAOIdx);
+		if (textureSetInfo.images[2])
+		{
+			if (textureSetCacheInfo.roughnessMetalnessAOIdx == 2)
+			{
+				textureSetCacheInfo.roughnessMetalnessAOIdx = m_currentBindlessCount++;
+				pushDataToGPUBuffer(&textureSetCacheInfo.roughnessMetalnessAOIdx, sizeof(uint32_t), m_textureSetsBuffer.createNonOwnerResource(),
+					textureSetCacheInfo.textureSetIdx * sizeof(TextureSetGPUInfo) + offsetof(TextureSetGPUInfo, roughnessMetalnessAOIdx));
+			}
+
+			DescriptorSetGenerator::ImageDescription imageToUpdate{ VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, textureSetInfo.images[2]->getDefaultImageView() };
+			updateImageInBindless(imageToUpdate, textureSetCacheInfo.roughnessMetalnessAOIdx);
+		}
 	}
 }
 
@@ -234,7 +441,7 @@ uint32_t Wolf::MaterialsGPUManager::addImagesToBindless(const std::vector<Descri
 		DescriptorLayout& descriptorLayout = descriptorSetUpdateInfo.descriptorImages[i].descriptorLayout;
 		descriptorLayout.binding = BINDING_SLOT;
 		descriptorLayout.arrayIndex = m_currentBindlessCount++;
-		descriptorLayout.descriptorType = VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE;
+		descriptorLayout.descriptorType = DescriptorType::SAMPLED_IMAGE;
 	}
 
 	m_descriptorSet->update(descriptorSetUpdateInfo);
@@ -255,9 +462,40 @@ void Wolf::MaterialsGPUManager::updateImageInBindless(const DescriptorSetGenerat
 	DescriptorLayout& descriptorLayout = descriptorSetUpdateInfo.descriptorImages[0].descriptorLayout;
 	descriptorLayout.binding = BINDING_SLOT;
 	descriptorLayout.arrayIndex = bindlessOffset;
-	descriptorLayout.descriptorType = VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE;
+	descriptorLayout.descriptorType = DescriptorType::SAMPLED_IMAGE;
 
 	m_descriptorSet->update(descriptorSetUpdateInfo);
+}
+
+uint32_t Wolf::MaterialsGPUManager::computeSliceCount(uint32_t textureWidth, uint32_t textureHeight)
+{
+	uint32_t sliceCount = 0;
+
+	Extent3D maxSliceExtent{ VirtualTextureManager::PAGE_SIZE, VirtualTextureManager::PAGE_SIZE, 1 };
+
+	uint32_t textureMipCount = MipMapGenerator::computeMipCount({ textureWidth, textureHeight });
+	for (uint32_t mipLevel = 0; mipLevel < textureMipCount; mipLevel++)
+	{
+		Extent3D extentForMip = { textureWidth >> mipLevel, textureHeight >> mipLevel, 1 };
+
+		const uint32_t sliceCountX = std::max(extentForMip.width / maxSliceExtent.width, 1u);
+		const uint32_t sliceCountY = std::max(extentForMip.height / maxSliceExtent.height, 1u);
+
+		sliceCount += sliceCountX * sliceCountY;
+	}
+
+	return sliceCount;
+}
+
+void Wolf::MaterialsGPUManager::addSlicedImage(const std::string& folder, TextureCPUInfo::TextureType textureType)
+{
+	TextureGPUInfo& textureInfo = m_newTextureInfo.emplace_back();
+
+	textureInfo.width = std::stoi(ConfigurationHelper::readInfoFromFile(folder + "info.txt", "width"));
+	textureInfo.height = std::stoi(ConfigurationHelper::readInfoFromFile(folder + "info.txt", "height"));
+	textureInfo.virtualTextureIndirectionOffset = -1;
+
+	m_texturesCPUInfo.emplace_back(folder, textureType, textureInfo.width, textureInfo.height, textureInfo.virtualTextureIndirectionOffset);
 }
 
 void Wolf::MaterialsGPUManager::bind(const CommandBuffer& commandBuffer, const Pipeline& pipeline, uint32_t descriptorSlot) const

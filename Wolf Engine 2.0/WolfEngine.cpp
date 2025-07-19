@@ -49,7 +49,7 @@ Wolf::WolfEngine::WolfEngine(const WolfInstanceCreateInfo& createInfo) : m_globa
 	if(m_configuration->getUseRenderDoc())
 	{
 #ifdef _WIN32
-		LoadLibrary(L"renderdoc.dll");
+		LoadLibraryW(L"renderdoc.dll");
 #else
 		Debug::sendError("Can't open renderdoc dll");
 #endif
@@ -187,7 +187,7 @@ void Wolf::WolfEngine::updateBeforeFrame()
 
 	if (static_cast<bool>(m_materialsManager))
 	{
-		m_materialsManager->pushMaterialsToGPU();
+		m_materialsManager->updateBeforeFrame();
 	}
 
 	m_globalTimer.updateCachedDuration();
@@ -231,6 +231,9 @@ void Wolf::WolfEngine::frame(const std::span<ResourceNonOwner<CommandRecordBase>
 	if (m_resizeIsNeeded)
 	{
 		waitIdle();
+		m_swapChain->resetAllFences();
+		g_runtimeContext->reset();
+		currentFrame = g_runtimeContext->getCurrentCPUFrameNumber();
 
 		InitializationContext initializeContext;
 		fillInitializeContext(initializeContext);

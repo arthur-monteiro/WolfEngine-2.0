@@ -16,7 +16,7 @@ namespace Wolf
 		void addStorageBuffer(ShaderStageFlags accessibility, uint32_t binding);
 		void addStorageImage(ShaderStageFlags accessibility, uint32_t binding);
 		void addSampler(ShaderStageFlags accessibility, uint32_t binding);
-		void addImages(VkDescriptorType descriptorType, ShaderStageFlags accessibility, uint32_t binding, uint32_t count, VkDescriptorBindingFlags bindingFlags = 0);
+		void addImages(DescriptorType descriptorType, ShaderStageFlags accessibility, uint32_t binding, uint32_t count, VkDescriptorBindingFlags bindingFlags = 0);
 		void addAccelerationStructure(ShaderStageFlags accessibility, uint32_t binding);
 
 		[[nodiscard]] const std::vector<DescriptorLayout>& getDescriptorLayouts() const { return m_descriptorLayouts; }

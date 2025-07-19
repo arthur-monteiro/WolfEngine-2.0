@@ -137,6 +137,11 @@ void Wolf::ShaderParser::parseAndCompile()
         parsedFilename += "_" + std::to_string(m_shaderCodeToAddHash);
     }
 
+    if (g_configuration->getUseVirtualTexture())
+    {
+        parsedFilename += "_virtualTexture";
+    }
+
     std::string compiledFilename = parsedFilename;
     parsedFilename += "Parsed" + extensionFound;
 
@@ -148,10 +153,18 @@ void Wolf::ShaderParser::parseAndCompile()
 
     outFileGLSL << "#version 460\n";
 
+    outFileGLSL << "#define GLSL\n\n";
     if (extensionFound == "Comp")
     {
         outFileGLSL << "#define COMPUTE_SHADER\n";
     }
+
+    for (const std::string& condition : m_conditionBlocksToInclude)
+    {
+        outFileGLSL << "#define " + condition + "\n";
+    }
+
+    outFileGLSL << "\n";
 
     addCameraCode(outFileGLSL);
     if (extensionFound == "Frag")
@@ -169,22 +182,6 @@ void Wolf::ShaderParser::parseAndCompile()
     std::string inShaderLine;
     while (std::getline(inFile, inShaderLine))
     {
-        if (inShaderLine.find("#endif") != std::string::npos)
-        {
-            currentConditions.pop_back();
-            continue;
-        }
-        else if (size_t tokenPos = inShaderLine.find("#else"); tokenPos != std::string::npos)
-        {
-            std::string conditionStr = currentConditions.back();
-            currentConditions.pop_back();
-            currentConditions.push_back("!" + conditionStr);
-            continue;
-        }
-
-        if (!isRespectingConditions(currentConditions))
-            continue;
-
         if (inShaderLine == "#include \"ShaderCommon.glsl\"")
         {
             outFileGLSL << shaderCommonStr;
@@ -205,12 +202,6 @@ void Wolf::ShaderParser::parseAndCompile()
 
             // includes seems to work with glslc so no need to copy content
             outFileGLSL << inShaderLine << std::endl;
-        }
-        else if (size_t tokenPos = inShaderLine.find("#if "); tokenPos != std::string::npos)
-        {
-            std::string conditionStr = inShaderLine.substr(tokenPos + 4);
-            std::erase(conditionStr, ' ');
-            currentConditions.push_back(conditionStr);
         }
         else
         {
@@ -284,31 +275,6 @@ void Wolf::ShaderParser::readFile(std::vector<char>& output, const std::string& 
     file.close();
 }
 
-bool Wolf::ShaderParser::isRespectingConditions(const std::vector<std::string>& conditions)
-{
-#ifndef __ANDROID__
-    return std::ranges::all_of(conditions.begin(), conditions.end(), [this](const std::string& condition)
-		{
-			if(condition[0] == '!') // condition must not be included
-			{
-                std::string conditionCpy = condition;
-                std::erase(conditionCpy, '!');
-				return std::ranges::find(m_conditionBlocksToInclude, conditionCpy) == m_conditionBlocksToInclude.end();
-			}
-            else
-            {
-                return std::ranges::find(m_conditionBlocksToInclude, condition) != m_conditionBlocksToInclude.end();
-            }
-		});
-#else
-    if(!conditions.empty())
-    {
-        Debug::sendError("Permutations are not available on android (std::ranges not supported)");
-    }
-    return true;
-#endif
-}
-
 void Wolf::ShaderParser::addCameraCode(std::ofstream& outFileGLSL) const
 {
     if (m_cameraDescriptorSlot == static_cast<uint32_t>(-1))
@@ -335,6 +301,24 @@ void Wolf::ShaderParser::addMaterialFetchCode(std::ofstream& outFileGLSL) const
     outFileGLSL << "\n//------------------\n";
 
     std::string materialFetchCode;
+
+    if (g_configuration->getUseVirtualTexture())
+    {
+        materialFetchCode +=
+            #include "VirtualTextureUtils.glsl"
+        ;
+
+        materialFetchCode +=
+            #include "VirtualTextureSample.glsl"
+        ;
+    }
+    else
+    {
+        materialFetchCode +=
+            #include "DefaultTextureSample.glsl"
+        ;
+    }
+
     if (m_materialFetchProcedure.codeString.empty())
     {
         materialFetchCode += "#define DEFAULT_MATERIAL_FETCH\n";

@@ -1,9 +1,6 @@
 R"(
 #extension GL_EXT_nonuniform_qualifier : enable
 
-layout (binding = 0, set = £BINDLESS_DESCRIPTOR_SLOT) uniform texture2D[] textures;
-layout (binding = 1, set = £BINDLESS_DESCRIPTOR_SLOT) uniform sampler textureSampler;
-
 struct InputTextureSetInfo
 {
     uint albedoIdx;
@@ -62,18 +59,18 @@ void clearMaterialInfo(inout MaterialInfo materialInfo)
 
 void addToMaterialInfoFromTexCoords(in const vec2 texCoords, in const InputTextureSetInfo textureSetInfo, in float strength, in const mat3 matrixTBN, inout MaterialInfo materialInfo)
 {
-    materialInfo.albedo += texture(sampler2D(textures[textureSetInfo.albedoIdx], textureSampler), texCoords).rgba * strength;
-    vec4 normal = texture(sampler2D(textures[textureSetInfo.normalIdx], textureSampler), texCoords).rgba;
+    materialInfo.albedo += sampleTexture(textureSetInfo.albedoIdx, texCoords, true).rgba * strength;
+    vec4 normal = sampleTexture(textureSetInfo.normalIdx, texCoords, false).rgba;
     normal.xy = normal.rg * 2.0 - vec2(1.0);
     normal.z = sqrt(1.0f - normal.x * normal.x - normal.y * normal.y);
     materialInfo.normal += normal.xyz * matrixTBN * strength; // TODO: normal blending
-    vec4 combinedRoughnessMetalnessAOAniso = texture(sampler2D(textures[textureSetInfo.roughnessMetalnessAOIdx], textureSampler), texCoords).rgba;
+    vec4 combinedRoughnessMetalnessAOAniso = sampleTexture(textureSetInfo.roughnessMetalnessAOIdx, texCoords, false).rgba;
 	materialInfo.roughness += combinedRoughnessMetalnessAOAniso.r * strength;
 	materialInfo.metalness += combinedRoughnessMetalnessAOAniso.g * strength;
     materialInfo.matAO += combinedRoughnessMetalnessAOAniso.b * strength;
     materialInfo.anisoStrength += combinedRoughnessMetalnessAOAniso.a * strength;
 
-    materialInfo.sixWaysLightmap1 += texture(sampler2D(textures[textureSetInfo.normalIdx], textureSampler), texCoords).rgba * strength;
+    materialInfo.sixWaysLightmap1 += sampleTexture(textureSetInfo.normalIdx, texCoords, false).rgba * strength;
 }
 
 void addToMaterialInfoTriplanr(in const InputTextureSetInfo textureSetInfo, in float strength, in const mat3 matrixTBN, in const vec3 worldPos, inout MaterialInfo materialInfo)

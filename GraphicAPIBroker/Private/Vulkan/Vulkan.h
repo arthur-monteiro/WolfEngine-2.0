@@ -5,7 +5,7 @@
 #define GLFW_INCLUDE_VULKAN
 #ifndef __ANDROID__
 #include <GLFW/glfw3.h>
-#include <OVR_CAPI_Vk.h>
+//#include <OVR_CAPI_Vk.h>
 #endif
 #include <memory>
 #include <mutex>
@@ -106,8 +106,8 @@ namespace Wolf
 
 		/* VR */
 #ifndef __ANDROID__
-		ovrSession                  m_session = nullptr;
-		ovrGraphicsLuid             m_luid;
+		//ovrSession                  m_session = nullptr;
+		//ovrGraphicsLuid             m_luid;
 #endif
 
 		/* Command Pools */
