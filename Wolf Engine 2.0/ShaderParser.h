@@ -35,7 +35,6 @@ namespace Wolf
 	private:
 		void parseAndCompile();
 		void readFile(std::vector<char>& output, const std::string& filename) const;
-		bool isRespectingConditions(const std::vector<std::string>& conditions);
 		void addCameraCode(std::ofstream& outFileGLSL) const;
 		void addMaterialFetchCode(std::ofstream& outFileGLSL) const;
 		void addLightInfoCode(std::ofstream& outFileGLSL) const;

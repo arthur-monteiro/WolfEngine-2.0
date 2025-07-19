@@ -12,6 +12,8 @@ namespace Wolf
 		{
 			case Format::R8_UINT:
 				return VK_FORMAT_R8_UINT;
+			case Format::R32_UINT:
+				return VK_FORMAT_R32_UINT;
 			case Format::R8G8B8A8_UNORM:
 				return VK_FORMAT_R8G8B8A8_UNORM;
 			case Format::R8G8B8A8_SRGB:
