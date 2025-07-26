@@ -383,6 +383,8 @@ void Wolf::ImageVulkan::setBPP()
 	case VK_FORMAT_R8G8B8A8_SRGB:
 	case VK_FORMAT_D32_SFLOAT:
 	case VK_FORMAT_R32_SFLOAT:
+	case VK_FORMAT_R32_UINT:
+	case VK_FORMAT_R32_SINT:
 		m_bpp = 4.0f;
 		break;
 	case VK_FORMAT_BC1_RGB_UNORM_BLOCK:

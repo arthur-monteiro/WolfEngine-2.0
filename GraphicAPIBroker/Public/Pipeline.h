@@ -86,7 +86,7 @@ namespace Wolf
 	public:
 		static Pipeline* createRenderingPipeline(const RenderingPipelineCreateInfo& renderingPipelineCreateInfo);
 		static Pipeline* createComputePipeline(const ShaderCreateInfo& computeShaderInfo, std::span<ResourceReference<const DescriptorSetLayout>> descriptorSetLayouts);
-		static Pipeline* createRayTracingPipeline(const RayTracingPipelineCreateInfo& rayTracingPipelineCreateInfo, std::span<const DescriptorSetLayout*> descriptorSetLayouts);
+		static Pipeline* createRayTracingPipeline(const RayTracingPipelineCreateInfo& rayTracingPipelineCreateInfo, std::span<ResourceReference<const DescriptorSetLayout>> descriptorSetLayouts);
 		virtual ~Pipeline() = default;
 	};
 
