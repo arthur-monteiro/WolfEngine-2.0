@@ -260,7 +260,7 @@ Wolf::PipelineVulkan::PipelineVulkan(const ShaderCreateInfo& computeShaderInfo, 
 	vkDestroyShaderModule(g_vulkanInstance->getDevice(), computeShaderModule, nullptr);
 }
 
-Wolf::PipelineVulkan::PipelineVulkan(const RayTracingPipelineCreateInfo& rayTracingPipelineCreateInfo, std::span<const DescriptorSetLayout*> descriptorSetLayouts)
+Wolf::PipelineVulkan::PipelineVulkan(const RayTracingPipelineCreateInfo& rayTracingPipelineCreateInfo, std::span<ResourceReference<const DescriptorSetLayout>> descriptorSetLayouts)
 {
 	m_type = Type::RAY_TRACING;
 
@@ -271,7 +271,7 @@ Wolf::PipelineVulkan::PipelineVulkan(const RayTracingPipelineCreateInfo& rayTrac
 	pipelineLayoutCreateInfo.setLayoutCount = static_cast<uint32_t>(descriptorSetLayouts.size());
 	std::vector<VkDescriptorSetLayout> vkDescriptorSetLayouts(pipelineLayoutCreateInfo.setLayoutCount);
 	for (uint32_t i = 0; i < pipelineLayoutCreateInfo.setLayoutCount; ++i)
-		vkDescriptorSetLayouts[i] = static_cast<const DescriptorSetLayoutVulkan*>(descriptorSetLayouts[i])->getDescriptorSetLayout();
+		vkDescriptorSetLayouts[i] = descriptorSetLayouts[i].operator-><const DescriptorSetLayoutVulkan>()->getDescriptorSetLayout();
 	pipelineLayoutCreateInfo.pSetLayouts = vkDescriptorSetLayouts.data();
 	pipelineLayoutCreateInfo.pushConstantRangeCount = 0;
 	pipelineLayoutCreateInfo.pPushConstantRanges = nullptr;

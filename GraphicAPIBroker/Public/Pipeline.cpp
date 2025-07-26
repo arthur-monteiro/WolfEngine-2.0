@@ -25,7 +25,7 @@ Wolf::Pipeline* Wolf::Pipeline::createComputePipeline(const ShaderCreateInfo& co
 
 Wolf::Pipeline* Wolf::Pipeline::createRayTracingPipeline(
 	const RayTracingPipelineCreateInfo& rayTracingPipelineCreateInfo,
-	std::span<const DescriptorSetLayout*> descriptorSetLayouts)
+	std::span<ResourceReference<const DescriptorSetLayout>> descriptorSetLayouts)
 {
 #ifdef WOLF_VULKAN
 	return new PipelineVulkan(rayTracingPipelineCreateInfo, descriptorSetLayouts);

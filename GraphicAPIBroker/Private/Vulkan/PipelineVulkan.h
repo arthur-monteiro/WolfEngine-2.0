@@ -15,7 +15,7 @@ namespace Wolf
 		// Compute
 		PipelineVulkan(const ShaderCreateInfo& computeShaderInfo, std::span<ResourceReference<const DescriptorSetLayout>> descriptorSetLayouts);
 		// Ray tracing
-		PipelineVulkan(const RayTracingPipelineCreateInfo& rayTracingPipelineCreateInfo, std::span<const DescriptorSetLayout*> descriptorSetLayouts);
+		PipelineVulkan(const RayTracingPipelineCreateInfo& rayTracingPipelineCreateInfo, std::span<ResourceReference<const DescriptorSetLayout>> descriptorSetLayouts);
 		~PipelineVulkan() override;
 
 		[[nodiscard]] VkPipeline getPipeline() const { return m_pipeline; }
