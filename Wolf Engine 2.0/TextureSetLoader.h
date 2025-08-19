@@ -51,12 +51,10 @@ namespace Wolf
 
 		void transferImageTo(uint32_t idx, ResourceUniqueOwner<Image>& output);
 		[[nodiscard]] const std::string& getOutputSlicesFolder(uint32_t idx) const { return m_outputFolders[idx]; }
-		void assignCache(uint32_t idx, std::vector<unsigned char>& output);
 
 	private:
 		std::array<ResourceUniqueOwner<Image>, MaterialsGPUManager::TEXTURE_COUNT_PER_MATERIAL> m_outputImages;
 		std::array<std::string, MaterialsGPUManager::TEXTURE_COUNT_PER_MATERIAL> m_outputFolders;
-		std::array<std::vector<unsigned char>, MaterialsGPUManager::TEXTURE_COUNT_PER_MATERIAL> m_imagesData;
 		bool m_useCache;
 
 		Format findFormatFromCompression(ImageCompression::Compression compression, bool sRGB);
@@ -77,5 +75,8 @@ namespace Wolf
 		template <typename CompressionType, typename PixelType>
 		void compressAndCreateImage(std::vector<std::vector<PixelType>>& mipLevels, const std::vector<PixelType>& pixels, Extent3D& extent, Format format, const std::string& filename, std::fstream& outCacheFile,
 			uint32_t imageIdx);
+
+		// Combine roughness, metalness, ao and anisotrength into the same texture
+		void createCombinedTexture(const TextureSetFileInfoGGX& textureSet);
 	};
 }

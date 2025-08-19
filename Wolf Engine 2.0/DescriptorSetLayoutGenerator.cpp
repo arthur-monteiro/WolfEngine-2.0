@@ -30,6 +30,18 @@ void Wolf::DescriptorSetLayoutGenerator::addStorageBuffer(ShaderStageFlags acces
 	m_descriptorLayouts.push_back(descriptorLayout);
 }
 
+void Wolf::DescriptorSetLayoutGenerator::addStorageBuffers(ShaderStageFlags accessibility, uint32_t binding, uint32_t count, VkDescriptorBindingFlags bindingFlags)
+{
+	DescriptorLayout descriptorLayout;
+	descriptorLayout.accessibility = accessibility;
+	descriptorLayout.binding = binding;
+	descriptorLayout.count = count;
+	descriptorLayout.bindingFlags = bindingFlags;
+	descriptorLayout.descriptorType = DescriptorType::STORAGE_BUFFER;
+
+	m_descriptorLayouts.push_back(descriptorLayout);
+}
+
 void Wolf::DescriptorSetLayoutGenerator::addStorageImage(ShaderStageFlags accessibility, uint32_t binding)
 {
 	DescriptorLayout descriptorLayout;

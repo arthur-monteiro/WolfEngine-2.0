@@ -64,142 +64,7 @@ Wolf::TextureSetLoader::TextureSetLoader(const TextureSetFileInfoGGX& textureSet
 		}
 	}
 
-	std::vector<ImageCompression::RGBA8> combinedRoughnessMetalnessAOAniso;
-	std::vector<std::vector<ImageCompression::RGBA8>> combinedRoughnessMetalnessAOMipLevels;
-	Extent3D combinedRoughnessMetalnessAOExtent = { 1, 1, 1};
-	combinedRoughnessMetalnessAOAniso.resize(1);
-
-	// Roughness
-	if (!textureSet.roughness.empty())
-	{
-		Debug::sendInfo("Loading roughness " + textureSet.roughness);
-		Timer albedoTimer("Loading roughness " + textureSet.roughness);
-
-		std::vector<ImageCompression::RGBA8> pixels;
-		std::vector<std::vector<ImageCompression::RGBA8>> mipLevels;
-		loadImageFile(textureSet.roughness, Format::R8G8B8A8_UNORM, pixels, mipLevels, combinedRoughnessMetalnessAOExtent);
-
-		combinedRoughnessMetalnessAOAniso.resize(pixels.size());
-		for (uint32_t i = 0; i < pixels.size(); ++i)
-		{
-			combinedRoughnessMetalnessAOAniso[i].r = pixels[i].r;
-		}
-		combinedRoughnessMetalnessAOMipLevels.resize(mipLevels.size());
-		for (uint32_t i = 0; i < mipLevels.size(); ++i)
-		{
-			combinedRoughnessMetalnessAOMipLevels[i].resize(mipLevels[i].size());
-			for (uint32_t j = 0; j < mipLevels[i].size(); ++j)
-			{
-				combinedRoughnessMetalnessAOMipLevels[i][j].r = mipLevels[i][j].r;
-			}
-		}
-	}
-
-	// Metalness
-	if (!textureSet.metalness.empty())
-	{
-		Debug::sendInfo("Loading metalness " + textureSet.metalness);
-		Timer albedoTimer("Loading metalness " + textureSet.metalness);
-
-		std::vector<ImageCompression::RGBA8> pixels;
-		std::vector<std::vector<ImageCompression::RGBA8>> mipLevels;
-		Extent3D extent;
-		loadImageFile(textureSet.metalness, Format::R8G8B8A8_UNORM, pixels, mipLevels, extent);
-
-		if (extent.width != combinedRoughnessMetalnessAOExtent.width || extent.height != combinedRoughnessMetalnessAOExtent.height)
-		{
-			Debug::sendWarning("Metalness has not same resolution than roughness, this is not supported and will be set to default value");
-		}
-		else
-		{
-			for (uint32_t i = 0; i < pixels.size(); ++i)
-			{
-				combinedRoughnessMetalnessAOAniso[i].g = pixels[i].r;
-			}
-			for (uint32_t i = 0; i < mipLevels.size(); ++i)
-			{
-				for (uint32_t j = 0; j < mipLevels[i].size(); ++j)
-				{
-					combinedRoughnessMetalnessAOMipLevels[i][j].g = mipLevels[i][j].r;
-				}
-			}
-		}
-	}
-
-	// AO
-	if (!textureSet.ao.empty())
-	{
-		Debug::sendInfo("Loading ao " + textureSet.ao);
-		Timer albedoTimer("Loading ao " + textureSet.ao);
-
-		std::vector<ImageCompression::RGBA8> pixels;
-		std::vector<std::vector<ImageCompression::RGBA8>> mipLevels;
-		Extent3D extent;
-		loadImageFile(textureSet.ao, Format::R8G8B8A8_UNORM, pixels, mipLevels, extent);
-
-		if (extent.width != combinedRoughnessMetalnessAOExtent.width || extent.height != combinedRoughnessMetalnessAOExtent.height)
-		{
-			Debug::sendWarning("AO has not same resolution than roughness, this is not supported and will be set to default value");
-		}
-		else
-		{
-			for (uint32_t i = 0; i < pixels.size(); ++i)
-			{
-				combinedRoughnessMetalnessAOAniso[i].b = pixels[i].r;
-			}
-			for (uint32_t i = 0; i < mipLevels.size(); ++i)
-			{
-				for (uint32_t j = 0; j < mipLevels[i].size(); ++j)
-				{
-					combinedRoughnessMetalnessAOMipLevels[i][j].b = mipLevels[i][j].r;
-				}
-			}
-		}
-	}
-
-	// Anisotropy strength
-	if (!textureSet.anisoStrength.empty())
-	{
-		Debug::sendInfo("Loading anisoStrength " + textureSet.anisoStrength);
-		Timer albedoTimer("Loading anisoStrength " + textureSet.anisoStrength);
-
-		std::vector<ImageCompression::RGBA8> pixels;
-		std::vector<std::vector<ImageCompression::RGBA8>> mipLevels;
-		Extent3D extent;
-		loadImageFile(textureSet.anisoStrength, Format::R8G8B8A8_UNORM, pixels, mipLevels, extent);
-
-		if (extent.width != combinedRoughnessMetalnessAOExtent.width || extent.height != combinedRoughnessMetalnessAOExtent.height)
-		{
-			Debug::sendWarning("Anisotropic strength has not same resolution than roughness, this is not supported and will be set to default value");
-		}
-		else
-		{
-			for (uint32_t i = 0; i < pixels.size(); ++i)
-			{
-				combinedRoughnessMetalnessAOAniso[i].a = pixels[i].r;
-			}
-			for (uint32_t i = 0; i < mipLevels.size(); ++i)
-			{
-				for (uint32_t j = 0; j < mipLevels[i].size(); ++j)
-				{
-					combinedRoughnessMetalnessAOMipLevels[i][j].a = mipLevels[i][j].r;
-				}
-			}
-		}
-	}
-
-	if (!textureSet.roughness.empty())
-	{
-		Debug::sendInfo("Creating combined texture");
-		Timer albedoTimer("Creating combined texture");
-
-		std::vector<const unsigned char*> mipsData(combinedRoughnessMetalnessAOMipLevels.size());
-		for (uint32_t i = 0; i < combinedRoughnessMetalnessAOMipLevels.size(); ++i)
-		{
-			mipsData[i] = reinterpret_cast<const unsigned char*>(combinedRoughnessMetalnessAOMipLevels[i].data());
-		}
-		createImageFromData(combinedRoughnessMetalnessAOExtent, Format::R8G8B8A8_UNORM, reinterpret_cast<const unsigned char*>(combinedRoughnessMetalnessAOAniso.data()), mipsData, 2);
-	}
+	createCombinedTexture(textureSet);
 }
 
 Wolf::TextureSetLoader::TextureSetLoader(const TextureSetFileInfoSixWayLighting& textureSet, bool useCache)
@@ -238,11 +103,6 @@ Wolf::TextureSetLoader::TextureSetLoader(const TextureSetFileInfoSixWayLighting&
 void Wolf::TextureSetLoader::transferImageTo(uint32_t idx, ResourceUniqueOwner<Image>& output)
 {
 	return output.transferFrom(m_outputImages[idx]);
-}
-
-void Wolf::TextureSetLoader::assignCache(uint32_t idx, std::vector<unsigned char>& output)
-{
-	output = std::move(m_imagesData[idx]);
 }
 
 void Wolf::TextureSetLoader::loadImageFile(const std::string& filename, Format format, std::vector<ImageCompression::RGBA8>& pixels, std::vector<std::vector<ImageCompression::RGBA8>>& mipLevels, Extent3D& outExtent) const
@@ -392,6 +252,8 @@ bool Wolf::TextureSetLoader::createImageFileFromCache(const std::string& filenam
 			compressedFormat = sRGB ? Format::BC3_SRGB_BLOCK : Format::BC3_UNORM_BLOCK;
 		else if (compression == ImageCompression::Compression::BC5)
 			compressedFormat = Format::BC5_UNORM_BLOCK;
+		else if (compression == ImageCompression::Compression::NO_COMPRESSION)
+			compressedFormat = sRGB ? Format::R8G8B8A8_SRGB : Format::R8G8B8A8_UNORM;
 
 		createImageFromData(extent, compressedFormat, data.data(), mipsDataPtr, imageIdx);
 
@@ -632,38 +494,206 @@ void Wolf::TextureSetLoader::createImageFromData(Extent3D extent, Format format,
 	{
 		pushDataToGPUImage(mipLevels[mipLevel - 1], m_outputImages[idx].createNonOwnerResource(), Image::SampledInFragmentShader(mipLevel), mipLevel);
 	}
+}
 
-	if (m_useCache)
+std::string extractFilenameFromPath(const std::string& fullPath)
+{
+	return fullPath.substr(fullPath.find_last_of("/\\") + 1);
+}
+
+std::string extractFolderFromFullPath(const std::string& fullPath)
+{
+	return fullPath.substr(0, fullPath.find_last_of("/\\"));
+}
+
+void Wolf::TextureSetLoader::createCombinedTexture(const TextureSetFileInfoGGX& textureSet)
+{
+	if (g_configuration->getUseVirtualTexture())
 	{
-		auto computeImageSize = [](Extent3D extent, float bpp, uint32_t mipLevel)
-			{
-				const Extent3D adjustedExtent = { extent.width >> mipLevel, extent.height >> mipLevel, extent.depth };
-				return static_cast<VkDeviceSize>(static_cast<float>(adjustedExtent.width) * static_cast<float>(adjustedExtent.height) * static_cast<float>(adjustedExtent.depth) * bpp);
-			};
+		return;
+	}
 
-		VkDeviceSize imageSize = 0;
-		for (uint32_t mipLevel = 0; mipLevel < mipLevels.size() + 1; ++mipLevel)
-			imageSize += computeImageSize(m_outputImages[idx]->getExtent(), m_outputImages[idx]->getBPP(), mipLevel);
+	bool useCache = m_useCache && !textureSet.roughness.empty();
 
-		m_imagesData[idx].resize(imageSize);
+	std::string combinedTexturePath = extractFolderFromFullPath(textureSet.roughness) + "combined_";
+	combinedTexturePath += extractFilenameFromPath(textureSet.roughness) + "_";
+	combinedTexturePath += extractFilenameFromPath(textureSet.metalness) + "_";
+	combinedTexturePath += extractFilenameFromPath(textureSet.ao) + "_";
+	combinedTexturePath += extractFilenameFromPath(textureSet.anisoStrength);
 
-		VkDeviceSize copyOffset = 0;
-		for (uint32_t mipLevel = 0; mipLevel < mipLevels.size() + 1; ++mipLevel)
+	if (useCache)
+	{
+		if (createImageFileFromCache(combinedTexturePath, false, ImageCompression::Compression::NO_COMPRESSION, 2))
 		{
-			const VkDeviceSize copySize = computeImageSize(m_outputImages[idx]->getExtent(), m_outputImages[idx]->getBPP(), mipLevel);
-			const unsigned char* dataPtr = pixels;
-			if (mipLevel > 0)
-				dataPtr = mipLevels[mipLevel - 1];
-			memcpy(m_imagesData[idx].data() + copyOffset, dataPtr, copySize);
+			return;
+		}
+	}
 
-			copyOffset += copySize;
+	std::vector<ImageCompression::RGBA8> combinedRoughnessMetalnessAOAniso;
+	std::vector<std::vector<ImageCompression::RGBA8>> combinedRoughnessMetalnessAOMipLevels;
+	Extent3D combinedRoughnessMetalnessAOExtent = { 1, 1, 1};
+	combinedRoughnessMetalnessAOAniso.resize(1);
+
+	// Roughness
+	if (!textureSet.roughness.empty())
+	{
+		Debug::sendInfo("Loading roughness " + textureSet.roughness);
+		Timer albedoTimer("Loading roughness " + textureSet.roughness);
+
+		std::vector<ImageCompression::RGBA8> pixels;
+		std::vector<std::vector<ImageCompression::RGBA8>> mipLevels;
+		loadImageFile(textureSet.roughness, Format::R8G8B8A8_UNORM, pixels, mipLevels, combinedRoughnessMetalnessAOExtent);
+
+		combinedRoughnessMetalnessAOAniso.resize(pixels.size());
+		for (uint32_t i = 0; i < pixels.size(); ++i)
+		{
+			combinedRoughnessMetalnessAOAniso[i].r = pixels[i].r;
+		}
+		combinedRoughnessMetalnessAOMipLevels.resize(mipLevels.size());
+		for (uint32_t i = 0; i < mipLevels.size(); ++i)
+		{
+			combinedRoughnessMetalnessAOMipLevels[i].resize(mipLevels[i].size());
+			for (uint32_t j = 0; j < mipLevels[i].size(); ++j)
+			{
+				combinedRoughnessMetalnessAOMipLevels[i][j].r = mipLevels[i][j].r;
+			}
+		}
+	}
+
+	// Metalness
+	if (!textureSet.metalness.empty())
+	{
+		Debug::sendInfo("Loading metalness " + textureSet.metalness);
+		Timer albedoTimer("Loading metalness " + textureSet.metalness);
+
+		std::vector<ImageCompression::RGBA8> pixels;
+		std::vector<std::vector<ImageCompression::RGBA8>> mipLevels;
+		Extent3D extent;
+		loadImageFile(textureSet.metalness, Format::R8G8B8A8_UNORM, pixels, mipLevels, extent);
+
+		if (extent.width != combinedRoughnessMetalnessAOExtent.width || extent.height != combinedRoughnessMetalnessAOExtent.height)
+		{
+			Debug::sendWarning("Metalness has not same resolution than roughness, this is not supported and will be set to default value");
+		}
+		else
+		{
+			for (uint32_t i = 0; i < pixels.size(); ++i)
+			{
+				combinedRoughnessMetalnessAOAniso[i].g = pixels[i].r;
+			}
+			for (uint32_t i = 0; i < mipLevels.size(); ++i)
+			{
+				for (uint32_t j = 0; j < mipLevels[i].size(); ++j)
+				{
+					combinedRoughnessMetalnessAOMipLevels[i][j].g = mipLevels[i][j].r;
+				}
+			}
+		}
+	}
+
+	// AO
+	if (!textureSet.ao.empty())
+	{
+		Debug::sendInfo("Loading ao " + textureSet.ao);
+		Timer albedoTimer("Loading ao " + textureSet.ao);
+
+		std::vector<ImageCompression::RGBA8> pixels;
+		std::vector<std::vector<ImageCompression::RGBA8>> mipLevels;
+		Extent3D extent;
+		loadImageFile(textureSet.ao, Format::R8G8B8A8_UNORM, pixels, mipLevels, extent);
+
+		if (extent.width != combinedRoughnessMetalnessAOExtent.width || extent.height != combinedRoughnessMetalnessAOExtent.height)
+		{
+			Debug::sendWarning("AO has not same resolution than roughness, this is not supported and will be set to default value");
+		}
+		else
+		{
+			for (uint32_t i = 0; i < pixels.size(); ++i)
+			{
+				combinedRoughnessMetalnessAOAniso[i].b = pixels[i].r;
+			}
+			for (uint32_t i = 0; i < mipLevels.size(); ++i)
+			{
+				for (uint32_t j = 0; j < mipLevels[i].size(); ++j)
+				{
+					combinedRoughnessMetalnessAOMipLevels[i][j].b = mipLevels[i][j].r;
+				}
+			}
+		}
+	}
+
+	// Anisotropy strength
+	if (!textureSet.anisoStrength.empty())
+	{
+		Debug::sendInfo("Loading anisoStrength " + textureSet.anisoStrength);
+		Timer albedoTimer("Loading anisoStrength " + textureSet.anisoStrength);
+
+		std::vector<ImageCompression::RGBA8> pixels;
+		std::vector<std::vector<ImageCompression::RGBA8>> mipLevels;
+		Extent3D extent;
+		loadImageFile(textureSet.anisoStrength, Format::R8G8B8A8_UNORM, pixels, mipLevels, extent);
+
+		if (extent.width != combinedRoughnessMetalnessAOExtent.width || extent.height != combinedRoughnessMetalnessAOExtent.height)
+		{
+			Debug::sendWarning("Anisotropic strength has not same resolution than roughness, this is not supported and will be set to default value");
+		}
+		else
+		{
+			for (uint32_t i = 0; i < pixels.size(); ++i)
+			{
+				combinedRoughnessMetalnessAOAniso[i].a = pixels[i].r;
+			}
+			for (uint32_t i = 0; i < mipLevels.size(); ++i)
+			{
+				for (uint32_t j = 0; j < mipLevels[i].size(); ++j)
+				{
+					combinedRoughnessMetalnessAOMipLevels[i][j].a = mipLevels[i][j].r;
+				}
+			}
+		}
+	}
+
+	if (!textureSet.roughness.empty())
+	{
+		Debug::sendInfo("Creating combined texture");
+		Timer albedoTimer("Creating combined texture");
+
+		std::vector<const unsigned char*> mipsData(combinedRoughnessMetalnessAOMipLevels.size());
+		for (uint32_t i = 0; i < combinedRoughnessMetalnessAOMipLevels.size(); ++i)
+		{
+			mipsData[i] = reinterpret_cast<const unsigned char*>(combinedRoughnessMetalnessAOMipLevels[i].data());
+		}
+		createImageFromData(combinedRoughnessMetalnessAOExtent, Format::R8G8B8A8_UNORM, reinterpret_cast<const unsigned char*>(combinedRoughnessMetalnessAOAniso.data()), mipsData, 2);
+
+		if (useCache)
+		{
+			std::fstream outCacheFile(combinedTexturePath + ".bin", std::ios::out | std::ios::binary);
+
+			/* Hash */
+			uint64_t hash = HASH_TEXTURE_SET_LOADER_CPP;
+			outCacheFile.write(reinterpret_cast<char*>(&hash), sizeof(hash));
+			outCacheFile.write(reinterpret_cast<char*>(&combinedRoughnessMetalnessAOExtent), sizeof(combinedRoughnessMetalnessAOExtent));
+
+			// Add to cache
+			uint32_t dataBytesCount = static_cast<uint32_t>(combinedRoughnessMetalnessAOAniso.size() * 4);
+			outCacheFile.write(reinterpret_cast<char*>(&dataBytesCount), sizeof(dataBytesCount));
+			outCacheFile.write(reinterpret_cast<char*>(combinedRoughnessMetalnessAOAniso.data()), dataBytesCount);
+
+			uint32_t mipsCount = static_cast<uint32_t>(combinedRoughnessMetalnessAOMipLevels.size());
+			outCacheFile.write(reinterpret_cast<char*>(&mipsCount), sizeof(mipsCount));
+
+			for (uint32_t i = 0; i < mipsCount; ++i)
+			{
+				dataBytesCount = static_cast<uint32_t>(combinedRoughnessMetalnessAOMipLevels[i].size() * 4);
+				outCacheFile.write(reinterpret_cast<char*>(&dataBytesCount), sizeof(dataBytesCount));
+				outCacheFile.write(reinterpret_cast<char*>(combinedRoughnessMetalnessAOMipLevels[i].data()), dataBytesCount);
+			}
 		}
 	}
 }
 
 template <typename CompressionType, typename PixelType>
-void Wolf::TextureSetLoader::compressAndCreateImage(std::vector<std::vector<PixelType>>& mipLevels, const std::vector<PixelType>& pixels, Extent3D& extent, Format format, const std::string& filename,
-	std::fstream& outCacheFile, uint32_t imageIdx)
+void Wolf::TextureSetLoader::compressAndCreateImage(std::vector<std::vector<PixelType>>& mipLevels, const std::vector<PixelType>& pixels, Extent3D& extent, Format format, const std::string& filename, std::fstream& outCacheFile, uint32_t imageIdx)
 {
 	std::vector<CompressionType> compressedBlocks;
 	std::vector<std::vector<CompressionType>> mipBlocks(mipLevels.size());

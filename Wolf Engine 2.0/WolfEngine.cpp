@@ -357,9 +357,11 @@ void Wolf::WolfEngine::resize(int width, int height)
 	waitIdle();
 
 	m_resizeIsNeeded = true;
-	m_swapChain->recreate({ static_cast<uint32_t>(width), static_cast<uint32_t>(height)});
+	m_swapChain->recreate({ static_cast<uint32_t>(width), static_cast<uint32_t>(height) });
 #ifndef __ANDROID__
 	if(m_ultraLight)
 		m_ultraLight->resize(width, height);
 #endif
+
+	m_materialsManager->resize({ static_cast<uint32_t>(width), static_cast<uint32_t>(height) });
 }

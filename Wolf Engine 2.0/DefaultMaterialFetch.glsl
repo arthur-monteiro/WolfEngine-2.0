@@ -59,18 +59,19 @@ void clearMaterialInfo(inout MaterialInfo materialInfo)
 
 void addToMaterialInfoFromTexCoords(in const vec2 texCoords, in const InputTextureSetInfo textureSetInfo, in float strength, in const mat3 matrixTBN, inout MaterialInfo materialInfo)
 {
-    materialInfo.albedo += sampleTexture(textureSetInfo.albedoIdx, texCoords, true).rgba * strength;
-    vec4 normal = sampleTexture(textureSetInfo.normalIdx, texCoords, false).rgba;
+    materialInfo.albedo += sampleTexture(textureSetInfo.albedoIdx, texCoords, 0).rgba * strength;
+    vec4 normalSampled = sampleTexture(textureSetInfo.normalIdx, texCoords, 1).rgba;
+    vec4 normal = normalSampled;
     normal.xy = normal.rg * 2.0 - vec2(1.0);
     normal.z = sqrt(1.0f - normal.x * normal.x - normal.y * normal.y);
     materialInfo.normal += normal.xyz * matrixTBN * strength; // TODO: normal blending
-    vec4 combinedRoughnessMetalnessAOAniso = sampleTexture(textureSetInfo.roughnessMetalnessAOIdx, texCoords, false).rgba;
+    vec4 combinedRoughnessMetalnessAOAniso = sampleTexture(textureSetInfo.roughnessMetalnessAOIdx, texCoords, -1).rgba;
 	materialInfo.roughness += combinedRoughnessMetalnessAOAniso.r * strength;
 	materialInfo.metalness += combinedRoughnessMetalnessAOAniso.g * strength;
     materialInfo.matAO += combinedRoughnessMetalnessAOAniso.b * strength;
     materialInfo.anisoStrength += combinedRoughnessMetalnessAOAniso.a * strength;
 
-    materialInfo.sixWaysLightmap1 += sampleTexture(textureSetInfo.normalIdx, texCoords, false).rgba * strength;
+    materialInfo.sixWaysLightmap1 += normalSampled * strength;
 }
 
 void addToMaterialInfoTriplanr(in const InputTextureSetInfo textureSetInfo, in float strength, in const mat3 matrixTBN, in const vec3 worldPos, inout MaterialInfo materialInfo)
@@ -132,7 +133,8 @@ MaterialInfo defaultFetchMaterial(in const vec2 texCoords, in const uint materia
         float strength = materialsInfo[materialIdx].textureSetStrengths[i];
         totalStrengths += strength;
 
-        InputTextureSetInfo textureSetInfo = textureSetsInfo[materialsInfo[materialIdx].textureSetIndices[i]];
+        uint textureSetInfoIdx = materialsInfo[materialIdx].textureSetIndices[i];
+        InputTextureSetInfo textureSetInfo = textureSetsInfo[textureSetInfoIdx];
         addToMaterialInfo(texCoords, textureSetInfo, strength, matrixTBN, worldPos, materialInfo);
     }
 
