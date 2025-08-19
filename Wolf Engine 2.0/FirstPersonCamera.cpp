@@ -82,7 +82,7 @@ void Wolf::FirstPersonCamera::update(const CameraUpdateContext& context)
 		pixelJitter.x = ((JITTER_OFFSET[context.frameIdx % JITTER_OFFSET_COUNT].x - 0.5f) * 2.0f) / static_cast<float>(context.swapChainExtent.width);
 		pixelJitter.y = ((JITTER_OFFSET[context.frameIdx % JITTER_OFFSET_COUNT].y - 0.5f) * 2.0f) / static_cast<float>(context.swapChainExtent.height);
 	}
-	updateGraphic(pixelJitter);
+	updateGraphic(pixelJitter, context);
 }
 
 const glm::mat4& Wolf::FirstPersonCamera::getViewMatrix() const

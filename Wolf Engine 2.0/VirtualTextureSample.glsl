@@ -19,32 +19,33 @@ layout(std430, binding = 4, set = £BINDLESS_DESCRIPTOR_SLOT) readonly restrict b
     TextureInfo texturesInfo[];
 };
 
+const uint DITHER_PIXEL_COUNT_PER_SIDE = 32;
 layout(std430, binding = 5, set = £BINDLESS_DESCRIPTOR_SLOT) buffer VirtualTextureFeedbackBuffer
 {
-    uint currentFeedackCount;
-	uint feedbacks[255];
+	uvec3 feedbacks[];
 };
 
-layout (binding = 6, set = £BINDLESS_DESCRIPTOR_SLOT) uniform texture2D albedoAtlas;
+layout (binding = 6, set = £BINDLESS_DESCRIPTOR_SLOT) uniform texture2D[] atlases;
+layout (binding = 7, set = £BINDLESS_DESCRIPTOR_SLOT) uniform sampler atlasesSampler;
 
 const uint MAX_INDIRECTION_COUNT = 16384;
 const uint INVALID_INDIRECTION = -1;
-layout(std430, binding = 7, set = £BINDLESS_DESCRIPTOR_SLOT) readonly restrict buffer VirtualTextureIndirectionBuffer
+layout(std430, binding = 8, set = £BINDLESS_DESCRIPTOR_SLOT) readonly restrict buffer VirtualTextureIndirectionBuffer
 {
     uint virtualTextureIndirection[MAX_INDIRECTION_COUNT];
 };
 
-void requestSlice(in uint textureIdx, in const uint sliceX, in const uint sliceY, in const uint mipLevel);
+void requestSlice(in uint textureIdx, in const uint sliceX, in const uint sliceY, in const uint mipLevel, in const uint atlasIdx);
 
 const uint PAGE_COUNT_PER_SIDE = 16u;
-vec4 sampleTexture(in uint textureIdx, in const vec2 texCoords, bool requestVT /* temp to disable normal and other non supported textures */)
+vec4 sampleTexture(in uint textureIdx, in const vec2 texCoords, in const uint atlasIdx)
 {
     // No textures placeholder
     if (textureIdx < 3)
     {
         return texture(sampler2D(textures[textureIdx], textureSampler), texCoords).rgba;
     }
-    else if (!requestVT)
+    else if (atlasIdx == -1)
     {
         return vec4(0, 0, 0, 1);
     }
@@ -73,10 +74,7 @@ vec4 sampleTexture(in uint textureIdx, in const vec2 texCoords, bool requestVT /
         indirectionInfo = virtualTextureIndirection[texturesInfo[textureIdx].virtualTextureIndirectionOffset + indirectionId];
     }
 
-    if (indirectionInfo == INVALID_INDIRECTION)
-    {
-        requestSlice(textureIdx, sliceX, sliceY, mipLevel);
-    }
+    requestSlice(textureIdx, sliceX, sliceY, mipLevel, atlasIdx);
 
     if (indirectionInfo != INVALID_INDIRECTION)
     {
@@ -94,19 +92,19 @@ vec4 sampleTexture(in uint textureIdx, in const vec2 texCoords, bool requestVT /
         vec2 scale = (sliceSize / ((sliceSize + 2.0f * vec2(4.0f, 4.0f)) * float(PAGE_COUNT_PER_SIDE)));
         vec2 finalUV = sliceUVOffset + uvInSlice * scale + vec2(borderOffset, borderOffset);
 
-        return texture(sampler2D(albedoAtlas, textureSampler), finalUV).rgba;
+        return texture(sampler2D(atlases[atlasIdx], atlasesSampler), finalUV).rgba;
     }
     else
         return vec4(1, 0, 0, 1);
 }
 
-void requestSlice(in uint textureIdx, in const uint sliceX, in const uint sliceY, in const uint mipLevel)
-{
-    uint feedbackIndex = atomicAdd(currentFeedackCount, 1);
-    if (feedbackIndex < 255)
+void requestSlice(in uint textureIdx, in const uint sliceX, in const uint sliceY, in const uint mipLevel, in const uint atlasIdx)
+{ 
+    uint pixelIndex = uint(gl_FragCoord.x) % DITHER_PIXEL_COUNT_PER_SIDE + (uint(gl_FragCoord.y) % DITHER_PIXEL_COUNT_PER_SIDE) * DITHER_PIXEL_COUNT_PER_SIDE;
+    if (getCameraFrameIndex() % (DITHER_PIXEL_COUNT_PER_SIDE * DITHER_PIXEL_COUNT_PER_SIDE) == pixelIndex)
     {
         uint feedbackValue = (textureIdx & 0x7FF) << 21 | (mipLevel & 0x1F) << 16 | (sliceX & 0xFF) << 8 | (sliceY & 0xFF);
-        feedbacks[feedbackIndex] = feedbackValue;
+        feedbacks[uint(gl_FragCoord.x) / DITHER_PIXEL_COUNT_PER_SIDE + (uint(gl_FragCoord.y) / DITHER_PIXEL_COUNT_PER_SIDE) * (getScreenWidth() / DITHER_PIXEL_COUNT_PER_SIDE)][atlasIdx] = feedbackValue;
     }
 }
 )"

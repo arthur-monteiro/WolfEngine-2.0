@@ -35,7 +35,7 @@ namespace Wolf
 			glm::vec3 triplanarScale = glm::vec3(1.0f);
 
 #ifdef MATERIAL_DEBUG
-			std::string materialName;
+			std::string name;
 			std::vector<std::string> imageNames;
 			std::string materialFolder;
 #endif
@@ -63,6 +63,7 @@ namespace Wolf
 		};
 		void addNewMaterial(const MaterialInfo& material);
 		void updateBeforeFrame();
+		void resize(Extent2D newExtent);
 
 		void lockTextureSets();
 		void unlockTextureSets();
@@ -183,6 +184,7 @@ namespace Wolf
 		ResourceUniqueOwner<VirtualTextureManager> m_virtualTextureManager;
 		ResourceUniqueOwner<Sampler> m_virtualTextureSampler;
 		VirtualTextureManager::AtlasIndex m_albedoAtlasIdx = -1;
+		VirtualTextureManager::AtlasIndex m_normalAtlasIdx = -1;
 
 		// Debug cache
 #ifdef MATERIAL_DEBUG

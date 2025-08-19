@@ -137,13 +137,18 @@ namespace Wolf
 		{
 			uint32_t indicesOffset;
 		};
-		bool loadCache(ModelLoadingInfo& modelLoadingInfo) const;
+		bool loadCache(ModelLoadingInfo& modelLoadingInfo);
 
 		// Materials
-		void loadTextureSet(const tinyobj::material_t& material, const std::string& mtlFolder, uint32_t indexMaterial);
+		TextureSetLoader::TextureSetFileInfoGGX createTextureSetFileInfoGGXFromTinyObjMaterial(const tinyobj::material_t& material, const std::string& mtlFolder) const;
+		void loadTextureSet(const TextureSetLoader::TextureSetFileInfoGGX& material, uint32_t indexMaterial);
 		
 		bool m_useCache;
-		std::vector<std::vector<unsigned char>> m_imagesData;
+		struct InfoForCachePerTextureSet
+		{
+			TextureSetLoader::TextureSetFileInfoGGX m_textureSetFileInfoGGX;
+		};
+		std::vector<InfoForCachePerTextureSet> m_infoForCache;
 
 		ModelData* m_outputModel = nullptr;
 	};

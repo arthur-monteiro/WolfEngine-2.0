@@ -1,6 +1,7 @@
 #include "GraphicCameraInterface.h"
 
 #include "Buffer.h"
+#include "CameraInterface.h"
 #include "DescriptorSetGenerator.h"
 
 Wolf::GraphicCameraInterface::GraphicCameraInterface()
@@ -23,7 +24,7 @@ Wolf::GraphicCameraInterface::GraphicCameraInterface()
 	m_descriptorSet->update(descriptorSetGenerator.getDescriptorSetCreateInfo());
 }
 
-void Wolf::GraphicCameraInterface::updateGraphic(const glm::vec2& pixelJitter) const
+void Wolf::GraphicCameraInterface::updateGraphic(const glm::vec2& pixelJitter, const CameraUpdateContext& context)
 {
 	UniformBufferData ubData;
 	ubData.projection = getProjectionMatrix();
@@ -36,6 +37,10 @@ void Wolf::GraphicCameraInterface::updateGraphic(const glm::vec2& pixelJitter) c
 	ubData.far = getFar();
 	ubData.projectionParams.x = ubData.far / (ubData.far - ubData.near);
 	ubData.projectionParams.y = (-ubData.far * ubData.near) / (ubData.far - ubData.near);
+	ubData.frameIndex = m_currentFrameIndex;
+	ubData.extentWidth = context.swapChainExtent.width;
 
 	m_matricesUniformBuffer->transferCPUMemory(&ubData, sizeof(ubData), 0);
+
+	m_currentFrameIndex++;
 }

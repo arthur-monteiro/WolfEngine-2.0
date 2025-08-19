@@ -10,6 +10,7 @@
 #include "MipMapGenerator.h"
 #include "ProfilerCommon.h"
 #include "PushDataToGPU.h"
+#include "Timer.h"
 
 Wolf::MaterialsGPUManager::MaterialsGPUManager(const std::vector<DescriptorSetGenerator::ImageDescription>& firstImages)
 {
@@ -25,16 +26,18 @@ Wolf::MaterialsGPUManager::MaterialsGPUManager(const std::vector<DescriptorSetGe
 	{
 		descriptorSetLayoutGenerator.addStorageBuffer(ShaderStageFlagBits::FRAGMENT, BINDING_SLOT + 4); // Textures info
 		descriptorSetLayoutGenerator.addStorageBuffer(ShaderStageFlagBits::FRAGMENT, BINDING_SLOT + 5); // Virtual texture feedbacks
-		descriptorSetLayoutGenerator.addCombinedImageSampler(ShaderStageFlagBits::FRAGMENT, BINDING_SLOT + 6); // Albedo atlas
-		descriptorSetLayoutGenerator.addStorageBuffer(ShaderStageFlagBits::FRAGMENT, BINDING_SLOT + 7); // Albedo atlas
+		descriptorSetLayoutGenerator.addImages(DescriptorType::SAMPLED_IMAGE, ShaderStageFlagBits::FRAGMENT, BINDING_SLOT + 6, 2); // Atlases
+		descriptorSetLayoutGenerator.addSampler(ShaderStageFlagBits::FRAGMENT, BINDING_SLOT + 7); // Albedo atlas
+		descriptorSetLayoutGenerator.addStorageBuffer(ShaderStageFlagBits::FRAGMENT, BINDING_SLOT + 8); // Indirection buffer
 	}
 
 	m_sampler.reset(Sampler::createSampler(VK_SAMPLER_ADDRESS_MODE_REPEAT, 11, VK_FILTER_LINEAR, 4.0f));
 
 	if (g_configuration->getUseVirtualTexture())
 	{
-		m_virtualTextureManager.reset(new VirtualTextureManager());
+		m_virtualTextureManager.reset(new VirtualTextureManager({ g_configuration->getWindowWidth(), g_configuration->getWindowHeight() }));
 		m_albedoAtlasIdx = m_virtualTextureManager->createAtlas(16, 16, Format::BC1_RGB_SRGB_BLOCK); // note that page count per side is a constant in shader
+		m_normalAtlasIdx = m_virtualTextureManager->createAtlas(16, 16, Format::BC5_UNORM_BLOCK);
 
 		m_virtualTextureSampler.reset(Sampler::createSampler(VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE, 1, VK_FILTER_LINEAR));
 	}
@@ -69,8 +72,14 @@ Wolf::MaterialsGPUManager::MaterialsGPUManager(const std::vector<DescriptorSetGe
 	{
 		descriptorSetGenerator.setBuffer(BINDING_SLOT + 4, *m_texturesInfoBuffer);
 		descriptorSetGenerator.setBuffer(BINDING_SLOT + 5, *m_virtualTextureManager->getFeedbackBuffer());
-		descriptorSetGenerator.setCombinedImageSampler(BINDING_SLOT + 6, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, m_virtualTextureManager->getAtlasImage(m_albedoAtlasIdx)->getDefaultImageView(), *m_virtualTextureSampler);
-		descriptorSetGenerator.setBuffer(BINDING_SLOT + 7, *m_virtualTextureManager->getIndirectionBuffer());
+
+		std::vector<DescriptorSetGenerator::ImageDescription> atlases(2);
+		atlases[0] = { VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, m_virtualTextureManager->getAtlasImage(m_albedoAtlasIdx)->getDefaultImageView()};
+		atlases[1] = { VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, m_virtualTextureManager->getAtlasImage(m_normalAtlasIdx)->getDefaultImageView()};
+
+		descriptorSetGenerator.setImages(BINDING_SLOT + 6, atlases);
+		descriptorSetGenerator.setSampler(BINDING_SLOT + 7, *m_virtualTextureSampler);
+		descriptorSetGenerator.setBuffer(BINDING_SLOT + 8, *m_virtualTextureManager->getIndirectionBuffer());
 	}
 	m_descriptorSet->update(descriptorSetGenerator.getDescriptorSetCreateInfo());
 
@@ -140,7 +149,7 @@ void Wolf::MaterialsGPUManager::addNewTextureSet(const TextureSetInfo& textureSe
 	textureSetCacheInfo.albedoIdx = newTextureSetInfo.albedoIdx;
 	textureSetCacheInfo.normalIdx = newTextureSetInfo.normalIdx;
 	textureSetCacheInfo.roughnessMetalnessAOIdx = newTextureSetInfo.roughnessMetalnessAOIdx;
-	textureSetCacheInfo.materialName = textureSetInfo.materialName;
+	textureSetCacheInfo.materialName = textureSetInfo.name;
 	textureSetCacheInfo.imageNames = textureSetInfo.imageNames;
 	textureSetCacheInfo.materialFolder = textureSetInfo.materialFolder;
 #endif
@@ -191,13 +200,16 @@ void Wolf::MaterialsGPUManager::updateBeforeFrame()
 		m_virtualTextureManager->updateBeforeFrame();
 
 		std::vector<VirtualTextureManager::FeedbackInfo> requestedSlices;
-		m_virtualTextureManager->getRequestedSlices(requestedSlices, 255);
+		m_virtualTextureManager->getRequestedSlices(requestedSlices, 4);
 
 		for (const VirtualTextureManager::FeedbackInfo& requestedSlice : requestedSlices)
 		{
 			uint16_t textureId = requestedSlice.m_textureId;
 			if (textureId <= 2)
+			{
+				m_virtualTextureManager->rejectRequest(requestedSlice);
 				continue;
+			}
 
 			const std::string& sliceFolder = m_texturesCPUInfo[textureId].m_slicesFolder;
 			uint8_t sliceX = requestedSlice.m_sliceX;
@@ -209,8 +221,13 @@ void Wolf::MaterialsGPUManager::updateBeforeFrame()
 			{
 				pixelSizeInBytes = 0.5f; // BC1
 			}
+			else if (m_texturesCPUInfo[textureId].m_textureType == TextureCPUInfo::TextureType::NORMAL)
+			{
+				pixelSizeInBytes = 1.0f; // BC5
+			}
 			else
 			{
+				m_virtualTextureManager->rejectRequest(requestedSlice);
 				continue; // not supported yet
 			}
 
@@ -219,6 +236,7 @@ void Wolf::MaterialsGPUManager::updateBeforeFrame()
 			if (!input.is_open())
 			{
 				Debug::sendError("Unable to open file");
+				m_virtualTextureManager->rejectRequest(requestedSlice);
 				continue;
 			}
 
@@ -244,22 +262,37 @@ void Wolf::MaterialsGPUManager::updateBeforeFrame()
 
 			input.close();
 
-			if (m_texturesCPUInfo[textureId].m_textureType == TextureCPUInfo::TextureType::ALBEDO)
+			if (m_texturesCPUInfo[textureId].virtualTextureIndirectionOffset == VirtualTextureManager::INVALID_INDIRECTION_OFFSET)
 			{
-				if (m_texturesCPUInfo[textureId].virtualTextureIndirectionOffset == VirtualTextureManager::INVALID_INDIRECTION_OFFSET)
-				{
-					uint32_t indirectionCount = computeSliceCount(m_texturesCPUInfo[textureId].m_width, m_texturesCPUInfo[textureId].m_height);
-					uint32_t virtualTextureIndirectionOffset = m_virtualTextureManager->createNewIndirection(indirectionCount);
+				uint32_t indirectionCount = computeSliceCount(m_texturesCPUInfo[textureId].m_width, m_texturesCPUInfo[textureId].m_height);
+				uint32_t virtualTextureIndirectionOffset = m_virtualTextureManager->createNewIndirection(indirectionCount);
 
-					m_texturesCPUInfo[textureId].virtualTextureIndirectionOffset = virtualTextureIndirectionOffset;
-					pushDataToGPUBuffer(&virtualTextureIndirectionOffset, sizeof(uint32_t), m_texturesInfoBuffer.createNonOwnerResource(), textureId * sizeof(TextureGPUInfo) + offsetof(TextureGPUInfo, virtualTextureIndirectionOffset));
-				}
-
-				uint8_t sliceCountX = m_texturesCPUInfo[textureId].m_height / VirtualTextureManager::PAGE_SIZE;
-				uint8_t sliceCountY = m_texturesCPUInfo[textureId].m_height / VirtualTextureManager::PAGE_SIZE;
-				m_virtualTextureManager->uploadData(m_albedoAtlasIdx, data, sliceExtent, sliceX, sliceY, mipLevel, sliceCountX, sliceCountY, m_texturesCPUInfo[textureId].virtualTextureIndirectionOffset);
+				m_texturesCPUInfo[textureId].virtualTextureIndirectionOffset = virtualTextureIndirectionOffset;
+				pushDataToGPUBuffer(&virtualTextureIndirectionOffset, sizeof(uint32_t), m_texturesInfoBuffer.createNonOwnerResource(), textureId * sizeof(TextureGPUInfo) + offsetof(TextureGPUInfo, virtualTextureIndirectionOffset));
 			}
+
+			uint8_t sliceCountX = m_texturesCPUInfo[textureId].m_height / VirtualTextureManager::PAGE_SIZE;
+			uint8_t sliceCountY = m_texturesCPUInfo[textureId].m_height / VirtualTextureManager::PAGE_SIZE;
+
+			uint32_t atlasIdx = -1;
+			if (m_texturesCPUInfo[textureId].m_textureType == TextureCPUInfo::TextureType::ALBEDO)
+				atlasIdx = m_albedoAtlasIdx;
+			if (m_texturesCPUInfo[textureId].m_textureType == TextureCPUInfo::TextureType::NORMAL)
+				atlasIdx = m_normalAtlasIdx;
+
+			if (atlasIdx == -1)
+				Debug::sendCriticalError("Wrong atlas index");
+
+			m_virtualTextureManager->uploadData(atlasIdx, data, sliceExtent, sliceX, sliceY, mipLevel, sliceCountX, sliceCountY, m_texturesCPUInfo[textureId].virtualTextureIndirectionOffset, requestedSlice);
 		}
+	}
+}
+
+void Wolf::MaterialsGPUManager::resize(Extent2D newExtent)
+{
+	if (g_configuration->getUseVirtualTexture())
+	{
+		m_virtualTextureManager->resize(newExtent);
 	}
 }
 

@@ -16,7 +16,8 @@ layout(binding = 0, set = £CAMERA_DESCRIPTOR_SLOT) uniform UniformBufferCamera
 
 	float near;
 	float far;
-	
+	uint  frameIndex;
+	uint  extentWidth;
 } ubCamera;
 
 mat4 getViewMatrix()
@@ -67,5 +68,15 @@ vec3 computeWorldPosFromViewPos(in const vec3 viewPos)
 vec3 getCameraPos()
 {
 	return ubCamera.invView[3].xyz;
+}
+
+uint getCameraFrameIndex()
+{
+	return ubCamera.frameIndex;
+}
+
+uint getScreenWidth()
+{
+	return ubCamera.extentWidth;
 }
 )"

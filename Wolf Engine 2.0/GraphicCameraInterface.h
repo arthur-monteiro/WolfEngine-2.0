@@ -11,6 +11,8 @@
 
 namespace Wolf
 {
+	struct CameraUpdateContext;
+
 	class GraphicCameraInterface
 	{
 	public:
@@ -27,7 +29,7 @@ namespace Wolf
 
 	protected:
 		GraphicCameraInterface();
-		void updateGraphic(const glm::vec2& pixelJitter) const;
+		void updateGraphic(const glm::vec2& pixelJitter, const CameraUpdateContext& context);
 
 	private:
 		std::unique_ptr<LazyInitSharedResource<DescriptorSetLayoutGenerator, GraphicCameraInterface>> m_descriptorSetLayoutGenerator;
@@ -50,9 +52,13 @@ namespace Wolf
 
 			glm::f32  near;
 			glm::f32  far;
+			glm::uint frameIndex;
+			glm::uint extentWidth;
 		};
 
 		std::unique_ptr<DescriptorSet> m_descriptorSet;
 		std::unique_ptr<UniformBuffer> m_matricesUniformBuffer;
+
+		uint32_t m_currentFrameIndex;
 	};
 }

@@ -13,7 +13,24 @@
 #include "JSONReader.h"
 #include "TextureSetLoader.h"
 #include "MaterialsGPUManager.h"
-#include "MipMapGenerator.h"
+
+inline void writeStringToCache(const std::string& str, std::fstream& outCacheFile)
+{
+	uint32_t strLength = static_cast<uint32_t>(str.size());
+	outCacheFile.write(reinterpret_cast<char*>(&strLength), sizeof(uint32_t));
+	outCacheFile.write(str.c_str(), strLength);
+}
+
+inline std::string readStringFromCache(std::ifstream& input)
+{
+	std::string str;
+	uint32_t strLength;
+	input.read(reinterpret_cast<char*>(&strLength), sizeof(uint32_t));
+	str.resize(strLength);
+	input.read(str.data(), strLength);
+
+	return str;
+}
 
 void Wolf::ModelLoader::loadObject(ModelData& outputModel, ModelLoadingInfo& modelLoadingInfo)
 {
@@ -77,7 +94,7 @@ Wolf::ModelLoader::ModelLoader(ModelData& outputModel, ModelLoadingInfo& modelLo
 
 	Debug::sendInfo("Start loading " + modelLoadingInfo.filename);
 
-	if (false && modelLoadingInfo.useCache) // TODO: fix cache: instead of writing texture data, just write texture filenames and load with 'loadTextureSet'
+	if (modelLoadingInfo.useCache)
 	{
 		if (loadCache(modelLoadingInfo))
 			return;
@@ -268,26 +285,52 @@ Wolf::ModelLoader::ModelLoader(ModelData& outputModel, ModelLoadingInfo& modelLo
 		}
 
 		m_outputModel->textureSets.resize(materials.size());
-		m_imagesData.resize(materials.size() * MaterialsGPUManager::TEXTURE_COUNT_PER_MATERIAL); // is kept empty if no cache is used
-		uint32_t indexMaterial = 0;
+		if (m_useCache)
+		{
+			m_infoForCache.resize(materials.size());
+		}
+
+		uint32_t textureSetIdx = 0;
 		for (uint32_t subMeshIdx = 0; subMeshIdx < m_materialIdToSubMeshIdx.size(); ++subMeshIdx)
 		{
-			int32_t materialIdx = 0;
-			for (; materialIdx < static_cast<int32_t>(materials.size()); ++materialIdx)
+			int32_t tinyObjMaterialIdx = 0;
+			for (; tinyObjMaterialIdx < static_cast<int32_t>(materials.size()); ++tinyObjMaterialIdx)
 			{
-				if (m_materialIdToSubMeshIdx[materialIdx] == subMeshIdx)
+				if (m_materialIdToSubMeshIdx[tinyObjMaterialIdx] == subMeshIdx)
 					break;
 			}
 
-			if (materialIdx == static_cast<int32_t>(materials.size()))
+			if (tinyObjMaterialIdx == static_cast<int32_t>(materials.size()))
 				continue; // the submesh probably don't have a material
 
-			loadTextureSet(materials[materialIdx], modelLoadingInfo.mtlFolder, indexMaterial);
-			indexMaterial++;
+#ifdef MATERIAL_DEBUG
+			m_outputModel->textureSets[textureSetIdx].name = materials[tinyObjMaterialIdx].name;
+			m_outputModel->textureSets[textureSetIdx].imageNames =
+			{
+				materials[tinyObjMaterialIdx].diffuse_texname,
+				materials[tinyObjMaterialIdx].bump_texname,
+				materials[tinyObjMaterialIdx].specular_highlight_texname,
+				materials[tinyObjMaterialIdx].specular_texname,
+				materials[tinyObjMaterialIdx].ambient_texname,
+				materials[tinyObjMaterialIdx].sheen_texname
+			};
+			m_outputModel->textureSets[textureSetIdx].materialFolder = modelLoadingInfo.mtlFolder;
+#endif
+
+			TextureSetLoader::TextureSetFileInfoGGX textureSetFileInfoGGX = createTextureSetFileInfoGGXFromTinyObjMaterial(materials[tinyObjMaterialIdx], modelLoadingInfo.mtlFolder);
+
+			if (m_useCache)
+			{
+				m_infoForCache[textureSetIdx].m_textureSetFileInfoGGX = textureSetFileInfoGGX;
+			}
+
+			loadTextureSet(textureSetFileInfoGGX, textureSetIdx);
+
+			textureSetIdx++;
 		}
 	}
 
-	if (modelLoadingInfo.useCache && false /* deactivated as cache needs to be redefined */)
+	if (modelLoadingInfo.useCache)
 	{
 		Debug::sendInfo("Creating new cache");
 
@@ -313,46 +356,35 @@ Wolf::ModelLoader::ModelLoader(ModelData& outputModel, ModelLoadingInfo& modelLo
 			outCacheFile.write(reinterpret_cast<const char*>(&shapeInfo), sizeof(InternalShapeInfo));
 		}
 
-		/* Materials */
+		/* Texture sets */
 		uint32_t textureSetCount = static_cast<uint32_t>(m_outputModel->textureSets.size());
 		outCacheFile.write(reinterpret_cast<char*>(&textureSetCount), sizeof(uint32_t));
 
 		for (uint32_t textureSetIdx = 0; textureSetIdx < textureSetCount; ++textureSetIdx)
 		{
 			MaterialsGPUManager::TextureSetInfo& currentTextureSet = m_outputModel->textureSets[textureSetIdx];
+			InfoForCachePerTextureSet& currentInfoForCache = m_infoForCache[textureSetIdx];
 
-			uint32_t imageCount = MaterialsGPUManager::TEXTURE_COUNT_PER_MATERIAL;
-			outCacheFile.write(reinterpret_cast<char*>(&imageCount), sizeof(uint32_t));
-			for (uint32_t imageIdx = 0; imageIdx < imageCount; ++imageIdx)
-			{
-				ResourceUniqueOwner<Image>& currentImage = currentTextureSet.images[imageIdx];
-
-				Extent3D extent = currentImage->getExtent();
-				outCacheFile.write(reinterpret_cast<char*>(&extent), sizeof(Extent3D));
-				const std::vector<unsigned char>& imageData = m_imagesData[textureSetIdx * MaterialsGPUManager::TEXTURE_COUNT_PER_MATERIAL + imageIdx];
-				uint32_t imageDataSize = static_cast<uint32_t>(imageData.size());
-				outCacheFile.write(reinterpret_cast<char*>(&imageDataSize), sizeof(uint32_t));
-				outCacheFile.write(reinterpret_cast<const char*>(imageData.data()), static_cast<uint32_t>(imageData.size()));
-			}
+			writeStringToCache(currentInfoForCache.m_textureSetFileInfoGGX.name, outCacheFile);
+			writeStringToCache(currentInfoForCache.m_textureSetFileInfoGGX.albedo, outCacheFile);
+			writeStringToCache(currentInfoForCache.m_textureSetFileInfoGGX.normal, outCacheFile);
+			writeStringToCache(currentInfoForCache.m_textureSetFileInfoGGX.roughness, outCacheFile);
+			writeStringToCache(currentInfoForCache.m_textureSetFileInfoGGX.metalness, outCacheFile);
+			writeStringToCache(currentInfoForCache.m_textureSetFileInfoGGX.ao, outCacheFile);
+			writeStringToCache(currentInfoForCache.m_textureSetFileInfoGGX.anisoStrength, outCacheFile);
 
 #ifdef MATERIAL_DEBUG
-			uint32_t materialNameSize = static_cast<uint32_t>(currentTextureSet.materialName.size());
-			outCacheFile.write(reinterpret_cast<char*>(&materialNameSize), sizeof(uint32_t));
-			outCacheFile.write(currentTextureSet.materialName.c_str(), materialNameSize);
+			writeStringToCache(currentTextureSet.name, outCacheFile);
 
 			uint32_t imageNameCount = static_cast<uint32_t>(currentTextureSet.imageNames.size());
 			outCacheFile.write(reinterpret_cast<char*>(&imageNameCount), sizeof(uint32_t));
 
 			for (uint32_t imageNameIdx = 0; imageNameIdx < imageNameCount; ++imageNameIdx)
 			{
-				uint32_t imageNameSize = static_cast<uint32_t>(currentTextureSet.imageNames[imageNameIdx].size());
-				outCacheFile.write(reinterpret_cast<char*>(&imageNameSize), sizeof(uint32_t));
-				outCacheFile.write(currentTextureSet.imageNames[imageNameIdx].c_str(), imageNameSize);
+				writeStringToCache(currentTextureSet.imageNames[imageNameIdx], outCacheFile);
 			}
 
-			uint32_t materialFolderSize = static_cast<uint32_t>(modelLoadingInfo.mtlFolder.size());
-			outCacheFile.write(reinterpret_cast<char*>(&materialFolderSize), sizeof(uint32_t));
-			outCacheFile.write(modelLoadingInfo.mtlFolder.c_str(), materialFolderSize);
+			writeStringToCache(modelLoadingInfo.mtlFolder, outCacheFile);
 #endif
 		}
 
@@ -360,7 +392,7 @@ Wolf::ModelLoader::ModelLoader(ModelData& outputModel, ModelLoadingInfo& modelLo
 	}
 }
 
-bool Wolf::ModelLoader::loadCache(ModelLoadingInfo& modelLoadingInfo) const
+bool Wolf::ModelLoader::loadCache(ModelLoadingInfo& modelLoadingInfo)
 {
 	std::string binFilename = modelLoadingInfo.filename + ".bin";
 	if (std::filesystem::exists(binFilename))
@@ -418,81 +450,24 @@ bool Wolf::ModelLoader::loadCache(ModelLoadingInfo& modelLoadingInfo) const
 		if (modelLoadingInfo.vulkanQueueLock)
 			modelLoadingInfo.vulkanQueueLock->lock();
 
-		std::chrono::steady_clock::time_point startTimer = std::chrono::steady_clock::now();
-
 		for (uint32_t textureSetIdx(0); textureSetIdx < textureSetCount; ++textureSetIdx)
 		{
-			uint32_t imageCount;
-			input.read(reinterpret_cast<char*>(&imageCount), sizeof(uint32_t));
+			TextureSetLoader::TextureSetFileInfoGGX textureSetFileInfoGGX;
+			textureSetFileInfoGGX.name = readStringFromCache(input);
+			textureSetFileInfoGGX.albedo = readStringFromCache(input);
+			textureSetFileInfoGGX.normal = readStringFromCache(input);
+			textureSetFileInfoGGX.roughness = readStringFromCache(input);
+			textureSetFileInfoGGX.metalness = readStringFromCache(input);
+			textureSetFileInfoGGX.ao = readStringFromCache(input);
+			textureSetFileInfoGGX.anisoStrength = readStringFromCache(input);
 
-			if (imageCount != MaterialsGPUManager::TEXTURE_COUNT_PER_MATERIAL)
-			{
-				Debug::sendError("Image count is wrong, cache is maybe corrupted");
-				return false;
-			}
-
-			for (uint32_t imageIdx = 0; imageIdx < imageCount; ++imageIdx)
-			{
-				std::chrono::steady_clock::time_point currentTimer = std::chrono::steady_clock::now();
-				long long timeDiff = std::chrono::duration_cast<std::chrono::milliseconds>(currentTimer - startTimer).count();
-
-				if (timeDiff > 33 && modelLoadingInfo.vulkanQueueLock)
-				{
-					modelLoadingInfo.vulkanQueueLock->unlock();
-					std::this_thread::sleep_for(std::chrono::milliseconds(1));
-					modelLoadingInfo.vulkanQueueLock->lock();
-
-					startTimer = std::chrono::steady_clock::now();
-				}
-
-				Extent3D extent;
-				input.read(reinterpret_cast<char*>(&extent), sizeof(extent));
-
-				ResourceUniqueOwner<Image>& currentImage = m_outputModel->textureSets[textureSetIdx].images[imageIdx];
-
-				CreateImageInfo createImageInfo;
-				createImageInfo.extent = { (extent.width), (extent.height), 1 };
-				createImageInfo.aspect = VK_IMAGE_ASPECT_COLOR_BIT;
-				createImageInfo.format = imageIdx == 0 ? Format::BC1_RGB_SRGB_BLOCK : Format::R8G8B8A8_UNORM;
-				createImageInfo.mipLevelCount = MAX_MIP_COUNT;
-				createImageInfo.usage = ImageUsageFlagBits::TRANSFER_DST | ImageUsageFlagBits::SAMPLED;
-				currentImage.reset(Image::createImage(createImageInfo));
-
-				auto computeImageSize = [](Extent3D extent, float bpp, uint32_t mipLevel)
-					{
-						const Extent3D adjustedExtent = { extent.width >> mipLevel, extent.height >> mipLevel, extent.depth };
-						return static_cast<VkDeviceSize>(static_cast<float>(adjustedExtent.width) * static_cast<float>(adjustedExtent.height) * static_cast<float>(adjustedExtent.depth) * bpp);
-					};
-
-				uint32_t imageDataSize;
-				input.read(reinterpret_cast<char*>(&imageDataSize), sizeof(uint32_t));
-
-				uint32_t totalReadByteCount = 0;
-
-				for (uint32_t mipLevel = 0; mipLevel < currentImage->getMipLevelCount(); ++mipLevel)
-				{
-					VkDeviceSize imageSize = computeImageSize(extent, currentImage->getBPP(), mipLevel);
-
-					std::vector<unsigned char> pixels(imageSize);
-					input.read(reinterpret_cast<char*>(pixels.data()), pixels.size());
-
-					totalReadByteCount += static_cast<uint32_t>(pixels.size());
-
-					currentImage->copyCPUBuffer(pixels.data(), Image::SampledInFragmentShader(mipLevel), mipLevel);
-				}
-
-				if (totalReadByteCount != imageDataSize)
-				{
-					Debug::sendError("Wrong image data size");
-					return false;
-				}
-			}
+			loadTextureSet(textureSetFileInfoGGX, textureSetIdx);
 
 #ifdef MATERIAL_DEBUG
-			uint32_t materialNameSize;
-			input.read(reinterpret_cast<char*>(&materialNameSize), sizeof(uint32_t));
-			m_outputModel->textureSets[textureSetIdx].materialName.resize(materialNameSize);
-			input.read(m_outputModel->textureSets[textureSetIdx].materialName.data(), materialNameSize);
+			uint32_t textureSetNameSize;
+			input.read(reinterpret_cast<char*>(&textureSetNameSize), sizeof(uint32_t));
+			m_outputModel->textureSets[textureSetIdx].name.resize(textureSetNameSize);
+			input.read(m_outputModel->textureSets[textureSetIdx].name.data(), textureSetNameSize);
 
 			uint32_t imageNameCount;
 			input.read(reinterpret_cast<char*>(&imageNameCount), sizeof(uint32_t));
@@ -528,8 +503,7 @@ inline std::string getTexName(const std::string& texName, const std::string& fol
 	return !texName.empty() ? folder + "/" + texName : defaultTexture;
 }
 
-
-void Wolf::ModelLoader::loadTextureSet(const tinyobj::material_t& material, const std::string& mtlFolder, uint32_t indexMaterial)
+Wolf::TextureSetLoader::TextureSetFileInfoGGX Wolf::ModelLoader::createTextureSetFileInfoGGXFromTinyObjMaterial(const tinyobj::material_t& material, const std::string& mtlFolder) const
 {
 	TextureSetLoader::TextureSetFileInfoGGX materialFileInfo{};
 	materialFileInfo.name = material.name;
@@ -540,29 +514,18 @@ void Wolf::ModelLoader::loadTextureSet(const tinyobj::material_t& material, cons
 	materialFileInfo.ao = getTexName(material.ambient_texname, mtlFolder);
 	materialFileInfo.anisoStrength = getTexName(material.sheen_texname, mtlFolder);
 
-#ifdef MATERIAL_DEBUG
-	m_outputModel->textureSets[indexMaterial].materialName = materialFileInfo.name;
-	m_outputModel->textureSets[indexMaterial].imageNames =
-	{
-		material.diffuse_texname,
-		material.bump_texname,
-		material.specular_highlight_texname,
-		material.specular_texname,
-		material.ambient_texname,
-		material.sheen_texname
-	};
-	m_outputModel->textureSets[indexMaterial].materialFolder = mtlFolder;
-#endif
+	return materialFileInfo;
+}
 
+void Wolf::ModelLoader::loadTextureSet(const TextureSetLoader::TextureSetFileInfoGGX& material, uint32_t indexMaterial)
+{
 	TextureSetLoader::OutputLayout outputLayout;
 	outputLayout.albedoCompression = ImageCompression::Compression::BC1;
 	outputLayout.normalCompression = ImageCompression::Compression::BC5;
 
-	TextureSetLoader materialLoader(materialFileInfo, outputLayout, m_useCache);
+	TextureSetLoader materialLoader(material, outputLayout, m_useCache);
 	for (uint32_t i = 0; i < MaterialsGPUManager::TEXTURE_COUNT_PER_MATERIAL; ++i)
 	{
-		if (m_useCache)
-			materialLoader.assignCache(i, m_imagesData[indexMaterial * MaterialsGPUManager::TEXTURE_COUNT_PER_MATERIAL + i]);
 		materialLoader.transferImageTo(i, m_outputModel->textureSets[indexMaterial].images[i]);
 		m_outputModel->textureSets[indexMaterial].slicesFolders[i] = materialLoader.getOutputSlicesFolder(i);
 	}
