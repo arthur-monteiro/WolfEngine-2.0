@@ -144,7 +144,7 @@ void UniquePass::createPipeline()
 
 	pipelineCreateInfo.shaderGroupsCreateInfos = shaderGroupGenerator.getShaderGroups();
 
-	std::vector<const DescriptorSetLayout*> descriptorSetLayouts = { m_descriptorSetLayout.get() };
+	std::vector<Wolf::ResourceReference<const Wolf::DescriptorSetLayout>> descriptorSetLayouts = { m_descriptorSetLayout.get() };
 	m_pipeline.reset(Pipeline::createRayTracingPipeline(pipelineCreateInfo, descriptorSetLayouts));
 
 	m_shaderBindingTable.reset(new ShaderBindingTable(static_cast<uint32_t>(shaders.size()), *m_pipeline));
