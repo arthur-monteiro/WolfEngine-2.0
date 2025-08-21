@@ -247,7 +247,7 @@ void Wolf::MaterialsGPUManager::updateBeforeFrame()
 			uint32_t dataBytesCount;
 			input.read(reinterpret_cast<char*>(&dataBytesCount), sizeof(dataBytesCount));
 
-			Extent3D maxSliceExtent{ VirtualTextureManager::PAGE_SIZE, VirtualTextureManager::PAGE_SIZE, 1 };
+			Extent3D maxSliceExtent{ VirtualTextureManager::VIRTUAL_PAGE_SIZE, VirtualTextureManager::VIRTUAL_PAGE_SIZE, 1 };
 			Extent3D extentForMip = { m_texturesCPUInfo[textureId].m_width >> mipLevel, m_texturesCPUInfo[textureId].m_height >> mipLevel, 1 };
 			Extent3D sliceExtent{ std::min(extentForMip.width, maxSliceExtent.width) + 2 * VirtualTextureManager::BORDER_SIZE,
 				std::min(extentForMip.height, maxSliceExtent.height) + 2 * VirtualTextureManager::BORDER_SIZE, 1 };
@@ -262,17 +262,17 @@ void Wolf::MaterialsGPUManager::updateBeforeFrame()
 
 			input.close();
 
-			if (m_texturesCPUInfo[textureId].virtualTextureIndirectionOffset == VirtualTextureManager::INVALID_INDIRECTION_OFFSET)
+			if (m_texturesCPUInfo[textureId].m_virtualTextureIndirectionOffset == VirtualTextureManager::INVALID_INDIRECTION_OFFSET)
 			{
 				uint32_t indirectionCount = computeSliceCount(m_texturesCPUInfo[textureId].m_width, m_texturesCPUInfo[textureId].m_height);
 				uint32_t virtualTextureIndirectionOffset = m_virtualTextureManager->createNewIndirection(indirectionCount);
 
-				m_texturesCPUInfo[textureId].virtualTextureIndirectionOffset = virtualTextureIndirectionOffset;
+				m_texturesCPUInfo[textureId].m_virtualTextureIndirectionOffset = virtualTextureIndirectionOffset;
 				pushDataToGPUBuffer(&virtualTextureIndirectionOffset, sizeof(uint32_t), m_texturesInfoBuffer.createNonOwnerResource(), textureId * sizeof(TextureGPUInfo) + offsetof(TextureGPUInfo, virtualTextureIndirectionOffset));
 			}
 
-			uint8_t sliceCountX = m_texturesCPUInfo[textureId].m_height / VirtualTextureManager::PAGE_SIZE;
-			uint8_t sliceCountY = m_texturesCPUInfo[textureId].m_height / VirtualTextureManager::PAGE_SIZE;
+			uint8_t sliceCountX = m_texturesCPUInfo[textureId].m_height / VirtualTextureManager::VIRTUAL_PAGE_SIZE;
+			uint8_t sliceCountY = m_texturesCPUInfo[textureId].m_height / VirtualTextureManager::VIRTUAL_PAGE_SIZE;
 
 			uint32_t atlasIdx = -1;
 			if (m_texturesCPUInfo[textureId].m_textureType == TextureCPUInfo::TextureType::ALBEDO)
@@ -283,7 +283,7 @@ void Wolf::MaterialsGPUManager::updateBeforeFrame()
 			if (atlasIdx == -1)
 				Debug::sendCriticalError("Wrong atlas index");
 
-			m_virtualTextureManager->uploadData(atlasIdx, data, sliceExtent, sliceX, sliceY, mipLevel, sliceCountX, sliceCountY, m_texturesCPUInfo[textureId].virtualTextureIndirectionOffset, requestedSlice);
+			m_virtualTextureManager->uploadData(atlasIdx, data, sliceExtent, sliceX, sliceY, mipLevel, sliceCountX, sliceCountY, m_texturesCPUInfo[textureId].m_virtualTextureIndirectionOffset, requestedSlice);
 		}
 	}
 }
@@ -504,7 +504,7 @@ uint32_t Wolf::MaterialsGPUManager::computeSliceCount(uint32_t textureWidth, uin
 {
 	uint32_t sliceCount = 0;
 
-	Extent3D maxSliceExtent{ VirtualTextureManager::PAGE_SIZE, VirtualTextureManager::PAGE_SIZE, 1 };
+	Extent3D maxSliceExtent{ VirtualTextureManager::VIRTUAL_PAGE_SIZE, VirtualTextureManager::VIRTUAL_PAGE_SIZE, 1 };
 
 	uint32_t textureMipCount = MipMapGenerator::computeMipCount({ textureWidth, textureHeight });
 	for (uint32_t mipLevel = 0; mipLevel < textureMipCount; mipLevel++)

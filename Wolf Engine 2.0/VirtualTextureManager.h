@@ -15,9 +15,9 @@ namespace Wolf
 	class VirtualTextureManager
 	{
 	public:
-		static constexpr uint32_t PAGE_SIZE = 256;
+		static constexpr uint32_t VIRTUAL_PAGE_SIZE = 256;
 		static constexpr uint32_t BORDER_SIZE = 4; // minimum for block compressed formats
-		static constexpr uint32_t PAGE_SIZE_WITH_BORDERS = PAGE_SIZE + 2 * BORDER_SIZE;
+		static constexpr uint32_t PAGE_SIZE_WITH_BORDERS = VIRTUAL_PAGE_SIZE + 2 * BORDER_SIZE;
 
 		VirtualTextureManager(Extent2D extent);
 

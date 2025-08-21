@@ -117,7 +117,14 @@ namespace Wolf
 			uint32_t m_width;
 			uint32_t m_height;
 
-			uint32_t virtualTextureIndirectionOffset;
+			uint32_t m_virtualTextureIndirectionOffset;
+
+			TextureCPUInfo() = default;
+			TextureCPUInfo(const std::string& slicesFolder, TextureType textureType, uint32_t width, uint32_t height, uint32_t virtualTextureIndirectionOffset)
+			: m_slicesFolder(slicesFolder), m_textureType(textureType), m_width(width), m_height(height), m_virtualTextureIndirectionOffset(virtualTextureIndirectionOffset)
+			{
+
+			}
 		};
 		std::vector<TextureCPUInfo> m_texturesCPUInfo;
 		void addSlicedImage(const std::string& folder, TextureCPUInfo::TextureType textureType);

@@ -90,7 +90,28 @@ void Wolf::JSONReader::readFromLines(const Lines& lines)
 		{
 			if (const size_t commentPos = line.find(L"//"); commentPos != std::wstring::npos)
 			{
-				line = line.substr(0, commentPos);
+				// Check if it's not in a string
+				bool isInString = false;
+				size_t beginQuotePos = line.find('"');
+				while (beginQuotePos != std::wstring::npos)
+				{
+					if (const size_t endQuotePos = line.find('"', beginQuotePos + 1); endQuotePos != std::wstring::npos)
+					{
+						if (beginQuotePos < commentPos && endQuotePos > commentPos)
+						{
+							isInString = true;
+							break;
+						}
+
+						beginQuotePos = line.find('"', endQuotePos + 1);
+					}
+				}
+					
+
+				if (!isInString)
+				{
+					line = line.substr(0, commentPos);
+				}
 			}
 		};
 	auto removeSpaces = [](std::wstring& line)
@@ -223,7 +244,8 @@ void Wolf::JSONReader::readFromLines(const Lines& lines)
 			else if (endArrayPos != std::string::npos && endArrayPos < endObjectPos)
 			{
 				if (currentPropertyStack.empty() ||
-					(currentPropertyStack.top()->type != JSONPropertyType::FloatArray && currentPropertyStack.top()->type != JSONPropertyType::StringArray && currentPropertyStack.top()->type != JSONPropertyType::UnknownArray && currentPropertyStack.top()->type != JSONPropertyType::ObjectArray))
+					(currentPropertyStack.top()->type != JSONPropertyType::FloatArray && currentPropertyStack.top()->type != JSONPropertyType::StringArray && currentPropertyStack.top()->type != JSONPropertyType::UnknownArray && 
+						currentPropertyStack.top()->type != JSONPropertyType::ObjectArray))
 					Debug::sendError("JSON unexpected ']' when property is not array");
 
 				currentPropertyStack.pop();
@@ -236,6 +258,16 @@ void Wolf::JSONReader::readFromLines(const Lines& lines)
 
 				if (currentObjectStack.empty())
 					break;
+
+				JSONPropertyValue* topProperty = currentPropertyStack.top(); 
+				if (currentPropertyStack.size() >= 2)
+				{
+					currentPropertyStack.pop();
+					if (currentPropertyStack.top()->type != JSONPropertyType::ObjectArray)
+					{
+						currentPropertyStack.push(topProperty);
+					}
+				}				
 
 				currentLookingFor = LookingFor::Comma;
 				line = line.substr(endObjectPos + 1);

@@ -367,7 +367,7 @@ void Wolf::TextureSetLoader::createSlicedCache(const std::string& filename, bool
 	Extent3D extent{};
 	loadImageFile(filename, format, pixels, mipLevels, extent);
 
-	if (extent.width % VirtualTextureManager::PAGE_SIZE != 0 || extent.height % VirtualTextureManager::PAGE_SIZE != 0 || extent.depth != 1)
+	if (extent.width % VirtualTextureManager::VIRTUAL_PAGE_SIZE != 0 || extent.height % VirtualTextureManager::VIRTUAL_PAGE_SIZE != 0 || extent.depth != 1)
 	{
 		Debug::sendError("Wrong texture extent for virtual texture slicing");
 		//return;
@@ -376,7 +376,7 @@ void Wolf::TextureSetLoader::createSlicedCache(const std::string& filename, bool
 	ConfigurationHelper::writeInfoToFile(binFolderFixed + "info.txt", "width", extent.width);
 	ConfigurationHelper::writeInfoToFile(binFolderFixed + "info.txt", "height", extent.height);
 
-	Extent3D maxSliceExtent{ VirtualTextureManager::PAGE_SIZE, VirtualTextureManager::PAGE_SIZE, 1 };
+	Extent3D maxSliceExtent{ VirtualTextureManager::VIRTUAL_PAGE_SIZE, VirtualTextureManager::VIRTUAL_PAGE_SIZE, 1 };
 
 	for (uint32_t mipLevel = 0; mipLevel < mipLevels.size() + 1; ++mipLevel)
 	{
