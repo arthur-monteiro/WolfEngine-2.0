@@ -1,4 +1,3 @@
-from flask import Flask
 import subprocess
 import os
 import win32gui, win32com.client, win32con
@@ -37,8 +36,6 @@ def screenshot(windowTitle):
 def runProcess(processName):
     subprocess.run(processName)
 
-app = Flask(__name__)
-
 def runProcessTest(folder, processFullName, processShortName, windowTitle):
     print("Starting " + windowTitle)
 
@@ -58,18 +55,16 @@ def runProcessTest(folder, processFullName, processShortName, windowTitle):
 
     p0.join()
 
-@app.route("/graphictests")
-def runGraphicTest():
-    runProcessTest('../Hello Triangle', '"../x64/Debug - Graphic Tests/Hello Triangle.exe"', "Hello Triangle.exe", "Hello Triangle")
-    if screenshotComparisonResult == False:
-        return "1"
-    
-    runProcessTest('../Compute Pass', '"../x64/Debug - Graphic Tests/Compute Pass.exe"', "Compute Pass.exe", "Compute Pass")
-    if screenshotComparisonResult == False:
-        return "1"
-    
-    runProcessTest('../Variable Rate Shading', '"../x64/Debug - Graphic Tests/Variable Rate Shading.exe"', "Variable Rate Shading.exe", "Variable Rate Shading")
-    if screenshotComparisonResult == False:
-        return "1"
+runProcessTest('../Hello Triangle', '"../x64/Debug - Graphic Tests/Hello Triangle.exe"', "Hello Triangle.exe", "Hello Triangle")
+if screenshotComparisonResult == False:
+    exit(1)
 
-    return "0"
+runProcessTest('../Compute Pass', '"../x64/Debug - Graphic Tests/Compute Pass.exe"', "Compute Pass.exe", "Compute Pass")
+if screenshotComparisonResult == False:
+    exit(1)
+
+runProcessTest('../Variable Rate Shading', '"../x64/Debug - Graphic Tests/Variable Rate Shading.exe"', "Variable Rate Shading.exe", "Variable Rate Shading")
+if screenshotComparisonResult == False:
+    exit(1)
+
+exit(0)
