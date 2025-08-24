@@ -129,6 +129,11 @@ Wolf::WolfEngine::WolfEngine(const WolfInstanceCreateInfo& createInfo) : m_globa
 
 	m_multiThreadTaskManager.reset(new MultiThreadTaskManager);
 	m_beforeFrameAndRecordThreadGroupId = m_multiThreadTaskManager->createThreadGroup(createInfo.threadCountBeforeFrameAndRecord, "Before frame and record");
+
+	if (m_configuration->getForcedTimerMsPerFrame() > 0)
+	{
+		m_globalTimer.forceFixedTimerEachUpdate(m_configuration->getForcedTimerMsPerFrame());
+	}
 }
 
 void Wolf::WolfEngine::initializePass(const ResourceNonOwner<CommandRecordBase>& pass) const

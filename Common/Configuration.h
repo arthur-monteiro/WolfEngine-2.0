@@ -25,6 +25,7 @@ namespace Wolf
 		[[nodiscard]] bool getUICommands() const { return m_saveUICommands; }
 		[[nodiscard]] bool getEnableGPUDebugMarkers() const { return m_enableGPUDebugMarkers; }
 		[[nodiscard]] bool getUseVirtualTexture() const { return m_useVirtualTexture; }
+		[[nodiscard]] uint64_t getForcedTimerMsPerFrame() const { return m_forcedTimerMsPerFrame; }
 
 #ifdef __ANDROID__
 		AAssetManager* getAndroidAssetManager() const { return m_androidAssetManager; }
@@ -39,6 +40,7 @@ namespace Wolf
 		bool m_saveUICommands = false;
 		bool m_enableGPUDebugMarkers = false;
 		bool m_useVirtualTexture = false;
+		uint64_t m_forcedTimerMsPerFrame = 0;
 
 #ifdef __ANDROID__
 		AAssetManager* m_androidAssetManager;

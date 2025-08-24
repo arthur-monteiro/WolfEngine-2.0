@@ -154,10 +154,12 @@ void Wolf::JSONReader::readFromLines(const Lines& lines)
 		};
 
 	std::wstring line;
+	int32_t currentLineNumber = -1;
 	auto getLine = [&]()
 		{
 			if (line.empty())
 			{
+				currentLineNumber++;
 				return lines.getNextLine(line);
 			}
 			return true;
@@ -254,20 +256,18 @@ void Wolf::JSONReader::readFromLines(const Lines& lines)
 			}
 			else if (endObjectPos != std::string::npos)
 			{
+				JSONObject* removedObject = currentObjectStack.top();
 				currentObjectStack.pop();
 
 				if (currentObjectStack.empty())
 					break;
 
-				JSONPropertyValue* topProperty = currentPropertyStack.top(); 
-				if (currentPropertyStack.size() >= 2)
+				// If the object is a property, we need to remove it
+				JSONPropertyValue* topProperty = currentPropertyStack.top();
+				if (topProperty->objectValue == removedObject)
 				{
 					currentPropertyStack.pop();
-					if (currentPropertyStack.top()->type != JSONPropertyType::ObjectArray)
-					{
-						currentPropertyStack.push(topProperty);
-					}
-				}				
+				}
 
 				currentLookingFor = LookingFor::Comma;
 				line = line.substr(endObjectPos + 1);
