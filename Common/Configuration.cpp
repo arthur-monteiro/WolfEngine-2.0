@@ -41,6 +41,8 @@ Wolf::Configuration::Configuration(const std::string& filePath, AAssetManager* a
 				m_enableGPUDebugMarkers = std::stoi(line);
 			if (token == "useVirtualTexture")
 				m_useVirtualTexture = std::stoi(line);
+			if (token == "forcedTimerMsPerFrame")
+				m_forcedTimerMsPerFrame = std::stoul(line);
 		}
 	}
 

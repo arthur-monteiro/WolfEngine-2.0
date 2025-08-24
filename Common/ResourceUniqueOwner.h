@@ -301,6 +301,8 @@ namespace Wolf
 
 		void transferFrom(ResourceUniqueOwner<T>& src) { reset(src.release()); }
 
+		[[nodiscard]] bool isSame(T* resource) const { return m_ptr.get() == resource; }
+
 		[[nodiscard]] explicit operator bool() const { return m_ptr != nullptr; }
 		[[nodiscard]] T* operator->() const { return m_ptr.get(); }
 		[[nodiscard]] const T& operator*() const { return *m_ptr; }

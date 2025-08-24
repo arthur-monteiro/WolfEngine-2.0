@@ -13,6 +13,8 @@ namespace Wolf
 
 		~Timer();
 
+		void forceFixedTimerEachUpdate(uint64_t forcedTimerMs);
+
 		void updateCachedDuration();
 
 		uint64_t getCurrentCachedMillisecondsDuration() const { return m_cachedMillisecondsDuration; }
@@ -24,5 +26,8 @@ namespace Wolf
 
 		uint64_t m_cachedMillisecondsDuration = 0;
 		uint64_t m_elapsedTimeSinceLastUpdateInMs = 0;
+
+		static constexpr uint64_t NO_FORCED_TIME_VALUE = -1;
+		uint64_t m_forcedTimerMs = NO_FORCED_TIME_VALUE;
 	};
 }
