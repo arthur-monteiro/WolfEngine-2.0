@@ -15,8 +15,8 @@ target_compile_definitions(WolfEngine PUBLIC CUSTOM_READBACK_DATA_FROM_GPU)
 
 set_target_properties(WolfEngine
         PROPERTIES
-        ARCHIVE_OUTPUT_DIRECTORY "../../x64/Debug/lib"
-        LIBRARY_OUTPUT_DIRECTORY "../../x64/Debug/lib")
+        ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_CURRENT_LIST_DIR}/../x64/Debug/lib"
+        LIBRARY_OUTPUT_DIRECTORY "${CMAKE_CURRENT_LIST_DIR}/../x64/Debug/lib")
 
-find_package("../Common/Common.cmake" NO_DEFAULT_PATH)
-find_package("../GraphicAPIBroker/GraphicAPIBroker_Vulkan.cmake" NO_DEFAULT_PATH)
+include("${CMAKE_CURRENT_LIST_DIR}/../Common/Common.cmake")
+include("${CMAKE_CURRENT_LIST_DIR}/../GraphicAPIBroker/GraphicAPIBroker_Vulkan.cmake")
