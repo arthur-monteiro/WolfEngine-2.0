@@ -3,4 +3,4 @@ file(GLOB SRC
 )
 
 # Includes
-include_directories(../ThirdParty/xxh64)
+include_directories(${CMAKE_CURRENT_LIST_DIR}/../ThirdParty/xxh64)

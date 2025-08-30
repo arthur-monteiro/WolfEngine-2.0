@@ -326,7 +326,20 @@ void Wolf::JSONReader::readFromLines(const Lines& lines)
 			{
 				currentPropertyStack.top()->type = JSONPropertyType::String;
 				line = line.substr(quotePos + 1);
-				if (const size_t propertyStringEnding = line.find('"'); propertyStringEnding != std::string::npos)
+				size_t propertyStringEnding = line.find('"');
+
+				while (propertyStringEnding != std::string::npos)
+				{
+					if (propertyStringEnding > 0 && line[propertyStringEnding - 1] == '\\')
+					{
+						line.erase(propertyStringEnding - 1, 1);
+						propertyStringEnding = line.find('"', propertyStringEnding + 1);
+						continue;
+					}
+					break;
+				}
+
+				if (propertyStringEnding != std::string::npos)
 				{
 					std::wstring propertyValue = line.substr(0, propertyStringEnding);
 

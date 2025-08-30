@@ -64,6 +64,8 @@ namespace Wolf
 #endif
 		);
 
+		[[nodiscard]] bool isSame(T* resource) const { return m_resource.get() == resource; }
+
 		[[nodiscard]] explicit operator bool() const;
 		[[nodiscard]] T* operator->() const { return m_resource.get(); }
 		[[nodiscard]] const T& operator*() const { return *m_resource; }

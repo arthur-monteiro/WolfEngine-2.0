@@ -37,6 +37,7 @@ Wolf::ImageFileLoader::ImageFileLoader(const std::string& fullFilePath, bool loa
 
 		m_pixels = pixels;
 		m_channels = 4;
+		m_format = Format::R8G8B8A8_UNORM;
 
 		if (!pixels)
 			Debug::sendError("Error : loading image " + fullFilePath);
