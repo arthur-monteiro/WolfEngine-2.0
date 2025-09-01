@@ -523,7 +523,7 @@ void Wolf::TextureSetLoader::createCombinedTexture(const TextureSetFileInfoGGX& 
 
 	if (useCache)
 	{
-		if (createImageFileFromCache(combinedTexturePath, false, ImageCompression::Compression::NO_COMPRESSION, 2))
+		if (createImageFileFromCache(combinedTexturePath, false, ImageCompression::Compression::BC3, 2))
 		{
 			return;
 		}
@@ -658,37 +658,15 @@ void Wolf::TextureSetLoader::createCombinedTexture(const TextureSetFileInfoGGX& 
 		Debug::sendInfo("Creating combined texture");
 		Timer albedoTimer("Creating combined texture");
 
-		std::vector<const unsigned char*> mipsData(combinedRoughnessMetalnessAOMipLevels.size());
-		for (uint32_t i = 0; i < combinedRoughnessMetalnessAOMipLevels.size(); ++i)
-		{
-			mipsData[i] = reinterpret_cast<const unsigned char*>(combinedRoughnessMetalnessAOMipLevels[i].data());
-		}
-		createImageFromData(combinedRoughnessMetalnessAOExtent, Format::R8G8B8A8_UNORM, reinterpret_cast<const unsigned char*>(combinedRoughnessMetalnessAOAniso.data()), mipsData, 2);
+		std::fstream outCacheFile(combinedTexturePath + ".bin", std::ios::out | std::ios::binary);
 
-		if (useCache)
-		{
-			std::fstream outCacheFile(combinedTexturePath + ".bin", std::ios::out | std::ios::binary);
+		/* Hash */
+		uint64_t hash = HASH_TEXTURE_SET_LOADER_CPP;
+		outCacheFile.write(reinterpret_cast<char*>(&hash), sizeof(hash));
+		outCacheFile.write(reinterpret_cast<char*>(&combinedRoughnessMetalnessAOExtent), sizeof(combinedRoughnessMetalnessAOExtent));
 
-			/* Hash */
-			uint64_t hash = HASH_TEXTURE_SET_LOADER_CPP;
-			outCacheFile.write(reinterpret_cast<char*>(&hash), sizeof(hash));
-			outCacheFile.write(reinterpret_cast<char*>(&combinedRoughnessMetalnessAOExtent), sizeof(combinedRoughnessMetalnessAOExtent));
-
-			// Add to cache
-			uint32_t dataBytesCount = static_cast<uint32_t>(combinedRoughnessMetalnessAOAniso.size() * 4);
-			outCacheFile.write(reinterpret_cast<char*>(&dataBytesCount), sizeof(dataBytesCount));
-			outCacheFile.write(reinterpret_cast<char*>(combinedRoughnessMetalnessAOAniso.data()), dataBytesCount);
-
-			uint32_t mipsCount = static_cast<uint32_t>(combinedRoughnessMetalnessAOMipLevels.size());
-			outCacheFile.write(reinterpret_cast<char*>(&mipsCount), sizeof(mipsCount));
-
-			for (uint32_t i = 0; i < mipsCount; ++i)
-			{
-				dataBytesCount = static_cast<uint32_t>(combinedRoughnessMetalnessAOMipLevels[i].size() * 4);
-				outCacheFile.write(reinterpret_cast<char*>(&dataBytesCount), sizeof(dataBytesCount));
-				outCacheFile.write(reinterpret_cast<char*>(combinedRoughnessMetalnessAOMipLevels[i].data()), dataBytesCount);
-			}
-		}
+		compressAndCreateImage<ImageCompression::BC3>(combinedRoughnessMetalnessAOMipLevels, combinedRoughnessMetalnessAOAniso, combinedRoughnessMetalnessAOExtent, Format::BC3_UNORM_BLOCK,
+			combinedTexturePath, outCacheFile, 2);
 	}
 }
 
