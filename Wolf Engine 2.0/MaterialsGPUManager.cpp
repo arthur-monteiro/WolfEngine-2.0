@@ -216,6 +216,13 @@ void Wolf::MaterialsGPUManager::updateBeforeFrame()
 			uint8_t sliceY = requestedSlice.m_sliceY;
 			uint8_t mipLevel = requestedSlice.m_mipLevel;
 
+			// Virtual texture manager will create request for the mip above (for trilinear sampling), we may get out range mip level
+			if (mipLevel >= MipMapGenerator::computeMipCount({ m_texturesCPUInfo[textureId].m_width, m_texturesCPUInfo[textureId].m_width }))
+			{
+				m_virtualTextureManager->rejectRequest(requestedSlice);
+				continue;
+			}
+
 			float pixelSizeInBytes = 0.0f;
 			if (m_texturesCPUInfo[textureId].m_textureType == TextureCPUInfo::TextureType::ALBEDO)
 			{

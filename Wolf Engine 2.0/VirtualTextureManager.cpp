@@ -144,6 +144,12 @@ void Wolf::VirtualTextureManager::readFeedbackBuffer()
 
 				deduplicatedValues.insert(feedback);
 
+				FeedbackInfo mipAboveFeedback = feedback;
+				mipAboveFeedback.m_mipLevel++;
+				mipAboveFeedback.m_sliceX >>= 1;
+				mipAboveFeedback.m_sliceY >>= 1;
+				deduplicatedValues.insert(mipAboveFeedback);
+
 				leftValue = feedback;
 				topValues[feedbackIdx % m_feedbackCountX][i] = feedback;
 			}
