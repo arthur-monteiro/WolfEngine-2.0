@@ -35,7 +35,20 @@ layout(std430, binding = 8, set = £BINDLESS_DESCRIPTOR_SLOT) readonly restrict b
     uint virtualTextureIndirection[MAX_INDIRECTION_COUNT];
 };
 
+float rand2(vec2 co)
+{
+    return max(fract(sin(dot(co, vec2(12.9898, 78.233))) * 43758.5453), 0.25);
+}
+
+vec3 randomColor(uint seed)
+{
+    vec2 co = vec2(float(seed), float(seed / 4952000));
+    return vec3(rand2(co), rand2(co + vec2(47)), rand2(co + vec2(29214)));
+}
+
 void requestSlice(in uint textureIdx, in const uint sliceX, in const uint sliceY, in const uint mipLevel, in const uint atlasIdx);
+vec4 fetchForIndirectionInfo(in uint indirectionInfo, in uint textureWidth, in uint textureHeight, in uint sliceX, in uint sliceY, in vec2 texCoords, in uint atlasIdx);
+void computeInfoForMipLevel(in uint mipLevel, in vec2 textureSize, in vec2 texCoords, in uint textureIdx, out uint indirectionInfo, out uint textureWidth, out uint textureHeight, out uint sliceX, out uint sliceY);
 
 const uint PAGE_COUNT_PER_SIDE = 16u;
 vec4 sampleTexture(in uint textureIdx, in const vec2 texCoords, in const uint atlasIdx)
@@ -55,44 +68,34 @@ vec4 sampleTexture(in uint textureIdx, in const vec2 texCoords, in const uint at
     vec2 texCoordsTexelUnits = texCoords * textureSize;
     vec2 dxTexCoords = dFdx(texCoordsTexelUnits);
     vec2 dyTexCoords = dFdy(texCoordsTexelUnits);
-    float deltaMaxSqr = max(dot(dxTexCoords, dxTexCoords), dot(dyTexCoords, dyTexCoords));
-    uint mipLevel = uint(0.5 * log2(deltaMaxSqr)); // log2(x ^ y) = y * log2(x)
+    float deltaMinSqr = min(dot(dxTexCoords, dxTexCoords), dot(dyTexCoords, dyTexCoords));
+    float mipLevel = 0.5 * log2(deltaMinSqr); // log2(x ^ y) = y * log2(x)
 
     uint maxMipCount = computeMipCount(texturesInfo[textureIdx].width, texturesInfo[textureIdx].height);
     mipLevel = min(mipLevel, maxMipCount - 1);
 
-    uint textureWidth = uint(textureSize.x) >> mipLevel;
-    uint textureHeight = uint(textureSize.y) >> mipLevel;
+    float bestMipLevelFactor = 1.0 - (mipLevel - uint(mipLevel));
 
-    uint sliceX = uint((fract(texCoords.x) * float(textureWidth)) / float(PAGE_SIZE));
-    uint sliceY = uint((fract(texCoords.y) * float(textureHeight)) / float(PAGE_SIZE));
-
-    uint indirectionId = computeVirtualTextureIndirectionId(sliceX, sliceY, uint(textureSize.x / float(PAGE_SIZE)), uint(textureSize.y / float(PAGE_SIZE)), mipLevel);
-    uint indirectionInfo = INVALID_INDIRECTION;
-    if (texturesInfo[textureIdx].virtualTextureIndirectionOffset != INVALID_INDIRECTION_OFFSET)
-    {
-        indirectionInfo = virtualTextureIndirection[texturesInfo[textureIdx].virtualTextureIndirectionOffset + indirectionId];
-    }
-
-    requestSlice(textureIdx, sliceX, sliceY, mipLevel, atlasIdx);
+    uint indirectionInfo;
+    uint textureWidth;
+    uint textureHeight;
+    uint sliceX;
+    uint sliceY;
+    computeInfoForMipLevel(uint(mipLevel), textureSize, texCoords, textureIdx, indirectionInfo, textureWidth, textureHeight, sliceX, sliceY);
+    
+    requestSlice(textureIdx, sliceX, sliceY, uint(mipLevel), atlasIdx);
 
     if (indirectionInfo != INVALID_INDIRECTION)
     {
-        vec2 pageCountForMip = vec2(float(textureWidth), float(textureHeight)) / float(PAGE_SIZE);
-        vec2 uvOffset = vec2(sliceX, sliceY) / pageCountForMip; 
-        vec2 uvInSlice = (fract(texCoords) - uvOffset) * pageCountForMip;
+        vec4 currentMipValue = fetchForIndirectionInfo(indirectionInfo, textureWidth, textureHeight, sliceX, sliceY, texCoords, atlasIdx);
 
-        uint indirectionX = indirectionInfo % PAGE_COUNT_PER_SIDE;
-        uint indirectionY = indirectionInfo / PAGE_COUNT_PER_SIDE;
-        vec2 indirection = vec2(float(indirectionX), float(indirectionY));
-        vec2 sliceUVOffset = indirection / float(PAGE_COUNT_PER_SIDE);
+        if (bestMipLevelFactor < 0.99)
+        {
+            computeInfoForMipLevel(uint(mipLevel) + 1, textureSize, texCoords, textureIdx, indirectionInfo, textureWidth, textureHeight, sliceX, sliceY);
+            currentMipValue = currentMipValue * bestMipLevelFactor + fetchForIndirectionInfo(indirectionInfo, textureWidth, textureHeight, sliceX, sliceY, texCoords, atlasIdx) * (1.0 - bestMipLevelFactor);
+        }
 
-        float borderOffset = 4.0f / (float(PAGE_COUNT_PER_SIDE) * 264.0f);
-        vec2 sliceSize = vec2(float(PAGE_SIZE), float(PAGE_SIZE));
-        vec2 scale = (sliceSize / ((sliceSize + 2.0f * vec2(4.0f, 4.0f)) * float(PAGE_COUNT_PER_SIDE)));
-        vec2 finalUV = sliceUVOffset + uvInSlice * scale + vec2(borderOffset, borderOffset);
-
-        return texture(sampler2D(atlases[atlasIdx], atlasesSampler), finalUV).rgba;
+        return currentMipValue;
     }
     else
         return vec4(1, 0, 0, 1);
@@ -106,5 +109,41 @@ void requestSlice(in uint textureIdx, in const uint sliceX, in const uint sliceY
         uint feedbackValue = (textureIdx & 0x7FF) << 21 | (mipLevel & 0x1F) << 16 | (sliceX & 0xFF) << 8 | (sliceY & 0xFF);
         feedbacks[uint(gl_FragCoord.x) / DITHER_PIXEL_COUNT_PER_SIDE + (uint(gl_FragCoord.y) / DITHER_PIXEL_COUNT_PER_SIDE) * (getScreenWidth() / DITHER_PIXEL_COUNT_PER_SIDE)][atlasIdx] = feedbackValue;
     }
+}
+
+void computeInfoForMipLevel(in uint mipLevel, in vec2 textureSize, in vec2 texCoords, in uint textureIdx, out uint indirectionInfo, out uint textureWidth, out uint textureHeight, out uint sliceX, out uint sliceY)
+{
+    textureWidth = uint(textureSize.x) >> mipLevel;
+    textureHeight = uint(textureSize.y) >> mipLevel;
+
+    sliceX = uint((fract(texCoords.x) * float(textureWidth)) / float(PAGE_SIZE));
+    sliceY = uint((fract(texCoords.y) * float(textureHeight)) / float(PAGE_SIZE));
+
+    uint indirectionId = computeVirtualTextureIndirectionId(sliceX, sliceY, uint(textureSize.x / float(PAGE_SIZE)), uint(textureSize.y / float(PAGE_SIZE)), mipLevel);
+    indirectionInfo = INVALID_INDIRECTION;
+    if (texturesInfo[textureIdx].virtualTextureIndirectionOffset != INVALID_INDIRECTION_OFFSET)
+    {
+        indirectionInfo = virtualTextureIndirection[texturesInfo[textureIdx].virtualTextureIndirectionOffset + indirectionId];
+    }
+}
+
+vec4 fetchForIndirectionInfo(in uint indirectionInfo, in uint textureWidth, in uint textureHeight, in uint sliceX, in uint sliceY, in vec2 texCoords, in uint atlasIdx)
+{
+    vec2 pageCountForMip = vec2(float(textureWidth), float(textureHeight)) / float(PAGE_SIZE);
+    vec2 uvOffset = vec2(sliceX, sliceY) / pageCountForMip; 
+    vec2 uvInSlice = (fract(texCoords) - uvOffset) * pageCountForMip;
+
+    uint indirectionX = indirectionInfo % PAGE_COUNT_PER_SIDE;
+    uint indirectionY = indirectionInfo / PAGE_COUNT_PER_SIDE;
+    vec2 indirection = vec2(float(indirectionX), float(indirectionY));
+    vec2 sliceUVOffset = indirection / float(PAGE_COUNT_PER_SIDE);
+
+    float borderOffset = 4.0f / (float(PAGE_COUNT_PER_SIDE) * 264.0f);
+    vec2 sliceSize = vec2(float(PAGE_SIZE), float(PAGE_SIZE));
+    vec2 scale = (sliceSize / ((sliceSize + 2.0f * vec2(4.0f, 4.0f)) * float(PAGE_COUNT_PER_SIDE)));
+    vec2 finalUV = sliceUVOffset + uvInSlice * scale + vec2(borderOffset, borderOffset);
+
+    //return vec4(randomColor(indirectionInfo), 1.0);
+    return texture(sampler2D(atlases[atlasIdx], atlasesSampler), finalUV).rgba;
 }
 )"
