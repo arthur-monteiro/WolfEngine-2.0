@@ -3,6 +3,8 @@
 #include <map>
 #include <span>
 
+#include <ResourceNonOwner.h>
+
 #include "DescriptorSet.h"
 #include "Image.h"
 #include "ImageView.h"
@@ -19,6 +21,7 @@ namespace Wolf
 		DescriptorSetGenerator(const DescriptorSetGenerator&) = delete;
 
 		void setBuffer(uint32_t binding, const Buffer& buffer);
+		void setBuffers(uint32_t binding, const std::vector<ResourceNonOwner<Buffer>>& buffers);
 		void setUniformBuffer(uint32_t binding, const UniformBuffer& buffer);
 		void setCombinedImageSampler(uint32_t binding, VkImageLayout imageLayout, ImageView imageView, const Sampler& sampler);
 		struct ImageDescription

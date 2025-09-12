@@ -92,7 +92,9 @@ bool Wolf::hasStencilComponent(VkFormat format)
 
 VkTransformMatrixKHR Wolf::toTransformMatrixKHR(const glm::mat4* matrix)
 {
+	glm::mat4 transposedMatrix = glm::transpose(glm::mat4(*matrix));
+
 	VkTransformMatrixKHR outMatrix;
-	memcpy(&outMatrix, matrix, sizeof(VkTransformMatrixKHR));
+	memcpy(&outMatrix, &transposedMatrix, sizeof(VkTransformMatrixKHR));
 	return outMatrix;
 }

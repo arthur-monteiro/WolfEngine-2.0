@@ -52,6 +52,20 @@ void Wolf::DescriptorSetGenerator::setBuffer(uint32_t binding, const Buffer& buf
 	m_descriptorSetCreateInfo.descriptorBuffers[descriptor.second].buffers[0] = &buffer;
 }
 
+void Wolf::DescriptorSetGenerator::setBuffers(uint32_t binding, const std::vector<ResourceNonOwner<Buffer>>& buffers)
+{
+	const std::pair<DescriptorType, uint32_t /* descriptor index */>& descriptor = m_mapBindingCreateInfo[binding];
+
+	if (descriptor.first != DescriptorType::STORAGE_BUFFER)
+		Debug::sendError("Binding provided is not a buffer");
+
+	m_descriptorSetCreateInfo.descriptorBuffers[descriptor.second].buffers.reserve(buffers.size());
+	for (const ResourceNonOwner<Buffer>& buffer : buffers)
+	{
+		m_descriptorSetCreateInfo.descriptorBuffers[descriptor.second].buffers.push_back(&(*buffer));
+	}
+}
+
 void Wolf::DescriptorSetGenerator::setUniformBuffer(uint32_t binding, const UniformBuffer& buffer)
 {
 	const std::pair<DescriptorType, uint32_t /* descriptor index */>& descriptor = m_mapBindingCreateInfo[binding];

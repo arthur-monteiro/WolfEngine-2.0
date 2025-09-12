@@ -369,8 +369,7 @@ void Wolf::TextureSetLoader::createSlicedCache(const std::string& filename, bool
 
 	if (extent.width % VirtualTextureManager::VIRTUAL_PAGE_SIZE != 0 || extent.height % VirtualTextureManager::VIRTUAL_PAGE_SIZE != 0 || extent.depth != 1)
 	{
-		Debug::sendError("Wrong texture extent for virtual texture slicing");
-		//return;
+		Debug::sendCriticalError("Wrong texture extent for virtual texture slicing");
 	}
 
 	ConfigurationHelper::writeInfoToFile(binFolderFixed + "info.txt", "width", extent.width);

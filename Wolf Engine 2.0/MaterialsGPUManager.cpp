@@ -17,18 +17,18 @@ Wolf::MaterialsGPUManager::MaterialsGPUManager(const std::vector<DescriptorSetGe
 	DescriptorSetLayoutGenerator descriptorSetLayoutGenerator;
 
 	descriptorSetLayoutGenerator.reset();
-	descriptorSetLayoutGenerator.addImages(DescriptorType::SAMPLED_IMAGE, ShaderStageFlagBits::FRAGMENT, BINDING_SLOT, MAX_IMAGES,
+	descriptorSetLayoutGenerator.addImages(DescriptorType::SAMPLED_IMAGE, ShaderStageFlagBits::FRAGMENT | ShaderStageFlagBits::CLOSEST_HIT, BINDING_SLOT, MAX_IMAGES,
 		VK_DESCRIPTOR_BINDING_PARTIALLY_BOUND_BIT | VK_DESCRIPTOR_BINDING_UPDATE_AFTER_BIND_BIT);
-	descriptorSetLayoutGenerator.addSampler(ShaderStageFlagBits::FRAGMENT, BINDING_SLOT + 1);
-	descriptorSetLayoutGenerator.addStorageBuffer(ShaderStageFlagBits::FRAGMENT, BINDING_SLOT + 2); // Texture sets
-	descriptorSetLayoutGenerator.addStorageBuffer(ShaderStageFlagBits::FRAGMENT, BINDING_SLOT + 3); // Materials
+	descriptorSetLayoutGenerator.addSampler(ShaderStageFlagBits::FRAGMENT | ShaderStageFlagBits::CLOSEST_HIT, BINDING_SLOT + 1);
+	descriptorSetLayoutGenerator.addStorageBuffer(ShaderStageFlagBits::FRAGMENT | ShaderStageFlagBits::CLOSEST_HIT, BINDING_SLOT + 2); // Texture sets
+	descriptorSetLayoutGenerator.addStorageBuffer(ShaderStageFlagBits::FRAGMENT | ShaderStageFlagBits::CLOSEST_HIT, BINDING_SLOT + 3); // Materials
 	if (g_configuration->getUseVirtualTexture())
 	{
-		descriptorSetLayoutGenerator.addStorageBuffer(ShaderStageFlagBits::FRAGMENT, BINDING_SLOT + 4); // Textures info
-		descriptorSetLayoutGenerator.addStorageBuffer(ShaderStageFlagBits::FRAGMENT, BINDING_SLOT + 5); // Virtual texture feedbacks
-		descriptorSetLayoutGenerator.addImages(DescriptorType::SAMPLED_IMAGE, ShaderStageFlagBits::FRAGMENT, BINDING_SLOT + 6, 2); // Atlases
-		descriptorSetLayoutGenerator.addSampler(ShaderStageFlagBits::FRAGMENT, BINDING_SLOT + 7); // Albedo atlas
-		descriptorSetLayoutGenerator.addStorageBuffer(ShaderStageFlagBits::FRAGMENT, BINDING_SLOT + 8); // Indirection buffer
+		descriptorSetLayoutGenerator.addStorageBuffer(ShaderStageFlagBits::FRAGMENT | ShaderStageFlagBits::CLOSEST_HIT, BINDING_SLOT + 4); // Textures info
+		descriptorSetLayoutGenerator.addStorageBuffer(ShaderStageFlagBits::FRAGMENT | ShaderStageFlagBits::CLOSEST_HIT, BINDING_SLOT + 5); // Virtual texture feedbacks
+		descriptorSetLayoutGenerator.addImages(DescriptorType::SAMPLED_IMAGE, ShaderStageFlagBits::FRAGMENT | ShaderStageFlagBits::CLOSEST_HIT, BINDING_SLOT + 6, 2); // Atlases
+		descriptorSetLayoutGenerator.addSampler(ShaderStageFlagBits::FRAGMENT | ShaderStageFlagBits::CLOSEST_HIT, BINDING_SLOT + 7); // Albedo atlas
+		descriptorSetLayoutGenerator.addStorageBuffer(ShaderStageFlagBits::FRAGMENT | ShaderStageFlagBits::CLOSEST_HIT, BINDING_SLOT + 8); // Indirection buffer
 	}
 
 	m_sampler.reset(Sampler::createSampler(VK_SAMPLER_ADDRESS_MODE_REPEAT, 11, VK_FILTER_LINEAR, 4.0f));

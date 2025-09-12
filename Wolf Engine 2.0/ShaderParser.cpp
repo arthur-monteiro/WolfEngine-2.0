@@ -28,6 +28,13 @@ uint64_t Wolf::ShaderParser::ShaderCodeToAdd::computeHash() const
     return xxh64::hash(codeString.c_str(), codeString.length(), 0);
 }
 
+#ifndef __ANDROID__
+bool Wolf::ShaderParser::ShaderCodeToAdd::lookForRayTraceCall() const
+{
+    return codeString.contains("traceRayEXT(");
+}
+#endif
+
 void Wolf::ShaderParser::ShaderCodeToAdd::addToGLSL(std::ofstream& outFileGLSL) const
 {
     outFileGLSL << codeString;
@@ -167,15 +174,28 @@ void Wolf::ShaderParser::parseAndCompile()
     outFileGLSL << "\n";
 
     addCameraCode(outFileGLSL);
-    if (extensionFound == "Frag")
+    if (extensionFound == "Frag" || extensionFound == "Rchit")
     {
         addMaterialFetchCode(outFileGLSL);
         addLightInfoCode(outFileGLSL);
     }
 
+#ifndef __ANDROID__
+    bool addRayTracedShaderCode = false;
+#endif
     if (m_shaderCodeToAddHash)
     {
-        m_shaderCodeToAdd.addToGLSL(outFileGLSL);
+#ifndef __ANDROID__
+        if (m_shaderCodeToAdd.lookForRayTraceCall())
+        {
+            // We'll need to add the code after the payload definition
+            addRayTracedShaderCode = true;
+        }
+        else
+#endif
+        {
+            m_shaderCodeToAdd.addToGLSL(outFileGLSL);
+        }
     }
 
     std::vector<std::string> currentConditions;
@@ -206,6 +226,14 @@ void Wolf::ShaderParser::parseAndCompile()
         else
         {
             outFileGLSL << inShaderLine << std::endl;
+
+#ifndef __ANDROID__
+            if (addRayTracedShaderCode && (inShaderLine.contains("rayPayloadEXT") || inShaderLine.contains("rayPayloadInEXT")))
+            {
+                m_shaderCodeToAdd.addToGLSL(outFileGLSL);
+                addRayTracedShaderCode = false;
+            }
+#endif
         }
     }
 

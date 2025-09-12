@@ -55,7 +55,7 @@ void UniquePass::initializeResources(const InitializationContext& context)
 	geometryInfo.mesh.vertexCount = m_triangle->getVertexCount();
 	geometryInfo.mesh.vertexSize = m_triangle->getVertexSize();
 	geometryInfo.mesh.vertexFormat = m_triangle->getVertexFormat();
-	geometryInfo.mesh.indexBuffer = &m_triangle->getIndexBuffer();
+	geometryInfo.mesh.indexBuffer = &*m_triangle->getIndexBuffer();
 	geometryInfo.mesh.indexCount = m_triangle->getIndexCount();
 	blasCreateInfo.geometryInfos = geometries;
 
@@ -160,7 +160,7 @@ void UniquePass::createDescriptorSets(const InitializationContext& context)
 		descriptorSetGenerator.setAccelerationStructure(0, *m_tlas);
 		descriptorSetGenerator.setImage(1, image);
 		descriptorSetGenerator.setBuffer(2, *m_triangle->getVertexBuffer());
-		descriptorSetGenerator.setBuffer(3, m_triangle->getIndexBuffer());
+		descriptorSetGenerator.setBuffer(3, *m_triangle->getIndexBuffer());
 
 		if (!m_descriptorSets[i])
 			m_descriptorSets[i].reset(DescriptorSet::createDescriptorSet(*m_descriptorSetLayout));
