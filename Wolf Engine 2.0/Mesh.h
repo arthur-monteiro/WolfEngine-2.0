@@ -43,6 +43,7 @@ namespace Wolf
 		[[nodiscard]] const Buffer& getVertexBuffer() const { return *m_vertexBuffer; }
 		[[nodiscard]] ResourceNonOwner<Buffer> getVertexBuffer() { return m_vertexBuffer.createNonOwnerResource(); }
 		[[nodiscard]] const Buffer& getIndexBuffer() const { return *m_indexBuffer; }
+		[[nodiscard]] ResourceNonOwner<Buffer> getIndexBuffer() { return m_indexBuffer.createNonOwnerResource(); }
 		[[nodiscard]] const AABB& getAABB() const { return m_AABB; }
 		[[nodiscard]] const BoundingSphere& getBoundingSphere() const { return m_boundingSphere; }
 
@@ -51,7 +52,7 @@ namespace Wolf
 
 	private:
 		ResourceUniqueOwner<Buffer> m_vertexBuffer;
-		std::unique_ptr<Buffer> m_indexBuffer;
+		ResourceUniqueOwner<Buffer> m_indexBuffer;
 
 		uint32_t m_vertexCount;
 		uint32_t m_vertexSize;

@@ -21,6 +21,7 @@ namespace Wolf
 			std::string codeString;
 
 			uint64_t computeHash() const;
+			bool lookForRayTraceCall() const;
 			void addToGLSL(std::ofstream& outFileGLSL) const;
 		};
 		ShaderParser(const std::string& filename, const std::vector<std::string>& conditionBlocksToInclude = {}, uint32_t cameraDescriptorSlot = -1, uint32_t bindlessDescriptorSlot = -1, uint32_t lightDescriptorSlot = -1, const MaterialFetchProcedure& materialFetchProcedure = MaterialFetchProcedure(),
