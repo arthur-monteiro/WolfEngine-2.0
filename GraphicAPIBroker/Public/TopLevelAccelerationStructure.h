@@ -3,7 +3,6 @@
 #if !defined(__ANDROID__) or __ANDROID_MIN_SDK_VERSION__ > 30
 
 #include <glm/glm.hpp>
-#include <memory>
 
 #include "BottomLevelAccelerationStructure.h"
 

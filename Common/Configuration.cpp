@@ -16,6 +16,9 @@ Wolf::Configuration::Configuration(const std::string& filePath, AAssetManager* a
 	if (g_configuration)
 		Debug::sendCriticalError("Can't instantiate Configuration twice");
 
+	if (filePath.empty())
+		return;
+
 	std::ifstream configFile(filePath);
 	std::string line;
 	while (std::getline(configFile, line))

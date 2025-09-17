@@ -26,7 +26,7 @@ namespace Wolf
 #endif
 			void addToGLSL(std::ofstream& outFileGLSL) const;
 		};
-		ShaderParser(const std::string& filename, const std::vector<std::string>& conditionBlocksToInclude = {}, uint32_t cameraDescriptorSlot = -1, uint32_t bindlessDescriptorSlot = -1, uint32_t lightDescriptorSlot = -1, const MaterialFetchProcedure& materialFetchProcedure = MaterialFetchProcedure(),
+		ShaderParser(const std::string& filename, const std::vector<std::string>& conditionBlocksToInclude = {}, uint32_t cameraDescriptorSlot = -1, uint32_t materialsDescriptorSlot = -1, uint32_t lightDescriptorSlot = -1, const MaterialFetchProcedure& materialFetchProcedure = MaterialFetchProcedure(),
 			const ShaderCodeToAdd& shaderCodesToAdd = ShaderCodeToAdd());
 
 		bool compileIfFileHasBeenModified(const std::vector<std::string>& conditionBlocksToInclude = {});
@@ -48,7 +48,7 @@ namespace Wolf
 		std::vector<std::string> m_conditionBlocksToInclude;
 
 		uint32_t m_cameraDescriptorSlot;
-		uint32_t m_bindlessDescriptorSlot;
+		uint32_t m_materialsDescriptorSlot;
 		uint32_t m_lightDescriptorSlot;
 		MaterialFetchProcedure m_materialFetchProcedure;
 		uint64_t m_materialFetchProcedureHash = 0;

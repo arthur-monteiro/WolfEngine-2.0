@@ -9,7 +9,7 @@ Wolf::LightManager::LightManager()
 {
 	m_uniformBuffer.reset(new UniformBuffer(sizeof(LightsUBData)));
 
-	m_descriptorSetLayoutGenerator.addUniformBuffer(ShaderStageFlagBits::FRAGMENT, 0);
+	m_descriptorSetLayoutGenerator.addUniformBuffer(ShaderStageFlagBits::FRAGMENT | ShaderStageFlagBits::RAYGEN, 0);
 
 	m_descriptorSetLayout.reset(new LazyInitSharedResource<DescriptorSetLayout, LightManager>([this](ResourceUniqueOwner<DescriptorSetLayout>& descriptorSetLayout)
 		{

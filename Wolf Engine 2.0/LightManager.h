@@ -30,6 +30,7 @@ namespace Wolf
 		struct SunLightInfo
 		{
 			glm::vec3 direction;
+			float angle;
 			glm::vec3 color;
 			float intensity;
 		};

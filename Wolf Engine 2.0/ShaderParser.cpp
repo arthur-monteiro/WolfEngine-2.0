@@ -4,6 +4,8 @@
 #include <fstream>
 #include <sstream>
 #ifdef __ANDROID__
+#include <shaderc/shaderc.hpp>
+
 #include <AndroidCacheHelper.h>
 #endif
 
@@ -40,7 +42,7 @@ void Wolf::ShaderParser::ShaderCodeToAdd::addToGLSL(std::ofstream& outFileGLSL) 
     outFileGLSL << codeString;
 }
 
-Wolf::ShaderParser::ShaderParser(const std::string& filename, const std::vector<std::string>& conditionBlocksToInclude, uint32_t cameraDescriptorSlot, uint32_t bindlessDescriptorSlot, uint32_t lightDescriptorSlot, 
+Wolf::ShaderParser::ShaderParser(const std::string& filename, const std::vector<std::string>& conditionBlocksToInclude, uint32_t cameraDescriptorSlot, uint32_t materialsDescriptorSlot, uint32_t lightDescriptorSlot,
                                  const MaterialFetchProcedure& materialFetchProcedure, const ShaderCodeToAdd& shaderCodeToAdd)
 {
     m_filename = filename;
@@ -50,7 +52,7 @@ Wolf::ShaderParser::ShaderParser(const std::string& filename, const std::vector<
     m_conditionBlocksToInclude = conditionBlocksToInclude;
 
     m_cameraDescriptorSlot = cameraDescriptorSlot;
-    m_bindlessDescriptorSlot = bindlessDescriptorSlot;
+    m_materialsDescriptorSlot = materialsDescriptorSlot;
     m_lightDescriptorSlot = lightDescriptorSlot;
     m_materialFetchProcedure = materialFetchProcedure;
     m_materialFetchProcedureHash = materialFetchProcedure.computeHash();
@@ -174,11 +176,8 @@ void Wolf::ShaderParser::parseAndCompile()
     outFileGLSL << "\n";
 
     addCameraCode(outFileGLSL);
-    if (extensionFound == "Frag" || extensionFound == "Rchit")
-    {
-        addMaterialFetchCode(outFileGLSL);
-        addLightInfoCode(outFileGLSL);
-    }
+    addMaterialFetchCode(outFileGLSL);
+    addLightInfoCode(outFileGLSL);
 
 #ifndef __ANDROID__
     bool addRayTracedShaderCode = false;
@@ -323,7 +322,7 @@ void Wolf::ShaderParser::addCameraCode(std::ofstream& outFileGLSL) const
 
 void Wolf::ShaderParser::addMaterialFetchCode(std::ofstream& outFileGLSL) const
 {
-    if (m_bindlessDescriptorSlot == static_cast<uint32_t>(-1))
+    if (m_materialsDescriptorSlot == static_cast<uint32_t>(-1))
         return;
 
     outFileGLSL << "\n//------------------\n";
@@ -370,7 +369,7 @@ void Wolf::ShaderParser::addMaterialFetchCode(std::ofstream& outFileGLSL) const
     size_t descriptorSlotTokenPos = materialFetchCode.find(descriptorSlotToken);
     while (descriptorSlotTokenPos != std::string::npos)
     {
-        materialFetchCode.replace(descriptorSlotTokenPos, descriptorSlotToken.length(), std::to_string(m_bindlessDescriptorSlot));
+        materialFetchCode.replace(descriptorSlotTokenPos, descriptorSlotToken.length(), std::to_string(m_materialsDescriptorSlot));
         descriptorSlotTokenPos = materialFetchCode.find(descriptorSlotToken);
     }
 

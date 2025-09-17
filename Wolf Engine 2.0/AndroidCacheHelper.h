@@ -3,7 +3,6 @@
 #ifdef __ANDROID__
 #include <android/asset_manager.h>
 #include <android/native_activity.h>
-#include <shaderc/shaderc.hpp>
 
 #include "Configuration.h"
 

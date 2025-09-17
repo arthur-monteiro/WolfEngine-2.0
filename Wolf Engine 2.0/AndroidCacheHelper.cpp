@@ -2,9 +2,11 @@
 
 #ifdef __ANDROID__
 
+#include <cstdint>
 #include <filesystem>
 #include <fstream>
 #include <sstream>
+#include <vector>
 
 void Wolf::copyCompressedFileToStorage(const std::string& filename, const std::string& folderInStorage, std::string& outFilename)
 {

@@ -126,6 +126,9 @@ void Wolf::SwapChainVulkan::initialize(VkExtent2D extent)
 		case VK_FORMAT_B8G8R8A8_UNORM:
 			wolfFormat = Format::B8G8R8A8_UNORM;
 			break;
+		case VK_FORMAT_R8G8B8A8_UNORM:
+			wolfFormat = Format::R8G8B8A8_UNORM;
+			break;
 		default:
 			Debug::sendError("Unhandled format");
 	}

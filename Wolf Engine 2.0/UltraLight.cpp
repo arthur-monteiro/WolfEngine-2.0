@@ -8,7 +8,7 @@
 #include "Debug.h"
 #include "InputHandler.h"
 #include "ProfilerCommon.h"
-#include "Semaphore.h"
+#include "GPUSemaphore.h"
 #include "Timer.h"
 #include "Window.h"
 

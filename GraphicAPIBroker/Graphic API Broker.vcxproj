@@ -72,6 +72,7 @@
     <ClInclude Include="Public\Fence.h" />
     <ClInclude Include="Public\Formats.h" />
     <ClInclude Include="Public\FrameBuffer.h" />
+    <ClInclude Include="Public\GPUSemaphore.h" />
     <ClInclude Include="Public\GraphicAPIManager.h" />
     <ClInclude Include="Public\Image.h" />
     <ClInclude Include="Public\ImageView.h" />
@@ -79,7 +80,6 @@
     <ClInclude Include="Public\ReadableBuffer.h" />
     <ClInclude Include="Public\RenderPass.h" />
     <ClInclude Include="Public\Sampler.h" />
-    <ClInclude Include="Public\Semaphore.h" />
     <ClInclude Include="Public\ShaderBindingTable.h" />
     <ClInclude Include="Public\ShaderStages.h" />
     <ClInclude Include="Public\Structs.h" />
@@ -116,6 +116,7 @@
     <ClCompile Include="Public\DescriptorSetLayout.cpp" />
     <ClCompile Include="Public\Fence.cpp" />
     <ClCompile Include="Public\FrameBuffer.cpp" />
+    <ClCompile Include="Public\GPUSemaphore.cpp" />
     <ClCompile Include="Public\GraphicAPIManager.cpp" />
     <ClCompile Include="Public\Image.cpp" />
     <ClCompile Include="Public\ImageView.cpp" />
@@ -123,7 +124,6 @@
     <ClCompile Include="Public\ReadableBuffer.cpp" />
     <ClCompile Include="Public\RenderPass.cpp" />
     <ClCompile Include="Public\Sampler.cpp" />
-    <ClCompile Include="Public\Semaphore.cpp" />
     <ClCompile Include="Public\ShaderBindingTable.cpp" />
     <ClCompile Include="Public\SwapChain.cpp" />
     <ClCompile Include="Public\TopLevelAccelerationStructure.cpp" />

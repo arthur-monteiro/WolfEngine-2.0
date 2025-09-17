@@ -2,8 +2,8 @@
 
 #ifdef WOLF_VULKAN
 
-#define GLFW_INCLUDE_VULKAN
 #ifndef __ANDROID__
+#define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
 //#include <OVR_CAPI_Vk.h>
 #endif
