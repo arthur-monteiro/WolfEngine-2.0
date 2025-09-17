@@ -111,7 +111,9 @@ void Wolf::TextureSetLoader::loadImageFile(const std::string& filename, Format f
 
 	if (imageFileLoader.getCompression() == ImageCompression::Compression::BC5)
 	{
+#ifndef __ANDROID__
 		__debugbreak(); // deadcode?
+#endif
 
 		std::vector<ImageCompression::RG8> RG8Pixels;
 		ImageCompression::uncompressImage(imageFileLoader.getCompression(), imageFileLoader.getPixels(), { (imageFileLoader.getWidth()), (imageFileLoader.getHeight()) }, RG8Pixels);

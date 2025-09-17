@@ -10,7 +10,7 @@
 
 const Wolf::Vulkan* Wolf::g_vulkanInstance = nullptr;
 
-#if !defined(__ANDROID__) or __ANDROID_MIN_SDK_VERSION__ > 30
+#ifndef __ANDROID__
 void registerGlobalDeviceForDebugMarker(VkDevice device);
 #endif
 
@@ -52,7 +52,9 @@ Wolf::Vulkan::Vulkan(GLFWwindow* glfwWindowPtr, bool useOVR)
 //#ifndef NDEBUG
 	if(useVIL)
 		m_validationLayers = { "VK_LAYER_live_introspection" };
+
 	m_validationLayers.push_back("VK_LAYER_KHRONOS_validation");
+
 //#endif
 	createInstance();
 
@@ -90,7 +92,7 @@ Wolf::Vulkan::Vulkan(GLFWwindow* glfwWindowPtr, bool useOVR)
 	}
 	//m_meshShaderDeviceExtensions = { VK_NV_MESH_SHADER_EXTENSION_NAME };
 #else
-    m_deviceExtensions = { VK_KHR_SWAPCHAIN_EXTENSION_NAME, VK_KHR_EXTERNAL_MEMORY_EXTENSION_NAME };
+    m_deviceExtensions = { VK_KHR_SWAPCHAIN_EXTENSION_NAME, VK_KHR_EXTERNAL_MEMORY_EXTENSION_NAME, "VK_KHR_buffer_device_address" };
 #endif
 
 	pickPhysicalDevice();
@@ -98,7 +100,7 @@ Wolf::Vulkan::Vulkan(GLFWwindow* glfwWindowPtr, bool useOVR)
 
 	initializeShadingRateFunctions(m_device);
 
-#if !defined(__ANDROID__) or __ANDROID_MIN_SDK_VERSION__ > 30
+#ifndef __ANDROID__
 	if(useDebugMarkers)
 	{
 		registerGlobalDeviceForDebugMarker(m_device);
@@ -130,10 +132,8 @@ std::vector<const char*> getRequiredExtensions()
 #else
 	extensions.push_back("VK_KHR_surface");
 	extensions.push_back("VK_KHR_android_surface");
-	extensions.push_back(VK_EXT_DEBUG_REPORT_EXTENSION_NAME);
 	extensions.push_back(VK_KHR_EXTERNAL_MEMORY_CAPABILITIES_EXTENSION_NAME);
-	extensions.push_back(VK_KHR_EXTERNAL_SEMAPHORE_CAPABILITIES_EXTENSION_NAME);
-	extensions.push_back("VK_KHR_get_physical_device_properties2");
+	extensions.push_back(VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_EXTENSION_NAME);
 #endif
 
 //#ifndef NDEBUG
@@ -156,11 +156,7 @@ void Wolf::Vulkan::createInstance()
 	appInfo.applicationVersion = VK_MAKE_VERSION(1, 0, 0);
 	appInfo.pEngineName = "Wolf Engine";
 	appInfo.engineVersion = VK_MAKE_VERSION(1, 0, 0);
-#ifdef __ANDROID__
-	appInfo.apiVersion = VK_API_VERSION_1_0;
-#else
 	appInfo.apiVersion = VK_API_VERSION_1_3;
-#endif
 
 	VkInstanceCreateInfo createInfo = {};
 	createInfo.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
@@ -182,7 +178,8 @@ void Wolf::Vulkan::createInstance()
 	//createInfo.enabledLayerCount = 0;
 	//createInfo.pNext = nullptr;
 
-	if (vkCreateInstance(&createInfo, nullptr, &m_instance) != VK_SUCCESS)
+	VkResult result = vkCreateInstance(&createInfo, nullptr, &m_instance);
+	if (result != VK_SUCCESS)
 		Debug::sendCriticalError("Error: instance creation");
 }
 
@@ -379,7 +376,6 @@ void Wolf::Vulkan::createDevice()
 		queueCreateInfos.push_back(queueCreateInfo);
 	}
 
-#ifndef __ANDROID__
 	VkPhysicalDeviceVulkan11Features features11{};
 	features11.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_1_FEATURES;
 
@@ -414,7 +410,6 @@ void Wolf::Vulkan::createDevice()
 	{
 		Debug::sendWarning("bufferDeviceAddress not supported");
 	}
-#endif
 
 	VkDeviceCreateInfo createInfo = {};
 	createInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
@@ -423,11 +418,7 @@ void Wolf::Vulkan::createDevice()
 	createInfo.pQueueCreateInfos = queueCreateInfos.data();
 
 	createInfo.pEnabledFeatures = nullptr; // &(supportedFeatures.features);
-#ifndef __ANDROID__
 	createInfo.pNext = &supportedFeatures;
-#else
-	createInfo.pNext = VK_NULL_HANDLE;
-#endif
 
 	createInfo.enabledExtensionCount = static_cast<uint32_t>(m_deviceExtensions.size());
 	createInfo.ppEnabledExtensionNames = m_deviceExtensions.data();

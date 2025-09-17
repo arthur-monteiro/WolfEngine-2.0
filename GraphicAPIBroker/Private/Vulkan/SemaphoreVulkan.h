@@ -1,6 +1,6 @@
 #pragma once
 
-#include "../../Public/Semaphore.h"
+#include "../../Public/GPUSemaphore.h"
 #include "Vulkan.h"
 
 namespace Wolf

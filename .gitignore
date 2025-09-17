@@ -368,6 +368,8 @@ MigrationBackup/
 # Fody - auto-generated XML schema
 FodyWeavers.xsd
 
+ThirdParty/vulkan/Lib/*.lib
+
 # WolfEngine Generated
 *.bin
 *.spv

@@ -1,1 +1,1 @@
-ndk-build APP_PLATFORM=26 APP_BUILD_SCRIPT=Android.mk APP_STL:=c++_static APP_ABI=all TARGET_OUT=./../ndk-builds/$(TARGET_ARCH_ABI)
+ndk-build APP_PLATFORM=33 APP_BUILD_SCRIPT=Android.mk APP_STL:=c++_static APP_ABI=all TARGET_OUT=./../ndk-builds/$(TARGET_ARCH_ABI)

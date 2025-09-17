@@ -291,7 +291,7 @@ void Wolf::CommandBufferVulkan::traceRays(const ResourceReference<const ShaderBi
 
 void Wolf::CommandBufferVulkan::debugMarkerInsert(const DebugMarkerInfo& debugMarkerInfo) const
 {
-#if !defined(__ANDROID__) or __ANDROID_MIN_SDK_VERSION__ > 30
+#if !defined(__ANDROID__)
 	VkDebugMarkerMarkerInfoEXT markerInfo = {};
 	markerInfo.sType = VK_STRUCTURE_TYPE_DEBUG_MARKER_MARKER_INFO_EXT;
 	memcpy(markerInfo.color, &debugMarkerInfo.color, sizeof(float) * 4);
@@ -302,7 +302,7 @@ void Wolf::CommandBufferVulkan::debugMarkerInsert(const DebugMarkerInfo& debugMa
 
 void Wolf::CommandBufferVulkan::debugMarkerBegin(const DebugMarkerInfo& debugMarkerInfo) const
 {
-#if !defined(__ANDROID__) or __ANDROID_MIN_SDK_VERSION__ > 30
+#if !defined(__ANDROID__)
 	VkDebugMarkerMarkerInfoEXT markerInfo = {};
 	markerInfo.sType = VK_STRUCTURE_TYPE_DEBUG_MARKER_MARKER_INFO_EXT;
 	memcpy(markerInfo.color, &debugMarkerInfo.color, sizeof(float) * 4);
@@ -313,7 +313,7 @@ void Wolf::CommandBufferVulkan::debugMarkerBegin(const DebugMarkerInfo& debugMar
 
 void Wolf::CommandBufferVulkan::debugMarkerEnd() const
 {
-#if !defined(__ANDROID__) or __ANDROID_MIN_SDK_VERSION__ > 30
+#if !defined(__ANDROID__)
 	vkCmdDebugMarkerEndEXT(getCommandBuffer());
 #endif
 }

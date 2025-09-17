@@ -34,15 +34,17 @@ LOCAL_SRC_FILES := Private/Vulkan/AccelerationStructureVulkan.cpp \
 	Public/Fence.cpp \
 	Public/FrameBuffer.cpp \
 	Public/GraphicAPIManager.cpp \
+	Public/GPUSemaphore.cpp \
 	Public/Image.cpp \
 	Public/ImageView.cpp \
 	Public/Pipeline.cpp \
+	Public/ReadableBuffer.cpp \
 	Public/RenderPass.cpp \
 	Public/Sampler.cpp \
-	Public/Semaphore.cpp \
 	Public/ShaderBindingTable.cpp \
 	Public/SwapChain.cpp \
-	Public/TopLevelAccelerationStructure.cpp
+	Public/TopLevelAccelerationStructure.cpp \
+	Public/UniformBuffer.cpp
 
 LOCAL_CXXFLAGS:=-std=c++20 -fno-exceptions -fno-rtti -DENABLE_HLSL=1 -D_LIBCPP_NO_NATIVE_SEMAPHORES=1 -DVK_USE_PLATFORM_ANDROID_KHR=1 -DGLM_FORCE_CXX14=1 -DWOLF_VULKAN=1 -DWOLF_VULKAN_FORCE_1_3=1
 LOCAL_EXPORT_CPPFLAGS:=-std=c++20

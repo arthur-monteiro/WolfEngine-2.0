@@ -63,9 +63,6 @@
     <ClInclude Include="Private\Vulkan\FenceVulkan.h">
       <Filter>Vulkan</Filter>
     </ClInclude>
-    <ClInclude Include="Public\Semaphore.h">
-      <Filter>API Elements</Filter>
-    </ClInclude>
     <ClInclude Include="Public\Enums.h">
       <Filter>Global</Filter>
     </ClInclude>
@@ -180,6 +177,9 @@
     <ClInclude Include="Public\ReadableBuffer.h">
       <Filter>API Elements</Filter>
     </ClInclude>
+    <ClInclude Include="Public\GPUSemaphore.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Private\Vulkan\CommandPool.cpp">
@@ -211,9 +211,6 @@
     </ClCompile>
     <ClCompile Include="Private\Vulkan\FenceVulkan.cpp">
       <Filter>Vulkan</Filter>
-    </ClCompile>
-    <ClCompile Include="Public\Semaphore.cpp">
-      <Filter>API Elements</Filter>
     </ClCompile>
     <ClCompile Include="Private\Vulkan\SemaphoreVulkan.cpp">
       <Filter>Vulkan</Filter>
@@ -301,6 +298,9 @@
     </ClCompile>
     <ClCompile Include="Public\ReadableBuffer.cpp">
       <Filter>API Elements</Filter>
+    </ClCompile>
+    <ClCompile Include="Public\GPUSemaphore.cpp">
+      <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

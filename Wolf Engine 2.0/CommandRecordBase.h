@@ -7,8 +7,8 @@
 
 #include <CommandBuffer.h>
 #include <Formats.h>
+#include <GPUSemaphore.h>
 #include <GraphicAPIManager.h>
-#include <Semaphore.h>
 
 struct GLFWwindow;
 

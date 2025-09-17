@@ -34,8 +34,13 @@ namespace Wolf
 	private:
 		void createBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties);
 
+#if defined(__LP64__) || defined(_WIN64) || (defined(__x86_64__) && !defined(__ILP32__) ) || defined(_M_X64) || defined(__ia64) || defined (_M_IA64) || defined(__aarch64__) || defined(__powerpc64__)
 		VkBuffer m_buffer = nullptr;
 		VkDeviceMemory m_bufferMemory = nullptr;
+#else
+		VkBuffer m_buffer = 0;
+		VkDeviceMemory m_bufferMemory = 0;
+#endif
 
 		VkDeviceSize m_bufferSize;
 		VkDeviceSize m_allocationSize = 0;

@@ -5,7 +5,9 @@
 
 #include "Extents.h"
 
+#ifndef __ANDROID__
 struct GLFWwindow;
+#endif
 
 namespace Wolf
 {
