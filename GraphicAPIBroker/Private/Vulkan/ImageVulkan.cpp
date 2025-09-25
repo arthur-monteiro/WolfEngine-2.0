@@ -284,44 +284,8 @@ void Wolf::ImageVulkan::exportToBuffer(std::vector<uint8_t>& outBuffer) const
 
 	stagingImage.copyGPUImage(*this, copyRegion);
 
-	struct ImageOutputPixel
-	{
-		uint8_t r;
-		uint8_t g;
-		uint8_t b;
-	};
-	ImageOutputPixel* outputPixels = new ImageOutputPixel[static_cast<size_t>(m_extent.width) * m_extent.height];
-
-	switch (m_vkImageFormat)
-	{
-	case VK_FORMAT_R32_SFLOAT:
-	{
-		const float* floatPixels = static_cast<float*>(stagingImage.map());
-		for (uint32_t i = 0, end = m_extent.width * m_extent.height; i < end; ++i)
-		{
-			outputPixels[i].r = static_cast<uint8_t>(floatPixels[i] * 255);
-			outputPixels[i].g = 0;
-			outputPixels[i].b = 0;
-		}
-		break;
-	}
-	case VK_FORMAT_B8G8R8A8_UNORM:
-	{
-		const uint8_t* pixels = static_cast<uint8_t*>(stagingImage.map());
-		for (uint32_t i = 0, end = m_extent.width * m_extent.height; i < end; ++i)
-		{
-			outputPixels[i].r = pixels[i * 4 + 2];
-			outputPixels[i].g = pixels[i * 4 + 1];
-			outputPixels[i].b = pixels[i * 4 + 0];
-		}
-		break;
-	}
-	default:
-		Debug::sendError("Unsupported image format to export");
-		return;
-	}
-
-	outBuffer.assign(reinterpret_cast<const uint8_t*>(outputPixels), reinterpret_cast<const uint8_t*>(outputPixels) + static_cast<size_t>(m_extent.width) * m_extent.height * sizeof(ImageOutputPixel));
+	const uint8_t* pixels = static_cast<uint8_t*>(stagingImage.map());
+	outBuffer.assign(pixels, pixels + static_cast<size_t>(m_extent.width) * m_extent.height * static_cast<size_t>(computeBPP()));
 
 	stagingImage.unmap();
 }
@@ -368,40 +332,48 @@ void Wolf::ImageVulkan::createImageView(VkFormat format)
 	m_imageViews[hash] = imageView;
 }
 
-void Wolf::ImageVulkan::setBPP()
+float Wolf::ImageVulkan::computeBPP() const
 {
 	switch (m_vkImageFormat)
 	{
-	case VK_FORMAT_R32G32B32A32_SFLOAT:
-		m_bpp = 16.0f;
-		break;
-	case VK_FORMAT_R32G32_SFLOAT:
-		m_bpp = 8.0f;
-		break;
-	case VK_FORMAT_R8G8B8A8_UNORM:
-	case VK_FORMAT_B8G8R8A8_UNORM:
-	case VK_FORMAT_R8G8B8A8_SRGB:
-	case VK_FORMAT_D32_SFLOAT:
-	case VK_FORMAT_R32_SFLOAT:
-	case VK_FORMAT_R32_UINT:
-	case VK_FORMAT_R32_SINT:
-		m_bpp = 4.0f;
-		break;
-	case VK_FORMAT_BC1_RGB_UNORM_BLOCK:
-	case VK_FORMAT_BC1_RGB_SRGB_BLOCK:
-		m_bpp = 0.5f;
-		break;
-	case VK_FORMAT_BC3_UNORM_BLOCK:
-	case VK_FORMAT_BC3_SRGB_BLOCK:
-	case VK_FORMAT_BC5_UNORM_BLOCK:
-	case VK_FORMAT_R8_UINT:
-		m_bpp = 1.0f;
-		break;
-	default:
-		m_bpp = 1.0f;
-		Debug::sendError("Unsupported image format");
-		break;
+		case VK_FORMAT_R32G32B32A32_SFLOAT:
+			return 16.0f;
+			break;
+		case VK_FORMAT_R32G32B32_SFLOAT:
+			return 12.0f;
+			break;
+		case VK_FORMAT_R32G32_SFLOAT:
+			return 8.0f;
+			break;
+		case VK_FORMAT_R8G8B8A8_UNORM:
+		case VK_FORMAT_B8G8R8A8_UNORM:
+		case VK_FORMAT_R8G8B8A8_SRGB:
+		case VK_FORMAT_D32_SFLOAT:
+		case VK_FORMAT_R32_SFLOAT:
+		case VK_FORMAT_R32_UINT:
+		case VK_FORMAT_R32_SINT:
+			return 4.0f;
+			break;
+		case VK_FORMAT_BC1_RGB_UNORM_BLOCK:
+		case VK_FORMAT_BC1_RGB_SRGB_BLOCK:
+			return 0.5f;
+			break;
+		case VK_FORMAT_BC3_UNORM_BLOCK:
+		case VK_FORMAT_BC3_SRGB_BLOCK:
+		case VK_FORMAT_BC5_UNORM_BLOCK:
+		case VK_FORMAT_R8_UINT:
+			return 1.0f;
+			break;
+		default:
+			return 1.0f;
+			Debug::sendError("Unsupported image format");
+			break;
 	}
+}
+
+void Wolf::ImageVulkan::setBPP()
+{
+	m_bpp = computeBPP();
 }
 
 VkImageUsageFlagBits Wolf::ImageVulkan::wolfImageUsageFlagBitsToVkImageUsageFlagBits(ImageUsageFlagBits imageUsageFlagBits)
@@ -509,7 +481,7 @@ void Wolf::ImageVulkan::transitionImageLayout(const CommandBuffer& commandBuffer
 	barrier.image = m_image;
 	barrier.subresourceRange.baseMipLevel = transitionLayoutInfo.baseMipLevel;
 	barrier.subresourceRange.levelCount = mipLevelCount;
-	barrier.subresourceRange.baseArrayLayer = 0;
+	barrier.subresourceRange.baseArrayLayer = transitionLayoutInfo.baseArrayLayer;
 	barrier.subresourceRange.layerCount = 1;
 
 	if (bool depth = hasDepthComponent(m_vkImageFormat), stencil = hasStencilComponent(m_vkImageFormat); depth || stencil)

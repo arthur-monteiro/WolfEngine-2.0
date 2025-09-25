@@ -385,10 +385,12 @@ void Wolf::ShaderParser::addLightInfoCode(std::ofstream& outFileGLSL) const
 		#include "LightInfo.glsl"
     ;
 
-    const std::string& descriptorSlotToken = "£LIGHT_INFO_DESCRIPTOR_SLOT";
-    if (const size_t descriptorSlotTokenPos = lightInfoCode.find(descriptorSlotToken); descriptorSlotTokenPos != std::string::npos)
+    const std::string& descriptorSlotToken = "@LIGHT_INFO_DESCRIPTOR_SLOT";
+    size_t descriptorSlotTokenPos = lightInfoCode.find(descriptorSlotToken);
+    while (descriptorSlotTokenPos != std::string::npos)
     {
         lightInfoCode.replace(descriptorSlotTokenPos, descriptorSlotToken.length(), std::to_string(m_lightDescriptorSlot));
+        descriptorSlotTokenPos = lightInfoCode.find(descriptorSlotToken);
     }
 
     outFileGLSL << lightInfoCode;

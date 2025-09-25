@@ -155,7 +155,7 @@ Wolf::SwapChainVulkan::~SwapChainVulkan()
 	vkDestroySwapchainKHR(g_vulkanInstance->getDevice(), m_swapChain, nullptr);
 }
 
-uint32_t Wolf::SwapChainVulkan::getCurrentImage(uint32_t currentFrame) const
+uint32_t Wolf::SwapChainVulkan::acquireNextImage(uint32_t currentFrame) const
 {
 	uint32_t imageIndex;
 	const VkResult result = vkAcquireNextImageKHR(g_vulkanInstance->getDevice(), m_swapChain, std::numeric_limits<uint64_t>::max(), 

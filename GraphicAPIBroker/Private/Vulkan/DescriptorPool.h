@@ -18,13 +18,13 @@ namespace Wolf
 		static void addDescriptorPoolSize(VkDescriptorType descriptorType, uint32_t descriptorCount, std::vector<VkDescriptorPoolSize>& poolSizes);
 
 	private:
-		unsigned int m_uniformBufferCount = 20;
-		unsigned int m_combinedImageSamplerCount = 10;
-		unsigned int m_storageImageCount = 10;
-		unsigned int m_samplerCount = 10;
-		unsigned int m_sampledImageCount = 300;
-		unsigned int m_storageBufferCount = 10;
-		unsigned int m_accelerationStructureCount = 1;
+		unsigned int m_uniformBufferCount = 1024;
+		unsigned int m_combinedImageSamplerCount = 128;
+		unsigned int m_storageImageCount = 512;
+		unsigned int m_samplerCount = 64;
+		unsigned int m_sampledImageCount = 16384;
+		unsigned int m_storageBufferCount = 65536;
+		unsigned int m_accelerationStructureCount = 8;
 
 		VkDescriptorPool m_descriptorPool;
 	};

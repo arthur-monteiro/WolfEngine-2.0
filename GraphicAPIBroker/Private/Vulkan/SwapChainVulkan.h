@@ -16,7 +16,7 @@ namespace Wolf
 		SwapChainVulkan(Extent2D extent);
 		~SwapChainVulkan() override;
 		
-		uint32_t getCurrentImage(uint32_t currentFrameGPU) const override;
+		uint32_t acquireNextImage(uint32_t currentFrameGPU) const override;
 		void present(const Semaphore* waitSemaphore, uint32_t imageIndex) const override;
 
 		void resetAllFences() override;

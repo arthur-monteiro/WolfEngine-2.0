@@ -33,7 +33,7 @@ void UniquePass::initializeResources(const InitializationContext& context)
 		m_frameBuffers[i].reset(FrameBuffer::createFrameBuffer(*m_renderPass, { depth, color }));
 	}
 
-	m_semaphore.reset(Semaphore::createSemaphore(VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT));
+	createSemaphores(context, VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT, true);
 
 	m_vertexShaderParser.reset(new ShaderParser("Shaders/shader.vert"));
 	m_fragmentShaderParser.reset(new ShaderParser("Shaders/shader.frag"));
@@ -106,7 +106,7 @@ void UniquePass::record(const RecordContext& context)
 void UniquePass::submit(const SubmitContext& context)
 {
 	const std::vector<const Semaphore*> waitSemaphores{ context.swapChainImageAvailableSemaphore };
-	const std::vector<const Semaphore*> signalSemaphores{ m_semaphore.get() };
+	const std::vector<const Semaphore*> signalSemaphores{ getSemaphore(context.swapChainImageIndex) };
 	m_commandBuffer->submit(waitSemaphores, signalSemaphores, context.frameFence);
 
 	bool anyShaderModified = m_vertexShaderParser->compileIfFileHasBeenModified();
