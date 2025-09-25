@@ -9,6 +9,7 @@
 #include <Formats.h>
 #include <GPUSemaphore.h>
 #include <GraphicAPIManager.h>
+#include <RuntimeContext.h>
 
 struct GLFWwindow;
 
@@ -58,6 +59,7 @@ namespace Wolf
 		const Semaphore* userInterfaceImageAvailableSemaphore;
 		Fence* frameFence;
 		GraphicAPIManager* graphicAPIManager;
+		uint32_t swapChainImageIndex;
 	};
 
 	class CommandRecordBase
@@ -69,10 +71,14 @@ namespace Wolf
 		virtual void record(const RecordContext& context) = 0;
 		virtual void submit(const SubmitContext& context) = 0;
 
-		[[nodiscard]] virtual const Semaphore* getSemaphore() const { return m_semaphore.get(); }
+		[[nodiscard]] virtual Semaphore* getSemaphore(uint32_t swapChainImageIdx) const { return m_semaphores[swapChainImageIdx % m_semaphores.size()].get(); }
 
 	protected:
+		void createSemaphores(const InitializationContext& context, uint32_t pipelineStage, bool isFinalPass);
+
 		std::unique_ptr<CommandBuffer> m_commandBuffer;
-		std::unique_ptr<Semaphore> m_semaphore;
+
+	private:
+		std::vector<std::unique_ptr<Semaphore>> m_semaphores;
 	};
 }

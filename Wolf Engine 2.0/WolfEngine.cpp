@@ -200,13 +200,11 @@ void Wolf::WolfEngine::updateBeforeFrame()
 	m_lightManager->updateBeforeFrame();
 }
 
-void Wolf::WolfEngine::frame(const std::span<ResourceNonOwner<CommandRecordBase>>& passes, const Semaphore* frameEndedSemaphore)
+uint32_t Wolf::WolfEngine::acquireNextSwapChainImage()
 {
-	PROFILE_FUNCTION
-
 	uint32_t currentFrame = g_runtimeContext->getCurrentCPUFrameNumber();
 
-	const uint32_t currentSwapChainImageIndex = m_swapChain->getCurrentImage(currentFrame);
+	const uint32_t currentSwapChainImageIndex = m_swapChain->acquireNextImage(currentFrame);
 	if (currentSwapChainImageIndex == SwapChain::NO_IMAGE_IDX)
 	{
 		std::this_thread::sleep_for(std::chrono::milliseconds(7)); // window is probably not visible, let the PC sleep a bit
@@ -214,9 +212,16 @@ void Wolf::WolfEngine::frame(const std::span<ResourceNonOwner<CommandRecordBase>
 		waitIdle();
 		m_swapChain->resetAllFences();
 		g_runtimeContext->reset();
-
-		return;
 	}
+
+	return currentSwapChainImageIndex;
+}
+
+void Wolf::WolfEngine::frame(const std::span<ResourceNonOwner<CommandRecordBase>>& passes, Semaphore* frameEndedSemaphore, uint32_t currentSwapChainImageIndex)
+{
+	PROFILE_FUNCTION
+
+	uint32_t currentFrame = g_runtimeContext->getCurrentCPUFrameNumber();
 
 	if (passes.empty())
 		Debug::sendError("No pass sent to frame");
@@ -291,6 +296,7 @@ void Wolf::WolfEngine::frame(const std::span<ResourceNonOwner<CommandRecordBase>
 #endif
 		submitContext.frameFence = m_swapChain->getFrameFence(currentFrame % g_configuration->getMaxCachedFrames());
 		submitContext.graphicAPIManager = m_graphicAPIManager.get();
+		submitContext.swapChainImageIndex = currentSwapChainImageIndex;
 
 		for (const ResourceNonOwner<CommandRecordBase>& pass : passes)
 		{

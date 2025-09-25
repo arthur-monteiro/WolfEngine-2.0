@@ -49,7 +49,7 @@ void Wolf::ConfigurationHelper::writeInfoToFile(const std::string& filepath, con
 			}
 		}
 
-		fullFile += line;
+		fullFile += line + '\n';
 	}
 
 	inConfigFile.close();
@@ -74,6 +74,11 @@ void Wolf::ConfigurationHelper::writeInfoToFile(const std::string& filepath, con
 }
 
 void Wolf::ConfigurationHelper::writeInfoToFile(const std::string& filepath, const std::string& token, uint32_t value)
+{
+	writeInfoToFile(filepath, token, std::to_string(value));
+}
+
+void Wolf::ConfigurationHelper::writeInfoToFile(const std::string& filepath, const std::string& token, uint64_t value)
 {
 	writeInfoToFile(filepath, token, std::to_string(value));
 }

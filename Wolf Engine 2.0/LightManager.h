@@ -6,6 +6,7 @@
 
 #include <DescriptorSet.h>
 #include <DescriptorSetLayout.h>
+#include <Image.h>
 #include <UniformBuffer.h>
 
 #include "DescriptorSetLayoutGenerator.h"
@@ -36,6 +37,8 @@ namespace Wolf
 		};
 		void addSunLightInfoForNextFrame(const SunLightInfo& sunLightInfo);
 
+		void setSkyCubeMap(ResourceNonOwner<Image> cubeMap);
+
 		void updateBeforeFrame();
 
 		[[nodiscard]] static ResourceUniqueOwner<DescriptorSetLayout>& getDescriptorSetLayout() { return LazyInitSharedResource<DescriptorSetLayout, LightManager>::getResource(); }
@@ -45,6 +48,8 @@ namespace Wolf
 		const SunLightInfo& getSunLightInfo(uint32_t idx) const { return m_currentSunLights[idx]; }
 
 	private:
+		void updateDescriptorSet();
+
 		std::vector<PointLightInfo> m_currentPointLights;
 		std::vector<PointLightInfo> m_nextFramePointLights;
 		std::mutex m_pointLightsMutex;
@@ -78,6 +83,10 @@ namespace Wolf
 			glm::vec3 padding2;
 		};
 		ResourceUniqueOwner<UniformBuffer> m_uniformBuffer;
+
+		ResourceUniqueOwner<Image> m_defaultSkyCubeMap;
+		NullableResourceNonOwner<Image> m_skyCubeMap;
+		ResourceUniqueOwner<Sampler> m_cubeMapSampler;
 
 		DescriptorSetLayoutGenerator m_descriptorSetLayoutGenerator;
 		ResourceUniqueOwner<DescriptorSet> m_descriptorSet;

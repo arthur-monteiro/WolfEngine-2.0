@@ -147,7 +147,8 @@ void android_main(struct android_app *state) {
             passes.push_back(pass.createNonOwnerResource<Wolf::CommandRecordBase>());
 
             engine.app_backend->updateBeforeFrame();
-            engine.app_backend->frame(passes, pass->getSemaphore());
+            uint32_t swapChainImageIdx = engine.app_backend->acquireNextSwapChainImage();
+            engine.app_backend->frame(passes, pass->getSemaphore(swapChainImageIdx), swapChainImageIdx);
         }
     }
 }

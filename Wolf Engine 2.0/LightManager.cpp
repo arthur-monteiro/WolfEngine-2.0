@@ -1,6 +1,7 @@
 #include "LightManager.h"
 
 #include <DescriptorSetLayout.h>
+#include <Sampler.h>
 
 #include "DescriptorSetGenerator.h"
 #include "ProfilerCommon.h"
@@ -8,19 +9,29 @@
 Wolf::LightManager::LightManager()
 {
 	m_uniformBuffer.reset(new UniformBuffer(sizeof(LightsUBData)));
+	m_cubeMapSampler.reset(Sampler::createSampler(VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE, 1.0f, VK_FILTER_LINEAR, 1));
 
-	m_descriptorSetLayoutGenerator.addUniformBuffer(ShaderStageFlagBits::FRAGMENT | ShaderStageFlagBits::RAYGEN, 0);
+	CreateImageInfo createCubeMapInfo{};
+	createCubeMapInfo.extent = { 4, 4, 1};
+	createCubeMapInfo.format = Format::R32G32B32A32_SFLOAT;
+	createCubeMapInfo.arrayLayerCount = 6;
+	createCubeMapInfo.aspect = VK_IMAGE_ASPECT_COLOR_BIT;
+	createCubeMapInfo.mipLevelCount = 1;
+	createCubeMapInfo.usage = Wolf::ImageUsageFlagBits::TRANSFER_DST | Wolf::ImageUsageFlagBits::SAMPLED;
+	m_defaultSkyCubeMap.reset(Wolf::Image::createImage(createCubeMapInfo));
+	m_skyCubeMap = m_defaultSkyCubeMap.createNonOwnerResource();
+
+	m_descriptorSetLayoutGenerator.addUniformBuffer(ShaderStageFlagBits::FRAGMENT | ShaderStageFlagBits::RAYGEN, 0); // lights info
+	m_descriptorSetLayoutGenerator.addCombinedImageSampler(ShaderStageFlagBits::FRAGMENT | ShaderStageFlagBits::RAYGEN, 1); // sky cube map
 
 	m_descriptorSetLayout.reset(new LazyInitSharedResource<DescriptorSetLayout, LightManager>([this](ResourceUniqueOwner<DescriptorSetLayout>& descriptorSetLayout)
 		{
 			descriptorSetLayout.reset(DescriptorSetLayout::createDescriptorSetLayout(m_descriptorSetLayoutGenerator.getDescriptorLayouts(), VK_DESCRIPTOR_SET_LAYOUT_CREATE_UPDATE_AFTER_BIND_POOL_BIT));
 		}));
 
-	Wolf::DescriptorSetGenerator descriptorSetGenerator(m_descriptorSetLayoutGenerator.getDescriptorLayouts());
-	descriptorSetGenerator.setUniformBuffer(0, *m_uniformBuffer);
-
 	m_descriptorSet.reset(Wolf::DescriptorSet::createDescriptorSet(*m_descriptorSetLayout->getResource()));
-	m_descriptorSet->update(descriptorSetGenerator.getDescriptorSetCreateInfo());
+
+	updateDescriptorSet();
 }
 
 void Wolf::LightManager::addPointLightForNextFrame(const PointLightInfo& pointLightInfo)
@@ -35,6 +46,12 @@ void Wolf::LightManager::addSunLightInfoForNextFrame(const SunLightInfo& sunLigh
 	m_nextFrameSunLights.emplace_back(sunLightInfo);
 }
 
+void Wolf::LightManager::setSkyCubeMap(ResourceNonOwner<Image> cubeMap)
+{
+	m_skyCubeMap = cubeMap;
+	updateDescriptorSet();
+}
+
 void Wolf::LightManager::updateBeforeFrame()
 {
 	PROFILE_FUNCTION
@@ -47,6 +64,10 @@ void Wolf::LightManager::updateBeforeFrame()
 
 	LightsUBData lightsUbData{};
 
+	if (m_currentPointLights.size() > MAX_POINT_LIGHTS)
+	{
+		Wolf::Debug::sendMessageOnce("Max point lights reached, next will be ignored", Wolf::Debug::Severity::WARNING, this);
+	}
 	uint32_t pointLightIdx = 0;
 	for (const PointLightInfo& pointLightInfo : m_currentPointLights)
 	{
@@ -56,13 +77,14 @@ void Wolf::LightManager::updateBeforeFrame()
 		pointLightIdx++;
 
 		if (pointLightIdx == MAX_POINT_LIGHTS)
-		{
-			Wolf::Debug::sendMessageOnce("Max point lights reached, next will be ignored", Wolf::Debug::Severity::WARNING, this);
 			break;
-		}
 	}
 	lightsUbData.pointLightsCount = pointLightIdx;
 
+	if (m_currentSunLights.size() > MAX_SUN_LIGHTS)
+	{
+		Wolf::Debug::sendMessageOnce("Max sun lights reached, next will be ignored", Wolf::Debug::Severity::WARNING, this);
+	}
 	uint32_t sunLightIdx = 0;
 	for (const SunLightInfo& sunLightInfo : m_currentSunLights)
 	{
@@ -72,12 +94,18 @@ void Wolf::LightManager::updateBeforeFrame()
 		sunLightIdx++;
 
 		if (sunLightIdx == MAX_SUN_LIGHTS)
-		{
-			Wolf::Debug::sendMessageOnce("Max sun lights reached, next will be ignored", Wolf::Debug::Severity::WARNING, this);
 			break;
-		}
 	}
 	lightsUbData.sunLightsCount = sunLightIdx;
 
 	m_uniformBuffer->transferCPUMemory(&lightsUbData, sizeof(LightsUBData));
+}
+
+void Wolf::LightManager::updateDescriptorSet()
+{
+	Wolf::DescriptorSetGenerator descriptorSetGenerator(m_descriptorSetLayoutGenerator.getDescriptorLayouts());
+	descriptorSetGenerator.setUniformBuffer(0, *m_uniformBuffer);
+	descriptorSetGenerator.setCombinedImageSampler(1, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, m_skyCubeMap->getDefaultImageView(), *m_cubeMapSampler);
+
+	m_descriptorSet->update(descriptorSetGenerator.getDescriptorSetCreateInfo());
 }

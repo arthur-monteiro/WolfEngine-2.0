@@ -39,7 +39,8 @@ int main()
 		passes.push_back(pass.createNonOwnerResource<Wolf::CommandRecordBase>());
 
 		wolfInstance.updateBeforeFrame();
-		wolfInstance.frame(passes, pass->getSemaphore());
+		uint32_t swapChainImageIdx = wolfInstance.acquireNextSwapChainImage();
+		wolfInstance.frame(passes, pass->getSemaphore(swapChainImageIdx), swapChainImageIdx);
 	}
 
 	wolfInstance.waitIdle();

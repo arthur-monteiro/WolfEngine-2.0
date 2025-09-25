@@ -23,8 +23,8 @@ namespace Wolf
 
 		void synchroniseCPUFromGPU(uint32_t currentFrameGPU) const;
 		static constexpr uint32_t NO_IMAGE_IDX = static_cast<uint32_t>(-1);
-		virtual uint32_t getCurrentImage(uint32_t currentFrameGPU) const = 0;
-		virtual void present(const Semaphore* waitSemaphore, uint32_t imageIndex) const = 0;
+		virtual uint32_t acquireNextImage(uint32_t currentFrameGPU) const = 0;
+		virtual void present(const Semaphore* frameEndedSemaphore, uint32_t imageIndex) const = 0;
 
 		virtual void resetAllFences() = 0;
 		virtual void recreate(Extent2D extent) = 0;

@@ -66,7 +66,8 @@ namespace Wolf
 
 		bool windowShouldClose() const;
 		void updateBeforeFrame();
-		void frame(const std::span<ResourceNonOwner<CommandRecordBase>>& passes, const Semaphore* frameEndedSemaphore);
+		uint32_t acquireNextSwapChainImage();
+		void frame(const std::span<ResourceNonOwner<CommandRecordBase>>& passes, Semaphore* frameEndedSemaphore, uint32_t currentSwapChainImageIndex);
 
 		void addJobBeforeFrame(const MultiThreadTaskManager::Job& job, bool runAfterAllJobs = false);
 

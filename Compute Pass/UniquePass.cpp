@@ -13,7 +13,7 @@ using namespace Wolf;
 void UniquePass::initializeResources(const InitializationContext& context)
 {
 	m_commandBuffer.reset(CommandBuffer::createCommandBuffer(QueueType::COMPUTE, false /* isTransient */));
-	m_semaphore.reset(Semaphore::createSemaphore(VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT));
+	createSemaphores(context, VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT, true);
 
 	m_computeShaderParser.reset(new ShaderParser("Shaders/shader.comp"));
 
@@ -64,7 +64,7 @@ void UniquePass::record(const RecordContext& context)
 void UniquePass::submit(const SubmitContext& context)
 {
 	const std::vector waitSemaphores{ context.swapChainImageAvailableSemaphore };
-	const std::vector<const Semaphore*> signalSemaphores{ m_semaphore.get() };
+	const std::vector<const Semaphore*> signalSemaphores{ getSemaphore(context.swapChainImageIndex) };
 	m_commandBuffer->submit(waitSemaphores, signalSemaphores, context.frameFence);
 
 	if (m_computeShaderParser->compileIfFileHasBeenModified())

@@ -13,7 +13,7 @@ struct SunLightInfo
 };
 const uint MAX_SUN_LIGHTS = 1;
 
-layout(binding = 0, set = £LIGHT_INFO_DESCRIPTOR_SLOT, std140) uniform readonly UniformBufferLights
+layout(binding = 0, set = @LIGHT_INFO_DESCRIPTOR_SLOT, std140) uniform readonly UniformBufferLights
 {
     PointLightInfo pointLights[MAX_POINT_LIGHTS];
     uint pointLightsCount;
@@ -21,4 +21,6 @@ layout(binding = 0, set = £LIGHT_INFO_DESCRIPTOR_SLOT, std140) uniform readonly 
     SunLightInfo sunLights[MAX_SUN_LIGHTS];
     uint sunLightsCount;
 } ubLights;
+
+layout (binding = 1, set = @LIGHT_INFO_DESCRIPTOR_SLOT) uniform samplerCube CubeMap;
 )"
