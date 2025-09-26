@@ -32,9 +32,7 @@ Wolf::ImageVulkan::ImageVulkan(const CreateImageInfo& createImageInfo)
 		m_mipLevelCount = createImageInfo.mipLevelCount;
 	m_arrayLayerCount = createImageInfo.arrayLayerCount;
 	m_aspectFlags = createImageInfo.aspect;
-	m_imageLayouts.resize(m_mipLevelCount);
-	for (VkImageLayout& imageLayout : m_imageLayouts)
-		imageLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+	resetAllLayouts();
 
 	VkImageCreateInfo imageInfo = {};
 	imageInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
@@ -101,9 +99,7 @@ Wolf::ImageVulkan::ImageVulkan(VkImage image, Format format, VkImageAspectFlags 
 	m_arrayLayerCount = 1;
 	m_sampleCount = VK_SAMPLE_COUNT_1_BIT;
 
-	m_imageLayouts.resize(m_mipLevelCount);
-	for (VkImageLayout& imageLayout : m_imageLayouts)
-		imageLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+	resetAllLayouts();
 
 	setBPP();
 }
@@ -121,7 +117,7 @@ Wolf::ImageVulkan::~ImageVulkan()
 	GPUMemoryDebug::unregisterResource(GPUMemoryDebug::TYPE::TEXTURE, 0, static_cast<uint64_t>(static_cast<float>(m_extent.width) * static_cast<float>(m_extent.height) * static_cast<float>(m_extent.depth) * m_bpp), m_allocationSize);
 }
 
-void Wolf::ImageVulkan::copyCPUBuffer(const unsigned char* pixels, const TransitionLayoutInfo& finalLayout, uint32_t mipLevel)
+void Wolf::ImageVulkan::copyCPUBuffer(const unsigned char* pixels, const TransitionLayoutInfo& finalLayout, uint32_t mipLevel, uint32_t baseArrayLayer)
 {
 	const VkExtent3D extent = { m_extent.width >> mipLevel, m_extent.height >> mipLevel, m_extent.depth };
 	const VkDeviceSize imageSize = static_cast<VkDeviceSize>(static_cast<float>(extent.width) * static_cast<float>(extent.height) * static_cast<float>(extent.depth) * m_bpp);
@@ -140,7 +136,7 @@ void Wolf::ImageVulkan::copyCPUBuffer(const unsigned char* pixels, const Transit
 
 	copyRegion.imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
 	copyRegion.imageSubresource.mipLevel = mipLevel;
-	copyRegion.imageSubresource.baseArrayLayer = 0;
+	copyRegion.imageSubresource.baseArrayLayer = baseArrayLayer;
 	copyRegion.imageSubresource.layerCount = 1;
 
 	copyRegion.imageOffset = { 0, 0, 0 };
@@ -154,7 +150,8 @@ void Wolf::ImageVulkan::copyGPUBuffer(const Buffer& bufferSrc, const BufferImage
 	const CommandBufferVulkan commandBuffer(QueueType::TRANSFER, true);
 	commandBuffer.beginCommandBuffer();
 
-	transitionImageLayout(commandBuffer, { VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_ACCESS_TRANSFER_WRITE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, copyRegion.imageSubresource.mipLevel, 1 });
+	transitionImageLayout(commandBuffer, { VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_ACCESS_TRANSFER_WRITE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, copyRegion.imageSubresource.mipLevel,
+		1, copyRegion.imageSubresource.baseArrayLayer, copyRegion.imageSubresource.layerCount });
 	VkBufferImageCopy vkBufferImageCopy = wolfBufferImageCopyToVkBufferImageCopy(copyRegion);
 	vkCmdCopyBufferToImage(commandBuffer.getCommandBuffer(), static_cast<const BufferVulkan*>(&bufferSrc)->getBuffer(), m_image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,	1, &vkBufferImageCopy);
 	transitionImageLayout(commandBuffer, finalLayout);
@@ -173,7 +170,8 @@ void Wolf::ImageVulkan::recordCopyGPUBuffer(const CommandBuffer& commandBuffer, 
 	const CommandBufferVulkan* commandBufferVulkan = static_cast<const CommandBufferVulkan*>(&commandBuffer);
 	const BufferVulkan* srcAsBufferVulkan = static_cast<const BufferVulkan*>(&bufferSrc);
 
-	transitionImageLayout(commandBuffer, { VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_ACCESS_TRANSFER_WRITE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, copyRegion.imageSubresource.mipLevel, 1 });
+	transitionImageLayout(commandBuffer, { VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_ACCESS_TRANSFER_WRITE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, copyRegion.imageSubresource.mipLevel,
+		1 });
 
 	VkBufferImageCopy vkBufferImageCopy = wolfBufferImageCopyToVkBufferImageCopy(copyRegion);
 	vkCmdCopyBufferToImage(commandBufferVulkan->getCommandBuffer(), srcAsBufferVulkan->getBuffer(), m_image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &vkBufferImageCopy);
@@ -188,7 +186,8 @@ void Wolf::ImageVulkan::copyGPUImage(const Image& imageSrc, const VkImageCopy& i
 
 	transitionImageLayout(commandBuffer, { VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_ACCESS_TRANSFER_WRITE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, imageCopy.dstSubresource.mipLevel, 1 });
 	recordCopyGPUImage(imageSrc, imageCopy, commandBuffer);
-	transitionImageLayout(commandBuffer, { VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_ACCESS_SHADER_READ_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, imageCopy.dstSubresource.mipLevel, 1 });
+	transitionImageLayout(commandBuffer, { VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_ACCESS_SHADER_READ_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, imageCopy.dstSubresource.mipLevel,
+		1 });
 
 	commandBuffer.endCommandBuffer();
 
@@ -376,6 +375,20 @@ void Wolf::ImageVulkan::setBPP()
 	m_bpp = computeBPP();
 }
 
+void Wolf::ImageVulkan::resetAllLayouts()
+{
+	m_imageLayouts.resize(m_arrayLayerCount);
+	for (std::vector<VkImageLayout>& imageLayoutArray : m_imageLayouts)
+	{
+		imageLayoutArray.resize(m_mipLevelCount);
+
+		for (VkImageLayout& imageLayout : imageLayoutArray)
+		{
+			imageLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+		}
+	}
+}
+
 VkImageUsageFlagBits Wolf::ImageVulkan::wolfImageUsageFlagBitsToVkImageUsageFlagBits(ImageUsageFlagBits imageUsageFlagBits)
 {
 	switch (imageUsageFlagBits)
@@ -457,11 +470,14 @@ void Wolf::ImageVulkan::transitionImageLayout(const CommandBuffer& commandBuffer
 
 	// Sanity checks
 	{
-		const VkImageLayout imageLayout = m_imageLayouts[transitionLayoutInfo.baseMipLevel];
-		for (uint32_t mipLevel = transitionLayoutInfo.baseMipLevel; mipLevel < mipLevelCount; mipLevel++)
+		const VkImageLayout imageLayout = m_imageLayouts[transitionLayoutInfo.baseArrayLayer][transitionLayoutInfo.baseMipLevel];
+		for (uint32_t layer = transitionLayoutInfo.baseArrayLayer; layer < transitionLayoutInfo.baseArrayLayer + transitionLayoutInfo.layerCount; layer++)
 		{
-			if (m_imageLayouts[mipLevel] != imageLayout)
-				Debug::sendError("Image layout must be the same for all mip level asked for transition");
+			for (uint32_t mipLevel = transitionLayoutInfo.baseMipLevel; mipLevel < mipLevelCount; mipLevel++)
+			{
+				if (m_imageLayouts[layer][mipLevel] != imageLayout)
+					Debug::sendError("Image layout must be the same for all mip level and all layers asked for transition");
+			}
 		}
 
 		//if (std::this_thread::get_id() != g_mainThreadId)
@@ -474,7 +490,7 @@ void Wolf::ImageVulkan::transitionImageLayout(const CommandBuffer& commandBuffer
 
 	VkImageMemoryBarrier barrier = {};
 	barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
-	barrier.oldLayout = transitionLayoutInfo.oldLayout == VK_IMAGE_LAYOUT_UNDEFINED ? m_imageLayouts[transitionLayoutInfo.baseMipLevel] : transitionLayoutInfo.oldLayout;
+	barrier.oldLayout = transitionLayoutInfo.oldLayout == VK_IMAGE_LAYOUT_UNDEFINED ? m_imageLayouts[transitionLayoutInfo.baseArrayLayer][transitionLayoutInfo.baseMipLevel] : transitionLayoutInfo.oldLayout;
 	barrier.newLayout = transitionLayoutInfo.dstLayout;
 	barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
 	barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
@@ -482,7 +498,7 @@ void Wolf::ImageVulkan::transitionImageLayout(const CommandBuffer& commandBuffer
 	barrier.subresourceRange.baseMipLevel = transitionLayoutInfo.baseMipLevel;
 	barrier.subresourceRange.levelCount = mipLevelCount;
 	barrier.subresourceRange.baseArrayLayer = transitionLayoutInfo.baseArrayLayer;
-	barrier.subresourceRange.layerCount = 1;
+	barrier.subresourceRange.layerCount = transitionLayoutInfo.layerCount;
 
 	if (bool depth = hasDepthComponent(m_vkImageFormat), stencil = hasStencilComponent(m_vkImageFormat); depth || stencil)
 	{
@@ -502,8 +518,12 @@ void Wolf::ImageVulkan::transitionImageLayout(const CommandBuffer& commandBuffer
 	vkCmdPipelineBarrier(static_cast<const CommandBufferVulkan*>(&commandBuffer)->getCommandBuffer(), m_pipelineStageFlags, transitionLayoutInfo.dstPipelineStageFlags, 0,	0, nullptr, 0, nullptr,	1, &barrier);
 
 	m_accessFlags = transitionLayoutInfo.dstAccessMask;
-	for(uint32_t mipLevel = transitionLayoutInfo.baseMipLevel; mipLevel < mipLevelCount; mipLevel++)
-		m_imageLayouts[mipLevel] = transitionLayoutInfo.dstLayout;
+	for (uint32_t layer = transitionLayoutInfo.baseArrayLayer; layer < transitionLayoutInfo.baseArrayLayer + transitionLayoutInfo.layerCount; layer++)
+	{
+		for (uint32_t mipLevel = transitionLayoutInfo.baseMipLevel; mipLevel < mipLevelCount; mipLevel++)
+			m_imageLayouts[layer][mipLevel] = transitionLayoutInfo.dstLayout;
+	}
+
 	m_pipelineStageFlags = transitionLayoutInfo.dstPipelineStageFlags;
 }
 
@@ -513,5 +533,5 @@ void Wolf::ImageVulkan::setImageLayoutWithoutOperation(VkImageLayout newImageLay
 		levelCount = m_mipLevelCount;
 
 	for (uint32_t mipLevel = baseMipLevel; mipLevel < levelCount; mipLevel++)
-		m_imageLayouts[mipLevel] = newImageLayout;
+		m_imageLayouts[0 /* layer */][mipLevel] = newImageLayout;
 }

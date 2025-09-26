@@ -47,6 +47,8 @@ namespace Wolf
 		const DescriptorSet* bindlessDescriptorSet = nullptr;
 		ResourceNonOwner<LightManager> lightManager;
 		const Timer* globalTimer = nullptr;
+		GraphicAPIManager* graphicAPIManager;
+		bool* invalidateFrame;
 
 		RecordContext(const ResourceNonOwner<LightManager>& lightManager, const ResourceNonOwner<RenderMeshList>& renderMeshList)
 			: renderMeshList(renderMeshList), lightManager(lightManager) {}

@@ -14,7 +14,7 @@
 
 using namespace ultralight;
 
-Wolf::UltraLight::UltraLight(const char* htmlURL, const std::function<void()>& bindCallbacks, const ResourceNonOwner<InputHandler>& inputHandler) : m_inputHandler(inputHandler)
+Wolf::UltraLight::UltraLight(const char* htmlURL, const std::function<void(ultralight::JSObject& jsObject)>& bindCallbacks, const ResourceNonOwner<InputHandler>& inputHandler) : m_inputHandler(inputHandler)
 {
     m_thread = std::thread(&UltraLight::processImplementation, this, htmlURL, bindCallbacks);
 }
@@ -91,7 +91,7 @@ void Wolf::UltraLight::resize(uint32_t width, uint32_t height)
 #include <Windows.h>
 #endif
 
-void Wolf::UltraLight::processImplementation(const char* htmlURL, const std::function<void()>& bindCallbacks)
+void Wolf::UltraLight::processImplementation(const char* htmlURL, const std::function<void(ultralight::JSObject& jsObject)>& bindCallbacks)
 {
 #ifdef _WIN32
     SetThreadDescription(GetCurrentThread(), L"UltraLight - Update");
@@ -108,7 +108,7 @@ void Wolf::UltraLight::processImplementation(const char* htmlURL, const std::fun
             escapedCurrentPath += currentPathChar;
     }
     const std::string absoluteURL = "file:///" + escapedCurrentPath + "/" + htmlURL;
-    m_ultraLightImplementation.reset(new UltraLightImplementation(g_configuration->getWindowWidth(), g_configuration->getWindowHeight(), absoluteURL, htmlURL, m_inputHandler));
+    m_ultraLightImplementation.reset(new UltraLightImplementation(g_configuration->getWindowWidth(), g_configuration->getWindowHeight(), absoluteURL, htmlURL, m_inputHandler, bindCallbacks));
 
     m_bindUltralightCallbacks = bindCallbacks;
 
@@ -140,7 +140,9 @@ void Wolf::UltraLight::processImplementation(const char* htmlURL, const std::fun
 
         if (m_ultraLightImplementation->reloadIfModified())
         {
-            bindCallbacks();
+            ultralight::JSObject jsObject;
+            getJSObject(jsObject);
+            bindCallbacks(jsObject);
             m_needUpdate = false;
             continue;
         }
@@ -164,8 +166,9 @@ void Wolf::UltraLight::processImplementation(const char* htmlURL, const std::fun
     }
 }
 
-Wolf::UltraLight::UltraLightImplementation::UltraLightImplementation(uint32_t width, uint32_t height, const std::string& absoluteURL, std::string filePath, const ResourceNonOwner<InputHandler>& inputHandler)
-	: m_filePath(std::move(filePath))
+Wolf::UltraLight::UltraLightImplementation::UltraLightImplementation(uint32_t width, uint32_t height, const std::string& absoluteURL, std::string filePath, const ResourceNonOwner<InputHandler>& inputHandler,
+    const std::function<void(ultralight::JSObject& jsObject)>& bindCallbacks)
+	: m_filePath(std::move(filePath)), m_bindUltralightCallbacks(bindCallbacks)
 {
     m_lastUpdated = std::filesystem::last_write_time(m_filePath);
     m_viewListener.reset(new UltralightViewListener(inputHandler));
@@ -191,9 +194,9 @@ Wolf::UltraLight::UltraLightImplementation::UltraLightImplementation(uint32_t wi
 
     UltraLightSurface* surface = dynamic_cast<UltraLightSurface*>(m_view->surface());
     uint32_t i = 0;
-    while (!m_done && i < UltraLightSurface::IMAGE_COUNT)
+    while (!m_done)
     {
-        if (i >= UltraLightSurface::IMAGE_COUNT)
+        if (i >= 1)
         {
             std::this_thread::sleep_for(std::chrono::milliseconds(10));
         }
@@ -202,6 +205,8 @@ Wolf::UltraLight::UltraLightImplementation::UltraLightImplementation(uint32_t wi
         m_renderer->Render();
 
         surface->moveToNextFrame();
+
+        ++i;
     }
 
     for (ResourceUniqueOwner<CommandBuffer>& commandBuffer : m_copyImageCommandBuffers)
@@ -245,6 +250,9 @@ void Wolf::UltraLight::UltraLightImplementation::OnDOMReady(View* caller, uint64
 {
     RefPtr<JSContext> context = caller->LockJSContext();
     SetJSContext(context->ctx());
+
+    JSObject jsObject = JSGlobalObject();
+    m_bindUltralightCallbacks(jsObject);
 }
 
 Wolf::Image* Wolf::UltraLight::UltraLightImplementation::getImage() const

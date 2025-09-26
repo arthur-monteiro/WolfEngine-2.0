@@ -58,11 +58,12 @@ namespace Wolf
 			uint32_t baseMipLevel = 0;
 			uint32_t levelCount = MAX_MIP_COUNT;
 			uint32_t baseArrayLayer = 0;
+			uint32_t layerCount = 1;
 
 			VkImageLayout oldLayout = VK_IMAGE_LAYOUT_UNDEFINED;
 		};
 
-		virtual void copyCPUBuffer(const unsigned char* pixels, const TransitionLayoutInfo& finalLayout, uint32_t mipLevel = 0) = 0;
+		virtual void copyCPUBuffer(const unsigned char* pixels, const TransitionLayoutInfo& finalLayout, uint32_t mipLevel = 0, uint32_t baseArrayLayer = 0) = 0;
 
 		typedef struct BufferImageCopy {
 			uint32_t bufferOffset;
@@ -83,9 +84,9 @@ namespace Wolf
 		virtual void getResourceLayout(VkSubresourceLayout& output) const = 0;
 		virtual void exportToBuffer(std::vector<uint8_t>& outBuffer) const = 0;
 
-		static constexpr TransitionLayoutInfo SampledInFragmentShader(uint32_t mipLevel = 0, VkImageLayout oldLayout = VK_IMAGE_LAYOUT_UNDEFINED, uint32_t baseArrayLayer = 0)
+		static constexpr TransitionLayoutInfo SampledInFragmentShader(uint32_t mipLevel = 0, VkImageLayout oldLayout = VK_IMAGE_LAYOUT_UNDEFINED, uint32_t baseArrayLayer = 0, uint32_t layerCount = 1)
 		{
-			return { VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_ACCESS_SHADER_READ_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, mipLevel, 1, baseArrayLayer, oldLayout };
+			return { VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_ACCESS_SHADER_READ_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, mipLevel, 1, baseArrayLayer, layerCount, oldLayout };
 		}
 		virtual void setImageLayout(const TransitionLayoutInfo& transitionLayoutInfo) = 0;
 		virtual void transitionImageLayout(const CommandBuffer& commandBuffer, const TransitionLayoutInfo& transitionLayoutInfo) = 0;
@@ -99,7 +100,7 @@ namespace Wolf
 		[[nodiscard]] virtual Format getFormat() const = 0;
 		[[nodiscard]] virtual VkSampleCountFlagBits getSampleCount() const = 0;
 		[[nodiscard]] virtual Extent3D getExtent() const = 0;
-		[[nodiscard]] virtual VkImageLayout getImageLayout(uint32_t mipLevel = 0) const = 0;
+		[[nodiscard]] virtual VkImageLayout getImageLayout(uint32_t mipLevel = 0, uint32_t layer = 0) const = 0;
 		[[nodiscard]] virtual uint32_t getMipLevelCount() const = 0;
 
 	protected:
