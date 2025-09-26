@@ -41,7 +41,9 @@ namespace Wolf
 		std::string configFilename;
 
 		const char* htmlURL = nullptr;
-		std::function<void()> bindUltralightCallbacks;
+#ifndef __ANDROID__
+		std::function<void(ultralight::JSObject& jsObject)> bindUltralightCallbacks;
+#endif
 
 		bool useOVR = false;
 		bool useBindlessDescriptor = false;
@@ -109,6 +111,8 @@ namespace Wolf
 		ResourceUniqueOwner<Window> m_window;
 #endif
 		ResourceUniqueOwner<SwapChain> m_swapChain;
+		uint32_t m_lastAcquiredSwapChainImageIndex;
+		bool m_previousFrameHasBeenReset = false;
 #ifndef __ANDROID__
 		ResourceUniqueOwner<InputHandler> m_inputHandler;
 		ResourceUniqueOwner<UltraLight> m_ultraLight;

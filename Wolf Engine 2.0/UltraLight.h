@@ -28,7 +28,7 @@ namespace Wolf
     class UltraLight
     {
     public:
-        UltraLight(const char* htmlURL, const std::function<void()>& bindCallbacks, const ResourceNonOwner<InputHandler>& inputHandler);
+        UltraLight(const char* htmlURL, const std::function<void(ultralight::JSObject& jsObject)>& bindCallbacks, const ResourceNonOwner<InputHandler>& inputHandler);
         ~UltraLight();
 
         void waitInitializationDone() const;
@@ -43,12 +43,12 @@ namespace Wolf
         Image* getImage() const { return m_ultraLightImplementation->getImage(); }
 
     private:
-        void processImplementation(const char* htmlURL, const std::function<void()>& bindCallbacks);
+        void processImplementation(const char* htmlURL, const std::function<void(ultralight::JSObject& jsObject)>& bindCallbacks);
 
         std::thread m_thread;
         std::mutex m_mutex;
         std::condition_variable m_updateCondition;
-        std::function<void()> m_bindUltralightCallbacks;
+        std::function<void(ultralight::JSObject& jsObject)> m_bindUltralightCallbacks;
         bool m_tryToRequestCopyThisFrame = false;
         bool m_copySubmittedThisFrame = false;
         ResourceNonOwner<InputHandler> m_inputHandler;
@@ -62,8 +62,8 @@ namespace Wolf
         class UltraLightImplementation : public ultralight::LoadListener, public ultralight::Logger
         {
         public:
-            UltraLightImplementation(uint32_t width, uint32_t height, const std::string& absoluteURL,
-                                     std::string filePath, const ResourceNonOwner<InputHandler>& inputHandler);
+            UltraLightImplementation(uint32_t width, uint32_t height, const std::string& absoluteURL, std::string filePath, const ResourceNonOwner<InputHandler>& inputHandler,
+                const std::function<void(ultralight::JSObject& jsObject)>& bindCallbacks);
             UltraLightImplementation(const UltraLightImplementation&) = delete;
 
             virtual void OnFinishLoading(ultralight::View* caller, uint64_t frame_id, bool is_main_frame, const ultralight::String& url) override;
@@ -94,6 +94,8 @@ namespace Wolf
 
             std::string m_filePath;
             std::filesystem::file_time_type m_lastUpdated;
+
+            std::function<void(ultralight::JSObject& jsObject)> m_bindUltralightCallbacks;
 
             // Copy to used UI image
             std::unique_ptr<Image> m_userInterfaceImage;

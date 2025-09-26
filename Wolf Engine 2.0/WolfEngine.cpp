@@ -202,6 +202,11 @@ void Wolf::WolfEngine::updateBeforeFrame()
 
 uint32_t Wolf::WolfEngine::acquireNextSwapChainImage()
 {
+	if (m_previousFrameHasBeenReset)
+	{
+		return m_lastAcquiredSwapChainImageIndex;
+	}
+
 	uint32_t currentFrame = g_runtimeContext->getCurrentCPUFrameNumber();
 
 	const uint32_t currentSwapChainImageIndex = m_swapChain->acquireNextImage(currentFrame);
@@ -214,6 +219,7 @@ uint32_t Wolf::WolfEngine::acquireNextSwapChainImage()
 		g_runtimeContext->reset();
 	}
 
+	m_lastAcquiredSwapChainImageIndex = currentSwapChainImageIndex;
 	return currentSwapChainImageIndex;
 }
 
@@ -232,7 +238,7 @@ void Wolf::WolfEngine::frame(const std::span<ResourceNonOwner<CommandRecordBase>
 #endif
 
 #ifndef __ANDROID__
-	if (m_ultraLight)
+	if (m_ultraLight && !m_previousFrameHasBeenReset)
 	{
 		m_ultraLight->processFrameJobs();
 	}
@@ -261,6 +267,7 @@ void Wolf::WolfEngine::frame(const std::span<ResourceNonOwner<CommandRecordBase>
 		m_resizeIsNeeded = false;
 	}
 
+	bool invalidateFrame = false;
 	{
 		PROFILE_SCOPED("Record GPU passes")
 
@@ -276,12 +283,21 @@ void Wolf::WolfEngine::frame(const std::span<ResourceNonOwner<CommandRecordBase>
 		if (m_materialsManager)
 			recordContext.bindlessDescriptorSet = m_materialsManager->getDescriptorSet();
 		recordContext.globalTimer = &m_globalTimer;
+		recordContext.graphicAPIManager = m_graphicAPIManager.get();
+		recordContext.invalidateFrame = &invalidateFrame;
 
 		for (const ResourceNonOwner<CommandRecordBase>& pass : passes)
 		{
 			pass->record(recordContext);
 		}
 	}
+
+	if (invalidateFrame)
+	{
+		m_previousFrameHasBeenReset = true;
+		return;
+	}
+	m_previousFrameHasBeenReset = false;
 
 	{
 		PROFILE_SCOPED("Submit GPU passes")

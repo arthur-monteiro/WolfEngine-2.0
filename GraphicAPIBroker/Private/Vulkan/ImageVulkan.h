@@ -20,7 +20,7 @@ namespace Wolf
 
 		~ImageVulkan() override;
 
-		void copyCPUBuffer(const unsigned char* pixels, const TransitionLayoutInfo& finalLayout, uint32_t mipLevel = 0) override;
+		void copyCPUBuffer(const unsigned char* pixels, const TransitionLayoutInfo& finalLayout, uint32_t mipLevel = 0, uint32_t baseArrayLayer = 0) override;
 		void copyGPUBuffer(const Buffer& bufferSrc, const BufferImageCopy& copyRegion, const TransitionLayoutInfo& finalLayout) override;
 		void recordCopyGPUBuffer(const CommandBuffer& commandBuffer, const Buffer& bufferSrc, const BufferImageCopy& copyRegion, const TransitionLayoutInfo& finalLayout) override;
 		void copyGPUImage(const Image& imageSrc, const VkImageCopy& imageCopy) override;
@@ -40,7 +40,7 @@ namespace Wolf
 		[[nodiscard]] Format getFormat() const override { return m_imageFormat; }
 		[[nodiscard]] VkSampleCountFlagBits getSampleCount() const override { return m_sampleCount; }
 		[[nodiscard]] Extent3D getExtent() const override { return { m_extent.width, m_extent.height, m_extent.depth }; }
-		[[nodiscard]] VkImageLayout getImageLayout(uint32_t mipLevel = 0) const override { return m_imageLayouts[mipLevel]; }
+		[[nodiscard]] VkImageLayout getImageLayout(uint32_t mipLevel = 0, uint32_t layer = 0) const override { return m_imageLayouts[layer][mipLevel]; }
 		[[nodiscard]] uint32_t getMipLevelCount() const override { return m_mipLevelCount; }
 		ImageView getImageView(Format format) override;
 		ImageView getDefaultImageView() override;
@@ -49,6 +49,7 @@ namespace Wolf
 		void createImageView(VkFormat format);
 		float computeBPP() const;
 		void setBPP();
+		void resetAllLayouts();
 		static VkImageUsageFlagBits wolfImageUsageFlagBitsToVkImageUsageFlagBits(ImageUsageFlagBits imageUsageFlagBits);
 		static VkImageUsageFlags wolfImageUsageFlagsToVkImageUsageFlags(ImageUsageFlags imageUsageFlags);
 		static VkBufferImageCopy wolfBufferImageCopyToVkBufferImageCopy(const BufferImageCopy& bufferImageCopy);
@@ -58,7 +59,7 @@ namespace Wolf
 		VkDeviceMemory  m_imageMemory = VK_NULL_HANDLE;
 		std::unordered_map<uint32_t, VkImageView> m_imageViews;
 
-		std::vector<VkImageLayout> m_imageLayouts;
+		std::vector<std::vector<VkImageLayout>> m_imageLayouts; // layer of mips
 		VkAccessFlags m_accessFlags = 0;
 		VkPipelineStageFlags m_pipelineStageFlags = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
 		Format m_imageFormat;
