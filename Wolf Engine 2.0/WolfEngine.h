@@ -41,7 +41,9 @@ namespace Wolf
 		std::string configFilename;
 
 		const char* htmlURL = nullptr;
+#ifndef __ANDROID__
 		std::function<void(ultralight::JSObject& jsObject)> bindUltralightCallbacks;
+#endif
 
 		bool useOVR = false;
 		bool useBindlessDescriptor = false;
