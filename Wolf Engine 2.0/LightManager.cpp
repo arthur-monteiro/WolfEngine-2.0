@@ -52,6 +52,11 @@ void Wolf::LightManager::setSkyCubeMap(ResourceNonOwner<Image> cubeMap)
 	updateDescriptorSet();
 }
 
+void Wolf::LightManager::resetSkyCubeMap()
+{
+	m_skyCubeMap.release();
+}
+
 void Wolf::LightManager::updateBeforeFrame()
 {
 	PROFILE_FUNCTION

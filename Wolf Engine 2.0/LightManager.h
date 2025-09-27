@@ -38,6 +38,7 @@ namespace Wolf
 		void addSunLightInfoForNextFrame(const SunLightInfo& sunLightInfo);
 
 		void setSkyCubeMap(ResourceNonOwner<Image> cubeMap);
+		void resetSkyCubeMap();
 
 		void updateBeforeFrame();
 
