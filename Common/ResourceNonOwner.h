@@ -197,6 +197,17 @@ namespace Wolf
 			return m_resource.operator->();
 		}
 
+		void release()
+		{
+			m_resource = ResourceNonOwner<T>(static_cast<T*>(nullptr),
+#ifdef RESOURCE_DEBUG
+				[](ResourceNonOwner<T>* instance) {}, [](ResourceNonOwner<T>* instance) {}, std::source_location::current()
+#else
+				[]{}, [] {}
+#endif
+			);
+		}
+
 	private:
 		friend ResourceNonOwner<T>;
 
@@ -236,6 +247,8 @@ namespace Wolf
 		[[nodiscard]] operator bool() const { return m_ptr != nullptr; }
 
 		[[nodiscard]] bool operator==(const ResourceNonOwner& other) const { return m_ptr == other.m_ptr; }
+
+		void release() { m_ptr = nullptr; }
 
 	private:
 		T* m_ptr = nullptr;
