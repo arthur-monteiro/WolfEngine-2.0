@@ -8,7 +8,7 @@ int main()
 {
     std::cout << "Computing hashes..\n";
 
-	const std::string path = "../Wolf Engine 2.0";
+	const std::string path = "../Wolf-Engine-2.0";
     const std::string outputFilepath = path + "/CodeFileHashes.h";
 	std::ofstream outFile(outputFilepath);
     outFile << "// -- AUTO GENERATED FILE --\n\n";

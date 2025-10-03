@@ -59,15 +59,15 @@ set_target_properties(ogl_compiler_lib PROPERTIES IMPORTED_LOCATION
 
 add_library(wolf_engine_lib STATIC IMPORTED)
 set_target_properties(wolf_engine_lib PROPERTIES IMPORTED_LOCATION
-        $ENV{WOLF_ENGINE_PATH}\\ndk-builds\\${ANDROID_ABI}\\libwolf-engine_vulkan.a)
+        ${CMAKE_CURRENT_SOURCE_DIR}/../../../../../../ndk-builds/${ANDROID_ABI}/libwolf-engine_vulkan.a)
 
 add_library(common_lib STATIC IMPORTED)
 set_target_properties(common_lib PROPERTIES IMPORTED_LOCATION
-        $ENV{WOLF_ENGINE_PATH}\\ndk-builds\\${ANDROID_ABI}\\libcommon.a)
+        ${CMAKE_CURRENT_SOURCE_DIR}/../../../../../../ndk-builds/${ANDROID_ABI}/libcommon.a)
 
 add_library(graphic_api_broker_lib STATIC IMPORTED)
 set_target_properties(graphic_api_broker_lib PROPERTIES IMPORTED_LOCATION
-        $ENV{WOLF_ENGINE_PATH}\\ndk-builds\\${ANDROID_ABI}\\libgraphic_api_broker_vulkan_1_3.a)
+        ${CMAKE_CURRENT_SOURCE_DIR}/../../../../../../ndk-builds/${ANDROID_ABI}/libgraphic_api_broker_vulkan_1_3.a)
 
 # add lib dependencies
 target_link_libraries(${PROJECT_NAME} PUBLIC
@@ -91,11 +91,8 @@ target_link_libraries(${PROJECT_NAME} PUBLIC
 
 target_compile_definitions(${PROJECT_NAME} PUBLIC WOLF_VULKAN)
 
-target_include_directories(${PROJECT_NAME} PRIVATE "F:\\Code\\Wolf Engine 2.0\\Wolf Engine 2.0\\ThirdParty\\glm")
-target_include_directories(${PROJECT_NAME} PRIVATE ThirdParty/stb_image)
-target_include_directories(${PROJECT_NAME} PRIVATE ThirdParty/UltraLight/include)
-target_include_directories(${PROJECT_NAME} PRIVATE ThirdParty/tiny_obj)
+target_include_directories(${PROJECT_NAME} PRIVATE "../../../../../../ThirdParty/glm")
 target_include_directories(${PROJECT_NAME} PRIVATE ${ANDROID_NDK}/sources/third_party/shaderc/libshaderc/include)
-target_include_directories(${PROJECT_NAME} PRIVATE "F:\\Code\\Wolf Engine 2.0\\Wolf Engine 2.0\\Common")
-target_include_directories(${PROJECT_NAME} PRIVATE "F:\\Code\\Wolf Engine 2.0\\Wolf Engine 2.0\\GraphicAPIBroker\\Public")
-target_include_directories(${PROJECT_NAME} PRIVATE "F:\\Code\\Wolf Engine 2.0\\Wolf Engine 2.0\\Wolf Engine 2.0")
+target_include_directories(${PROJECT_NAME} PRIVATE "../../../../../../Common")
+target_include_directories(${PROJECT_NAME} PRIVATE "../../../../../../GraphicAPIBroker/Public")
+target_include_directories(${PROJECT_NAME} PRIVATE "../../../../../../Wolf-Engine-2.0")

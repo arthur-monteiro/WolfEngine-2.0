@@ -1,5 +1,4 @@
 LOCAL_PATH := $(call my-dir)
-ANDROID_NDK := 'F:\Android_studio_SDK\ndk\25.1.8937393'
 include $(CLEAR_VARS)
 LOCAL_CPP_EXTENSION := .cc .cpp .cxx
 

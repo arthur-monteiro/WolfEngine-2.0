@@ -183,7 +183,7 @@
       <LanguageStandard>stdcpp20</LanguageStandard>
       <EnableModules>true</EnableModules>
       <ScanSourceForModuleDependencies>true</ScanSourceForModuleDependencies>
-      <AdditionalIncludeDirectories>..\Common;..\GraphicAPIBroker\Public;..\Wolf Engine 2.0;..\ThirdParty\vulkan\Include;..\ThirdParty\stb_image;..\ThirdParty\glm;..\ThirdParty\tiny_obj;..\ThirdParty\GLFW\include;..\ThirdParty\OVR\Include;..\ThirdParty\UltraLight\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\Common;..\GraphicAPIBroker\Public;..\Wolf-Engine-2.0;..\ThirdParty\vulkan\Include;..\ThirdParty\stb_image;..\ThirdParty\glm;..\ThirdParty\tiny_obj;..\ThirdParty\GLFW\include;..\ThirdParty\OVR\Include;..\ThirdParty\UltraLight\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <AdditionalModuleDependencies>./../Wolf Engine 2.0/WolfEngine;%(AdditionalModuleDependencies)</AdditionalModuleDependencies>
     </ClCompile>
     <Link>
