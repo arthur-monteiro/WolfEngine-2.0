@@ -408,8 +408,6 @@ output.json
 obj/
 .externalNativeBuild
 
-ThirdParty/vulkan/Lib/*.lib
-
 # WolfEngine Generated
 *.bin
 *.spv
