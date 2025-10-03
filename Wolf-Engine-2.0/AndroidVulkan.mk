@@ -37,6 +37,6 @@ LOCAL_CXXFLAGS:=-std=c++20 -fexceptions -fno-rtti -DENABLE_HLSL=1 -D_LIBCPP_NO_N
 LOCAL_EXPORT_CPPFLAGS:=-std=c++20
 LOCAL_EXPORT_LDFLAGS:=-latomic
 LOCAL_C_INCLUDES := $(LOCAL_PATH)/../Common $(LOCAL_PATH)/../GraphicAPIBroker/Public $(LOCAL_PATH)/../ThirdParty/glm $(LOCAL_PATH)/../ThirdParty/stb_image $(LOCAL_PATH)/../ThirdParty/tiny_obj $(LOCAL_PATH)/../ThirdParty/xxh64 \
-	${ANDROID_NDK}/sources/third_party/shaderc/libshaderc/include \
-	${ANDROID_NDK}/toolchains/llvm/prebuilt/windows-x86_64/sysroot/usr/include/vulkan
+	${NDK_PROJECT_PATH}/sources/third_party/shaderc/libshaderc/include \
+	${NDK_PROJECT_PATH}/toolchains/llvm/prebuilt/windows-x86_64/sysroot/usr/include/vulkan
 include $(BUILD_STATIC_LIBRARY)
