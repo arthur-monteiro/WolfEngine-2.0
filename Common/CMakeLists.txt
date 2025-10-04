@@ -9,5 +9,5 @@ add_library(Common STATIC ${SRC})
 
 set_target_properties(Common
         PROPERTIES
-        ARCHIVE_OUTPUT_DIRECTORY "../../x64/Debug/lib"
-        LIBRARY_OUTPUT_DIRECTORY "../../x64/Debug/lib")
+        ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_CURRENT_LIST_DIR}/../x64/Debug/lib"
+        LIBRARY_OUTPUT_DIRECTORY "${CMAKE_CURRENT_LIST_DIR}/../x64/Debug/lib")
