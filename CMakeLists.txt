@@ -37,6 +37,10 @@ target_compile_definitions(WolfEngine PUBLIC CUSTOM_READBACK_DATA_FROM_GPU)
 option(RESOURCE_TRACKING "Enable resource tracking features" OFF)
 option(RESOURCE_DEBUG "Enable resource debug features" OFF)
 
+add_subdirectory("GenerateCodeFileHashes")
+add_subdirectory("Common")
+add_subdirectory("GraphicAPIBroker")
+
 if (RESOURCE_TRACKING OR RESOURCE_DEBUG)
     target_compile_definitions(
             WolfEngine
@@ -44,11 +48,21 @@ if (RESOURCE_TRACKING OR RESOURCE_DEBUG)
             $<$<BOOL:RESOURCE_TRACKING>:RESOURCE_TRACKING>
             $<$<BOOL:RESOURCE_DEBUG>:RESOURCE_DEBUG>
     )
-endif()
 
-add_subdirectory("GenerateCodeFileHashes")
-add_subdirectory("Common")
-add_subdirectory("GraphicAPIBroker")
+    target_compile_definitions(
+            Common
+            PRIVATE
+            $<$<BOOL:RESOURCE_TRACKING>:RESOURCE_TRACKING>
+            $<$<BOOL:RESOURCE_DEBUG>:RESOURCE_DEBUG>
+    )
+
+    target_compile_definitions(
+            GraphicAPIBroker
+            PRIVATE
+            $<$<BOOL:RESOURCE_TRACKING>:RESOURCE_TRACKING>
+            $<$<BOOL:RESOURCE_DEBUG>:RESOURCE_DEBUG>
+    )
+endif()
 
 add_custom_command(COMMAND "$<TARGET_FILE:GenerateCodeFileHashes>"
         WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/Wolf-Engine-2.0"
