@@ -34,6 +34,18 @@ target_compile_definitions(WolfEngine PUBLIC _CRT_SECURE_NO_WARNINGS)
 target_compile_definitions(WolfEngine PUBLIC CUSTOM_PUSH_DATA_TO_GPU)
 target_compile_definitions(WolfEngine PUBLIC CUSTOM_READBACK_DATA_FROM_GPU)
 
+option(RESOURCE_TRACKING "Enable resource tracking features" OFF)
+option(RESOURCE_DEBUG "Enable resource debug features" OFF)
+
+if (RESOURCE_TRACKING OR RESOURCE_DEBUG)
+    target_compile_definitions(
+            WolfEngine
+            PRIVATE
+            $<$<BOOL:RESOURCE_TRACKING>:RESOURCE_TRACKING>
+            $<$<BOOL:RESOURCE_DEBUG>:RESOURCE_DEBUG>
+    )
+endif()
+
 add_subdirectory("GenerateCodeFileHashes")
 add_subdirectory("Common")
 add_subdirectory("GraphicAPIBroker")
