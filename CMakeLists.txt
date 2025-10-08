@@ -38,7 +38,7 @@ add_subdirectory("GenerateCodeFileHashes")
 add_subdirectory("Common")
 add_subdirectory("GraphicAPIBroker")
 
-add_custom_command(COMMAND "${CMAKE_CURRENT_SOURCE_DIR}/x64/${CMAKE_BUILD_TYPE}/exe/GenerateCodeFileHashes.exe"
+add_custom_command(COMMAND "$<TARGET_FILE:GenerateCodeFileHashes>"
         WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/Wolf-Engine-2.0"
         OUTPUT "${CMAKE_CURRENT_SOURCE_DIR}/Wolf-Engine-2.0/CodeFileHashes.h"
         DEPENDS GenerateCodeFileHashes)
