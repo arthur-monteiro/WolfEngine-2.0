@@ -104,13 +104,22 @@ namespace Wolf
 			InfoForPipeline(PipelineInfo pipelineCreateInfo);
 			InfoForPipeline(PipelineInfo pipelineCreateInfo, uint64_t hash) : m_pipelineInfo(std::move(pipelineCreateInfo)), m_hash(hash) {}
 
-			std::map<const RenderPass*, std::unique_ptr<Pipeline>>& getPipelines() { return m_pipelines; }
+			struct CreatedPipelineInfo
+			{
+				const RenderPass* renderPass;
+				const std::vector<DescriptorSetBindInfo>* additionalDescriptorSetsBindInfo;
+
+				uint64_t computeHash() const;
+			};
+			using CreatedPipelineInfoHash = uint64_t;
+
+			std::map<CreatedPipelineInfoHash, std::unique_ptr<Pipeline>>& getPipelines() { return m_pipelines; }
 			const PipelineInfo& getPipelineInfo() const { return m_pipelineInfo; }
 			uint64_t getHash() const { return m_hash; }
 
 		private:
 			const PipelineInfo m_pipelineInfo;
-			std::map<const RenderPass*, std::unique_ptr<Pipeline>> m_pipelines;
+			std::map<CreatedPipelineInfoHash, std::unique_ptr<Pipeline>> m_pipelines;
 			uint64_t m_hash;
 		};
 
