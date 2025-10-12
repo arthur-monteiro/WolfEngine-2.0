@@ -26,6 +26,9 @@ include_directories(ThirdParty/Tracy/tracy)
 add_library(WolfEngine STATIC ${SRC})
 
 # Defines
+target_compile_definitions(WolfEngine PUBLIC GLM_FORCE_DEPTH_ZERO_TO_ONE)
+target_compile_definitions(WolfEngine PUBLIC GLM_FORCE_RADIANS)
+target_compile_definitions(WolfEngine PUBLIC GLM_ENABLE_EXPERIMENTAL)
 target_compile_definitions(WolfEngine PUBLIC WOLF_VULKAN)
 target_compile_definitions(WolfEngine PUBLIC MATERIAL_DEBUG)
 target_compile_definitions(WolfEngine PUBLIC TRACY_ENABLE)

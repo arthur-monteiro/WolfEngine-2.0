@@ -8,6 +8,9 @@ include(GraphicAPIBroker_Vulkan.cmake)
 add_library(GraphicAPIBroker STATIC ${SRC})
 
 # Defines
+target_compile_definitions(GraphicAPIBroker PUBLIC GLM_FORCE_DEPTH_ZERO_TO_ONE)
+target_compile_definitions(GraphicAPIBroker PUBLIC GLM_FORCE_RADIANS)
+target_compile_definitions(GraphicAPIBroker PUBLIC GLM_ENABLE_EXPERIMENTAL)
 target_compile_definitions(GraphicAPIBroker PUBLIC WOLF_VULKAN)
 
 set_target_properties(GraphicAPIBroker

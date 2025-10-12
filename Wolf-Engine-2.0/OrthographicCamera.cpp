@@ -1,18 +1,20 @@
 #include "OrthographicCamera.h"
 
-Wolf::OrthographicCamera::OrthographicCamera(const glm::vec3& initialCenter, float initialRadius, float initialHeightFromCenter, const glm::vec3& initialDirection)
+Wolf::OrthographicCamera::OrthographicCamera(const glm::vec3& initialCenter, float initialRadius, float initialHeightFromCenter, const glm::vec3& initialDirection, float near, float far)
 {
 	m_center = initialCenter;
 	m_radius = initialRadius;
 	m_heightFromCenter = initialHeightFromCenter;
 	m_direction = initialDirection;
+	m_near = near;
+	m_far = far;
 }
 
 void Wolf::OrthographicCamera::update(const CameraUpdateContext& context)
 {
 	m_previousViewMatrix = m_viewMatrix;
 	m_viewMatrix = glm::lookAt(m_center - m_heightFromCenter * normalize(m_direction), m_center, glm::vec3(0.0f, 1.0f, 0.0f));
-	m_projectionMatrix = glm::ortho(-m_radius, m_radius, -m_radius, m_radius, -30.0f * 6.0f, 30.0f * 6.0f);
+	m_projectionMatrix = glm::ortho(-m_radius, m_radius, -m_radius, m_radius, m_near, m_far);
 
 	updateGraphic(glm::vec2(0.0f), context);
 }

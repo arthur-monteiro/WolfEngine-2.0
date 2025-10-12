@@ -93,7 +93,12 @@ std::vector<const Wolf::PipelineSet::PipelineInfo*> Wolf::PipelineSet::retrieveA
 
 const Wolf::Pipeline* Wolf::PipelineSet::getOrCreatePipeline(uint32_t idx, RenderPass* renderPass, const std::vector<DescriptorSetBindInfo>& meshDescriptorSetsBindInfo, const std::vector<DescriptorSetBindInfo>& additionalDescriptorSetsBindInfo, ShaderList& shaderList) const
 {
-	if (!m_infoForPipelines[idx]->getPipelines().contains(renderPass))
+	InfoForPipeline::CreatedPipelineInfo createdPipelineInfo{};
+	createdPipelineInfo.renderPass = renderPass;
+	createdPipelineInfo.additionalDescriptorSetsBindInfo = &additionalDescriptorSetsBindInfo;
+
+	InfoForPipeline::CreatedPipelineInfoHash createdPipelineHash = createdPipelineInfo.computeHash();
+	if (!m_infoForPipelines[idx]->getPipelines().contains(createdPipelineHash))
 	{
 		renderPass->registerNewExtentChangedCallback([this](const RenderPass* paramRenderPass)
 			{
@@ -240,10 +245,10 @@ const Wolf::Pipeline* Wolf::PipelineSet::getOrCreatePipeline(uint32_t idx, Rende
 		// Dynamic states
 		renderingPipelineCreateInfo.dynamicStates = pipelineInfo.dynamicStates;
 
-		m_infoForPipelines[idx]->getPipelines()[renderPass].reset(Pipeline::createRenderingPipeline(renderingPipelineCreateInfo));
+		m_infoForPipelines[idx]->getPipelines()[createdPipelineHash].reset(Pipeline::createRenderingPipeline(renderingPipelineCreateInfo));
 	}
 
-	return m_infoForPipelines[idx]->getPipelines()[renderPass].get();
+	return m_infoForPipelines[idx]->getPipelines()[createdPipelineHash].get();
 }
 
 void Wolf::PipelineSet::shaderCodeChanged(const ShaderParser* shaderParser) const
@@ -258,12 +263,48 @@ void Wolf::PipelineSet::renderPassExtentChanged(const RenderPass* renderPass) co
 {
 	for (const std::unique_ptr<InfoForPipeline>& infoForPipeline : m_infoForPipelines)
 	{
-		if (infoForPipeline)
-			infoForPipeline->getPipelines().erase(renderPass);
+		// TODO: we should only erase pipelines with the sent render pass
+		//if (infoForPipeline)
+		//	infoForPipeline->getPipelines().erase(renderPass);
+		infoForPipeline->getPipelines().clear();
 	}
 }
 
 Wolf::PipelineSet::InfoForPipeline::InfoForPipeline(PipelineInfo pipelineCreateInfo) : m_pipelineInfo(std::move(pipelineCreateInfo))
 {
 	m_hash = xxh64::hash(reinterpret_cast<const char*>(&m_pipelineInfo), sizeof(pipelineCreateInfo), 0);
+}
+
+uint64_t Wolf::PipelineSet::InfoForPipeline::CreatedPipelineInfo::computeHash() const
+{
+	struct DataToHash
+	{
+		const RenderPass* renderPass;
+
+		struct InfoPerAdditionalDescriptorSetLayout
+		{
+			uint32_t binding;
+			const DescriptorSetLayout* descriptorSetLayout;
+		};
+#define MAX_DESCRIPTOR_SET_LAYOUTS 256
+		std::array<InfoPerAdditionalDescriptorSetLayout, MAX_DESCRIPTOR_SET_LAYOUTS> descriptorSetLayouts;
+	};
+
+	DataToHash dataToHash{};
+	dataToHash.renderPass = renderPass;
+
+	if (additionalDescriptorSetsBindInfo->size() > MAX_DESCRIPTOR_SET_LAYOUTS)
+	{
+		Debug::sendCriticalError("Too many descriptor set layouts");
+	}
+#undef MAX_DESCRIPTOR_SET_LAYOUTS
+
+	for (uint32_t i = 0; i < additionalDescriptorSetsBindInfo->size(); i++)
+	{
+		const DescriptorSetBindInfo& descriptorSetBindInfo = additionalDescriptorSetsBindInfo->at(i);
+		dataToHash.descriptorSetLayouts[i].binding = descriptorSetBindInfo.getBindingSlot();
+		dataToHash.descriptorSetLayouts[i].descriptorSetLayout = descriptorSetBindInfo.getDescriptorSetLayout().operator->();
+	}
+
+	return xxh64::hash(reinterpret_cast<const char*>(&dataToHash), sizeof(dataToHash), 0);
 }

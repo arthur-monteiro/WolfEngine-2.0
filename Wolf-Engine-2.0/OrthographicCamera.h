@@ -1,8 +1,5 @@
 #pragma once
 
-#define GLM_FORCE_RADIANS
-#define GLM_FORCE_DEPTH_ZERO_TO_ONE
-#define GLM_ENABLE_EXPERIMENTAL
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtx/hash.hpp>
@@ -15,7 +12,7 @@ namespace Wolf
 	class OrthographicCamera : public CameraInterface, public GraphicCameraInterface
 	{
 	public:
-		OrthographicCamera(const glm::vec3& initialCenter, float initialRadius, float initialHeightFromCenter, const glm::vec3& initialDirection);
+		OrthographicCamera(const glm::vec3& initialCenter, float initialRadius, float initialHeightFromCenter, const glm::vec3& initialDirection, float near, float far);
 
 		void update(const CameraUpdateContext& context) override;
 
@@ -35,12 +32,15 @@ namespace Wolf
 		void setCenter(const glm::vec3& center) { m_center = center; }
 		void setRadius(float radius) { m_radius = radius; }
 		void setDirection(const glm::vec3& direction) { m_direction = direction; }
+		void setHeightFromCenter(float heightFromCenter) { m_heightFromCenter = heightFromCenter; }
 
 	private:
 		glm::vec3 m_center;
 		float m_radius;
 		float m_heightFromCenter;
 		glm::vec3 m_direction;
+		float m_near;
+		float m_far;
 
 		glm::mat4 m_viewMatrix;
 		glm::mat4 m_previousViewMatrix;

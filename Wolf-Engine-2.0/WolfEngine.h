@@ -83,6 +83,7 @@ namespace Wolf
 		[[nodiscard]] Extent3D getSwapChainExtent() const { return m_swapChain->getImage(0)->getExtent(); }
 
 		[[nodiscard]] bool isRayTracingAvailable() const { return m_graphicAPIManager->isRayTracingAvailable(); }
+		[[nodiscard]] GraphicAPIManager* getGraphicAPIManager() { return m_graphicAPIManager.get(); }
 
 		void setGameContexts(const std::vector<void*>& gameContexts) { m_gameContexts = gameContexts; }
 
