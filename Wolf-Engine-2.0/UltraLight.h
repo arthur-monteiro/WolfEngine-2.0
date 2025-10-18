@@ -28,7 +28,7 @@ namespace Wolf
     class UltraLight
     {
     public:
-        UltraLight(const char* htmlURL, const std::function<void(ultralight::JSObject& jsObject)>& bindCallbacks, const ResourceNonOwner<InputHandler>& inputHandler);
+        UltraLight(const char* htmlURL, VkImageLayout finalLayout, const std::function<void(ultralight::JSObject& jsObject)>& bindCallbacks, const ResourceNonOwner<InputHandler>& inputHandler);
         ~UltraLight();
 
         void waitInitializationDone() const;
@@ -43,7 +43,7 @@ namespace Wolf
         Image* getImage() const { return m_ultraLightImplementation->getImage(); }
 
     private:
-        void processImplementation(const char* htmlURL, const std::function<void(ultralight::JSObject& jsObject)>& bindCallbacks);
+        void processImplementation(const char* htmlURL, VkImageLayout finalLayout, const std::function<void(ultralight::JSObject& jsObject)>& bindCallbacks);
 
         std::thread m_thread;
         std::mutex m_mutex;
@@ -62,24 +62,25 @@ namespace Wolf
         class UltraLightImplementation : public ultralight::LoadListener, public ultralight::Logger
         {
         public:
-            UltraLightImplementation(uint32_t width, uint32_t height, const std::string& absoluteURL, std::string filePath, const ResourceNonOwner<InputHandler>& inputHandler,
+            UltraLightImplementation(uint32_t width, uint32_t height, VkImageLayout finalLayout, const std::string& absoluteURL, std::string filePath, const ResourceNonOwner<InputHandler>& inputHandler,
                 const std::function<void(ultralight::JSObject& jsObject)>& bindCallbacks);
             UltraLightImplementation(const UltraLightImplementation&) = delete;
 
-            virtual void OnFinishLoading(ultralight::View* caller, uint64_t frame_id, bool is_main_frame, const ultralight::String& url) override;
-            virtual void LogMessage(ultralight::LogLevel log_level, const ultralight::String& message) override;
-            virtual void OnDOMReady(ultralight::View* caller, uint64_t frame_id, bool is_main_frame, const ultralight::String& url) override;
+            void OnFinishLoading(ultralight::View* caller, uint64_t frame_id, bool is_main_frame, const ultralight::String& url) override;
+            void LogMessage(ultralight::LogLevel log_level, const ultralight::String& message) override;
+            void OnDOMReady(ultralight::View* caller, uint64_t frame_id, bool is_main_frame, const ultralight::String& url) override;
 
             Image* getImage() const;
             static void getJSObject(ultralight::JSObject& outObject);
             void evaluateScript(const std::string& script) const;
+            VkImageLayout getFinalLayout() const { return m_finalLayout; }
 
             bool reloadIfModified();
             void update(const ResourceNonOwner<InputHandler>& inputHandler) const;
             void render() const;
             void resize(uint32_t width, uint32_t height) const;
 
-            void createOutputAndRecordCopyCommandBuffer(uint32_t width, uint32_t height);
+            void createOutputAndRecordCopyCommandBuffer(uint32_t width, uint32_t height, VkImageLayout finalLayout);
 
             void submitCopyImageCommandBuffer() const;
             const Semaphore* getImageCopySemaphore() const { return m_copyImageSemaphore.get(); }
@@ -101,6 +102,7 @@ namespace Wolf
             std::unique_ptr<Image> m_userInterfaceImage;
             std::array<ResourceUniqueOwner<CommandBuffer>, UltraLightSurface::IMAGE_COUNT> m_copyImageCommandBuffers;
             std::unique_ptr<Semaphore> m_copyImageSemaphore;
+            VkImageLayout m_finalLayout;
         };
 
         std::unique_ptr<UltraLightImplementation> m_ultraLightImplementation;

@@ -342,6 +342,7 @@ float Wolf::ImageVulkan::computeBPP() const
 			return 12.0f;
 			break;
 		case VK_FORMAT_R32G32_SFLOAT:
+		case VK_FORMAT_R16G16B16A16_SFLOAT:
 			return 8.0f;
 			break;
 		case VK_FORMAT_R8G8B8A8_UNORM:
@@ -353,9 +354,9 @@ float Wolf::ImageVulkan::computeBPP() const
 		case VK_FORMAT_R32_SINT:
 			return 4.0f;
 			break;
-		case VK_FORMAT_BC1_RGB_UNORM_BLOCK:
-		case VK_FORMAT_BC1_RGB_SRGB_BLOCK:
-			return 0.5f;
+		case VK_FORMAT_R16_SFLOAT:
+		case VK_FORMAT_R16_UNORM:
+			return 2.0f;
 			break;
 		case VK_FORMAT_BC3_UNORM_BLOCK:
 		case VK_FORMAT_BC3_SRGB_BLOCK:
@@ -363,9 +364,13 @@ float Wolf::ImageVulkan::computeBPP() const
 		case VK_FORMAT_R8_UINT:
 			return 1.0f;
 			break;
+		case VK_FORMAT_BC1_RGB_UNORM_BLOCK:
+		case VK_FORMAT_BC1_RGB_SRGB_BLOCK:
+			return 0.5f;
+			break;
 		default:
-			return 1.0f;
 			Debug::sendError("Unsupported image format");
+			return 1.0f;
 			break;
 	}
 }

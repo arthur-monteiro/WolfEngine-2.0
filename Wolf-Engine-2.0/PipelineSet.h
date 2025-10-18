@@ -10,6 +10,7 @@
 
 #include "DescriptorSet.h"
 #include "DescriptorSetBindInfo.h"
+#include "Enums.h"
 #include "Pipeline.h"
 #include "ResourceReference.h"
 #include "ShaderParser.h"
@@ -70,9 +71,9 @@ namespace Wolf
 			std::vector<RenderingPipelineCreateInfo::BLEND_MODE> blendModes;
 
 			// Depth testing
-			VkBool32 enableDepthTesting = VK_TRUE;
-			VkBool32 enableDepthWrite = VK_TRUE;
-			VkCompareOp depthCompareOp = VK_COMPARE_OP_LESS_OR_EQUAL;
+			bool enableDepthTesting = true;
+			bool enableDepthWrite = true;
+			CompareOp depthCompareOp = CompareOp::LESS_OR_EQUAL;
 
 			// Tessellation
 			uint32_t patchControlPoint = 0;

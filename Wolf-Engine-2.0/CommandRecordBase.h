@@ -10,6 +10,7 @@
 #include <GPUSemaphore.h>
 #include <GraphicAPIManager.h>
 #include <RuntimeContext.h>
+#include <SwapChain.h>
 
 struct GLFWwindow;
 
@@ -30,6 +31,7 @@ namespace Wolf
 		Format depthFormat = Format::UNDEFINED;
 		uint32_t swapChainImageCount = 0;
 		std::vector<Image*> swapChainImages;
+		SwapChain::SwapChainCreateInfo::ColorSpace swapChainColorSpace;
 		Image* userInterfaceImage = nullptr;
 	};
 

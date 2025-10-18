@@ -27,6 +27,9 @@ namespace Wolf
 		[[nodiscard]] bool getUseVirtualTexture() const { return m_useVirtualTexture; }
 		[[nodiscard]] uint64_t getForcedTimerMsPerFrame() const { return m_forcedTimerMsPerFrame; }
 
+		enum class ColorSpace { SDR, ESDR10, HDR16 };
+		[[nodiscard]] ColorSpace getColorSpace() const { return m_colorSpace; }
+
 #ifdef __ANDROID__
 		AAssetManager* getAndroidAssetManager() const { return m_androidAssetManager; }
 #endif
@@ -41,6 +44,7 @@ namespace Wolf
 		bool m_enableGPUDebugMarkers = false;
 		bool m_useVirtualTexture = false;
 		uint64_t m_forcedTimerMsPerFrame = 0;
+		ColorSpace m_colorSpace = ColorSpace::SDR;
 
 #ifdef __ANDROID__
 		AAssetManager* m_androidAssetManager;

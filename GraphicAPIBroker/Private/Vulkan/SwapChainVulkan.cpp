@@ -4,23 +4,61 @@
 #include <Debug.h>
 
 #include "FenceVulkan.h"
+#include "FormatsVulkan.h"
 #include "ImageVulkan.h"
 #include "SemaphoreVulkan.h"
 #include "SwapChainSupportDetails.h"
 #include "Vulkan.h"
 #include "VulkanHelper.h"
 
-VkSurfaceFormatKHR chooseSurfaceFormat(const std::vector<VkSurfaceFormatKHR>& availableFormats)
+VkSurfaceFormatKHR Wolf::SwapChainVulkan::chooseSurfaceFormat(const std::vector<VkSurfaceFormatKHR>& availableFormats, Wolf::SwapChain::SwapChainCreateInfo::ColorSpace colorSpace, Format format)
 {
-	if (availableFormats.size() == 1 && availableFormats[0].format == VK_FORMAT_UNDEFINED)
-		return { VK_FORMAT_B8G8R8A8_UNORM, VK_COLOR_SPACE_SRGB_NONLINEAR_KHR };
+	VkFormat fallbackFormat = VK_FORMAT_R8G8B8A8_UNORM;
+	VkColorSpaceKHR fallbackColorSpace = VK_COLOR_SPACE_SRGB_NONLINEAR_KHR;
+
+	VkFormat preferredFormat;
+	VkColorSpaceKHR preferredColorSpace;
+	switch (colorSpace)
+	{
+		case SwapChainCreateInfo::ColorSpace::S_RGB:
+			preferredColorSpace = VK_COLOR_SPACE_SRGB_NONLINEAR_KHR;
+			break;
+		case SwapChainCreateInfo::ColorSpace::SC_RGB:
+		case SwapChainCreateInfo::ColorSpace::PQ:
+			Debug::sendCriticalError("Color space is not currently supported by the wolf engine");
+			break;
+		case SwapChainCreateInfo::ColorSpace::LINEAR:
+			preferredFormat = VK_FORMAT_R16G16B16A16_SFLOAT;
+			preferredColorSpace = VK_COLOR_SPACE_EXTENDED_SRGB_LINEAR_EXT;
+			break;
+		default:
+			Debug::sendCriticalError("Unknown color space");
+	}
+
+	preferredFormat = wolfFormatToVkFormat(format);
 
 	for (const auto& availableFormat : availableFormats)
 	{
-		if (availableFormat.format == VK_FORMAT_B8G8R8A8_UNORM && availableFormat.colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR)
+		if (availableFormat.format == preferredFormat && availableFormat.colorSpace == preferredColorSpace)
+		{
+			m_colorSpace = colorSpace;
 			return availableFormat;
+		}
 	}
 
+	Debug::sendError("Chosen swapchain format is not supported by the hardware, switching to fallback (SDR)");
+
+	for (const auto& availableFormat : availableFormats)
+	{
+		if (availableFormat.format == fallbackFormat && availableFormat.colorSpace == fallbackColorSpace)
+		{
+			m_colorSpace = SwapChainCreateInfo::ColorSpace::S_RGB;
+			return availableFormat;
+		}
+	}
+
+	Debug::sendCriticalError("Fallback format is not supported by the hardware, behaviour will be undefined");
+	m_colorSpace = SwapChainCreateInfo::ColorSpace::S_RGB;
 	return availableFormats[0];
 }
 
@@ -40,28 +78,30 @@ VkPresentModeKHR choosePresentMode(const std::vector<VkPresentModeKHR>& availabl
 	return bestMode;
 }
 
-Wolf::SwapChainVulkan::SwapChainVulkan(Extent2D extent)
+Wolf::SwapChainVulkan::SwapChainVulkan(const SwapChainCreateInfo& swapChainCreateInfo)
 {
-	initialize({ extent.width, extent.height });
+	initialize(swapChainCreateInfo);
 }
 
-void Wolf::SwapChainVulkan::initialize(VkExtent2D extent)
+void Wolf::SwapChainVulkan::initialize(const SwapChainCreateInfo& swapChainCreateInfo)
 {
+	VkExtent2D extent = { swapChainCreateInfo.extent.width, swapChainCreateInfo.extent.height };
+
 	SwapChainSupportDetails swapChainSupport;
 	querySwapChainSupport(swapChainSupport, g_vulkanInstance->getPhysicalDevice(), g_vulkanInstance->getSurface());
 
-	if(swapChainSupport.capabilities.currentExtent.width != std::numeric_limits<uint32_t>::max() && swapChainSupport.capabilities.currentExtent.width < extent.width)
+	if(swapChainSupport.capabilities.currentExtent.width != std::numeric_limits<uint32_t>::max() && swapChainSupport.capabilities.currentExtent.width < swapChainCreateInfo.extent.width)
 	{
 		Debug::sendError("Requested width is too high, reducing to max capability");
 		extent.width = swapChainSupport.capabilities.currentExtent.width;
 	}
-	if (swapChainSupport.capabilities.currentExtent.height != std::numeric_limits<uint32_t>::max() && swapChainSupport.capabilities.currentExtent.height < extent.height)
+	if (swapChainSupport.capabilities.currentExtent.height != std::numeric_limits<uint32_t>::max() && swapChainSupport.capabilities.currentExtent.height < swapChainCreateInfo.extent.height)
 	{
 		Debug::sendError("Requested height is too high, reducing to max capability");
 		extent.height = swapChainSupport.capabilities.currentExtent.height;
 	}
 
-	const VkSurfaceFormatKHR surfaceFormat = chooseSurfaceFormat(swapChainSupport.formats);
+	const VkSurfaceFormatKHR surfaceFormat = chooseSurfaceFormat(swapChainSupport.formats, swapChainCreateInfo.colorSpace, swapChainCreateInfo.format);
 	const VkPresentModeKHR presentMode = choosePresentMode(swapChainSupport.presentModes);
 
 	uint32_t imageCount = swapChainSupport.capabilities.minImageCount + 1;
@@ -114,12 +154,6 @@ void Wolf::SwapChainVulkan::initialize(VkExtent2D extent)
 	VkFormatProperties swapchainFormatProperties;
 	vkGetPhysicalDeviceFormatProperties(g_vulkanInstance->getPhysicalDevice(), surfaceFormat.format, &swapchainFormatProperties);
 
-	if (!(swapchainFormatProperties.optimalTilingFeatures & VK_FORMAT_FEATURE_STORAGE_IMAGE_BIT))
-	{
-		m_invertColors = true;
-		//surfaceFormat.format = VK_FORMAT_R8G8B8A8_UNORM;
-	}
-
 	Format wolfFormat = Format::UNDEFINED;
 	switch (surfaceFormat.format)
 	{
@@ -128,6 +162,9 @@ void Wolf::SwapChainVulkan::initialize(VkExtent2D extent)
 			break;
 		case VK_FORMAT_R8G8B8A8_UNORM:
 			wolfFormat = Format::R8G8B8A8_UNORM;
+			break;
+		case VK_FORMAT_R16G16B16A16_SFLOAT:
+			wolfFormat = Format::R16G16B16A16_SFLOAT;
 			break;
 		default:
 			Debug::sendError("Unhandled format");

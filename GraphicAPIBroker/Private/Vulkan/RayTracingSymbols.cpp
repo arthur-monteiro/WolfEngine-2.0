@@ -15,12 +15,12 @@ vkCreateAccelerationStructureKHR(VkDevice       device,
 }
 
 VKAPI_ATTR void VKAPI_CALL
-vkDestroyAccelerationStructureNV(VkDevice                     device,
-    VkAccelerationStructureNV    accelerationStructure,
-    const VkAllocationCallbacks* pAllocator)
+vkDestroyAccelerationStructureKHR(VkDevice device,
+    VkAccelerationStructureKHR             accelerationStructure,
+    const VkAllocationCallbacks*           pAllocator)
 {
-    static const auto call = reinterpret_cast<PFN_vkDestroyAccelerationStructureNV>(
-        vkGetDeviceProcAddr(device, "vkDestroyAccelerationStructureNV"));
+    static const auto call = reinterpret_cast<PFN_vkDestroyAccelerationStructureKHR>(
+        vkGetDeviceProcAddr(device, "vkDestroyAccelerationStructureKHR"));
     return call(device, accelerationStructure, pAllocator);
 }
 
@@ -33,16 +33,6 @@ VKAPI_ATTR void VKAPI_CALL vkGetAccelerationStructureBuildSizesKHR(VkDevice devi
     static const auto call = reinterpret_cast<PFN_vkGetAccelerationStructureBuildSizesKHR>(
         vkGetDeviceProcAddr(device, "vkGetAccelerationStructureBuildSizesKHR"));
     return call(device, buildType, pBuildInfo, pMaxPrimitiveCounts, pSizeInfo);
-}
-
-VKAPI_ATTR VkResult VKAPI_CALL
-vkBindAccelerationStructureMemoryNV(VkDevice                                       device,
-    uint32_t                                       bindInfoCount,
-    const VkBindAccelerationStructureMemoryInfoNV* pBindInfos)
-{
-    static const auto call = reinterpret_cast<PFN_vkBindAccelerationStructureMemoryNV>(
-        vkGetDeviceProcAddr(device, "vkBindAccelerationStructureMemoryNV"));
-    return call(device, bindInfoCount, pBindInfos);
 }
 
 VKAPI_ATTR void VKAPI_CALL

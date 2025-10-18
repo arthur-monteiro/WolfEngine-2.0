@@ -14,6 +14,8 @@ namespace Wolf
 	class AccelerationStructureVulkan
 	{
 	public:
+		virtual ~AccelerationStructureVulkan();
+
 		void build(const CommandBufferVulkan& commandBuffer);
 
 		[[nodiscard]] const BufferVulkan& getStructureBuffer() const { return *m_structureBuffer; }
