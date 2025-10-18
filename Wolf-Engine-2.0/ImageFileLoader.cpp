@@ -4,12 +4,24 @@
 #define STB_IMAGE_IMPLEMENTATION
 #include <fstream>
 #include <stb_image.h>
+#include <glm/gtc/packing.hpp>
 
 #include <Debug.h>
+#include <sstream>
 
 Wolf::ImageFileLoader::ImageFileLoader(const std::string& fullFilePath, bool loadFloat)
 {
-	if (fullFilePath[fullFilePath.size() - 4] == '.' && fullFilePath[fullFilePath.size() - 3] == 'h' && fullFilePath[fullFilePath.size() - 2] == 'd' && fullFilePath[fullFilePath.size() - 1] == 'r' || loadFloat)
+	std::string fileExtension = fullFilePath.substr(fullFilePath.find_last_of(".") + 1);
+
+	if (fileExtension == "dds")
+	{
+		loadDDS(fullFilePath);
+	}
+	else if (fileExtension == "cube")
+	{
+		loadCube(fullFilePath);
+	}
+	else if (fileExtension == "hdr" || loadFloat)
 	{
         int iWidth(0), iHeight(0), iChannels(0);
 		float* pixels = stbi_loadf(fullFilePath.c_str(), &iWidth, &iHeight, &iChannels, STBI_rgb_alpha);
@@ -19,13 +31,10 @@ Wolf::ImageFileLoader::ImageFileLoader(const std::string& fullFilePath, bool loa
 
 		m_pixels = reinterpret_cast<unsigned char*>(pixels);
 		m_channels = 4;
+		m_format = Format::R32G32B32A32_SFLOAT;
 
 		if (!pixels)
 			Debug::sendError("Error loading file " + fullFilePath + " !");
-	}
-	else if (fullFilePath[fullFilePath.size() - 4] == '.' && fullFilePath[fullFilePath.size() - 3] == 'd' && fullFilePath[fullFilePath.size() - 2] == 'd' && fullFilePath[fullFilePath.size() - 1] == 's')
-	{
-        loadDDS(fullFilePath);
 	}
 	else
 	{
@@ -351,4 +360,76 @@ void Wolf::ImageFileLoader::loadDDS(const std::string& fullFilePath)
 
         currentPosInFile += static_cast<uint32_t>(sizeInBytes);
     }
+}
+
+bool isFloat(std::string str)
+{
+	std::istringstream iss(str);
+	float f;
+	iss >> std::noskipws >> f; // noskipws considers leading whitespace invalid
+	// Check the entire string was consumed and if either failbit or badbit is set
+	return iss.eof() && !iss.fail();
+}
+
+bool Wolf::ImageFileLoader::loadCube(const std::string& fullFilePath)
+{
+	uint16_t* data = nullptr;
+
+	std::ifstream file(fullFilePath);
+	std::string line;
+	uint32 lineIdx = 0;
+	uint32 dataIdx = 0;
+	bool dataStarted = false;
+	while (std::getline(file, line))
+	{
+		if (const size_t pos = line.find("LUT_3D_SIZE"); pos != std::string::npos)
+		{
+			line.erase(0, pos + 12);
+			uint32_t cubeSize = std::stoi(line);
+
+			m_width = m_height = m_depth = cubeSize;
+
+			size_t sizeInBytes = static_cast<size_t>(cubeSize * cubeSize * cubeSize * 4 /* must be RGBA even if alpha is not used */* 2 /* size of half */);
+			m_pixels = new unsigned char[sizeInBytes];
+			data = reinterpret_cast<uint16_t*>(m_pixels);
+
+			lineIdx++;
+			continue;
+		}
+		else if (!data)
+		{
+			continue; // looking for "LUT_3D_SIZE" on next lines
+		}
+		else if (!dataStarted)
+		{
+			if (const size_t firstSpace = line.find(' '); firstSpace != std::string::npos)
+			{
+				if (isFloat(line.substr(0, firstSpace)))
+				{
+					dataStarted = true;
+				}
+				else
+					continue;
+			}
+			else
+				continue;
+		}
+
+		const size_t firstSpace = line.find(' ');
+		data[dataIdx++] = glm::packHalf1x16(std::stof(line.substr(0, firstSpace)));
+		line.erase(0, firstSpace + 1);
+
+		const size_t secondSpace = line.find(' ');
+		data[dataIdx++] = glm::packHalf1x16(std::stof(line.substr(0, secondSpace)));
+		line.erase(0, secondSpace + 1);
+
+		data[dataIdx++] =  glm::packHalf1x16(std::stof(line));
+
+		data[dataIdx++] =  glm::packHalf1x16(0.0f); // alpha
+	}
+
+	m_channels = 4;
+	m_format = Format::R16G16B16A16_SFLOAT;
+
+	return true;
 }

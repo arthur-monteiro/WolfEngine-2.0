@@ -13,7 +13,7 @@ namespace Wolf
 	class SwapChainVulkan : public SwapChain
 	{
 	public:
-		SwapChainVulkan(Extent2D extent);
+		SwapChainVulkan(const SwapChainCreateInfo& swapChainCreateInfo);
 		~SwapChainVulkan() override;
 		
 		uint32_t acquireNextImage(uint32_t currentFrameGPU) const override;
@@ -23,7 +23,8 @@ namespace Wolf
 		void recreate(Extent2D extent) override;
 	
 	private:
-		void initialize(VkExtent2D extent);
+		void initialize(const SwapChainCreateInfo& swapChainCreateInfo);
+		VkSurfaceFormatKHR chooseSurfaceFormat(const std::vector<VkSurfaceFormatKHR>& availableFormats, Wolf::SwapChain::SwapChainCreateInfo::ColorSpace colorSpace, Format format);
 
 		VkSwapchainKHR m_swapChain;
 	};

@@ -4,6 +4,7 @@
 #include <vector>
 
 #include "Extents.h"
+#include "Formats.h"
 
 #ifndef __ANDROID__
 struct GLFWwindow;
@@ -18,7 +19,14 @@ namespace Wolf
 	class SwapChain
 	{
 	public:
-		static SwapChain* createSwapChain(Extent2D extent);
+		struct SwapChainCreateInfo
+		{
+			Extent2D extent;
+			Format format;
+			enum class ColorSpace { S_RGB, SC_RGB, PQ, LINEAR } colorSpace = ColorSpace::S_RGB;
+		};
+
+		static SwapChain* createSwapChain(const SwapChainCreateInfo& swapChainCreateInfo);
 		virtual ~SwapChain() = default;
 
 		void synchroniseCPUFromGPU(uint32_t currentFrameGPU) const;
@@ -33,12 +41,14 @@ namespace Wolf
 		[[nodiscard]] uint32_t getImageCount() const { return static_cast<uint32_t>(m_images.size()); }
 		[[nodiscard]] const Semaphore* getImageAvailableSemaphore(uint32_t index) const { return m_imageAvailableSemaphores[index].get(); }
 		[[nodiscard]] Fence* getFrameFence(uint32_t index) const { return m_frameFences[index].get(); }
+		[[nodiscard]] SwapChainCreateInfo::ColorSpace getColorSpace() const { return m_colorSpace; }
 
 	protected:
 		std::vector<std::unique_ptr<Image>> m_images;
-		bool m_invertColors = false;
 
 		std::vector<std::unique_ptr<Semaphore>> m_imageAvailableSemaphores;
 		std::vector<std::unique_ptr<Fence>> m_frameFences;
+
+		SwapChainCreateInfo::ColorSpace m_colorSpace = SwapChainCreateInfo::ColorSpace::S_RGB;
 	};
 }

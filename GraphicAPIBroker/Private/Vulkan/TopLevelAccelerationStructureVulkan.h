@@ -13,6 +13,8 @@ namespace Wolf
 		TopLevelAccelerationStructureVulkan(std::span<BLASInstance> blasInstances);
 		TopLevelAccelerationStructureVulkan(const TopLevelAccelerationStructureVulkan&) = delete;
 
+		~TopLevelAccelerationStructureVulkan() override = default;
+
 	private:
 		std::unique_ptr<BufferVulkan> m_instanceBuffer;
 	};

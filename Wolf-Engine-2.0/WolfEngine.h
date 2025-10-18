@@ -3,6 +3,7 @@
 #include <functional>
 #include <memory>
 #include <span>
+
 #ifdef __ANDROID__
 #include <android/asset_manager.h>
 #endif
@@ -12,6 +13,7 @@
 
 // API Broker
 #include <GraphicAPIManager.h>
+#include <SwapChain.h>
 
 #include "CameraList.h"
 #include "CommandRecordBase.h"
@@ -25,7 +27,6 @@
 #include "ResourceUniqueOwner.h"
 #include "RuntimeContext.h"
 #include "ShaderList.h"
-#include "SwapChain.h"
 #include "UltraLight.h"
 #include "Window.h"
 #include "Timer.h"
@@ -41,6 +42,7 @@ namespace Wolf
 		std::string configFilename;
 
 		const char* htmlURL = nullptr;
+		VkImageLayout uiFinalLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 #ifndef __ANDROID__
 		std::function<void(ultralight::JSObject& jsObject)> bindUltralightCallbacks;
 #endif
@@ -81,6 +83,7 @@ namespace Wolf
 		[[nodiscard]] ResourceNonOwner<InputHandler> getInputHandler() { return m_inputHandler.createNonOwnerResource(); }
 #endif
 		[[nodiscard]] Extent3D getSwapChainExtent() const { return m_swapChain->getImage(0)->getExtent(); }
+		[[nodiscard]] SwapChain::SwapChainCreateInfo::ColorSpace getSwapChainColorSpace() const { return m_swapChain->getColorSpace(); }
 
 		[[nodiscard]] bool isRayTracingAvailable() const { return m_graphicAPIManager->isRayTracingAvailable(); }
 		[[nodiscard]] GraphicAPIManager* getGraphicAPIManager() { return m_graphicAPIManager.get(); }

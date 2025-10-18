@@ -7,6 +7,40 @@
 #include "ShaderStagesVulkan.h"
 #include "Vulkan.h"
 
+VkCompareOp compareOpToVkType(Wolf::CompareOp in)
+{
+	switch (in)
+	{
+		case Wolf::CompareOp::NEVER:
+			return VK_COMPARE_OP_NEVER;
+			break;
+		case Wolf::CompareOp::LESS:
+			return VK_COMPARE_OP_LESS;
+			break;
+		case Wolf::CompareOp::EQUAL:
+			return VK_COMPARE_OP_EQUAL;
+			break;
+		case Wolf::CompareOp::LESS_OR_EQUAL:
+			return VK_COMPARE_OP_LESS_OR_EQUAL;
+			break;
+		case Wolf::CompareOp::GREATER:
+			return VK_COMPARE_OP_GREATER;
+			break;
+		case Wolf::CompareOp::NOT_EQUAL:
+			return VK_COMPARE_OP_NOT_EQUAL;
+			break;
+		case Wolf::CompareOp::GREATER_OR_EQUAL:
+			return VK_COMPARE_OP_GREATER_OR_EQUAL;
+			break;
+		case Wolf::CompareOp::ALWAYS:
+			return VK_COMPARE_OP_ALWAYS;
+			break;
+	}
+
+	Wolf::Debug::sendCriticalError("Unsupported compare operation");
+	return VK_COMPARE_OP_LESS_OR_EQUAL;
+}
+
 Wolf::PipelineVulkan::PipelineVulkan(const RenderingPipelineCreateInfo& renderingPipelineCreateInfo)
 {
 	m_type = Type::RENDERING;
@@ -176,7 +210,7 @@ Wolf::PipelineVulkan::PipelineVulkan(const RenderingPipelineCreateInfo& renderin
 	depthStencil.sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
 	depthStencil.depthTestEnable = renderingPipelineCreateInfo.enableDepthTesting;
 	depthStencil.depthWriteEnable = renderingPipelineCreateInfo.enableDepthWrite;
-	depthStencil.depthCompareOp = renderingPipelineCreateInfo.depthCompareOp;
+	depthStencil.depthCompareOp = compareOpToVkType(renderingPipelineCreateInfo.depthCompareOp);
 	depthStencil.depthBoundsTestEnable = VK_FALSE;
 	depthStencil.stencilTestEnable = VK_FALSE;
 

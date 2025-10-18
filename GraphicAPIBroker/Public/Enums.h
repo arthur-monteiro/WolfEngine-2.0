@@ -12,4 +12,6 @@ namespace Wolf
 	enum class IndexType { U16, U32 };
 
 	enum class FragmentShadingRateCombinerOp { KEEP, REPLACE, MIN, MAX, MUL	};
+
+	enum class CompareOp { NEVER, LESS, EQUAL, LESS_OR_EQUAL, GREATER, NOT_EQUAL, GREATER_OR_EQUAL, ALWAYS };
 }

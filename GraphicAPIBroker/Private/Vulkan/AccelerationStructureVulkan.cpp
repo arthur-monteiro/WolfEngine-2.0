@@ -4,6 +4,12 @@
 
 #include "BufferVulkan.h"
 #include "CommandBufferVulkan.h"
+#include "Vulkan.h"
+
+Wolf::AccelerationStructureVulkan::~AccelerationStructureVulkan()
+{
+	vkDestroyAccelerationStructureKHR(g_vulkanInstance->getDevice(), m_accelerationStructure, nullptr);
+}
 
 void Wolf::AccelerationStructureVulkan::build(const CommandBufferVulkan& commandBuffer)
 {

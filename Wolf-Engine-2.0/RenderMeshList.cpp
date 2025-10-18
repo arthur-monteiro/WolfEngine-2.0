@@ -82,9 +82,11 @@ void Wolf::RenderMeshList::draw(const RecordContext& context, const CommandBuffe
 	ResourceReference<const DescriptorSet> lightDescriptorSet(context.lightManager->getDescriptorSet().createConstNonOwnerResource());
 	std::vector<DescriptorSetBindInfo> descriptorSetsBindInfo;
 
+	uint32_t meshCount = m_transientMeshesCurrentFrame.size() + m_meshes.size() + m_transientInstancedMeshesCurrentFrame.size() + m_instancedMeshes.size();
+
 	const Pipeline* currentPipeline = nullptr;
 	NullableResourceNonOwner<const PipelineSet> currentPipelineSet;
-	for (uint32_t i = 0; i < m_transientMeshesCurrentFrame.size() + m_meshes.size() + m_transientInstancedMeshesCurrentFrame.size() + m_instancedMeshes.size(); ++i)
+	for (uint32_t i = 0; i < meshCount; ++i)
 	{
 		PROFILE_SCOPED("Draw mesh")
 

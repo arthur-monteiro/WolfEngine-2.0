@@ -6,10 +6,10 @@
 #include "../Private/Vulkan/SwapChainVulkan.h"
 #endif
 
-Wolf::SwapChain* Wolf::SwapChain::createSwapChain(Extent2D extent)
+Wolf::SwapChain* Wolf::SwapChain::createSwapChain(const SwapChainCreateInfo& swapChainCreateInfo)
 {
 #ifdef WOLF_VULKAN
-	return new SwapChainVulkan(extent);
+	return new SwapChainVulkan(swapChainCreateInfo);
 #else
 	return nullptr;
 #endif

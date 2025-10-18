@@ -2,6 +2,9 @@
 
 #include <limits>
 
+#include "SwapChain.h"
+#include "SwapChain.h"
+
 #ifdef __ANDROID__
 #include <android/native_window.h>
 #include <android/native_window_jni.h>
@@ -73,8 +76,27 @@ Wolf::WolfEngine::WolfEngine(const WolfInstanceCreateInfo& createInfo) : m_globa
 #else
 	Extent2D extent = chooseExtent(m_window->getWindow());
 #endif
-	
-	m_swapChain.reset(SwapChain::createSwapChain(extent));
+
+	SwapChain::SwapChainCreateInfo swapChainCreateInfo{};
+	swapChainCreateInfo.extent = extent;
+
+	switch (m_configuration->getColorSpace())
+	{
+		case Configuration::ColorSpace::SDR:
+			swapChainCreateInfo.colorSpace = SwapChain::SwapChainCreateInfo::ColorSpace::S_RGB;
+			swapChainCreateInfo.format = Format::R8G8B8A8_UNORM;
+			break;
+		case Configuration::ColorSpace::ESDR10:
+			Debug::sendError("ESDR10 is not currently supported");
+			swapChainCreateInfo.colorSpace = SwapChain::SwapChainCreateInfo::ColorSpace::S_RGB;
+			swapChainCreateInfo.format = Format::R8G8B8A8_UNORM;
+			break;
+		case Configuration::ColorSpace::HDR16:
+			swapChainCreateInfo.colorSpace = SwapChain::SwapChainCreateInfo::ColorSpace::LINEAR;
+			swapChainCreateInfo.format = Format::R16G16B16A16_SFLOAT;
+			break;
+	};
+	m_swapChain.reset(SwapChain::createSwapChain(swapChainCreateInfo));
 
 	m_gameContexts.resize(m_configuration->getMaxCachedFrames());
 
@@ -83,7 +105,7 @@ Wolf::WolfEngine::WolfEngine(const WolfInstanceCreateInfo& createInfo) : m_globa
 
 	if (createInfo.htmlURL)
 	{
-		m_ultraLight.reset(new UltraLight(createInfo.htmlURL, createInfo.bindUltralightCallbacks, m_inputHandler.createNonOwnerResource()));
+		m_ultraLight.reset(new UltraLight(createInfo.htmlURL, createInfo.uiFinalLayout, createInfo.bindUltralightCallbacks, m_inputHandler.createNonOwnerResource()));
 		m_ultraLight->waitInitializationDone();
 	}
 #endif
@@ -373,6 +395,7 @@ void Wolf::WolfEngine::fillInitializeContext(InitializationContext& context) con
 	context.swapChainImageCount = m_swapChain->getImageCount();
 	for (uint32_t i = 0; i < context.swapChainImageCount; ++i)
 		context.swapChainImages.push_back(m_swapChain->getImage(i));
+	context.swapChainColorSpace = m_swapChain->getColorSpace();
 #ifndef __ANDROID__
 	if(m_ultraLight)
 		context.userInterfaceImage = m_ultraLight->getImage();

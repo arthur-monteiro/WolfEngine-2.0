@@ -46,6 +46,17 @@ Wolf::Configuration::Configuration(const std::string& filePath, AAssetManager* a
 				m_useVirtualTexture = std::stoi(line);
 			if (token == "forcedTimerMsPerFrame")
 				m_forcedTimerMsPerFrame = std::stoul(line);
+			if (token == "colorSpace")
+			{
+				if (line == "SDR")
+					m_colorSpace = ColorSpace::SDR;
+				else if (line == "ESDR10")
+					m_colorSpace = ColorSpace::ESDR10;
+				else if (line == "HDR16")
+					m_colorSpace = ColorSpace::HDR16;
+				else
+					Debug::sendError("Unknown color space, switching to SDR");
+			}
 		}
 	}
 
