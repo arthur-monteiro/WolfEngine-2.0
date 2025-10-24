@@ -24,6 +24,8 @@ namespace Wolf
 		void* map(VkDeviceSize size = 0) const override;
 		void unmap() const override;
 
+		[[nodiscard]] uint32_t getSize() const override;
+
 		[[nodiscard]] VkBuffer getBuffer() const { return m_buffer; }
 		[[nodiscard]] VkDeviceMemory getBufferMemory() const { return m_bufferMemory; }
 		[[nodiscard]] VkDeviceSize getBufferSize() const { return m_bufferSize; }

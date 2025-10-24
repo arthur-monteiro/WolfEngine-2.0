@@ -136,7 +136,7 @@ namespace Wolf
 		uint32_t m_currentBindlessCount = 0;
 
 		// Material layout
-		static constexpr uint32_t MAX_MATERIAL_COUNT = 1024;
+		static constexpr uint32_t MAX_MATERIAL_COUNT = 4096;
 		struct MaterialGPUInfo
 		{
 			std::array<uint32_t, MaterialInfo::MAX_TEXTURE_SET_PER_MATERIAL> textureSetIndices;
