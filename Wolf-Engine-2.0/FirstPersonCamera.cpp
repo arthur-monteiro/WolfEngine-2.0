@@ -22,8 +22,22 @@ Wolf::FirstPersonCamera::FirstPersonCamera(glm::vec3 initialPosition, glm::vec3 
 
 void Wolf::FirstPersonCamera::update(const CameraUpdateContext& context)
 {
+	glm::vec2 pixelJitter(0.0f);
+	if (m_enableJittering)
+	{
+		const uint32_t JITTER_OFFSET_COUNT = static_cast<uint32_t>(std::size(JITTER_OFFSET));
+
+		pixelJitter.x = ((JITTER_OFFSET[context.frameIdx % JITTER_OFFSET_COUNT].x - 0.5f) * 2.0f) / static_cast<float>(context.swapChainExtent.width);
+		pixelJitter.y = ((JITTER_OFFSET[context.frameIdx % JITTER_OFFSET_COUNT].y - 0.5f) * 2.0f) / static_cast<float>(context.swapChainExtent.height);
+	}
+
 	if (m_overrideViewMatrices)
+	{
+		m_projectionMatrix = m_overridenProjectionMatrix;
+
+		updateGraphic(pixelJitter, context);
 		return;
+	}
 
 	if (m_oldMousePosX < 0 || m_locked)
 	{
@@ -74,14 +88,6 @@ void Wolf::FirstPersonCamera::update(const CameraUpdateContext& context)
 	m_projectionMatrix = glm::perspective(m_radFOV, m_aspect, m_near, m_far);
 	m_projectionMatrix[1][1] *= -1;
 
-	glm::vec2 pixelJitter(0.0f);
-	if (m_enableJittering)
-	{
-		const uint32_t JITTER_OFFSET_COUNT = static_cast<uint32_t>(std::size(JITTER_OFFSET));
-
-		pixelJitter.x = ((JITTER_OFFSET[context.frameIdx % JITTER_OFFSET_COUNT].x - 0.5f) * 2.0f) / static_cast<float>(context.swapChainExtent.width);
-		pixelJitter.y = ((JITTER_OFFSET[context.frameIdx % JITTER_OFFSET_COUNT].y - 0.5f) * 2.0f) / static_cast<float>(context.swapChainExtent.height);
-	}
 	updateGraphic(pixelJitter, context);
 }
 

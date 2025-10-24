@@ -75,6 +75,18 @@ void Wolf::RenderMeshList::addTransientInstancedMesh(const InstancedMesh& mesh, 
 	m_transientInstancedMeshesNextFrame.back().offsetAndCounts.push_back({ 0, instanceCount });
 }
 
+void Wolf::RenderMeshList::isolateInstanceMesh(uint32_t instancedMeshIdx, uint32_t instanceIdx)
+{
+	m_isolatedInfo.enabled = true;
+	m_isolatedInfo.instancedMeshIdx = instancedMeshIdx;
+	m_isolatedInfo.instanceIdx = instanceIdx;
+}
+
+void Wolf::RenderMeshList::removeIsolation()
+{
+	m_isolatedInfo.enabled = false;
+}
+
 void Wolf::RenderMeshList::draw(const RecordContext& context, const CommandBuffer& commandBuffer, RenderPass* renderPass, uint32_t pipelineIdx, uint32_t cameraIdx, const std::vector<AdditionalDescriptorSet>& descriptorSetsToBind) const
 {
 	PROFILE_FUNCTION
@@ -83,6 +95,11 @@ void Wolf::RenderMeshList::draw(const RecordContext& context, const CommandBuffe
 	std::vector<DescriptorSetBindInfo> descriptorSetsBindInfo;
 
 	uint32_t meshCount = m_transientMeshesCurrentFrame.size() + m_meshes.size() + m_transientInstancedMeshesCurrentFrame.size() + m_instancedMeshes.size();
+
+	if (m_isolatedInfo.enabled)
+	{
+		meshCount = 1;
+	}
 
 	const Pipeline* currentPipeline = nullptr;
 	NullableResourceNonOwner<const PipelineSet> currentPipelineSet;
@@ -93,20 +110,29 @@ void Wolf::RenderMeshList::draw(const RecordContext& context, const CommandBuffe
 		const MeshToRender* meshToRender = nullptr;
 		const InternalInstancedMesh* internalInstancedMesh = nullptr;
 
-		if (i < m_transientMeshesCurrentFrame.size())
-			meshToRender = &m_transientMeshesCurrentFrame[i].meshToRender;
-		else if (i < m_transientMeshesCurrentFrame.size() + m_meshes.size())
-			meshToRender = &m_meshes[i - m_transientMeshesCurrentFrame.size()].meshToRender;
-		else if (i < m_transientMeshesCurrentFrame.size() + m_meshes.size() + m_transientInstancedMeshesCurrentFrame.size())
+		if (m_isolatedInfo.enabled)
 		{
-			meshToRender = &m_transientInstancedMeshesCurrentFrame[i - m_transientMeshesCurrentFrame.size() - m_meshes.size()].instancedMesh.mesh;
-			internalInstancedMesh = &m_transientInstancedMeshesCurrentFrame[i - m_transientMeshesCurrentFrame.size() - m_meshes.size()];
+			meshToRender = &m_instancedMeshes[m_isolatedInfo.instancedMeshIdx].instancedMesh.mesh;
+			internalInstancedMesh = &m_instancedMeshes[m_isolatedInfo.instancedMeshIdx];
 		}
 		else
 		{
-			meshToRender = &m_instancedMeshes[i - m_transientMeshesCurrentFrame.size() - m_meshes.size() - m_transientInstancedMeshesCurrentFrame.size()].instancedMesh.mesh;
-			internalInstancedMesh = &m_instancedMeshes[i - m_transientMeshesCurrentFrame.size() - m_meshes.size() - m_transientInstancedMeshesCurrentFrame.size()];
+			if (i < m_transientMeshesCurrentFrame.size())
+				meshToRender = &m_transientMeshesCurrentFrame[i].meshToRender;
+			else if (i < m_transientMeshesCurrentFrame.size() + m_meshes.size())
+				meshToRender = &m_meshes[i - m_transientMeshesCurrentFrame.size()].meshToRender;
+			else if (i < m_transientMeshesCurrentFrame.size() + m_meshes.size() + m_transientInstancedMeshesCurrentFrame.size())
+			{
+				meshToRender = &m_transientInstancedMeshesCurrentFrame[i - m_transientMeshesCurrentFrame.size() - m_meshes.size()].instancedMesh.mesh;
+				internalInstancedMesh = &m_transientInstancedMeshesCurrentFrame[i - m_transientMeshesCurrentFrame.size() - m_meshes.size()];
+			}
+			else
+			{
+				meshToRender = &m_instancedMeshes[i - m_transientMeshesCurrentFrame.size() - m_meshes.size() - m_transientInstancedMeshesCurrentFrame.size()].instancedMesh.mesh;
+				internalInstancedMesh = &m_instancedMeshes[i - m_transientMeshesCurrentFrame.size() - m_meshes.size() - m_transientInstancedMeshesCurrentFrame.size()];
+			}
 		}
+
 
 		if (meshToRender->pipelineSet->getPipelineHash(pipelineIdx) == 0)
 			continue;

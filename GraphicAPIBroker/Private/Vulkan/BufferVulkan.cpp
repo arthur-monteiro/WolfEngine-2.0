@@ -109,6 +109,11 @@ void Wolf::BufferVulkan::unmap() const
 	vkUnmapMemory(g_vulkanInstance->getDevice(), m_bufferMemory);
 }
 
+uint32_t Wolf::BufferVulkan::getSize() const
+{
+	return m_bufferSize;
+}
+
 #if !defined(__ANDROID__) or __ANDROID_MIN_SDK_VERSION__ > 30
 VkDeviceAddress Wolf::BufferVulkan::getBufferDeviceAddress() const
 {

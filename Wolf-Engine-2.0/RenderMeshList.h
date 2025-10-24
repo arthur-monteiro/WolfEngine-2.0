@@ -54,6 +54,9 @@ namespace Wolf
 		void removeInstance(uint32_t instancedMeshIdx, uint32_t instanceIdx);
 		void addTransientInstancedMesh(const InstancedMesh& mesh, uint32_t instanceCount);
 
+		void isolateInstanceMesh(uint32_t instancedMeshIdx, uint32_t instanceIdx);
+		void removeIsolation();
+
 		static constexpr uint32_t NO_CAMERA_IDX = -1;
 		struct AdditionalDescriptorSet
 		{
@@ -94,6 +97,15 @@ namespace Wolf
 		std::vector<InternalInstancedMesh> m_instancedMeshes;
 		std::vector<InternalInstancedMesh> m_transientInstancedMeshesCurrentFrame;
 		std::vector<InternalInstancedMesh> m_transientInstancedMeshesNextFrame;
+
+		struct IsolatedInfo
+		{
+			bool enabled;
+
+			uint32_t instancedMeshIdx;
+			uint32_t instanceIdx;
+		};
+		IsolatedInfo m_isolatedInfo{};
 
 		ShaderList* m_shaderList;
 	};

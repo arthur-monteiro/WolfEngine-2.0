@@ -15,6 +15,7 @@ void Wolf::OrthographicCamera::update(const CameraUpdateContext& context)
 	m_previousViewMatrix = m_viewMatrix;
 	m_viewMatrix = glm::lookAt(m_center - m_heightFromCenter * normalize(m_direction), m_center, glm::vec3(0.0f, 1.0f, 0.0f));
 	m_projectionMatrix = glm::ortho(-m_radius, m_radius, -m_radius, m_radius, m_near, m_far);
+	m_projectionMatrix[1][1] *= -1;
 
 	updateGraphic(glm::vec2(0.0f), context);
 }
