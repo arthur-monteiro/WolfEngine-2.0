@@ -83,7 +83,6 @@ namespace Wolf
 		};
 		uint32_t addPipeline(const PipelineInfo& pipelineInfo, int32_t forceIdx = -1);
 		uint32_t addEmptyPipeline(int32_t forceIdx = -1);
-		void updatePipeline(const PipelineInfo& pipelineInfo, uint32_t idx);
 
 		std::vector<uint64_t> retrieveAllPipelinesHash() const;
 		uint32_t getPipelineCount() const;

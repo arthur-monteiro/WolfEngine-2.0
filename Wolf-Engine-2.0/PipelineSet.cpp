@@ -50,21 +50,6 @@ uint32_t Wolf::PipelineSet::addEmptyPipeline(int32_t forceIdx)
 	return insertionIdx;
 }
 
-void Wolf::PipelineSet::updatePipeline(const PipelineInfo& pipelineInfo, uint32_t idx)
-{
-	// TODO: Deadcode?
-	__debugbreak();
-
-	if (idx >= m_infoForPipelines.size())
-	{
-		Debug::sendError("Invalid index " + std::to_string(idx) + " for pipeline update");
-		return;
-	}
-
-	if (const uint64_t hash = xxh64::hash(reinterpret_cast<const char*>(&pipelineInfo), sizeof(pipelineInfo), 0); hash != m_infoForPipelines[idx]->getHash())
-		m_infoForPipelines[idx].reset(new InfoForPipeline(pipelineInfo, hash));
-}
-
 std::vector<uint64_t> Wolf::PipelineSet::retrieveAllPipelinesHash() const
 {
 	std::vector<uint64_t> pipelinesHash;
