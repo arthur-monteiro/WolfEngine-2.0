@@ -47,10 +47,10 @@ namespace Wolf
 			bool primitiveRestartEnable = false;
 
 			// Resources layouts
-			uint32_t cameraDescriptorSlot = -1;
-			uint32_t bindlessDescriptorSlot = -1;
-			uint32_t lightDescriptorSlot = -1;
-			uint32_t customMask = 0;
+			uint32_t cameraDescriptorSlot = static_cast<uint32_t>(-1);
+			uint32_t bindlessDescriptorSlot = static_cast<uint32_t>(-1);
+			uint32_t lightDescriptorSlot = static_cast<uint32_t>(-1);
+			uint32_t customMask = 0u;
 
 			// Viewport
 			std::array<float, 2> viewportScale = { 1.0f, 1.0f };
@@ -83,12 +83,20 @@ namespace Wolf
 		};
 		uint32_t addPipeline(const PipelineInfo& pipelineInfo, int32_t forceIdx = -1);
 		uint32_t addEmptyPipeline(int32_t forceIdx = -1);
-		void updatePipeline(const PipelineInfo& pipelineInfo, uint32_t idx);
 
 		std::vector<uint64_t> retrieveAllPipelinesHash() const;
 		uint32_t getPipelineCount() const;
 		std::vector<const PipelineInfo*> retrieveAllPipelinesInfo() const;
-		const Pipeline* getOrCreatePipeline(uint32_t idx, RenderPass* renderPass, const std::vector<DescriptorSetBindInfo>& meshDescriptorSetsBindInfo, const std::vector<DescriptorSetBindInfo>& additionalDescriptorSetsBindInfo, ShaderList& shaderList) const;
+
+		struct ShaderCodeToAddForStage
+		{
+			ShaderParser::ShaderCodeToAdd shaderCodeToAdd;
+			ShaderStageFlagBits stage;
+			uint32_t requiredMask;
+		};
+		const Pipeline* getOrCreatePipeline(uint32_t idx, RenderPass* renderPass, const std::vector<DescriptorSetBindInfo>& meshDescriptorSetsBindInfo, const std::vector<DescriptorSetBindInfo>& additionalDescriptorSetsBindInfo,
+			const std::vector<ShaderCodeToAddForStage>& shadersCodeToAdd, ShaderList& shaderList) const;
+
 		uint64_t getPipelineHash(uint32_t idx) const { return (idx < m_infoForPipelines.size() && m_infoForPipelines[idx]) ? m_infoForPipelines[idx]->getHash() : 0; }
 		uint32_t getCameraDescriptorSlot(uint32_t idx) const { return m_infoForPipelines[idx]->getPipelineInfo().cameraDescriptorSlot; }
 		uint32_t getBindlessDescriptorSlot(uint32_t idx) const { return m_infoForPipelines[idx]->getPipelineInfo().bindlessDescriptorSlot; }

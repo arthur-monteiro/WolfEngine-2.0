@@ -63,7 +63,8 @@ namespace Wolf
 			DescriptorSetBindInfo descriptorSetBindInfo;
 			uint32_t mask = 0;
 		};
-		void draw(const RecordContext& context, const CommandBuffer& commandBuffer, RenderPass* renderPass, uint32_t pipelineIdx, uint32_t cameraIdx, const std::vector<AdditionalDescriptorSet>& descriptorSetsToBind) const;
+		void draw(const RecordContext& context, const CommandBuffer& commandBuffer, RenderPass* renderPass, uint32_t pipelineIdx, uint32_t cameraIdx, const std::vector<AdditionalDescriptorSet>& descriptorSetsToBind,
+			const std::vector<PipelineSet::ShaderCodeToAddForStage>& shadersCodeToAdd) const;
 
 	private:
 		struct InternalMesh

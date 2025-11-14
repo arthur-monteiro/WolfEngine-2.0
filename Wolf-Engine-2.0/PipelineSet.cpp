@@ -50,18 +50,6 @@ uint32_t Wolf::PipelineSet::addEmptyPipeline(int32_t forceIdx)
 	return insertionIdx;
 }
 
-void Wolf::PipelineSet::updatePipeline(const PipelineInfo& pipelineInfo, uint32_t idx)
-{
-	if (idx >= m_infoForPipelines.size())
-	{
-		Debug::sendError("Invalid index " + std::to_string(idx) + " for pipeline update");
-		return;
-	}
-
-	if (const uint64_t hash = xxh64::hash(reinterpret_cast<const char*>(&pipelineInfo), sizeof(pipelineInfo), 0); hash != m_infoForPipelines[idx]->getHash())
-		m_infoForPipelines[idx].reset(new InfoForPipeline(pipelineInfo, hash));
-}
-
 std::vector<uint64_t> Wolf::PipelineSet::retrieveAllPipelinesHash() const
 {
 	std::vector<uint64_t> pipelinesHash;
@@ -91,7 +79,8 @@ std::vector<const Wolf::PipelineSet::PipelineInfo*> Wolf::PipelineSet::retrieveA
 	return r;
 }
 
-const Wolf::Pipeline* Wolf::PipelineSet::getOrCreatePipeline(uint32_t idx, RenderPass* renderPass, const std::vector<DescriptorSetBindInfo>& meshDescriptorSetsBindInfo, const std::vector<DescriptorSetBindInfo>& additionalDescriptorSetsBindInfo, ShaderList& shaderList) const
+const Wolf::Pipeline* Wolf::PipelineSet::getOrCreatePipeline(uint32_t idx, RenderPass* renderPass, const std::vector<DescriptorSetBindInfo>& meshDescriptorSetsBindInfo, const std::vector<DescriptorSetBindInfo>& additionalDescriptorSetsBindInfo,
+	const std::vector<ShaderCodeToAddForStage>& shadersCodeToAdd, ShaderList& shaderList) const
 {
 	InfoForPipeline::CreatedPipelineInfo createdPipelineInfo{};
 	createdPipelineInfo.renderPass = renderPass;
@@ -124,6 +113,13 @@ const Wolf::Pipeline* Wolf::PipelineSet::getOrCreatePipeline(uint32_t idx, Rende
 			addShaderInfo.bindlessDescriptorSlot = pipelineInfo.shaderInfos[i].stage == ShaderStageFlagBits::FRAGMENT ? pipelineInfo.bindlessDescriptorSlot : -1;
 			addShaderInfo.lightDescriptorSlot = pipelineInfo.shaderInfos[i].stage == ShaderStageFlagBits::FRAGMENT ? pipelineInfo.lightDescriptorSlot : -1;
 			addShaderInfo.materialFetchProcedure = pipelineInfo.shaderInfos[i].materialFetchProcedure;
+			for (const ShaderCodeToAddForStage& shaderCodeToAddForStage : shadersCodeToAdd)
+			{
+				if (shaderCodeToAddForStage.stage == pipelineInfo.shaderInfos[i].stage)
+				{
+					addShaderInfo.shaderCodeToAdd = shaderCodeToAddForStage.shaderCodeToAdd;
+				}
+			}
 			if (!addShaderInfo.materialFetchProcedure.codeString.empty())
 			{
 				if (pipelineInfo.shaderInfos[i].stage != ShaderStageFlagBits::FRAGMENT)
@@ -266,7 +262,8 @@ void Wolf::PipelineSet::renderPassExtentChanged(const RenderPass* renderPass) co
 		// TODO: we should only erase pipelines with the sent render pass
 		//if (infoForPipeline)
 		//	infoForPipeline->getPipelines().erase(renderPass);
-		infoForPipeline->getPipelines().clear();
+		if (infoForPipeline)
+			infoForPipeline->getPipelines().clear();
 	}
 }
 

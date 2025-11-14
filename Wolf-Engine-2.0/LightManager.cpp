@@ -21,8 +21,8 @@ Wolf::LightManager::LightManager()
 	m_defaultSkyCubeMap.reset(Wolf::Image::createImage(createCubeMapInfo));
 	m_skyCubeMap = m_defaultSkyCubeMap.createNonOwnerResource();
 
-	m_descriptorSetLayoutGenerator.addUniformBuffer(ShaderStageFlagBits::FRAGMENT | ShaderStageFlagBits::RAYGEN, 0); // lights info
-	m_descriptorSetLayoutGenerator.addCombinedImageSampler(ShaderStageFlagBits::FRAGMENT | ShaderStageFlagBits::RAYGEN, 1); // sky cube map
+	m_descriptorSetLayoutGenerator.addUniformBuffer(ShaderStageFlagBits::FRAGMENT | ShaderStageFlagBits::RAYGEN | ShaderStageFlagBits::MISS | ShaderStageFlagBits::CLOSEST_HIT, 0); // lights info
+	m_descriptorSetLayoutGenerator.addCombinedImageSampler(ShaderStageFlagBits::FRAGMENT | ShaderStageFlagBits::RAYGEN | ShaderStageFlagBits::MISS | ShaderStageFlagBits::CLOSEST_HIT, 1); // sky cube map
 
 	m_descriptorSetLayout.reset(new LazyInitSharedResource<DescriptorSetLayout, LightManager>([this](ResourceUniqueOwner<DescriptorSetLayout>& descriptorSetLayout)
 		{
