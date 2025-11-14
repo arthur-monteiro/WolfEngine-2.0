@@ -87,7 +87,8 @@ void Wolf::RenderMeshList::removeIsolation()
 	m_isolatedInfo.enabled = false;
 }
 
-void Wolf::RenderMeshList::draw(const RecordContext& context, const CommandBuffer& commandBuffer, RenderPass* renderPass, uint32_t pipelineIdx, uint32_t cameraIdx, const std::vector<AdditionalDescriptorSet>& descriptorSetsToBind) const
+void Wolf::RenderMeshList::draw(const RecordContext& context, const CommandBuffer& commandBuffer, RenderPass* renderPass, uint32_t pipelineIdx, uint32_t cameraIdx, const std::vector<AdditionalDescriptorSet>& descriptorSetsToBind,
+	const std::vector<PipelineSet::ShaderCodeToAddForStage>& shadersCodeToAdd) const
 {
 	PROFILE_FUNCTION
 
@@ -153,7 +154,17 @@ void Wolf::RenderMeshList::draw(const RecordContext& context, const CommandBuffe
 			}
 		}
 
-		if (const Pipeline* meshPipeline = meshToRender->pipelineSet->getOrCreatePipeline(pipelineIdx, renderPass, meshToRender->perPipelineDescriptorSets[pipelineIdx], descriptorSetsBindInfo, *m_shaderList); meshPipeline != currentPipeline)
+		std::vector<PipelineSet::ShaderCodeToAddForStage> realShadersCodeToAdd;
+		for (const PipelineSet::ShaderCodeToAddForStage& requestedShaderCode : shadersCodeToAdd)
+		{
+			if (requestedShaderCode.requiredMask == 0 || requestedShaderCode.requiredMask & meshToRender->pipelineSet->getCustomMask(pipelineIdx))
+			{
+				realShadersCodeToAdd.push_back(requestedShaderCode);
+			}
+		}
+
+		if (const Pipeline* meshPipeline = meshToRender->pipelineSet->getOrCreatePipeline(pipelineIdx, renderPass, meshToRender->perPipelineDescriptorSets[pipelineIdx], descriptorSetsBindInfo,
+			realShadersCodeToAdd, *m_shaderList); meshPipeline != currentPipeline)
 		{
 			PROFILE_SCOPED("Bind pipeline and default descriptor sets")
 

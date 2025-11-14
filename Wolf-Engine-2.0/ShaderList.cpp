@@ -6,13 +6,14 @@ const Wolf::ShaderParser* Wolf::ShaderList::addShader(const AddShaderInfo& addSh
 {
 	for (const ShaderInfo& shaderInfo : m_shadersInfo)
 	{
-		if (shaderInfo.getShaderParser()->isSame(addShaderInfo.filename, addShaderInfo.conditionBlocksToInclude, addShaderInfo.materialFetchProcedure.computeHash(), 0))
+		if (shaderInfo.getShaderParser()->isSame(addShaderInfo.filename, addShaderInfo.conditionBlocksToInclude, addShaderInfo.materialFetchProcedure.computeHash(), addShaderInfo.shaderCodeToAdd.computeHash()))
 		{
 			return shaderInfo.getShaderParser();
 		}
 	}
 
-	m_shadersInfo.emplace_back(addShaderInfo.filename, addShaderInfo.conditionBlocksToInclude, addShaderInfo.cameraDescriptorSlot, addShaderInfo.bindlessDescriptorSlot, addShaderInfo.lightDescriptorSlot, addShaderInfo.materialFetchProcedure);
+	m_shadersInfo.emplace_back(addShaderInfo.filename, addShaderInfo.conditionBlocksToInclude, addShaderInfo.cameraDescriptorSlot, addShaderInfo.bindlessDescriptorSlot, addShaderInfo.lightDescriptorSlot, addShaderInfo.materialFetchProcedure,
+		addShaderInfo.shaderCodeToAdd);
 	m_shadersInfo.back().getCallbackWhenModifiedList() = addShaderInfo.callbackWhenModified;
 
 	return m_shadersInfo.back().getShaderParser();

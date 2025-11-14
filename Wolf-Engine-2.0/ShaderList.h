@@ -20,6 +20,7 @@ namespace Wolf
 			uint32_t bindlessDescriptorSlot = -1;
 			uint32_t lightDescriptorSlot = -1;
 			ShaderParser::MaterialFetchProcedure materialFetchProcedure;
+			ShaderParser::ShaderCodeToAdd shaderCodeToAdd;
 
 			AddShaderInfo(const std::string& filename, const std::vector<std::string>& conditionBlocksToInclude = defaultConditionBlocksToInclude) : filename(filename), conditionBlocksToInclude(conditionBlocksToInclude) {}
 		};
@@ -31,9 +32,10 @@ namespace Wolf
 		class ShaderInfo
 		{
 		public:
-			ShaderInfo(const std::string& filename, const std::vector<std::string>& conditionBlocksToInclude, uint32_t cameraDescriptorSlot, uint32_t bindlessDescriptorSlot, uint32_t lightDescriptorSlot, const ShaderParser::MaterialFetchProcedure& materialFetchProcedure)
+			ShaderInfo(const std::string& filename, const std::vector<std::string>& conditionBlocksToInclude, uint32_t cameraDescriptorSlot, uint32_t bindlessDescriptorSlot, uint32_t lightDescriptorSlot,
+				const ShaderParser::MaterialFetchProcedure& materialFetchProcedure, const ShaderParser::ShaderCodeToAdd& shaderCodeToAdd)
 			{
-				m_shaderParser.reset(new ShaderParser(filename, conditionBlocksToInclude, cameraDescriptorSlot, bindlessDescriptorSlot, lightDescriptorSlot, materialFetchProcedure));
+				m_shaderParser.reset(new ShaderParser(filename, conditionBlocksToInclude, cameraDescriptorSlot, bindlessDescriptorSlot, lightDescriptorSlot, materialFetchProcedure, shaderCodeToAdd));
 			}
 
 			std::vector<std::function<void(const ShaderParser*)>>& getCallbackWhenModifiedList() { return m_callbackWhenModified; }
