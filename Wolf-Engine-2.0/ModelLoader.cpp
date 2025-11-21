@@ -1,7 +1,9 @@
 #include "ModelLoader.h"
 
 #include <filesystem>
+#ifndef __ANDROID__
 #include <meshoptimizer.h>
+#endif
 #define TINYOBJLOADER_IMPLEMENTATION
 #include <tiny_obj_loader.h>
 #include <thread>
@@ -270,6 +272,7 @@ Wolf::ModelLoader::ModelLoader(ModelData& outputModel, ModelLoadingInfo& modelLo
 		tempTriangle[i % 3] = vertices[indices[i]];
 	}
 
+#ifndef __ANDROID__
 	// Optimize mesh
 	std::vector<unsigned int> remap(indices.size()); // temporary remap table
 	size_t meshOptVertexCount = meshopt_generateVertexRemap(&remap[0], indices.data(), indices.size(),
@@ -308,6 +311,7 @@ Wolf::ModelLoader::ModelLoader(ModelData& outputModel, ModelLoadingInfo& modelLo
 		lodInfo.indexCount = lod.size();
 		m_outputModel->lodsInfo.push_back(lodInfo);
 	}
+#endif
 
 	m_outputModel->mesh.reset(new Mesh(vertices, indices, aabb, boundingSphere, modelLoadingInfo.additionalVertexBufferUsages, modelLoadingInfo.additionalIndexBufferUsages));
 
@@ -437,6 +441,7 @@ Wolf::ModelLoader::ModelLoader(ModelData& outputModel, ModelLoadingInfo& modelLo
 		uint32_t lodCount = modelLoadingInfo.generateLODCount;
 		outCacheFile.write(reinterpret_cast<char*>(&lodCount), sizeof(uint32_t));
 
+#ifndef __ANDROID__
 		for (uint32_t lodIdx = 0; lodIdx < lodCount; ++lodIdx)
 		{
 			uint32_t indexCount = static_cast<uint32_t>(savedLODs[lodIdx].size());
@@ -444,6 +449,7 @@ Wolf::ModelLoader::ModelLoader(ModelData& outputModel, ModelLoadingInfo& modelLo
 			outCacheFile.write(reinterpret_cast<char*>(savedLODs[lodIdx].data()), indexCount * sizeof(uint32_t));
 			outCacheFile.write(reinterpret_cast<char*>(&m_outputModel->lodsInfo[lodIdx]), sizeof(ModelData::LODInfo));
 		}
+#endif
 
 		outCacheFile.close();
 	}

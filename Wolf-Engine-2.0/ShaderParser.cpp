@@ -222,6 +222,7 @@ void Wolf::ShaderParser::parseAndCompile()
             // includes seems to work with glslc so no need to copy content
             outFileGLSL << inShaderLine << std::endl;
 
+#ifndef __ANDROID__
             if (addRayTracedShaderCode) // check for payload definition
             {
                 std::ifstream inIncludedFile(fullIncludeFilename);
@@ -236,6 +237,7 @@ void Wolf::ShaderParser::parseAndCompile()
                     }
                 }
             }
+#endif
         }
         else
         {
