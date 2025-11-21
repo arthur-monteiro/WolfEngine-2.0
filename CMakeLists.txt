@@ -22,6 +22,7 @@ include_directories(ThirdParty/stb_image)
 include_directories(ThirdParty/UltraLight/include)
 include_directories(ThirdParty/vulkan/Include)
 include_directories(ThirdParty/Tracy/tracy)
+include_directories(ThirdParty/meshoptimizer/src)
 
 add_library(WolfEngine STATIC ${SRC})
 

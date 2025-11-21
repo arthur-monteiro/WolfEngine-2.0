@@ -1,8 +1,8 @@
 R"(
 #extension GL_EXT_nonuniform_qualifier : enable
 
-layout (binding = 0, set = £BINDLESS_DESCRIPTOR_SLOT) uniform texture2D[] textures;
-layout (binding = 1, set = £BINDLESS_DESCRIPTOR_SLOT) uniform sampler textureSampler;
+layout (binding = 0, set = @BINDLESS_DESCRIPTOR_SLOT) uniform texture2D[] textures;
+layout (binding = 1, set = @BINDLESS_DESCRIPTOR_SLOT) uniform sampler textureSampler;
 
 const uint PAGE_SIZE = 256;
 
@@ -14,23 +14,23 @@ struct TextureInfo
 
     uint virtualTextureIndirectionOffset;
 };
-layout(std430, binding = 4, set = £BINDLESS_DESCRIPTOR_SLOT) readonly restrict buffer TexturesInfoBuffer
+layout(std430, binding = 4, set = @BINDLESS_DESCRIPTOR_SLOT) readonly restrict buffer TexturesInfoBuffer
 {
     TextureInfo texturesInfo[];
 };
 
 const uint DITHER_PIXEL_COUNT_PER_SIDE = 32;
-layout(std430, binding = 5, set = £BINDLESS_DESCRIPTOR_SLOT) buffer VirtualTextureFeedbackBuffer
+layout(std430, binding = 5, set = @BINDLESS_DESCRIPTOR_SLOT) buffer VirtualTextureFeedbackBuffer
 {
 	uvec3 feedbacks[];
 };
 
-layout (binding = 6, set = £BINDLESS_DESCRIPTOR_SLOT) uniform texture2D[] atlases;
-layout (binding = 7, set = £BINDLESS_DESCRIPTOR_SLOT) uniform sampler atlasesSampler;
+layout (binding = 6, set = @BINDLESS_DESCRIPTOR_SLOT) uniform texture2D[] atlases;
+layout (binding = 7, set = @BINDLESS_DESCRIPTOR_SLOT) uniform sampler atlasesSampler;
 
 const uint MAX_INDIRECTION_COUNT = 16384;
 const uint INVALID_INDIRECTION = -1;
-layout(std430, binding = 8, set = £BINDLESS_DESCRIPTOR_SLOT) readonly restrict buffer VirtualTextureIndirectionBuffer
+layout(std430, binding = 8, set = @BINDLESS_DESCRIPTOR_SLOT) readonly restrict buffer VirtualTextureIndirectionBuffer
 {
     uint virtualTextureIndirection[MAX_INDIRECTION_COUNT];
 };

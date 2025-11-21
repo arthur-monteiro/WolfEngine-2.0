@@ -101,6 +101,9 @@ namespace Wolf
 		// Cache options
 		bool useCache = true;
 
+		// LODs
+		uint32_t generateLODCount = 1;
+
 		// Multi-threading options
 		std::mutex* vulkanQueueLock = nullptr;
 
@@ -112,6 +115,16 @@ namespace Wolf
 	struct ModelData
 	{
 		ResourceUniqueOwner<Mesh> mesh;
+
+		// LOD data
+		std::vector<ResourceUniqueOwner<Buffer>> simplifiedIndexBuffers;
+		struct LODInfo
+		{
+			float error;
+			uint32_t indexCount;
+		};
+		std::vector<LODInfo> lodsInfo;
+
 #ifdef MATERIAL_DEBUG
 		std::string originFilepath;
 #endif

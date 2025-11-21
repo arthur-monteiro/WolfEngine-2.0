@@ -221,6 +221,21 @@ void Wolf::ShaderParser::parseAndCompile()
 
             // includes seems to work with glslc so no need to copy content
             outFileGLSL << inShaderLine << std::endl;
+
+            if (addRayTracedShaderCode) // check for payload definition
+            {
+                std::ifstream inIncludedFile(fullIncludeFilename);
+                std::string inIncludedShaderLine;
+                while (std::getline(inIncludedFile, inIncludedShaderLine))
+                {
+                    if ((inIncludedShaderLine.contains("rayPayloadEXT") || inIncludedShaderLine.contains("rayPayloadInEXT")))
+                    {
+                        m_shaderCodeToAdd.addToGLSL(outFileGLSL);
+                        addRayTracedShaderCode = false;
+                        break;
+                    }
+                }
+            }
         }
         else
         {
@@ -311,7 +326,7 @@ void Wolf::ShaderParser::addCameraCode(std::ofstream& outFileGLSL) const
 		#include "Camera.glsl"
     ;
 
-    const std::string& descriptorSlotToken = "£CAMERA_DESCRIPTOR_SLOT";
+    const std::string& descriptorSlotToken = "@CAMERA_DESCRIPTOR_SLOT";
     if (const size_t descriptorSlotTokenPos = cameraCode.find(descriptorSlotToken); descriptorSlotTokenPos != std::string::npos)
     {
         cameraCode.replace(descriptorSlotTokenPos, descriptorSlotToken.length(), std::to_string(m_cameraDescriptorSlot));
@@ -365,7 +380,7 @@ void Wolf::ShaderParser::addMaterialFetchCode(std::ofstream& outFileGLSL) const
 
     outFileGLSL << "//------------------\n";
 
-    const std::string& descriptorSlotToken = "£BINDLESS_DESCRIPTOR_SLOT";
+    const std::string& descriptorSlotToken = "@BINDLESS_DESCRIPTOR_SLOT";
     size_t descriptorSlotTokenPos = materialFetchCode.find(descriptorSlotToken);
     while (descriptorSlotTokenPos != std::string::npos)
     {
