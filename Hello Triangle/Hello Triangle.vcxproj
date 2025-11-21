@@ -189,8 +189,8 @@
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalLibraryDirectories>..\x64\Debug - Graphic Tests;..\ThirdParty\OVR\Lib\Windows\x64\Debug\VS2017;..\ThirdParty\GLFW\lib-vc2019;..\ThirdParty\vulkan\Lib;..\ThirdParty\Wolf Engine\lib;..\ThirdParty\UltraLight\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>vulkan-1.lib;glfw3.lib;LibOVR.lib;UltralightCore.lib;Ultralight.lib;WebCore.lib;AppCore.lib;Engine Core.lib;Common.lib;Graphic API Broker.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>..\x64\Debug - Graphic Tests;..\ThirdParty\OVR\Lib\Windows\x64\Debug\VS2017;..\ThirdParty\GLFW\lib-vc2019;..\ThirdParty\vulkan\Lib;..\ThirdParty\Wolf Engine\lib;..\ThirdParty\UltraLight\lib;..\ThirdParty\meshoptimizer\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>vulkan-1.lib;glfw3.lib;LibOVR.lib;UltralightCore.lib;Ultralight.lib;WebCore.lib;AppCore.lib;meshoptimizer.lib;Engine Core.lib;Common.lib;Graphic API Broker.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalOptions>/NODEFAULTLIB:msvcrt.lib %(AdditionalOptions)</AdditionalOptions>
     </Link>
   </ItemDefinitionGroup>
