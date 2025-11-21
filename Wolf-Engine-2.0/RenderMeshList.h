@@ -38,6 +38,8 @@ namespace Wolf
 			ResourceNonOwner<Mesh> mesh;
 			ResourceNonOwner<const PipelineSet> pipelineSet;
 			std::array<std::vector<DescriptorSetBindInfo>, PipelineSet::MAX_PIPELINE_COUNT> perPipelineDescriptorSets;
+
+			NullableResourceNonOwner<Buffer> overrideIndexBuffer;
 		};
 		uint32_t registerMesh(const MeshToRender& mesh);
 		void addTransientMesh(const MeshToRender& mesh);

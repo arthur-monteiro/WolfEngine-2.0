@@ -1,6 +1,9 @@
 #include "ModelLoader.h"
 
 #include <filesystem>
+#ifndef __ANDROID__
+#include <meshoptimizer.h>
+#endif
 #define TINYOBJLOADER_IMPLEMENTATION
 #include <tiny_obj_loader.h>
 #include <thread>
@@ -50,6 +53,11 @@ void Wolf::ModelLoader::loadObject(ModelData& outputModel, ModelLoadingInfo& mod
 	else
 	{
 		Debug::sendCriticalError("Unhandled filename extension");
+	}
+
+	if (modelLoadingInfo.generateLODCount > 1)
+	{
+
 	}
 
 	// Load physics
@@ -264,6 +272,47 @@ Wolf::ModelLoader::ModelLoader(ModelData& outputModel, ModelLoadingInfo& modelLo
 		tempTriangle[i % 3] = vertices[indices[i]];
 	}
 
+#ifndef __ANDROID__
+	// Optimize mesh
+	std::vector<unsigned int> remap(indices.size()); // temporary remap table
+	size_t meshOptVertexCount = meshopt_generateVertexRemap(&remap[0], indices.data(), indices.size(),
+		vertices.data(), vertices.size(), sizeof(Vertex3D));
+	std::vector<uint32_t> newIndices(indices.size());
+	meshopt_remapIndexBuffer(newIndices.data(), indices.data(), indices.size(), &remap[0]);
+	std::vector<Vertex3D> newVertices(meshOptVertexCount);
+	meshopt_remapVertexBuffer(newVertices.data(), vertices.data(), vertices.size(), sizeof(Vertex3D), &remap[0]);
+
+	vertices = std::move(newVertices);
+	indices = std::move(newIndices);
+
+	meshopt_optimizeVertexCache(indices.data(), indices.data(), indices.size(), vertices.size());
+
+	std::vector<std::vector<uint32_t>> savedLODs(modelLoadingInfo.generateLODCount);
+
+	size_t targetIndexCount = indices.size();
+	float targetError = FLT_MAX;
+	for (uint32_t lodIdx = 0; lodIdx < modelLoadingInfo.generateLODCount; ++lodIdx)
+	{
+		targetIndexCount *= 0.5f;
+
+		std::vector<uint32_t>& lod = savedLODs[lodIdx];
+		lod.resize(indices.size());
+		float lodError = 0.0f;
+		static_assert(offsetof(Vertex3D, pos) == 0);
+		lod.resize(meshopt_simplify(&lod[0], indices.data(), indices.size(), reinterpret_cast<float*>(vertices.data() /* note that it makes the assumption that pos is the first data */),
+			vertices.size(), sizeof(Vertex3D), targetIndexCount, targetError, 0, &lodError));
+
+		m_outputModel->simplifiedIndexBuffers.push_back(Buffer::createBuffer(lod.size() * sizeof(uint32_t), VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT | modelLoadingInfo.additionalIndexBufferUsages,
+			VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT));
+		m_outputModel->simplifiedIndexBuffers.back()->transferCPUMemoryWithStagingBuffer(lod.data(), lod.size() * sizeof(uint32_t));
+
+		ModelData::LODInfo lodInfo;
+		lodInfo.error = lodError;
+		lodInfo.indexCount = lod.size();
+		m_outputModel->lodsInfo.push_back(lodInfo);
+	}
+#endif
+
 	m_outputModel->mesh.reset(new Mesh(vertices, indices, aabb, boundingSphere, modelLoadingInfo.additionalVertexBufferUsages, modelLoadingInfo.additionalIndexBufferUsages));
 
 	for (uint32_t shapeIdx = 0; shapeIdx < shapeInfos.size(); ++shapeIdx)
@@ -388,6 +437,20 @@ Wolf::ModelLoader::ModelLoader(ModelData& outputModel, ModelLoadingInfo& modelLo
 #endif
 		}
 
+		/* LODs */
+		uint32_t lodCount = modelLoadingInfo.generateLODCount;
+		outCacheFile.write(reinterpret_cast<char*>(&lodCount), sizeof(uint32_t));
+
+#ifndef __ANDROID__
+		for (uint32_t lodIdx = 0; lodIdx < lodCount; ++lodIdx)
+		{
+			uint32_t indexCount = static_cast<uint32_t>(savedLODs[lodIdx].size());
+			outCacheFile.write(reinterpret_cast<char*>(&indexCount), sizeof(uint32_t));
+			outCacheFile.write(reinterpret_cast<char*>(savedLODs[lodIdx].data()), indexCount * sizeof(uint32_t));
+			outCacheFile.write(reinterpret_cast<char*>(&m_outputModel->lodsInfo[lodIdx]), sizeof(ModelData::LODInfo));
+		}
+#endif
+
 		outCacheFile.close();
 	}
 }
@@ -486,6 +549,23 @@ bool Wolf::ModelLoader::loadCache(ModelLoadingInfo& modelLoadingInfo)
 			m_outputModel->textureSets[textureSetIdx].materialFolder.resize(materialFolderSize);
 			input.read(m_outputModel->textureSets[textureSetIdx].materialFolder.data(), materialFolderSize);
 #endif
+		}
+
+		uint32_t lodCount;
+		input.read(reinterpret_cast<char*>(&lodCount), sizeof(lodCount));
+
+		m_outputModel->lodsInfo.resize(lodCount);
+		for (uint32_t lodIdx = 0; lodIdx < lodCount; ++lodIdx)
+		{
+			input.read(reinterpret_cast<char*>(&indicesCount), sizeof(indicesCount));
+			std::vector<uint32_t> lod(indicesCount);
+			input.read(reinterpret_cast<char*>(lod.data()), indicesCount * sizeof(lod[0]));
+
+			m_outputModel->simplifiedIndexBuffers.push_back(Buffer::createBuffer(lod.size() * sizeof(uint32_t), VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT | modelLoadingInfo.additionalIndexBufferUsages,
+				VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT));
+			m_outputModel->simplifiedIndexBuffers.back()->transferCPUMemoryWithStagingBuffer(lod.data(), lod.size() * sizeof(uint32_t));
+
+			input.read(reinterpret_cast<char*>(&m_outputModel->lodsInfo[lodIdx]), sizeof(ModelData::LODInfo));
 		}
 
 		if (modelLoadingInfo.vulkanQueueLock)

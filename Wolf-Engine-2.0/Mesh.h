@@ -48,7 +48,7 @@ namespace Wolf
 		[[nodiscard]] const BoundingSphere& getBoundingSphere() const { return m_boundingSphere; }
 
 		void cullForCamera(uint32_t cameraIdx, const CameraInterface* camera, const glm::mat4& transform, bool isInstanced);
-		void draw(const CommandBuffer& commandBuffer, uint32_t cameraIdx, uint32_t instanceCount = 1, uint32_t firstInstance = 0) const;
+		void draw(const CommandBuffer& commandBuffer, uint32_t cameraIdx, uint32_t instanceCount = 1, uint32_t firstInstance = 0, const NullableResourceNonOwner<Buffer>& overrideIndexBuffer = NullableResourceNonOwner<Buffer>()) const;
 
 	private:
 		ResourceUniqueOwner<Buffer> m_vertexBuffer;

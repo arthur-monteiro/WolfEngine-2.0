@@ -11,7 +11,7 @@ struct InputTextureSetInfo
     vec3 scale;
     float pad;
 };
-layout(std430, binding = 2, set = £BINDLESS_DESCRIPTOR_SLOT) readonly restrict buffer TextureSetBufferLayout
+layout(std430, binding = 2, set = @BINDLESS_DESCRIPTOR_SLOT) readonly restrict buffer TextureSetBufferLayout
 {
     InputTextureSetInfo textureSetsInfo[];
 };
@@ -25,7 +25,7 @@ struct InputMaterialInfo
     float textureSetStrengths[TEXTURE_SET_COUNT_PER_MATERIAL];
     uint shadingMode;
 };
-layout(std430, binding = 3, set = £BINDLESS_DESCRIPTOR_SLOT) readonly restrict buffer MaterialBufferLayout
+layout(std430, binding = 3, set = @BINDLESS_DESCRIPTOR_SLOT) readonly restrict buffer MaterialBufferLayout
 {
     InputMaterialInfo materialsInfo[];
 };

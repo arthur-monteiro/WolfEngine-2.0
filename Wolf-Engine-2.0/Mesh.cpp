@@ -43,14 +43,26 @@ void Wolf::Mesh::cullForCamera(uint32_t cameraIdx, const CameraInterface* camera
 	}
 }
 
-void Wolf::Mesh::draw(const CommandBuffer& commandBuffer, uint32_t cameraIdx, uint32_t instanceCount, uint32_t firstInstance) const
+void Wolf::Mesh::draw(const CommandBuffer& commandBuffer, uint32_t cameraIdx, uint32_t instanceCount, uint32_t firstInstance, const NullableResourceNonOwner<Buffer>& overrideIndexBuffer) const
 {
 	commandBuffer.bindVertexBuffer(*m_vertexBuffer);
-	commandBuffer.bindIndexBuffer(*m_indexBuffer, IndexType::U32);
+	if (overrideIndexBuffer)
+	{
+		commandBuffer.bindIndexBuffer(*overrideIndexBuffer, IndexType::U32);
+	}
+	else
+	{
+		commandBuffer.bindIndexBuffer(*m_indexBuffer, IndexType::U32);
+	}
 
 	//if(m_subMeshes.empty() || cameraIdx == RenderMeshList::NO_CAMERA_IDX)
 	{
-		commandBuffer.drawIndexed(m_indexCount, instanceCount, 0, 0, firstInstance);
+		uint32_t indexCount = m_indexCount;
+		if (overrideIndexBuffer)
+		{
+			indexCount = overrideIndexBuffer->getSize() / sizeof(uint32_t);
+		}
+		commandBuffer.drawIndexed(indexCount, instanceCount, 0, 0, firstInstance);
 	}
 	/*else
 	{

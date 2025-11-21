@@ -215,14 +215,14 @@ void Wolf::RenderMeshList::draw(const RecordContext& context, const CommandBuffe
 
 			for (const InternalInstancedMesh::OffsetAndCount& offsetAndCount : internalInstancedMesh->offsetAndCounts)
 			{
-				meshToRender->mesh->draw(commandBuffer, cameraIdx, offsetAndCount.count, offsetAndCount.offset);
+				meshToRender->mesh->draw(commandBuffer, cameraIdx, offsetAndCount.count, offsetAndCount.offset, meshToRender->overrideIndexBuffer);
 			}
 		}
 		else
 		{
 			PROFILE_SCOPED("Draw command")
 
-			meshToRender->mesh->draw(commandBuffer, cameraIdx, 1);
+			meshToRender->mesh->draw(commandBuffer, cameraIdx, 1, 0, meshToRender->overrideIndexBuffer);
 		}
 	}
 }

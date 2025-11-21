@@ -1,5 +1,5 @@
 R"(
-layout(binding = 0, set = £CAMERA_DESCRIPTOR_SLOT) uniform UniformBufferCamera
+layout(binding = 0, set = @CAMERA_DESCRIPTOR_SLOT) uniform UniformBufferCamera
 {
 	mat4 view;
 
