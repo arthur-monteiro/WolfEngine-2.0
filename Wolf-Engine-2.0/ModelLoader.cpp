@@ -5,6 +5,8 @@
 #include <meshoptimizer.h>
 #endif
 #define TINYOBJLOADER_IMPLEMENTATION
+#include "ModelLoader.h"
+
 #include <tiny_obj_loader.h>
 #include <thread>
 
@@ -38,7 +40,7 @@ inline std::string readStringFromCache(std::ifstream& input)
 void Wolf::ModelLoader::loadObject(ModelData& outputModel, ModelLoadingInfo& modelLoadingInfo)
 {
 #ifdef MATERIAL_DEBUG
-	outputModel.originFilepath = modelLoadingInfo.filename;
+	outputModel.m_originFilepath = modelLoadingInfo.filename;
 #endif
 
 	std::string filenameExtension = modelLoadingInfo.filename.substr(modelLoadingInfo.filename.find_last_of(".") + 1);
@@ -55,11 +57,6 @@ void Wolf::ModelLoader::loadObject(ModelData& outputModel, ModelLoadingInfo& mod
 		Debug::sendCriticalError("Unhandled filename extension");
 	}
 
-	if (modelLoadingInfo.generateLODCount > 1)
-	{
-
-	}
-
 	// Load physics
 	std::string physicsConfigFilename = modelLoadingInfo.filename + ".physics.json";
 	if (std::filesystem::exists(physicsConfigFilename))
@@ -67,7 +64,7 @@ void Wolf::ModelLoader::loadObject(ModelData& outputModel, ModelLoadingInfo& mod
 		JSONReader physicsJSONReader(JSONReader::FileReadInfo{ physicsConfigFilename });
 
 		uint32_t physicsMeshesCount = static_cast<uint32_t>(physicsJSONReader.getRoot()->getPropertyFloat("physicsMeshesCount"));
-		outputModel.physicsShapes.resize(physicsMeshesCount);
+		outputModel.m_physicsShapes.resize(physicsMeshesCount);
 
 		for (uint32_t i = 0; i < physicsMeshesCount; ++i)
 		{
@@ -80,11 +77,19 @@ void Wolf::ModelLoader::loadObject(ModelData& outputModel, ModelLoadingInfo& mod
 				glm::vec3 s1 = glm::vec3(physicsMeshObject->getPropertyFloat("defaultS1X"), physicsMeshObject->getPropertyFloat("defaultS1Y"), physicsMeshObject->getPropertyFloat("defaultS1Z"));
 				glm::vec3 s2 = glm::vec3(physicsMeshObject->getPropertyFloat("defaultS2X"), physicsMeshObject->getPropertyFloat("defaultS2Y"), physicsMeshObject->getPropertyFloat("defaultS2Z"));
 
-				outputModel.physicsShapes[i].reset(new Physics::Rectangle(physicsMeshObject->getPropertyString("name"), p0, s1, s2));
+				outputModel.m_physicsShapes[i].reset(new Physics::Rectangle(physicsMeshObject->getPropertyString("name"), p0, s1, s2));
+			}
+			else if (type == "Box")
+			{
+				glm::vec3 aabbMin = glm::vec3(physicsMeshObject->getPropertyFloat("defaultAABBMinX"), physicsMeshObject->getPropertyFloat("defaultAABBMinY"), physicsMeshObject->getPropertyFloat("defaultAABBMinZ"));
+				glm::vec3 aabbMax = glm::vec3(physicsMeshObject->getPropertyFloat("defaultAABBMaxX"), physicsMeshObject->getPropertyFloat("defaultAABBMaxY"), physicsMeshObject->getPropertyFloat("defaultAABBMaxZ"));
+				glm::vec3 rotation = glm::vec3(physicsMeshObject->getPropertyFloat("defaultRotationX"), physicsMeshObject->getPropertyFloat("defaultRotationY"), physicsMeshObject->getPropertyFloat("defaultRotationZ"));
+
+				outputModel.m_physicsShapes[i].reset(new Physics::Box(physicsMeshObject->getPropertyString("name"), aabbMin, aabbMax, rotation));
 			}
 			else
 			{
-				Debug::sendError("Unhandled physics mesh type");
+				Debug::sendCriticalError("Unhandled physics mesh type");
 			}
 		}
 	}
@@ -167,6 +172,13 @@ Wolf::ModelLoader::ModelLoader(ModelData& outputModel, ModelLoadingInfo& modelLo
 			if (vertex.pos.z > maxPos.z)
 				maxPos.z = vertex.pos.z;
 
+			vertex.color =
+			{
+				sRGBtoLinear(attrib.colors[3 * index.vertex_index + 0]),
+				sRGBtoLinear(attrib.colors[3 * index.vertex_index + 1]),
+				sRGBtoLinear(attrib.colors[3 * index.vertex_index + 2])
+			};
+
 			vertex.texCoord =
 			{
 				attrib.texcoords[2 * index.texcoord_index + 0],
@@ -228,17 +240,17 @@ Wolf::ModelLoader::ModelLoader(ModelData& outputModel, ModelLoadingInfo& modelLo
 			maxPos -= center;
 			minPos -= center;
 
-			m_outputModel->isMeshCentered = true;
+			m_outputModel->m_isMeshCentered = true;
 		}
 		else
 		{
 			Debug::sendWarning("Model " + modelLoadingInfo.filename + " is not centered");
-			m_outputModel->isMeshCentered = false;
+			m_outputModel->m_isMeshCentered = false;
 		}
 	}
 	else
 	{
-		m_outputModel->isMeshCentered = true;
+		m_outputModel->m_isMeshCentered = true;
 	}
 
 	AABB aabb(minPos, maxPos);
@@ -287,29 +299,77 @@ Wolf::ModelLoader::ModelLoader(ModelData& outputModel, ModelLoadingInfo& modelLo
 
 	meshopt_optimizeVertexCache(indices.data(), indices.data(), indices.size(), vertices.size());
 
-	std::vector<std::vector<uint32_t>> savedLODs(modelLoadingInfo.generateLODCount);
+	std::vector<std::vector<uint32_t>> savedDefaultLODs(modelLoadingInfo.generateDefaultLODCount);
+	std::vector<std::vector<uint32_t>> savedSloppyLODs(modelLoadingInfo.generateSloppyLODCount);
 
 	size_t targetIndexCount = indices.size();
-	float targetError = FLT_MAX;
-	for (uint32_t lodIdx = 0; lodIdx < modelLoadingInfo.generateLODCount; ++lodIdx)
+	float targetError = 1.0;
+	for (uint32_t lodIdx = 0; lodIdx < modelLoadingInfo.generateDefaultLODCount; ++lodIdx)
 	{
+		if (targetIndexCount <= 16)
+		{
+			modelLoadingInfo.generateDefaultLODCount = lodIdx;
+			break;
+		}
+
 		targetIndexCount *= 0.5f;
 
-		std::vector<uint32_t>& lod = savedLODs[lodIdx];
+		std::vector<uint32_t>& lod = savedDefaultLODs[lodIdx];
 		lod.resize(indices.size());
 		float lodError = 0.0f;
 		static_assert(offsetof(Vertex3D, pos) == 0);
 		lod.resize(meshopt_simplify(&lod[0], indices.data(), indices.size(), reinterpret_cast<float*>(vertices.data() /* note that it makes the assumption that pos is the first data */),
 			vertices.size(), sizeof(Vertex3D), targetIndexCount, targetError, 0, &lodError));
 
-		m_outputModel->simplifiedIndexBuffers.push_back(Buffer::createBuffer(lod.size() * sizeof(uint32_t), VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT | modelLoadingInfo.additionalIndexBufferUsages,
+		if (lod.size() > targetIndexCount * 1.5f) // target not reached
+		{
+			modelLoadingInfo.generateDefaultLODCount = lodIdx;
+			break;
+		}
+
+		m_outputModel->defaultSimplifiedIndexBuffers.push_back(Buffer::createBuffer(lod.size() * sizeof(uint32_t), VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT | modelLoadingInfo.additionalIndexBufferUsages,
 			VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT));
-		m_outputModel->simplifiedIndexBuffers.back()->transferCPUMemoryWithStagingBuffer(lod.data(), lod.size() * sizeof(uint32_t));
+		m_outputModel->defaultSimplifiedIndexBuffers.back()->transferCPUMemoryWithStagingBuffer(lod.data(), lod.size() * sizeof(uint32_t));
 
 		ModelData::LODInfo lodInfo;
-		lodInfo.error = lodError;
-		lodInfo.indexCount = lod.size();
-		m_outputModel->lodsInfo.push_back(lodInfo);
+		lodInfo.m_error = lodError;
+		lodInfo.m_indexCount = lod.size();
+		m_outputModel->m_defaultLODsInfo.push_back(lodInfo);
+	}
+
+	targetIndexCount = indices.size();
+	targetError = 1.0;
+	for (uint32_t lodIdx = 0; lodIdx < modelLoadingInfo.generateSloppyLODCount; ++lodIdx)
+	{
+		if (targetIndexCount <= 16)
+		{
+			modelLoadingInfo.generateSloppyLODCount = lodIdx;
+			break;
+		}
+
+		targetIndexCount *= 0.5f;
+
+		std::vector<uint32_t>& lod = savedSloppyLODs[lodIdx];
+		lod.resize(indices.size());
+		float lodError = 0.0f;
+		static_assert(offsetof(Vertex3D, pos) == 0);
+		lod.resize(meshopt_simplifySloppy(&lod[0], indices.data(), indices.size(), reinterpret_cast<float*>(vertices.data() /* note that it makes the assumption that pos is the first data */),
+			vertices.size(), sizeof(Vertex3D), targetIndexCount, targetError, &lodError));
+
+		if (lod.size() <= 16)
+		{
+			modelLoadingInfo.generateSloppyLODCount = lodIdx;
+			break;
+		}
+
+		m_outputModel->sloppySimplifiedIndexBuffers.push_back(Buffer::createBuffer(lod.size() * sizeof(uint32_t), VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT | modelLoadingInfo.additionalIndexBufferUsages,
+			VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT));
+		m_outputModel->sloppySimplifiedIndexBuffers.back()->transferCPUMemoryWithStagingBuffer(lod.data(), lod.size() * sizeof(uint32_t));
+
+		ModelData::LODInfo lodInfo;
+		lodInfo.m_error = lodError;
+		lodInfo.m_indexCount = lod.size();
+		m_outputModel->m_sloppyLODsInfo.push_back(lodInfo);
 	}
 #endif
 
@@ -333,7 +393,7 @@ Wolf::ModelLoader::ModelLoader(ModelData& outputModel, ModelLoadingInfo& modelLo
 			materials.clear();
 		}
 
-		m_outputModel->textureSets.resize(materials.size());
+		m_outputModel->m_textureSets.resize(materials.size());
 		if (m_useCache)
 		{
 			m_infoForCache.resize(materials.size());
@@ -353,8 +413,8 @@ Wolf::ModelLoader::ModelLoader(ModelData& outputModel, ModelLoadingInfo& modelLo
 				continue; // the submesh probably don't have a material
 
 #ifdef MATERIAL_DEBUG
-			m_outputModel->textureSets[textureSetIdx].name = materials[tinyObjMaterialIdx].name;
-			m_outputModel->textureSets[textureSetIdx].imageNames =
+			m_outputModel->m_textureSets[textureSetIdx].name = materials[tinyObjMaterialIdx].name;
+			m_outputModel->m_textureSets[textureSetIdx].imageNames =
 			{
 				materials[tinyObjMaterialIdx].diffuse_texname,
 				materials[tinyObjMaterialIdx].bump_texname,
@@ -363,7 +423,7 @@ Wolf::ModelLoader::ModelLoader(ModelData& outputModel, ModelLoadingInfo& modelLo
 				materials[tinyObjMaterialIdx].ambient_texname,
 				materials[tinyObjMaterialIdx].sheen_texname
 			};
-			m_outputModel->textureSets[textureSetIdx].materialFolder = modelLoadingInfo.mtlFolder;
+			m_outputModel->m_textureSets[textureSetIdx].materialFolder = modelLoadingInfo.mtlFolder;
 #endif
 
 			TextureSetLoader::TextureSetFileInfoGGX textureSetFileInfoGGX = createTextureSetFileInfoGGXFromTinyObjMaterial(materials[tinyObjMaterialIdx], modelLoadingInfo.mtlFolder);
@@ -406,12 +466,12 @@ Wolf::ModelLoader::ModelLoader(ModelData& outputModel, ModelLoadingInfo& modelLo
 		}
 
 		/* Texture sets */
-		uint32_t textureSetCount = static_cast<uint32_t>(m_outputModel->textureSets.size());
+		uint32_t textureSetCount = static_cast<uint32_t>(m_outputModel->m_textureSets.size());
 		outCacheFile.write(reinterpret_cast<char*>(&textureSetCount), sizeof(uint32_t));
 
 		for (uint32_t textureSetIdx = 0; textureSetIdx < textureSetCount; ++textureSetIdx)
 		{
-			MaterialsGPUManager::TextureSetInfo& currentTextureSet = m_outputModel->textureSets[textureSetIdx];
+			MaterialsGPUManager::TextureSetInfo& currentTextureSet = m_outputModel->m_textureSets[textureSetIdx];
 			InfoForCachePerTextureSet& currentInfoForCache = m_infoForCache[textureSetIdx];
 
 			writeStringToCache(currentInfoForCache.m_textureSetFileInfoGGX.name, outCacheFile);
@@ -438,16 +498,29 @@ Wolf::ModelLoader::ModelLoader(ModelData& outputModel, ModelLoadingInfo& modelLo
 		}
 
 		/* LODs */
-		uint32_t lodCount = modelLoadingInfo.generateLODCount;
-		outCacheFile.write(reinterpret_cast<char*>(&lodCount), sizeof(uint32_t));
+		uint32_t defaultLODCount = modelLoadingInfo.generateDefaultLODCount;
+		outCacheFile.write(reinterpret_cast<char*>(&defaultLODCount), sizeof(uint32_t));
 
 #ifndef __ANDROID__
-		for (uint32_t lodIdx = 0; lodIdx < lodCount; ++lodIdx)
+		for (uint32_t lodIdx = 0; lodIdx < defaultLODCount; ++lodIdx)
 		{
-			uint32_t indexCount = static_cast<uint32_t>(savedLODs[lodIdx].size());
+			uint32_t indexCount = static_cast<uint32_t>(savedDefaultLODs[lodIdx].size());
 			outCacheFile.write(reinterpret_cast<char*>(&indexCount), sizeof(uint32_t));
-			outCacheFile.write(reinterpret_cast<char*>(savedLODs[lodIdx].data()), indexCount * sizeof(uint32_t));
-			outCacheFile.write(reinterpret_cast<char*>(&m_outputModel->lodsInfo[lodIdx]), sizeof(ModelData::LODInfo));
+			outCacheFile.write(reinterpret_cast<char*>(savedDefaultLODs[lodIdx].data()), indexCount * sizeof(uint32_t));
+			outCacheFile.write(reinterpret_cast<char*>(&m_outputModel->m_defaultLODsInfo[lodIdx]), sizeof(ModelData::LODInfo));
+		}
+#endif
+
+		uint32_t sloppyLODCount = modelLoadingInfo.generateSloppyLODCount;
+		outCacheFile.write(reinterpret_cast<char*>(&sloppyLODCount), sizeof(uint32_t));
+
+#ifndef __ANDROID__
+		for (uint32_t lodIdx = 0; lodIdx < sloppyLODCount; ++lodIdx)
+		{
+			uint32_t indexCount = static_cast<uint32_t>(savedSloppyLODs[lodIdx].size());
+			outCacheFile.write(reinterpret_cast<char*>(&indexCount), sizeof(uint32_t));
+			outCacheFile.write(reinterpret_cast<char*>(savedSloppyLODs[lodIdx].data()), indexCount * sizeof(uint32_t));
+			outCacheFile.write(reinterpret_cast<char*>(&m_outputModel->m_sloppyLODsInfo[lodIdx]), sizeof(ModelData::LODInfo));
 		}
 #endif
 
@@ -508,7 +581,7 @@ bool Wolf::ModelLoader::loadCache(ModelLoadingInfo& modelLoadingInfo)
 
 		uint32_t textureSetCount;
 		input.read(reinterpret_cast<char*>(&textureSetCount), sizeof(textureSetCount));
-		m_outputModel->textureSets.resize(textureSetCount);
+		m_outputModel->m_textureSets.resize(textureSetCount);
 
 		if (modelLoadingInfo.vulkanQueueLock)
 			modelLoadingInfo.vulkanQueueLock->lock();
@@ -529,43 +602,60 @@ bool Wolf::ModelLoader::loadCache(ModelLoadingInfo& modelLoadingInfo)
 #ifdef MATERIAL_DEBUG
 			uint32_t textureSetNameSize;
 			input.read(reinterpret_cast<char*>(&textureSetNameSize), sizeof(uint32_t));
-			m_outputModel->textureSets[textureSetIdx].name.resize(textureSetNameSize);
-			input.read(m_outputModel->textureSets[textureSetIdx].name.data(), textureSetNameSize);
+			m_outputModel->m_textureSets[textureSetIdx].name.resize(textureSetNameSize);
+			input.read(m_outputModel->m_textureSets[textureSetIdx].name.data(), textureSetNameSize);
 
 			uint32_t imageNameCount;
 			input.read(reinterpret_cast<char*>(&imageNameCount), sizeof(uint32_t));
-			m_outputModel->textureSets[textureSetIdx].imageNames.resize(imageNameCount);
+			m_outputModel->m_textureSets[textureSetIdx].imageNames.resize(imageNameCount);
 
 			for (uint32_t imageNameIdx = 0; imageNameIdx < imageNameCount; ++imageNameIdx)
 			{
 				uint32_t imageNameSize;
 				input.read(reinterpret_cast<char*>(&imageNameSize), sizeof(uint32_t));
-				m_outputModel->textureSets[textureSetIdx].imageNames[imageNameIdx].resize(imageNameSize);
-				input.read(m_outputModel->textureSets[textureSetIdx].imageNames[imageNameIdx].data(), imageNameSize);
+				m_outputModel->m_textureSets[textureSetIdx].imageNames[imageNameIdx].resize(imageNameSize);
+				input.read(m_outputModel->m_textureSets[textureSetIdx].imageNames[imageNameIdx].data(), imageNameSize);
 			}
 
 			uint32_t materialFolderSize;
 			input.read(reinterpret_cast<char*>(&materialFolderSize), sizeof(uint32_t));
-			m_outputModel->textureSets[textureSetIdx].materialFolder.resize(materialFolderSize);
-			input.read(m_outputModel->textureSets[textureSetIdx].materialFolder.data(), materialFolderSize);
+			m_outputModel->m_textureSets[textureSetIdx].materialFolder.resize(materialFolderSize);
+			input.read(m_outputModel->m_textureSets[textureSetIdx].materialFolder.data(), materialFolderSize);
 #endif
 		}
 
-		uint32_t lodCount;
-		input.read(reinterpret_cast<char*>(&lodCount), sizeof(lodCount));
+		uint32_t defaultLODCount;
+		input.read(reinterpret_cast<char*>(&defaultLODCount), sizeof(defaultLODCount));
 
-		m_outputModel->lodsInfo.resize(lodCount);
-		for (uint32_t lodIdx = 0; lodIdx < lodCount; ++lodIdx)
+		m_outputModel->m_defaultLODsInfo.resize(defaultLODCount);
+		for (uint32_t lodIdx = 0; lodIdx < defaultLODCount; ++lodIdx)
 		{
 			input.read(reinterpret_cast<char*>(&indicesCount), sizeof(indicesCount));
 			std::vector<uint32_t> lod(indicesCount);
 			input.read(reinterpret_cast<char*>(lod.data()), indicesCount * sizeof(lod[0]));
 
-			m_outputModel->simplifiedIndexBuffers.push_back(Buffer::createBuffer(lod.size() * sizeof(uint32_t), VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT | modelLoadingInfo.additionalIndexBufferUsages,
+			m_outputModel->defaultSimplifiedIndexBuffers.push_back(Buffer::createBuffer(lod.size() * sizeof(uint32_t), VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT | modelLoadingInfo.additionalIndexBufferUsages,
 				VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT));
-			m_outputModel->simplifiedIndexBuffers.back()->transferCPUMemoryWithStagingBuffer(lod.data(), lod.size() * sizeof(uint32_t));
+			m_outputModel->defaultSimplifiedIndexBuffers.back()->transferCPUMemoryWithStagingBuffer(lod.data(), lod.size() * sizeof(uint32_t));
 
-			input.read(reinterpret_cast<char*>(&m_outputModel->lodsInfo[lodIdx]), sizeof(ModelData::LODInfo));
+			input.read(reinterpret_cast<char*>(&m_outputModel->m_defaultLODsInfo[lodIdx]), sizeof(ModelData::LODInfo));
+		}
+
+		uint32_t sloppyLODCount;
+		input.read(reinterpret_cast<char*>(&sloppyLODCount), sizeof(sloppyLODCount));
+
+		m_outputModel->m_sloppyLODsInfo.resize(sloppyLODCount);
+		for (uint32_t lodIdx = 0; lodIdx < sloppyLODCount; ++lodIdx)
+		{
+			input.read(reinterpret_cast<char*>(&indicesCount), sizeof(indicesCount));
+			std::vector<uint32_t> lod(indicesCount);
+			input.read(reinterpret_cast<char*>(lod.data()), indicesCount * sizeof(lod[0]));
+
+			m_outputModel->sloppySimplifiedIndexBuffers.push_back(Buffer::createBuffer(lod.size() * sizeof(uint32_t), VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT | modelLoadingInfo.additionalIndexBufferUsages,
+				VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT));
+			m_outputModel->sloppySimplifiedIndexBuffers.back()->transferCPUMemoryWithStagingBuffer(lod.data(), lod.size() * sizeof(uint32_t));
+
+			input.read(reinterpret_cast<char*>(&m_outputModel->m_sloppyLODsInfo[lodIdx]), sizeof(ModelData::LODInfo));
 		}
 
 		if (modelLoadingInfo.vulkanQueueLock)
@@ -606,7 +696,24 @@ void Wolf::ModelLoader::loadTextureSet(const TextureSetLoader::TextureSetFileInf
 	TextureSetLoader materialLoader(material, outputLayout, m_useCache);
 	for (uint32_t i = 0; i < MaterialsGPUManager::TEXTURE_COUNT_PER_MATERIAL; ++i)
 	{
-		materialLoader.transferImageTo(i, m_outputModel->textureSets[indexMaterial].images[i]);
-		m_outputModel->textureSets[indexMaterial].slicesFolders[i] = materialLoader.getOutputSlicesFolder(i);
+		materialLoader.transferImageTo(i, m_outputModel->m_textureSets[indexMaterial].images[i]);
+		m_outputModel->m_textureSets[indexMaterial].slicesFolders[i] = materialLoader.getOutputSlicesFolder(i);
+	}
+}
+
+float Wolf::ModelLoader::sRGBtoLinear(float component)
+{
+	// Clamp the input to the valid range [0.0, 1.0]
+	component = std::max(0.0f, std::min(1.0f, component));
+
+	if (component <= 0.04045f)
+	{
+		// Linear segment for dark colors
+		return component / 12.92f;
+	}
+	else
+	{
+		// Gamma segment for bright colors (power function)
+		return std::pow((component + 0.055f) / 1.055f, 2.4f);
 	}
 }

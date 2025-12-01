@@ -16,6 +16,7 @@ namespace Wolf
 			using DynamicShapeId = uint32_t;
 			static constexpr DynamicShapeId INVALID_DYNAMIC_SHAPE_ID = -1;
 			[[nodiscard]] DynamicShapeId addDynamicRectangle(const Rectangle& rectangle, void* instance);
+			[[nodiscard]] DynamicShapeId addDynamicBox(const Box& box, void* instance);
 			void removeDynamicShape(DynamicShapeId shapeId);
 
 			struct RayCastResult

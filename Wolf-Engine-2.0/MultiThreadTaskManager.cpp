@@ -21,6 +21,8 @@ void Wolf::MultiThreadTaskManager::addJobToThreadGroup(ThreadGroupId threadGroup
 
 void Wolf::MultiThreadTaskManager::executeJobsForThreadGroup(ThreadGroupId threadGroupId)
 {
+	PROFILE_FUNCTION
+
 	ThreadGroup& threadGroup = m_threadGroups[threadGroupId];
 	threadGroup.executeJobs();
 }

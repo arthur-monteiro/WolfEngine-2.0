@@ -183,11 +183,16 @@ void Wolf::WolfEngine::updateBeforeFrame()
 	std::this_thread::sleep_for(std::chrono::microseconds(10)); // let some time to the threads to lock
 	m_multiThreadTaskManager->waitForThreadGroup(m_beforeFrameAndRecordThreadGroupId);
 
-	for (MultiThreadTaskManager::Job& job : m_jobsToExecuteAfterMTJobs)
 	{
-		job();
+		PROFILE_SCOPED("Jobs after MT jobs")
+
+		for (MultiThreadTaskManager::Job& job : m_jobsToExecuteAfterMTJobs)
+		{
+			job();
+		}
+		m_jobsToExecuteAfterMTJobs.clear();
 	}
-	m_jobsToExecuteAfterMTJobs.clear();
+
 
 	uint32_t currentFrame = g_runtimeContext->getCurrentCPUFrameNumber();
 

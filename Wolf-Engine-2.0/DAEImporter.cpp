@@ -16,7 +16,7 @@ Wolf::DAEImporter::DAEImporter(ModelData& outputModel, ModelLoadingInfo& modelLo
 	Debug::sendInfo("Loading DAE file " + modelLoadingInfo.filename);
 	Timer albedoTimer("Loading DAE file " + modelLoadingInfo.filename);
 
-	outputModel.animationData.reset(new AnimationData);
+	outputModel.m_animationData.reset(new AnimationData);
 
 	std::ifstream file(modelLoadingInfo.filename);
 
@@ -547,11 +547,11 @@ Wolf::DAEImporter::DAEImporter(ModelData& outputModel, ModelLoadingInfo& modelLo
 		}
 	}
 
-	m_outputModel->animationData->boneCount = jointsCount;
+	m_outputModel->m_animationData->boneCount = jointsCount;
 
 	// Hierarchy
 	Node* visualSceneNode = m_rootNodes[0]->getFirstChildByName("library_visual_scenes")->getFirstChildByName("visual_scene");
-	findNodesInHierarchy(visualSceneNode, m_outputModel->animationData->rootBones);
+	findNodesInHierarchy(visualSceneNode, m_outputModel->m_animationData->rootBones);
 }
 
 void Wolf::DAEImporter::extractFloatValues(const std::string& input, std::vector<float>& outValues)

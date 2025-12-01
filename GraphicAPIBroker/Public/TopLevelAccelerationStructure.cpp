@@ -6,11 +6,10 @@
 #include "../Private/Vulkan/TopLevelAccelerationStructureVulkan.h"
 #endif
 
-Wolf::TopLevelAccelerationStructure* Wolf::TopLevelAccelerationStructure::createTopLevelAccelerationStructure(
-	std::span<BLASInstance> blasInstances)
+Wolf::TopLevelAccelerationStructure* Wolf::TopLevelAccelerationStructure::createTopLevelAccelerationStructure(uint32_t maxInstanceCount)
 {
 #ifdef WOLF_VULKAN
-	return new TopLevelAccelerationStructureVulkan(blasInstances);
+	return new TopLevelAccelerationStructureVulkan(maxInstanceCount);
 #else
 	return nullptr;
 #endif
