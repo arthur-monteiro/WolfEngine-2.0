@@ -67,7 +67,20 @@ void UniquePass::initializeResources(const InitializationContext& context)
 	blasInstance.transform = glm::mat4(1.0f);
 	blasInstance.instanceID = 0;
 	std::vector blasInstances = { blasInstance };
-	m_tlas.reset(TopLevelAccelerationStructure::createTopLevelAccelerationStructure(blasInstances));
+	m_tlas.reset(TopLevelAccelerationStructure::createTopLevelAccelerationStructure(blasInstances.size()));
+
+	Wolf::ResourceUniqueOwner<Wolf::CommandBuffer> commandBuffer(Wolf::CommandBuffer::createCommandBuffer(Wolf::QueueType::COMPUTE, true));
+	commandBuffer->beginCommandBuffer();
+
+	m_tlas->build(&*commandBuffer, blasInstances);
+
+	commandBuffer->endCommandBuffer();
+
+	std::vector<const Wolf::Semaphore*> waitSemaphores;
+	std::vector<const Wolf::Semaphore*> signalSemaphores;
+	Wolf::ResourceUniqueOwner<Wolf::Fence> fence(Wolf::Fence::createFence(0));
+	commandBuffer->submit(waitSemaphores, signalSemaphores, &*fence);
+	fence->waitForFence();
 
 	m_descriptorSets.resize(context.swapChainImageCount);
 	createDescriptorSets(context);

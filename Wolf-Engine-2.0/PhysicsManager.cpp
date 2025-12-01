@@ -20,6 +20,21 @@ Wolf::Physics::PhysicsManager::DynamicShapeId Wolf::Physics::PhysicsManager::add
 	return static_cast<uint32_t>(m_dynamicShapes.size()) - 1;
 }
 
+Wolf::Physics::PhysicsManager::DynamicShapeId Wolf::Physics::PhysicsManager::addDynamicBox(const Box& box, void* instance)
+{
+	if (!m_holesInDynamicShapesArray.empty())
+	{
+		uint32_t shapeId = m_holesInDynamicShapesArray.back();
+		m_holesInDynamicShapesArray.pop_back();
+		m_dynamicShapes[shapeId].shape.reset(new Box(box));
+		m_dynamicShapes[shapeId].instance = instance;
+		return shapeId;
+	}
+
+	m_dynamicShapes.emplace_back(ResourceUniqueOwner<Shape>(new Box(box)), instance);
+	return static_cast<uint32_t>(m_dynamicShapes.size()) - 1;
+}
+
 void Wolf::Physics::PhysicsManager::removeDynamicShape(DynamicShapeId shapeId)
 {
 	m_dynamicShapes[shapeId].shape.reset(nullptr);

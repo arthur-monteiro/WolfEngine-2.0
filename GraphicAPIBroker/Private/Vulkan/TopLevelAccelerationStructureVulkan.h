@@ -2,6 +2,8 @@
 
 #if !defined(__ANDROID__) or __ANDROID_MIN_SDK_VERSION__ > 30
 
+#include <ResourceUniqueOwner.h>
+
 #include "AccelerationStructureVulkan.h"
 #include "../../Public/TopLevelAccelerationStructure.h"
 
@@ -10,13 +12,21 @@ namespace Wolf
 	class TopLevelAccelerationStructureVulkan : public AccelerationStructureVulkan, public TopLevelAccelerationStructure
 	{
 	public:
-		TopLevelAccelerationStructureVulkan(std::span<BLASInstance> blasInstances);
+		TopLevelAccelerationStructureVulkan(uint32_t instanceCount);
 		TopLevelAccelerationStructureVulkan(const TopLevelAccelerationStructureVulkan&) = delete;
+
+		void build(CommandBuffer* commandBuffer, std::span<BLASInstance> blasInstances);
+		uint32_t getInstanceCount() const override { return m_instanceCount; }
 
 		~TopLevelAccelerationStructureVulkan() override = default;
 
 	private:
-		std::unique_ptr<BufferVulkan> m_instanceBuffer;
+		uint32_t m_instanceCount;
+		ResourceUniqueOwner<BufferVulkan> m_instanceBuffer;
+		ResourceUniqueOwner<BufferVulkan> m_instanceBufferCPUWriteable;
+
+		VkAccelerationStructureGeometryInstancesDataKHR m_instancesVk;
+		VkAccelerationStructureGeometryKHR m_topASGeometry;
 	};
 }
 

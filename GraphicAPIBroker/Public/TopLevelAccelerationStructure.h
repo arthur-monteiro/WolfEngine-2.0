@@ -8,6 +8,8 @@
 
 namespace Wolf
 {
+	class CommandBuffer;
+
 	struct BLASInstance
 	{
 		const BottomLevelAccelerationStructure* bottomLevelAS;
@@ -19,7 +21,10 @@ namespace Wolf
 	class TopLevelAccelerationStructure
 	{
 	public:
-		static TopLevelAccelerationStructure* createTopLevelAccelerationStructure(std::span<BLASInstance> blasInstances);
+		static TopLevelAccelerationStructure* createTopLevelAccelerationStructure(uint32_t maxInstanceCount);
+
+		virtual void build(CommandBuffer* commandBuffer, std::span<BLASInstance> blasInstances) = 0;
+		virtual uint32_t getInstanceCount() const = 0;
 
 		virtual ~TopLevelAccelerationStructure() = default;
 	};

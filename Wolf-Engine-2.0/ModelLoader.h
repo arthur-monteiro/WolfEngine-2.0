@@ -18,6 +18,7 @@ namespace Wolf
 	struct Vertex3D
 	{
 		glm::vec3 pos;
+		glm::vec3 color;
 		glm::vec3 normal;
 		glm::vec3 tangent;
 		glm::vec2 texCoord;
@@ -33,7 +34,7 @@ namespace Wolf
 		static void getAttributeDescriptions(std::vector<VkVertexInputAttributeDescription>& attributeDescriptions, uint32_t binding)
 		{
 			const uint32_t attributeDescriptionCountBefore = static_cast<uint32_t>(attributeDescriptions.size());
-			attributeDescriptions.resize(attributeDescriptionCountBefore + 5);
+			attributeDescriptions.resize(attributeDescriptionCountBefore + 6);
 
 			attributeDescriptions[attributeDescriptionCountBefore + 0].binding = binding;
 			attributeDescriptions[attributeDescriptionCountBefore + 0].location = 0;
@@ -43,22 +44,27 @@ namespace Wolf
 			attributeDescriptions[attributeDescriptionCountBefore + 1].binding = binding;
 			attributeDescriptions[attributeDescriptionCountBefore + 1].location = 1;
 			attributeDescriptions[attributeDescriptionCountBefore + 1].format = VK_FORMAT_R32G32B32_SFLOAT;
-			attributeDescriptions[attributeDescriptionCountBefore + 1].offset = offsetof(Vertex3D, normal);
+			attributeDescriptions[attributeDescriptionCountBefore + 1].offset = offsetof(Vertex3D, color);
 
 			attributeDescriptions[attributeDescriptionCountBefore + 2].binding = binding;
 			attributeDescriptions[attributeDescriptionCountBefore + 2].location = 2;
 			attributeDescriptions[attributeDescriptionCountBefore + 2].format = VK_FORMAT_R32G32B32_SFLOAT;
-			attributeDescriptions[attributeDescriptionCountBefore + 2].offset = offsetof(Vertex3D, tangent);
+			attributeDescriptions[attributeDescriptionCountBefore + 2].offset = offsetof(Vertex3D, normal);
 
 			attributeDescriptions[attributeDescriptionCountBefore + 3].binding = binding;
 			attributeDescriptions[attributeDescriptionCountBefore + 3].location = 3;
-			attributeDescriptions[attributeDescriptionCountBefore + 3].format = VK_FORMAT_R32G32_SFLOAT;
-			attributeDescriptions[attributeDescriptionCountBefore + 3].offset = offsetof(Vertex3D, texCoord);
+			attributeDescriptions[attributeDescriptionCountBefore + 3].format = VK_FORMAT_R32G32B32_SFLOAT;
+			attributeDescriptions[attributeDescriptionCountBefore + 3].offset = offsetof(Vertex3D, tangent);
 
 			attributeDescriptions[attributeDescriptionCountBefore + 4].binding = binding;
 			attributeDescriptions[attributeDescriptionCountBefore + 4].location = 4;
-			attributeDescriptions[attributeDescriptionCountBefore + 4].format = VK_FORMAT_R32_UINT;
-			attributeDescriptions[attributeDescriptionCountBefore + 4].offset = offsetof(Vertex3D, subMeshIdx);
+			attributeDescriptions[attributeDescriptionCountBefore + 4].format = VK_FORMAT_R32G32_SFLOAT;
+			attributeDescriptions[attributeDescriptionCountBefore + 4].offset = offsetof(Vertex3D, texCoord);
+
+			attributeDescriptions[attributeDescriptionCountBefore + 5].binding = binding;
+			attributeDescriptions[attributeDescriptionCountBefore + 5].location = 5;
+			attributeDescriptions[attributeDescriptionCountBefore + 5].format = VK_FORMAT_R32_UINT;
+			attributeDescriptions[attributeDescriptionCountBefore + 5].offset = offsetof(Vertex3D, subMeshIdx);
 		}
 
 		bool operator==(const Vertex3D& other) const
@@ -102,7 +108,8 @@ namespace Wolf
 		bool useCache = true;
 
 		// LODs
-		uint32_t generateLODCount = 1;
+		uint32_t generateDefaultLODCount = 1;
+		uint32_t generateSloppyLODCount = 1;
 
 		// Multi-threading options
 		std::mutex* vulkanQueueLock = nullptr;
@@ -117,22 +124,24 @@ namespace Wolf
 		ResourceUniqueOwner<Mesh> mesh;
 
 		// LOD data
-		std::vector<ResourceUniqueOwner<Buffer>> simplifiedIndexBuffers;
 		struct LODInfo
 		{
-			float error;
-			uint32_t indexCount;
+			float m_error;
+			uint32_t m_indexCount;
 		};
-		std::vector<LODInfo> lodsInfo;
+		std::vector<ResourceUniqueOwner<Buffer>> defaultSimplifiedIndexBuffers;
+		std::vector<LODInfo> m_defaultLODsInfo;
+		std::vector<ResourceUniqueOwner<Buffer>> sloppySimplifiedIndexBuffers;
+		std::vector<LODInfo> m_sloppyLODsInfo;
 
 #ifdef MATERIAL_DEBUG
-		std::string originFilepath;
+		std::string m_originFilepath;
 #endif
-		bool isMeshCentered;
-		std::vector<MaterialsGPUManager::TextureSetInfo> textureSets;
+		bool m_isMeshCentered;
+		std::vector<MaterialsGPUManager::TextureSetInfo> m_textureSets;
 
-		std::unique_ptr<AnimationData> animationData;
-		std::vector<ResourceUniqueOwner<Physics::Shape>> physicsShapes;
+		std::unique_ptr<AnimationData> m_animationData;
+		std::vector<ResourceUniqueOwner<Physics::Shape>> m_physicsShapes;
 	};
 
 	class ModelLoader
@@ -152,6 +161,8 @@ namespace Wolf
 		// Materials
 		TextureSetLoader::TextureSetFileInfoGGX createTextureSetFileInfoGGXFromTinyObjMaterial(const tinyobj::material_t& material, const std::string& mtlFolder) const;
 		void loadTextureSet(const TextureSetLoader::TextureSetFileInfoGGX& material, uint32_t indexMaterial);
+
+		float sRGBtoLinear(float component);
 		
 		bool m_useCache;
 		struct InfoForCachePerTextureSet
