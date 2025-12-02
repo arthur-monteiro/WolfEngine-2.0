@@ -26,7 +26,7 @@ Wolf::MaterialsGPUManager::MaterialsGPUManager(const std::vector<DescriptorSetGe
 	{
 		descriptorSetLayoutGenerator.addStorageBuffer(ShaderStageFlagBits::FRAGMENT | ShaderStageFlagBits::CLOSEST_HIT, BINDING_SLOT + 4); // Textures info
 		descriptorSetLayoutGenerator.addStorageBuffer(ShaderStageFlagBits::FRAGMENT | ShaderStageFlagBits::CLOSEST_HIT, BINDING_SLOT + 5); // Virtual texture feedbacks
-		descriptorSetLayoutGenerator.addImages(DescriptorType::SAMPLED_IMAGE, ShaderStageFlagBits::FRAGMENT | ShaderStageFlagBits::CLOSEST_HIT, BINDING_SLOT + 6, 2); // Atlases
+		descriptorSetLayoutGenerator.addImages(DescriptorType::SAMPLED_IMAGE, ShaderStageFlagBits::FRAGMENT | ShaderStageFlagBits::CLOSEST_HIT, BINDING_SLOT + 6, 3); // Atlases
 		descriptorSetLayoutGenerator.addSampler(ShaderStageFlagBits::FRAGMENT | ShaderStageFlagBits::CLOSEST_HIT, BINDING_SLOT + 7); // Albedo atlas
 		descriptorSetLayoutGenerator.addStorageBuffer(ShaderStageFlagBits::FRAGMENT | ShaderStageFlagBits::CLOSEST_HIT, BINDING_SLOT + 8); // Indirection buffer
 	}
@@ -38,6 +38,7 @@ Wolf::MaterialsGPUManager::MaterialsGPUManager(const std::vector<DescriptorSetGe
 		m_virtualTextureManager.reset(new VirtualTextureManager({ g_configuration->getWindowWidth(), g_configuration->getWindowHeight() }));
 		m_albedoAtlasIdx = m_virtualTextureManager->createAtlas(16, 16, Format::BC1_RGB_SRGB_BLOCK); // note that page count per side is a constant in shader
 		m_normalAtlasIdx = m_virtualTextureManager->createAtlas(16, 16, Format::BC5_UNORM_BLOCK);
+		m_combinedAtlasIdx = m_virtualTextureManager->createAtlas(16, 16, Format::BC3_UNORM_BLOCK);
 
 		m_virtualTextureSampler.reset(Sampler::createSampler(VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE, 1, VK_FILTER_LINEAR));
 	}
@@ -73,9 +74,10 @@ Wolf::MaterialsGPUManager::MaterialsGPUManager(const std::vector<DescriptorSetGe
 		descriptorSetGenerator.setBuffer(BINDING_SLOT + 4, *m_texturesInfoBuffer);
 		descriptorSetGenerator.setBuffer(BINDING_SLOT + 5, *m_virtualTextureManager->getFeedbackBuffer());
 
-		std::vector<DescriptorSetGenerator::ImageDescription> atlases(2);
+		std::vector<DescriptorSetGenerator::ImageDescription> atlases(3);
 		atlases[0] = { VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, m_virtualTextureManager->getAtlasImage(m_albedoAtlasIdx)->getDefaultImageView()};
 		atlases[1] = { VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, m_virtualTextureManager->getAtlasImage(m_normalAtlasIdx)->getDefaultImageView()};
+		atlases[2] = { VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, m_virtualTextureManager->getAtlasImage(m_combinedAtlasIdx)->getDefaultImageView() };
 
 		descriptorSetGenerator.setImages(BINDING_SLOT + 6, atlases);
 		descriptorSetGenerator.setSampler(BINDING_SLOT + 7, *m_virtualTextureSampler);
@@ -232,11 +234,15 @@ void Wolf::MaterialsGPUManager::updateBeforeFrame()
 			{
 				pixelSizeInBytes = 1.0f; // BC5
 			}
-			else
+			else if (m_texturesCPUInfo[textureId].m_textureType == TextureCPUInfo::TextureType::COMBINED_ROUGHNESS_METALNESS_AO)
 			{
-				m_virtualTextureManager->rejectRequest(requestedSlice);
-				continue; // not supported yet
+				pixelSizeInBytes = 1.0f; // BC3
 			}
+ 			else
+ 			{
+ 				m_virtualTextureManager->rejectRequest(requestedSlice);
+ 				continue;
+ 			}
 
 			std::string binFilename = sliceFolder + "mip" + std::to_string(mipLevel) + "_sliceX" + std::to_string(sliceX) + "_sliceY" + std::to_string(sliceY) + ".bin";
 			std::ifstream input(binFilename, std::ios::in | std::ios::binary);
@@ -284,8 +290,10 @@ void Wolf::MaterialsGPUManager::updateBeforeFrame()
 			uint32_t atlasIdx = -1;
 			if (m_texturesCPUInfo[textureId].m_textureType == TextureCPUInfo::TextureType::ALBEDO)
 				atlasIdx = m_albedoAtlasIdx;
-			if (m_texturesCPUInfo[textureId].m_textureType == TextureCPUInfo::TextureType::NORMAL)
+			else if (m_texturesCPUInfo[textureId].m_textureType == TextureCPUInfo::TextureType::NORMAL)
 				atlasIdx = m_normalAtlasIdx;
+			else if (m_texturesCPUInfo[textureId].m_textureType == TextureCPUInfo::TextureType::COMBINED_ROUGHNESS_METALNESS_AO)
+				atlasIdx = m_combinedAtlasIdx;
 
 			if (atlasIdx == -1)
 				Debug::sendCriticalError("Wrong atlas index");
@@ -300,6 +308,13 @@ void Wolf::MaterialsGPUManager::resize(Extent2D newExtent)
 	if (g_configuration->getUseVirtualTexture())
 	{
 		m_virtualTextureManager->resize(newExtent);
+
+		DescriptorSetLayoutGenerator descriptorSetLayoutGenerator;
+		descriptorSetLayoutGenerator.addStorageBuffer(ShaderStageFlagBits::FRAGMENT | ShaderStageFlagBits::CLOSEST_HIT, BINDING_SLOT + 5); // Virtual texture feedbacks
+
+		DescriptorSetGenerator descriptorSetGenerator(descriptorSetLayoutGenerator.getDescriptorLayouts());
+		descriptorSetGenerator.setBuffer(BINDING_SLOT + 5, *m_virtualTextureManager->getFeedbackBuffer());
+		m_descriptorSet->update(descriptorSetGenerator.getDescriptorSetCreateInfo());
 	}
 }
 

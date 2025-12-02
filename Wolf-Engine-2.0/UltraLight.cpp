@@ -168,7 +168,7 @@ void Wolf::UltraLight::processImplementation(const char* htmlURL, VkImageLayout 
 
 Wolf::UltraLight::UltraLightImplementation::UltraLightImplementation(uint32_t width, uint32_t height, VkImageLayout finalLayout, const std::string& absoluteURL, std::string filePath, const ResourceNonOwner<InputHandler>& inputHandler,
     const std::function<void(ultralight::JSObject& jsObject)>& bindCallbacks)
-	: m_filePath(std::move(filePath)), m_bindUltralightCallbacks(bindCallbacks)
+	: m_finalLayout(finalLayout), m_filePath(std::move(filePath)), m_bindUltralightCallbacks(bindCallbacks)
 {
     m_lastUpdated = std::filesystem::last_write_time(m_filePath);
     m_viewListener.reset(new UltralightViewListener(inputHandler));

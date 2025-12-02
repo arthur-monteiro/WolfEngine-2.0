@@ -19,7 +19,7 @@ namespace Wolf
 		static constexpr uint32_t BORDER_SIZE = 4; // minimum for block compressed formats
 		static constexpr uint32_t PAGE_SIZE_WITH_BORDERS = VIRTUAL_PAGE_SIZE + 2 * BORDER_SIZE;
 
-		VirtualTextureManager(Extent2D extent);
+		explicit VirtualTextureManager(Extent2D extent);
 
 		using AtlasIndex = uint32_t;
 		AtlasIndex createAtlas(uint32_t pageCountX, uint32_t pageCountY, Format format);
@@ -46,7 +46,7 @@ namespace Wolf
 			}
 
 			FeedbackInfo() = default;
-			FeedbackInfo(uint32_t value)
+			explicit FeedbackInfo(uint32_t value)
 			{
 				*reinterpret_cast<uint32_t*>(this) = value;
 			}
@@ -109,7 +109,7 @@ namespace Wolf
 		};
 		std::map<uint32_t, InfoPerLoadedFeedback> m_loadedFeedbacks;
 
-		static constexpr uint32_t MAX_INDIRECTION_COUNT = 16384;
+		static constexpr uint32_t MAX_INDIRECTION_COUNT = 32768;
 		static constexpr uint32_t INVALID_INDIRECTION = -1;
 		ResourceUniqueOwner<Buffer> m_indirectionBuffer;
 		uint32_t m_currentIndirectionOffset = 0;
@@ -117,7 +117,7 @@ namespace Wolf
 
 		DynamicResourceUniqueOwnerArray<AtlasInfo, 4> m_atlases;
 
-		static constexpr uint32_t DITHER_PIXEL_COUNT_PER_SIDE = 32;
+		static constexpr uint32_t DITHER_PIXEL_COUNT_PER_SIDE = 24;
 		uint32_t m_feedbackCountX = 0;
 		uint32_t m_feedbackCountY = 0;
 		uint32_t m_maxFeedbackCount = 0;
@@ -129,14 +129,11 @@ namespace Wolf
 	};
 }
 
-namespace std
+template<>
+struct std::hash<Wolf::VirtualTextureManager::FeedbackInfo>
 {
-	template<>
-	struct hash<Wolf::VirtualTextureManager::FeedbackInfo>
+	size_t operator()(Wolf::VirtualTextureManager::FeedbackInfo const& feedback) const noexcept
 	{
-		size_t operator()(Wolf::VirtualTextureManager::FeedbackInfo const& feedback) const
-		{
-			return *reinterpret_cast<const uint32_t*>(&feedback);
-		}
-	};
-}
+		return *reinterpret_cast<const uint32_t*>(&feedback);
+	}
+};

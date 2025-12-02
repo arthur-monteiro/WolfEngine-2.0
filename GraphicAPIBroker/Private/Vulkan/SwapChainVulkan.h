@@ -27,5 +27,6 @@ namespace Wolf
 		VkSurfaceFormatKHR chooseSurfaceFormat(const std::vector<VkSurfaceFormatKHR>& availableFormats, Wolf::SwapChain::SwapChainCreateInfo::ColorSpace colorSpace, Format format);
 
 		VkSwapchainKHR m_swapChain;
+		Format m_format;
 	};
 }

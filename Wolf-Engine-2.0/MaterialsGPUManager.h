@@ -192,6 +192,7 @@ namespace Wolf
 		ResourceUniqueOwner<Sampler> m_virtualTextureSampler;
 		VirtualTextureManager::AtlasIndex m_albedoAtlasIdx = -1;
 		VirtualTextureManager::AtlasIndex m_normalAtlasIdx = -1;
+		VirtualTextureManager::AtlasIndex m_combinedAtlasIdx = -1;
 
 		// Debug cache
 #ifdef MATERIAL_DEBUG

@@ -30,7 +30,7 @@ Wolf::TextureSetLoader::TextureSetLoader(const TextureSetFileInfoGGX& textureSet
 			{
 				Debug::sendError("Albedo compression must be BC1");
 			}
-			createSlicedCache<ImageCompression::RGBA8, ImageCompression::BC1>(textureSet.albedo, true, outputLayout.albedoCompression, 0);
+			createSlicedCacheFromFile<ImageCompression::RGBA8, ImageCompression::BC1>(textureSet.albedo, true, outputLayout.albedoCompression, 0);
 		}
 		else
 		{
@@ -53,7 +53,7 @@ Wolf::TextureSetLoader::TextureSetLoader(const TextureSetFileInfoGGX& textureSet
 			{
 				Debug::sendError("Normal compression must be BC5");
 			}
-			createSlicedCache<ImageCompression::RG32F, ImageCompression::BC5>(textureSet.normal, false, outputLayout.normalCompression, 1);
+			createSlicedCacheFromFile<ImageCompression::RG32F, ImageCompression::BC5>(textureSet.normal, false, outputLayout.normalCompression, 1);
 		}
 		else
 		{
@@ -326,56 +326,17 @@ void Wolf::TextureSetLoader::createImageFileFromSource(const std::string& filena
 }
 
 template <typename PixelType, typename CompressionType>
-void Wolf::TextureSetLoader::createSlicedCache(const std::string& filename, bool sRGB, ImageCompression::Compression compression, uint32_t imageIdx)
+void Wolf::TextureSetLoader::createSlicedCacheFromData(const std::string& binFolder, Extent3D extent, const std::vector<PixelType>& pixels, const std::vector<std::vector<PixelType>>& mipLevels)
 {
-	std::string filenameNoExtension = filename.substr(filename.find_last_of("\\") + 1, filename.find_last_of("."));
-	std::string folder = filename.substr(0, filename.find_last_of("\\"));
-	std::string binFolder = folder + '\\' + filenameNoExtension + "_bin" + "\\";
-
-	std::string binFolderFixed;
-	for (const char character : binFolder)
+	if (extent.depth != 1 ||
+		(extent.width > VirtualTextureManager::VIRTUAL_PAGE_SIZE && (extent.width % VirtualTextureManager::VIRTUAL_PAGE_SIZE) != 0) ||
+		(extent.height > VirtualTextureManager::VIRTUAL_PAGE_SIZE && (extent.height % VirtualTextureManager::VIRTUAL_PAGE_SIZE) != 0))
 	{
-		if (character == '/')
-			binFolderFixed += "\\";
-		else
-			binFolderFixed += character;
+		Debug::sendCriticalError("Wrong texture extent for virtual texture slicing: width/height must be a multiple of VIRTUAL_PAGE_SIZE when larger than a page, and depth must be 1");
 	}
 
-	if (!std::filesystem::is_directory(binFolderFixed) || !std::filesystem::exists(binFolderFixed))
-	{
-		std::filesystem::create_directory(binFolderFixed);
-	}
-
-	m_outputFolders[imageIdx] = binFolderFixed;
-
-	// Check 1st file to avoid loading pixels if we don't need
-	std::string binFilename = binFolderFixed + "mip0_sliceX0_sliceY0.bin";
-	if (std::filesystem::exists(binFilename))
-	{
-		std::ifstream input(binFilename, std::ios::in | std::ios::binary);
-
-		uint64_t hash;
-		input.read(reinterpret_cast<char*>(&hash), sizeof(hash));
-		if (hash == (HASH_TEXTURE_SET_LOADER_CPP ^ HASH_VIRTUAL_TEXTURE_MANAGER_H))
-		{
-			return; // we assume cache is ready
-		}
-	}
-
-	Format format = findFormatFromCompression(compression, sRGB);
-
-	std::vector<PixelType> pixels;
-	std::vector<std::vector<PixelType>> mipLevels;
-	Extent3D extent{};
-	loadImageFile(filename, format, pixels, mipLevels, extent);
-
-	if (extent.width % VirtualTextureManager::VIRTUAL_PAGE_SIZE != 0 || extent.height % VirtualTextureManager::VIRTUAL_PAGE_SIZE != 0 || extent.depth != 1)
-	{
-		Debug::sendCriticalError("Wrong texture extent for virtual texture slicing");
-	}
-
-	ConfigurationHelper::writeInfoToFile(binFolderFixed + "info.txt", "width", extent.width);
-	ConfigurationHelper::writeInfoToFile(binFolderFixed + "info.txt", "height", extent.height);
+	ConfigurationHelper::writeInfoToFile(binFolder + "info.txt", "width", extent.width);
+	ConfigurationHelper::writeInfoToFile(binFolder + "info.txt", "height", extent.height);
 
 	Extent3D maxSliceExtent{ VirtualTextureManager::VIRTUAL_PAGE_SIZE, VirtualTextureManager::VIRTUAL_PAGE_SIZE, 1 };
 
@@ -390,7 +351,7 @@ void Wolf::TextureSetLoader::createSlicedCache(const std::string& filename, bool
 		{
 			for (uint32_t sliceY = 0; sliceY < sliceCountY; ++sliceY)
 			{
-				std::string binFilename = binFolderFixed + "mip" + std::to_string(mipLevel) + "_sliceX" + std::to_string(sliceX) + "_sliceY" + std::to_string(sliceY) + ".bin";
+				std::string binFilename = binFolder + "mip" + std::to_string(mipLevel) + "_sliceX" + std::to_string(sliceX) + "_sliceY" + std::to_string(sliceY) + ".bin";
 				if (std::filesystem::exists(binFilename))
 				{
 					std::ifstream input(binFilename, std::ios::in | std::ios::binary);
@@ -420,7 +381,7 @@ void Wolf::TextureSetLoader::createSlicedCache(const std::string& filename, bool
 				pixelsToCompressExtent.height += 2 * VirtualTextureManager::BORDER_SIZE;
 				std::vector<PixelType> pixelsToCompress(pixelsToCompressExtent.width * pixelsToCompressExtent.height);
 
-				std::vector<PixelType>& allPixelsSrc = mipLevel == 0 ? pixels : mipLevels[mipLevel - 1];
+				const std::vector<PixelType>& allPixelsSrc = mipLevel == 0 ? pixels : mipLevels[mipLevel - 1];
 				for (uint32_t line = 0; line < pixelsToCompressExtent.height; ++line)
 				{
 					uint32_t srcY = sliceY * maxSliceExtent.width + line - VirtualTextureManager::BORDER_SIZE;
@@ -480,6 +441,53 @@ void Wolf::TextureSetLoader::createSlicedCache(const std::string& filename, bool
 	}
 }
 
+template <typename PixelType, typename CompressionType>
+void Wolf::TextureSetLoader::createSlicedCacheFromFile(const std::string& filename, bool sRGB, ImageCompression::Compression compression, uint32_t imageIdx)
+{
+	std::string filenameNoExtension = filename.substr(filename.find_last_of("\\") + 1, filename.find_last_of("."));
+	std::string folder = filename.substr(0, filename.find_last_of("\\"));
+	std::string binFolder = folder + '\\' + filenameNoExtension + "_bin" + "\\";
+
+	std::string binFolderFixed;
+	for (const char character : binFolder)
+	{
+		if (character == '/')
+			binFolderFixed += "\\";
+		else
+			binFolderFixed += character;
+	}
+
+	if (!std::filesystem::is_directory(binFolderFixed) || !std::filesystem::exists(binFolderFixed))
+	{
+		std::filesystem::create_directory(binFolderFixed);
+	}
+
+	m_outputFolders[imageIdx] = binFolderFixed;
+
+	// Check 1st file to avoid loading pixels if we don't need
+	std::string binFilename = binFolderFixed + "mip0_sliceX0_sliceY0.bin";
+	if (std::filesystem::exists(binFilename))
+	{
+		std::ifstream input(binFilename, std::ios::in | std::ios::binary);
+
+		uint64_t hash;
+		input.read(reinterpret_cast<char*>(&hash), sizeof(hash));
+		if (hash == (HASH_TEXTURE_SET_LOADER_CPP ^ HASH_VIRTUAL_TEXTURE_MANAGER_H))
+		{
+			return; // we assume cache is ready
+		}
+	}
+
+	Format format = findFormatFromCompression(compression, sRGB);
+
+	std::vector<PixelType> pixels;
+	std::vector<std::vector<PixelType>> mipLevels;
+	Extent3D extent{};
+	loadImageFile(filename, format, pixels, mipLevels, extent);
+
+	createSlicedCacheFromData<PixelType, CompressionType>(binFolderFixed, extent, pixels, mipLevels);
+}
+
 void Wolf::TextureSetLoader::createImageFromData(Extent3D extent, Format format, const unsigned char* pixels, const std::vector<const unsigned char*>& mipLevels, uint32_t idx)
 {
 	CreateImageInfo createImageInfo;
@@ -509,11 +517,6 @@ std::string extractFolderFromFullPath(const std::string& fullPath)
 
 void Wolf::TextureSetLoader::createCombinedTexture(const TextureSetFileInfoGGX& textureSet)
 {
-	if (g_configuration->getUseVirtualTexture())
-	{
-		return;
-	}
-
 	bool useCache = m_useCache && !textureSet.roughness.empty();
 
 	std::string combinedTexturePath = extractFolderFromFullPath(textureSet.roughness) + "combined_";
@@ -527,6 +530,46 @@ void Wolf::TextureSetLoader::createCombinedTexture(const TextureSetFileInfoGGX& 
 		if (createImageFileFromCache(combinedTexturePath, false, ImageCompression::Compression::BC3, 2))
 		{
 			return;
+		}
+	}
+
+	std::string binFolderForSlices;
+	if (g_configuration->getUseVirtualTexture())
+	{
+		std::string roughnessFilenameNoExtension = textureSet.roughness.substr(textureSet.roughness.find_last_of("\\") + 1, textureSet.roughness.find_last_of("."));
+		std::string metalnessFilenameNoExtension = textureSet.metalness.substr(textureSet.metalness.find_last_of("\\") + 1, textureSet.metalness.find_last_of("."));
+		std::string aoFilenameNoExtension = textureSet.ao.substr(textureSet.ao.find_last_of("\\") + 1, textureSet.ao.find_last_of("."));
+		std::string anisoFilenameNoExtension = textureSet.anisoStrength.substr(textureSet.anisoStrength.find_last_of("\\") + 1, textureSet.anisoStrength.find_last_of("."));
+		std::string folder = textureSet.roughness.substr(0, textureSet.roughness.find_last_of("\\"));
+		std::string binFolder = folder + '\\' + roughnessFilenameNoExtension + "_" + metalnessFilenameNoExtension + "_" + aoFilenameNoExtension + "_" + anisoFilenameNoExtension + "_bin" + "\\";
+
+		for (const char character : binFolder)
+		{
+			if (character == '/')
+				binFolderForSlices += "\\";
+			else
+				binFolderForSlices += character;
+		}
+
+		if (!std::filesystem::is_directory(binFolderForSlices) || !std::filesystem::exists(binFolderForSlices))
+		{
+			std::filesystem::create_directory(binFolderForSlices);
+		}
+
+		m_outputFolders[2] = binFolderForSlices;
+
+		// Check 1st file to avoid loading pixels if we don't need
+		std::string binFilename = binFolderForSlices + "mip0_sliceX0_sliceY0.bin";
+		if (std::filesystem::exists(binFilename))
+		{
+			std::ifstream input(binFilename, std::ios::in | std::ios::binary);
+
+			uint64_t hash;
+			input.read(reinterpret_cast<char*>(&hash), sizeof(hash));
+			if (hash == (HASH_TEXTURE_SET_LOADER_CPP ^ HASH_VIRTUAL_TEXTURE_MANAGER_H))
+			{
+				return; // we assume cache is ready
+			}
 		}
 	}
 
@@ -654,7 +697,11 @@ void Wolf::TextureSetLoader::createCombinedTexture(const TextureSetFileInfoGGX& 
 		}
 	}
 
-	if (!textureSet.roughness.empty())
+	if (g_configuration->getUseVirtualTexture())
+	{
+		createSlicedCacheFromData<ImageCompression::RGBA8, ImageCompression::BC3>(binFolderForSlices, combinedRoughnessMetalnessAOExtent, combinedRoughnessMetalnessAOAniso, combinedRoughnessMetalnessAOMipLevels);
+	}
+	else if (!textureSet.roughness.empty())
 	{
 		Debug::sendInfo("Creating combined texture");
 		Timer albedoTimer("Creating combined texture");

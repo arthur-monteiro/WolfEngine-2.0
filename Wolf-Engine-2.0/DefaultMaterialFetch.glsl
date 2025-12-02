@@ -65,7 +65,7 @@ void addToMaterialInfoFromTexCoords(in const vec2 texCoords, in const InputTextu
     normal.xy = normal.rg * 2.0 - vec2(1.0);
     normal.z = sqrt(1.0f - normal.x * normal.x - normal.y * normal.y);
     materialInfo.normal += normal.xyz * matrixTBN * strength; // TODO: normal blending
-    vec4 combinedRoughnessMetalnessAOAniso = sampleTexture(textureSetInfo.roughnessMetalnessAOIdx, texCoords, -1).rgba;
+    vec4 combinedRoughnessMetalnessAOAniso = sampleTexture(textureSetInfo.roughnessMetalnessAOIdx, texCoords, 2).rgba;
 	materialInfo.roughness += combinedRoughnessMetalnessAOAniso.r * strength;
 	materialInfo.metalness += combinedRoughnessMetalnessAOAniso.g * strength;
     materialInfo.matAO += combinedRoughnessMetalnessAOAniso.b * strength;
