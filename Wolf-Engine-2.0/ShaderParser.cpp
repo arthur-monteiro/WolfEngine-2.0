@@ -167,6 +167,10 @@ void Wolf::ShaderParser::parseAndCompile()
     {
         outFileGLSL << "#define COMPUTE_SHADER\n";
     }
+    else if (extensionFound == "Frag")
+    {
+        outFileGLSL << "#define FRAGMENT_SHADER\n";
+    }
 
     for (const std::string& condition : m_conditionBlocksToInclude)
     {

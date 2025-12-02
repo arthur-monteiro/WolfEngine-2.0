@@ -80,6 +80,7 @@ VkPresentModeKHR choosePresentMode(const std::vector<VkPresentModeKHR>& availabl
 
 Wolf::SwapChainVulkan::SwapChainVulkan(const SwapChainCreateInfo& swapChainCreateInfo)
 {
+	m_format = swapChainCreateInfo.format;
 	initialize(swapChainCreateInfo);
 }
 
@@ -256,6 +257,10 @@ void Wolf::SwapChainVulkan::recreate(Extent2D extent)
 	vkDestroySwapchainKHR(g_vulkanInstance->getDevice(), m_swapChain, nullptr);
 	m_images.clear();
 	m_frameFences.clear();
-	
-	initialize({ extent.width, extent.height });
+
+	SwapChainCreateInfo swapChainCreateInfo{};
+	swapChainCreateInfo.extent = extent;
+	swapChainCreateInfo.colorSpace = m_colorSpace;
+	swapChainCreateInfo.format = m_format;
+	initialize(swapChainCreateInfo);
 }

@@ -49,7 +49,7 @@ uint32_t Wolf::VirtualTextureManager::createNewIndirection(uint32_t indirectionC
 	const uint32_t r = m_currentIndirectionOffset;
 	m_currentIndirectionOffset += indirectionCount;
 
-	if (r > MAX_INDIRECTION_COUNT)
+	if (m_currentIndirectionOffset > MAX_INDIRECTION_COUNT)
 		Debug::sendCriticalError("Too many indirections, this can cause a GPU hang");
 
 	return r;
@@ -124,8 +124,8 @@ void Wolf::VirtualTextureManager::readFeedbackBuffer()
 
 	const uint32_t* feedbackData = static_cast<const uint32_t*>(m_feedbackReadableBuffer->getBuffer(bufferIdx).map());
 
-	FeedbackInfo leftValue = static_cast<uint32_t>(-1);
-	std::vector<std::array<FeedbackInfo, 3>> topValues(m_feedbackCountX, { static_cast<uint32_t>(-1), static_cast<uint32_t>(-1), static_cast<uint32_t>(-1) });
+	FeedbackInfo leftValue(static_cast<uint32_t>(-1));
+	std::vector<std::array<FeedbackInfo, 3>> topValues(m_feedbackCountX, { FeedbackInfo(static_cast<uint32_t>(-1)), FeedbackInfo(static_cast<uint32_t>(-1)), FeedbackInfo(static_cast<uint32_t>(-1)) });
 	std::unordered_set<FeedbackInfo> deduplicatedValues;
 	{
 		PROFILE_SCOPED("De-duplication")
@@ -137,7 +137,7 @@ void Wolf::VirtualTextureManager::readFeedbackBuffer()
 				if (feedbackAsUint == -1)
 					continue;
 
-				FeedbackInfo feedback = feedbackAsUint;
+				FeedbackInfo feedback = FeedbackInfo(feedbackAsUint);
 
 				if (feedback == leftValue || feedback == topValues[feedbackIdx % m_feedbackCountX][i])
 					continue;

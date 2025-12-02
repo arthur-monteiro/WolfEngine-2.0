@@ -264,20 +264,8 @@ void Wolf::WolfEngine::frame(const std::span<ResourceNonOwner<CommandRecordBase>
 		return;
 #endif
 
-#ifndef __ANDROID__
-	if (m_ultraLight && !m_previousFrameHasBeenReset)
-	{
-		m_ultraLight->processFrameJobs();
-	}
-#endif
-
 	if (m_resizeIsNeeded)
 	{
-		waitIdle();
-		m_swapChain->resetAllFences();
-		g_runtimeContext->reset();
-		currentFrame = g_runtimeContext->getCurrentCPUFrameNumber();
-
 		InitializationContext initializeContext;
 		fillInitializeContext(initializeContext);
 
@@ -293,6 +281,13 @@ void Wolf::WolfEngine::frame(const std::span<ResourceNonOwner<CommandRecordBase>
 
 		m_resizeIsNeeded = false;
 	}
+
+#ifndef __ANDROID__
+	if (m_ultraLight && !m_previousFrameHasBeenReset)
+	{
+		m_ultraLight->processFrameJobs();
+	}
+#endif
 
 	bool invalidateFrame = false;
 	{
@@ -419,4 +414,7 @@ void Wolf::WolfEngine::resize(int width, int height)
 #endif
 
 	m_materialsManager->resize({ static_cast<uint32_t>(width), static_cast<uint32_t>(height) });
+
+	m_swapChain->resetAllFences();
+	g_runtimeContext->reset();
 }

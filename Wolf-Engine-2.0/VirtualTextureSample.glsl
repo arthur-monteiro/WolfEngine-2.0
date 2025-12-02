@@ -19,7 +19,7 @@ layout(std430, binding = 4, set = @BINDLESS_DESCRIPTOR_SLOT) readonly restrict b
     TextureInfo texturesInfo[];
 };
 
-const uint DITHER_PIXEL_COUNT_PER_SIDE = 32;
+const uint DITHER_PIXEL_COUNT_PER_SIDE = 24;
 layout(std430, binding = 5, set = @BINDLESS_DESCRIPTOR_SLOT) buffer VirtualTextureFeedbackBuffer
 {
 	uvec3 feedbacks[];
@@ -65,11 +65,15 @@ vec4 sampleTexture(in uint textureIdx, in const vec2 texCoords, in const uint at
 
     vec2 textureSize = vec2(float(texturesInfo[textureIdx].width), float(texturesInfo[textureIdx].height));
 
+#ifdef FRAGMENT_SHADER
     vec2 texCoordsTexelUnits = texCoords * textureSize;
     vec2 dxTexCoords = dFdx(texCoordsTexelUnits);
     vec2 dyTexCoords = dFdy(texCoordsTexelUnits);
     float deltaMinSqr = min(dot(dxTexCoords, dxTexCoords), dot(dyTexCoords, dyTexCoords));
     float mipLevel = 0.5 * log2(deltaMinSqr); // log2(x ^ y) = y * log2(x)
+#else
+    float mipLevel = 0.0;
+#endif
 
     uint maxMipCount = computeMipCount(texturesInfo[textureIdx].width, texturesInfo[textureIdx].height);
     mipLevel = min(mipLevel, maxMipCount - 1);
@@ -103,12 +107,14 @@ vec4 sampleTexture(in uint textureIdx, in const vec2 texCoords, in const uint at
 
 void requestSlice(in uint textureIdx, in const uint sliceX, in const uint sliceY, in const uint mipLevel, in const uint atlasIdx)
 { 
+#ifdef FRAGMENT_SHADER
     uint pixelIndex = uint(gl_FragCoord.x) % DITHER_PIXEL_COUNT_PER_SIDE + (uint(gl_FragCoord.y) % DITHER_PIXEL_COUNT_PER_SIDE) * DITHER_PIXEL_COUNT_PER_SIDE;
     if (getCameraFrameIndex() % (DITHER_PIXEL_COUNT_PER_SIDE * DITHER_PIXEL_COUNT_PER_SIDE) == pixelIndex)
     {
         uint feedbackValue = (textureIdx & 0x7FF) << 21 | (mipLevel & 0x1F) << 16 | (sliceX & 0xFF) << 8 | (sliceY & 0xFF);
         feedbacks[uint(gl_FragCoord.x) / DITHER_PIXEL_COUNT_PER_SIDE + (uint(gl_FragCoord.y) / DITHER_PIXEL_COUNT_PER_SIDE) * (getScreenWidth() / DITHER_PIXEL_COUNT_PER_SIDE)][atlasIdx] = feedbackValue;
     }
+#endif
 }
 
 void computeInfoForMipLevel(in uint mipLevel, in vec2 textureSize, in vec2 texCoords, in uint textureIdx, out uint indirectionInfo, out uint textureWidth, out uint textureHeight, out uint sliceX, out uint sliceY)

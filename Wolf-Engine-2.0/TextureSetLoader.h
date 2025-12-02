@@ -66,7 +66,9 @@ namespace Wolf
 
 		// Use virtual texture
 		template <typename PixelType, typename CompressionType>
-		void createSlicedCache(const std::string& filename, bool sRGB, ImageCompression::Compression compression, uint32_t imageIdx);
+		void createSlicedCacheFromData(const std::string& binFolder, Extent3D extent, const std::vector<PixelType>& pixels, const std::vector<std::vector<PixelType>>& mipLevels);
+		template <typename PixelType, typename CompressionType>
+		void createSlicedCacheFromFile(const std::string& filename, bool sRGB, ImageCompression::Compression compression, uint32_t imageIdx);
 
 		void loadImageFile(const std::string& filename, Format format, std::vector<ImageCompression::RGBA8>& pixels, std::vector<std::vector<ImageCompression::RGBA8>>& mipLevels, Extent3D& outExtent) const;
 		void loadImageFile(const std::string& filename, Format format, std::vector<ImageCompression::RG32F>& pixels, std::vector<std::vector<ImageCompression::RG32F>>& mipLevels, Extent3D& outExtent) const;
