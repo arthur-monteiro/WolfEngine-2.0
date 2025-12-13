@@ -1,7 +1,7 @@
 #pragma once
 
-#include <cstdint>
-#include <vulkan/vulkan_core.h>
+#include "AccessFlags.h"
+#include "Enums.h"
 
 namespace Wolf
 {
@@ -33,6 +33,13 @@ namespace Wolf
 			uint32_t data;
 		};
 		virtual void recordFillBuffer(const CommandBuffer* commandBuffer, const BufferFill& bufferFill) const = 0;
+
+		struct BufferAccess
+		{
+			PipelineStage stage;
+			AccessFlags accessFlags;
+		};
+		virtual void recordBarrier(const CommandBuffer* commandBuffer, const BufferAccess& accessBefore, const BufferAccess& accessAfter) const = 0;
 
 		[[nodiscard]] virtual void* map(uint64_t size = 0) const = 0;
 		[[nodiscard]] virtual void unmap() const = 0;

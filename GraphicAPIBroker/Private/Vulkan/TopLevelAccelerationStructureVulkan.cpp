@@ -50,7 +50,7 @@ Wolf::TopLevelAccelerationStructureVulkan::TopLevelAccelerationStructureVulkan(u
 	m_rangeInfo.primitiveCount = instanceCount;
 }
 
-void Wolf::TopLevelAccelerationStructureVulkan::build(CommandBuffer* commandBuffer, std::span<BLASInstance> blasInstances)
+void Wolf::TopLevelAccelerationStructureVulkan::build(const CommandBuffer* commandBuffer, std::span<BLASInstance> blasInstances)
 {
 	if (blasInstances.size() != m_instanceCount)
 	{
@@ -65,7 +65,7 @@ void Wolf::TopLevelAccelerationStructureVulkan::build(CommandBuffer* commandBuff
 	    rayInst.transform = toTransformMatrixKHR(&blasInstance.transform);
 	    rayInst.instanceCustomIndex = blasInstance.instanceID; // gl_InstanceCustomIndexEXT
 	    rayInst.accelerationStructureReference = static_cast<const BottomLevelAccelerationStructureVulkan*>(blasInstance.bottomLevelAS)->getStructureBuffer().getBufferDeviceAddress();
-	    rayInst.flags = VK_GEOMETRY_INSTANCE_TRIANGLE_FACING_CULL_DISABLE_BIT_KHR;
+	    rayInst.flags = 0; //VK_GEOMETRY_INSTANCE_TRIANGLE_FACING_CULL_DISABLE_BIT_KHR;
 	    rayInst.mask = 0xFF; //  Only be hit if rayMask & instance.mask != 0
 	    rayInst.instanceShaderBindingTableRecordOffset = 0; // Do be replace with blasInstance.hitGroupIndex
 
@@ -80,7 +80,14 @@ void Wolf::TopLevelAccelerationStructureVulkan::build(CommandBuffer* commandBuff
 	bufferCopy.size = m_instanceBufferCPUWriteable->getSize();
 	m_instanceBuffer->recordTransferGPUMemory(commandBuffer, *m_instanceBufferCPUWriteable, bufferCopy);
 
-	AccelerationStructureVulkan::build(*static_cast<CommandBufferVulkan*>(commandBuffer));
+	AccelerationStructureVulkan::build(*static_cast<const CommandBufferVulkan*>(commandBuffer));
+}
+
+void Wolf::TopLevelAccelerationStructureVulkan::recordBuildBarriers(const CommandBuffer* commandBuffer)
+{
+	VkCommandBuffer vkCommandBuffer = static_cast<const CommandBufferVulkan*>(commandBuffer)->getCommandBuffer();
+	vkCmdPipelineBarrier(vkCommandBuffer, VK_PIPELINE_STAGE_ACCELERATION_STRUCTURE_BUILD_BIT_KHR, VK_PIPELINE_STAGE_RAY_TRACING_SHADER_BIT_KHR, 0, 0, NULL,
+		0, nullptr, 0, nullptr);
 }
 
 #endif

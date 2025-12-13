@@ -121,7 +121,7 @@ namespace Wolf
 
 	struct ModelData
 	{
-		ResourceUniqueOwner<Mesh> mesh;
+		ResourceUniqueOwner<Mesh> m_mesh;
 
 		// LOD data
 		struct LODInfo
@@ -129,9 +129,9 @@ namespace Wolf
 			float m_error;
 			uint32_t m_indexCount;
 		};
-		std::vector<ResourceUniqueOwner<Buffer>> defaultSimplifiedIndexBuffers;
+		std::vector<ResourceUniqueOwner<Buffer>> m_defaultSimplifiedIndexBuffers;
 		std::vector<LODInfo> m_defaultLODsInfo;
-		std::vector<ResourceUniqueOwner<Buffer>> sloppySimplifiedIndexBuffers;
+		std::vector<ResourceUniqueOwner<Buffer>> m_sloppySimplifiedIndexBuffers;
 		std::vector<LODInfo> m_sloppyLODsInfo;
 
 #ifdef MATERIAL_DEBUG

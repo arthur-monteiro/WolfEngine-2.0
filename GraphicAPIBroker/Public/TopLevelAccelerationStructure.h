@@ -23,7 +23,8 @@ namespace Wolf
 	public:
 		static TopLevelAccelerationStructure* createTopLevelAccelerationStructure(uint32_t maxInstanceCount);
 
-		virtual void build(CommandBuffer* commandBuffer, std::span<BLASInstance> blasInstances) = 0;
+		virtual void build(const CommandBuffer* commandBuffer, std::span<BLASInstance> blasInstances) = 0;
+		virtual void recordBuildBarriers(const CommandBuffer* commandBuffer) = 0;
 		virtual uint32_t getInstanceCount() const = 0;
 
 		virtual ~TopLevelAccelerationStructure() = default;
