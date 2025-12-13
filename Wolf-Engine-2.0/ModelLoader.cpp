@@ -327,9 +327,9 @@ Wolf::ModelLoader::ModelLoader(ModelData& outputModel, ModelLoadingInfo& modelLo
 			break;
 		}
 
-		m_outputModel->defaultSimplifiedIndexBuffers.push_back(Buffer::createBuffer(lod.size() * sizeof(uint32_t), VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT | modelLoadingInfo.additionalIndexBufferUsages,
+		m_outputModel->m_defaultSimplifiedIndexBuffers.push_back(Buffer::createBuffer(lod.size() * sizeof(uint32_t), VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT | modelLoadingInfo.additionalIndexBufferUsages,
 			VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT));
-		m_outputModel->defaultSimplifiedIndexBuffers.back()->transferCPUMemoryWithStagingBuffer(lod.data(), lod.size() * sizeof(uint32_t));
+		m_outputModel->m_defaultSimplifiedIndexBuffers.back()->transferCPUMemoryWithStagingBuffer(lod.data(), lod.size() * sizeof(uint32_t));
 
 		ModelData::LODInfo lodInfo;
 		lodInfo.m_error = lodError;
@@ -362,9 +362,9 @@ Wolf::ModelLoader::ModelLoader(ModelData& outputModel, ModelLoadingInfo& modelLo
 			break;
 		}
 
-		m_outputModel->sloppySimplifiedIndexBuffers.push_back(Buffer::createBuffer(lod.size() * sizeof(uint32_t), VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT | modelLoadingInfo.additionalIndexBufferUsages,
+		m_outputModel->m_sloppySimplifiedIndexBuffers.push_back(Buffer::createBuffer(lod.size() * sizeof(uint32_t), VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT | modelLoadingInfo.additionalIndexBufferUsages,
 			VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT));
-		m_outputModel->sloppySimplifiedIndexBuffers.back()->transferCPUMemoryWithStagingBuffer(lod.data(), lod.size() * sizeof(uint32_t));
+		m_outputModel->m_sloppySimplifiedIndexBuffers.back()->transferCPUMemoryWithStagingBuffer(lod.data(), lod.size() * sizeof(uint32_t));
 
 		ModelData::LODInfo lodInfo;
 		lodInfo.m_error = lodError;
@@ -373,14 +373,14 @@ Wolf::ModelLoader::ModelLoader(ModelData& outputModel, ModelLoadingInfo& modelLo
 	}
 #endif
 
-	m_outputModel->mesh.reset(new Mesh(vertices, indices, aabb, boundingSphere, modelLoadingInfo.additionalVertexBufferUsages, modelLoadingInfo.additionalIndexBufferUsages));
+	m_outputModel->m_mesh.reset(new Mesh(vertices, indices, aabb, boundingSphere, modelLoadingInfo.additionalVertexBufferUsages, modelLoadingInfo.additionalIndexBufferUsages));
 
 	for (uint32_t shapeIdx = 0; shapeIdx < shapeInfos.size(); ++shapeIdx)
 	{
 		const InternalShapeInfo& shapeInfo = shapeInfos[shapeIdx];
 		const InternalShapeInfo& nextShapeInfo = shapeIdx == shapeInfos.size() - 1 ? InternalShapeInfo{ static_cast<uint32_t>(indices.size()) } : shapeInfos[shapeIdx + 1];
 
-		m_outputModel->mesh->addSubMesh(shapeInfo.indicesOffset, nextShapeInfo.indicesOffset - shapeInfo.indicesOffset);
+		m_outputModel->m_mesh->addSubMesh(shapeInfo.indicesOffset, nextShapeInfo.indicesOffset - shapeInfo.indicesOffset);
 	}
 
 	Debug::sendInfo("Model " + modelLoadingInfo.filename + " loaded with " + std::to_string(indices.size() / 3) + " triangles and " + std::to_string(shapeInfos.size()) + " shapes");
@@ -562,7 +562,7 @@ bool Wolf::ModelLoader::loadCache(ModelLoadingInfo& modelLoadingInfo)
 
 		if (modelLoadingInfo.vulkanQueueLock)
 			modelLoadingInfo.vulkanQueueLock->lock();
-		m_outputModel->mesh.reset(new Mesh(vertices, indices, aabb, boundingSphere, modelLoadingInfo.additionalVertexBufferUsages, modelLoadingInfo.additionalIndexBufferUsages, Format::R32G32B32_SFLOAT));
+		m_outputModel->m_mesh.reset(new Mesh(vertices, indices, aabb, boundingSphere, modelLoadingInfo.additionalVertexBufferUsages, modelLoadingInfo.additionalIndexBufferUsages, Format::R32G32B32_SFLOAT));
 		if (modelLoadingInfo.vulkanQueueLock)
 			modelLoadingInfo.vulkanQueueLock->unlock();
 
@@ -576,7 +576,7 @@ bool Wolf::ModelLoader::loadCache(ModelLoadingInfo& modelLoadingInfo)
 			const InternalShapeInfo& shapeInfo = shapes[shapeIdx];
 			const InternalShapeInfo& nextShapeInfo = shapeIdx == shapes.size() - 1 ? InternalShapeInfo{ static_cast<uint32_t>(indices.size()) } : shapes[shapeIdx + 1];
 
-			m_outputModel->mesh->addSubMesh(shapeInfo.indicesOffset, nextShapeInfo.indicesOffset - shapeInfo.indicesOffset);
+			m_outputModel->m_mesh->addSubMesh(shapeInfo.indicesOffset, nextShapeInfo.indicesOffset - shapeInfo.indicesOffset);
 		}
 
 		uint32_t textureSetCount;
@@ -634,9 +634,9 @@ bool Wolf::ModelLoader::loadCache(ModelLoadingInfo& modelLoadingInfo)
 			std::vector<uint32_t> lod(indicesCount);
 			input.read(reinterpret_cast<char*>(lod.data()), indicesCount * sizeof(lod[0]));
 
-			m_outputModel->defaultSimplifiedIndexBuffers.push_back(Buffer::createBuffer(lod.size() * sizeof(uint32_t), VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT | modelLoadingInfo.additionalIndexBufferUsages,
+			m_outputModel->m_defaultSimplifiedIndexBuffers.push_back(Buffer::createBuffer(lod.size() * sizeof(uint32_t), VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT | modelLoadingInfo.additionalIndexBufferUsages,
 				VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT));
-			m_outputModel->defaultSimplifiedIndexBuffers.back()->transferCPUMemoryWithStagingBuffer(lod.data(), lod.size() * sizeof(uint32_t));
+			m_outputModel->m_defaultSimplifiedIndexBuffers.back()->transferCPUMemoryWithStagingBuffer(lod.data(), lod.size() * sizeof(uint32_t));
 
 			input.read(reinterpret_cast<char*>(&m_outputModel->m_defaultLODsInfo[lodIdx]), sizeof(ModelData::LODInfo));
 		}
@@ -651,9 +651,9 @@ bool Wolf::ModelLoader::loadCache(ModelLoadingInfo& modelLoadingInfo)
 			std::vector<uint32_t> lod(indicesCount);
 			input.read(reinterpret_cast<char*>(lod.data()), indicesCount * sizeof(lod[0]));
 
-			m_outputModel->sloppySimplifiedIndexBuffers.push_back(Buffer::createBuffer(lod.size() * sizeof(uint32_t), VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT | modelLoadingInfo.additionalIndexBufferUsages,
+			m_outputModel->m_sloppySimplifiedIndexBuffers.push_back(Buffer::createBuffer(lod.size() * sizeof(uint32_t), VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT | modelLoadingInfo.additionalIndexBufferUsages,
 				VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT));
-			m_outputModel->sloppySimplifiedIndexBuffers.back()->transferCPUMemoryWithStagingBuffer(lod.data(), lod.size() * sizeof(uint32_t));
+			m_outputModel->m_sloppySimplifiedIndexBuffers.back()->transferCPUMemoryWithStagingBuffer(lod.data(), lod.size() * sizeof(uint32_t));
 
 			input.read(reinterpret_cast<char*>(&m_outputModel->m_sloppyLODsInfo[lodIdx]), sizeof(ModelData::LODInfo));
 		}

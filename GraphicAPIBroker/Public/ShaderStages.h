@@ -4,7 +4,8 @@
 
 namespace Wolf
 {
-	enum ShaderStageFlagBits : uint32_t {
+	enum ShaderStageFlagBits : uint32_t
+	{
 		VERTEX = 1 << 0,
 		TESSELLATION_CONTROL = 1 << 1,
 		TESSELLATION_EVALUATION = 1 << 2,

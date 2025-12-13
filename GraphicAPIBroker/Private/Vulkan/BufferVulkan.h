@@ -20,6 +20,7 @@ namespace Wolf
 		void transferGPUMemoryImmediate(const Buffer& bufferSrc, const BufferCopy& copyRegion) const override;
 		void recordTransferGPUMemory(const CommandBuffer* commandBuffer, const Buffer& bufferSrc, const BufferCopy& copyRegion) const override;
 		void recordFillBuffer(const CommandBuffer* commandBuffer, const BufferFill& bufferFill) const override;
+		void recordBarrier(const CommandBuffer* commandBuffer, const BufferAccess& accessBefore, const BufferAccess& accessAfter) const override;
 
 		void* map(VkDeviceSize size = 0) const override;
 		void unmap() const override;

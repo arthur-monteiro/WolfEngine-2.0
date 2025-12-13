@@ -474,7 +474,7 @@ Wolf::DAEImporter::DAEImporter(ModelData& outputModel, ModelLoadingInfo& modelLo
 
 	AABB aabb(minPos, maxPos);
 	BoundingSphere boundingSphere(glm::vec3(0.0f), glm::max(glm::length(minPos), glm::length(maxPos)));
-	m_outputModel->mesh.reset(new Mesh(m_vertices, m_indices, aabb, boundingSphere, modelLoadingInfo.additionalVertexBufferUsages, modelLoadingInfo.additionalIndexBufferUsages));
+	m_outputModel->m_mesh.reset(new Mesh(m_vertices, m_indices, aabb, boundingSphere, modelLoadingInfo.additionalVertexBufferUsages, modelLoadingInfo.additionalIndexBufferUsages));
 
 	// Animation
 

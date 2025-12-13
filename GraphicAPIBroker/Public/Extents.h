@@ -8,6 +8,11 @@ namespace Wolf
 	{
 		uint32_t width;
 		uint32_t height;
+
+		bool operator==(const Extent2D& other) const
+		{
+			return width == other.width && height == other.height;
+		}
 	};
 
 	struct Extent3D

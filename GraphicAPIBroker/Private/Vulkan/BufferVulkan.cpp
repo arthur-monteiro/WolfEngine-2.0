@@ -6,8 +6,10 @@
 #include <Debug.h>
 #include <GPUMemoryDebug.h>
 
+#include "AccessFlagsVulkan.h"
 #include "CommandBufferVulkan.h"
 #include "FenceVulkan.h"
+#include "PipelineStagesVulkan.h"
 #include "SemaphoreVulkan.h"
 #include "Vulkan.h"
 #include "VulkanHelper.h"
@@ -91,6 +93,38 @@ void Wolf::BufferVulkan::recordFillBuffer(const CommandBuffer* commandBuffer, co
 	const CommandBufferVulkan* commandBufferVulkan = static_cast<const CommandBufferVulkan*>(commandBuffer);
 
 	vkCmdFillBuffer(commandBufferVulkan->getCommandBuffer(), m_buffer, bufferFill.dstOffset, bufferFill.size, bufferFill.data);
+}
+
+void Wolf::BufferVulkan::recordBarrier(const CommandBuffer* commandBuffer, const BufferAccess& accessBefore, const BufferAccess& accessAfter) const
+{
+	VkBufferMemoryBarrier2 bufferBarrier =
+	{
+		.sType = VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER_2,
+		.pNext = nullptr,
+
+		.srcStageMask  = pipelineStageToVkType2(accessBefore.stage),
+		.srcAccessMask = wolfAccessFlagsToVkAccessFlags2(accessBefore.accessFlags),
+
+		.dstStageMask  = pipelineStageToVkType2(accessAfter.stage),
+		.dstAccessMask = wolfAccessFlagsToVkAccessFlags2(accessAfter.accessFlags),
+
+		.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+		.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+		.buffer        = m_buffer,
+		.offset        = 0,
+		.size          = VK_WHOLE_SIZE
+	};
+
+	VkDependencyInfo dependencyInfo =
+	{
+		.sType = VK_STRUCTURE_TYPE_DEPENDENCY_INFO,
+		.pNext = nullptr,
+		.bufferMemoryBarrierCount = 1,
+		.pBufferMemoryBarriers    = &bufferBarrier
+	};
+
+	const CommandBufferVulkan* commandBufferVulkan = static_cast<const CommandBufferVulkan*>(commandBuffer);
+	vkCmdPipelineBarrier2(commandBufferVulkan->getCommandBuffer(), &dependencyInfo);
 }
 
 void* Wolf::BufferVulkan::map(VkDeviceSize size) const
