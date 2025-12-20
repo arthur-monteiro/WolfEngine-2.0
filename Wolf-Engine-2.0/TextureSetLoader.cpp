@@ -100,6 +100,24 @@ Wolf::TextureSetLoader::TextureSetLoader(const TextureSetFileInfoSixWayLighting&
 	}
 }
 
+Wolf::TextureSetLoader::TextureSetLoader(const TextureSetFileInfoAlphaOnly& textureSet, bool useCache)
+{
+	if (!textureSet.alphaMap.empty())
+	{
+		std::vector<ImageCompression::RGBA8> pixels;
+		std::vector<std::vector<ImageCompression::RGBA8>> mipLevels;
+		Extent3D extent;
+		loadImageFile(textureSet.alphaMap, Format::R8G8B8A8_UNORM, pixels, mipLevels, extent);
+
+		std::vector<const unsigned char*> mipsData(mipLevels.size());
+		for (uint32_t i = 0; i < mipLevels.size(); ++i)
+		{
+			mipsData[i] = reinterpret_cast<const unsigned char*>(mipLevels[i].data());
+		}
+		createImageFromData(extent, Format::R8G8B8A8_UNORM, reinterpret_cast<const unsigned char*>(pixels.data()), mipsData, 0);
+	}
+}
+
 void Wolf::TextureSetLoader::transferImageTo(uint32_t idx, ResourceUniqueOwner<Image>& output)
 {
 	return output.transferFrom(m_outputImages[idx]);

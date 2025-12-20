@@ -13,7 +13,19 @@ Wolf::OrthographicCamera::OrthographicCamera(const glm::vec3& initialCenter, flo
 void Wolf::OrthographicCamera::update(const CameraUpdateContext& context)
 {
 	m_previousViewMatrix = m_viewMatrix;
-	m_viewMatrix = glm::lookAt(m_center - m_heightFromCenter * normalize(m_direction), m_center, glm::vec3(0.0f, 1.0f, 0.0f));
+
+	glm::vec3 eye = m_center - m_heightFromCenter * glm::normalize(m_direction);
+	glm::vec3 forward = glm::normalize(m_center - eye);
+	glm::vec3 up = glm::vec3(0.0f, 1.0f, 0.0f);
+
+	if (glm::abs(glm::dot(forward, up)) > 0.999f)
+	{
+		// if looking straight up or down, use the Z-axis as a temporary Up
+		up = glm::vec3(0.0f, 0.0f, 1.0f);
+	}
+
+	m_viewMatrix = glm::lookAt(eye, m_center, up);
+
 	m_projectionMatrix = glm::ortho(-m_radius, m_radius, -m_radius, m_radius, m_near, m_far);
 	m_projectionMatrix[1][1] *= -1;
 

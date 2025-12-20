@@ -27,6 +27,10 @@ void Wolf::CameraList::moveToNextFrame(const CameraUpdateContext& context)
 
 	for (CameraInterface* camera : m_currentCameras)
 	{
-		camera->update(context);
+		// Camera can be null if not set for this index
+		if (camera)
+		{
+			camera->update(context);
+		}
 	}
 }
