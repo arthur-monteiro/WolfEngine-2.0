@@ -53,11 +53,13 @@ namespace Wolf
 			};
 			std::array<PerTextureSetInMaterialInfo, MAX_TEXTURE_SET_PER_MATERIAL> textureSetInfos;
 
+			static std::vector<std::string> SHADING_MODE_STRING_LIST;
 			enum class ShadingMode : uint32_t
 			{
 				GGX = 0,
 				AnisoGGX = 1,
-				SixWaysLighting = 2
+				SixWaysLighting = 2,
+				AlphaOnly = 3
 			};
 			ShadingMode shadingMode = ShadingMode::GGX;
 		};

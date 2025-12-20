@@ -12,6 +12,8 @@
 #include "PushDataToGPU.h"
 #include "Timer.h"
 
+std::vector<std::string> Wolf::MaterialsGPUManager::MaterialInfo::SHADING_MODE_STRING_LIST = { "GGX", "Aniso GGX", "Six ways lighting", "Alpha only" };
+
 Wolf::MaterialsGPUManager::MaterialsGPUManager(const std::vector<DescriptorSetGenerator::ImageDescription>& firstImages)
 {
 	DescriptorSetLayoutGenerator descriptorSetLayoutGenerator;

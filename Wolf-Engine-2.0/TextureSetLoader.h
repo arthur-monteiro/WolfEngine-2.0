@@ -49,6 +49,14 @@ namespace Wolf
 		};
 		TextureSetLoader(const TextureSetFileInfoSixWayLighting& textureSet, bool useCache);
 
+		struct TextureSetFileInfoAlphaOnly
+		{
+			std::string name;
+
+			std::string alphaMap;
+		};
+		TextureSetLoader(const TextureSetFileInfoAlphaOnly& textureSet, bool useCache);
+
 		void transferImageTo(uint32_t idx, ResourceUniqueOwner<Image>& output);
 		[[nodiscard]] const std::string& getOutputSlicesFolder(uint32_t idx) const { return m_outputFolders[idx]; }
 
