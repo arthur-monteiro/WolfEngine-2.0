@@ -26,6 +26,8 @@ namespace Wolf
 				return VK_FORMAT_R16G16B16_SFLOAT;
 			case Format::R16G16B16A16_SFLOAT:
 				return VK_FORMAT_R16G16B16A16_SFLOAT;
+			case Format::R32_SFLOAT:
+				return VK_FORMAT_R32_SFLOAT;
 			case Format::R32G32_SFLOAT:
 				return VK_FORMAT_R32G32_SFLOAT;
 			case Format::R32G32B32_SFLOAT:

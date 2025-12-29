@@ -9,7 +9,9 @@ Wolf::GraphicCameraInterface::GraphicCameraInterface()
 	m_descriptorSetLayoutGenerator.reset(new LazyInitSharedResource<DescriptorSetLayoutGenerator, GraphicCameraInterface>([](ResourceUniqueOwner<DescriptorSetLayoutGenerator>& descriptorSetLayoutGenerator)
 		{
 			descriptorSetLayoutGenerator.reset(new DescriptorSetLayoutGenerator);
-			descriptorSetLayoutGenerator->addUniformBuffer(ShaderStageFlagBits::VERTEX | ShaderStageFlagBits::FRAGMENT | ShaderStageFlagBits::COMPUTE | ShaderStageFlagBits::RAYGEN | ShaderStageFlagBits::TESSELLATION_EVALUATION, 0); // matrices
+			descriptorSetLayoutGenerator->addUniformBuffer(
+				ShaderStageFlagBits::VERTEX | ShaderStageFlagBits::FRAGMENT | ShaderStageFlagBits::COMPUTE | ShaderStageFlagBits::RAYGEN | ShaderStageFlagBits::TESSELLATION_EVALUATION | ShaderStageFlagBits::GEOMETRY,
+				0); // matrices
 		}));
 
 	m_descriptorSetLayout.reset(new LazyInitSharedResource<DescriptorSetLayout, GraphicCameraInterface>([this](ResourceUniqueOwner<DescriptorSetLayout>& descriptorSetLayout)

@@ -238,6 +238,9 @@ namespace Wolf
 		ResourceNonOwner(T* ptr = nullptr) : m_ptr(ptr) {}
 
 		template <typename U = T>
+		ResourceNonOwner<U> duplicateAs() const { return ResourceNonOwner<U>(static_cast<U*>(m_ptr)); }
+
+		template <typename U = T>
 		[[nodiscard]] U* operator->() const { return static_cast<U*>(m_ptr); }
 
 		[[nodiscard]] const T& operator*() const noexcept requires(!std::is_void_v<T>) { return *m_ptr; }

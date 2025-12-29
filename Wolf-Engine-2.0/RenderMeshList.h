@@ -35,7 +35,7 @@ namespace Wolf
 
 		struct MeshToRender
 		{
-			ResourceNonOwner<Mesh> mesh;
+			ResourceNonOwner<MeshInterface> mesh;
 			ResourceNonOwner<const PipelineSet> pipelineSet;
 			std::array<std::vector<DescriptorSetBindInfo>, PipelineSet::MAX_PIPELINE_COUNT> perPipelineDescriptorSets;
 

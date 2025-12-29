@@ -72,3 +72,8 @@ void Wolf::Mesh::draw(const CommandBuffer& commandBuffer, uint32_t cameraIdx, ui
 		}
 	}*/
 }
+
+bool Wolf::Mesh::hasVertexBuffer() const
+{
+	return true;
+}

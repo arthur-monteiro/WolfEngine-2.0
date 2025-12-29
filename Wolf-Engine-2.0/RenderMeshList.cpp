@@ -210,7 +210,8 @@ void Wolf::RenderMeshList::draw(const RecordContext& context, const CommandBuffe
 
 			if (internalInstancedMesh->instancedMesh.instanceBuffer)
 			{
-				commandBuffer.bindVertexBuffer(*internalInstancedMesh->instancedMesh.instanceBuffer, 1);
+				uint32_t bindingIdx = meshToRender->mesh->hasVertexBuffer() ? 1 : 0;
+				commandBuffer.bindVertexBuffer(*internalInstancedMesh->instancedMesh.instanceBuffer, bindingIdx);
 			}
 
 			for (const InternalInstancedMesh::OffsetAndCount& offsetAndCount : internalInstancedMesh->offsetAndCounts)
