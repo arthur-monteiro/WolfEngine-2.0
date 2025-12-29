@@ -86,9 +86,7 @@ namespace Wolf
 		);
 #ifdef RESOURCE_DEBUG
 		template <typename U = T>
-		void nonOwnerResourceDeleteTracked(ResourceNonOwner<U>* instance);
-		template <typename U = T>
-		void nonOwnerResourceDeleteTracked(ResourceNonOwner<const U>* instance);
+		void nonOwnerResourceDeleteTracked(void* instance);
 #endif
 
 		void addNonOwnerResourceCommon(
@@ -98,9 +96,7 @@ namespace Wolf
 		);
 #ifdef RESOURCE_DEBUG
 		template <typename U = T>
-		void addNonOwnerResourceTracked(ResourceNonOwner<U>* instance);
-		template <typename U = T>
-		void addNonOwnerResourceTracked(ResourceNonOwner<const U>* instance);
+		void addNonOwnerResourceTracked(void* instance);
 #endif
 		void checksBeforeDelete() const;
 
@@ -136,8 +132,8 @@ namespace Wolf
 
 		for (ResourceNonOwner<T>* nonOwnerResource : m_nonOwnerResources)
 		{
-			nonOwnerResource->m_onDelete = [this](ResourceNonOwner<T>* instance) { nonOwnerResourceDeleteTracked(instance); };
-			nonOwnerResource->m_onDuplicate = [this](ResourceNonOwner<T>* instance) { addNonOwnerResourceTracked(instance); };
+			nonOwnerResource->m_onDelete = [this](void* instance) { nonOwnerResourceDeleteTracked(instance); };
+			nonOwnerResource->m_onDuplicate = [this](void* instance) { addNonOwnerResourceTracked(instance); };
 		}
 	}
 
@@ -160,7 +156,7 @@ namespace Wolf
 		{
 			return ResourceNonOwner<U>(resourceAsNewType,
 #ifdef RESOURCE_DEBUG
-				[this](ResourceNonOwner<U>* instance) { nonOwnerResourceDeleteTracked(instance); }, [this](ResourceNonOwner<U>* instance) { addNonOwnerResourceTracked(instance); }, location
+				[this](void* instance) { nonOwnerResourceDeleteTracked(instance); }, [this](void* instance) { addNonOwnerResourceTracked(instance); }, location
 #else
 				[this] { nonOwnerResourceDeleteCommon(); }, [this] { addNonOwnerResourceCommon(); }
 #endif
@@ -170,7 +166,7 @@ namespace Wolf
 		{
 			return ResourceNonOwner<U>(nullptr,
 #ifdef RESOURCE_DEBUG
-				[this](ResourceNonOwner<U>*) { }, [this](ResourceNonOwner<U>* instance) { }, location
+				[this](void* instance) { }, [this](void* instance) { }, location
 #else
 				[this]{ nonOwnerResourceDeleteCommon(); }, [this] { addNonOwnerResourceCommon(); }
 #endif
@@ -187,7 +183,7 @@ namespace Wolf
 	{
 		return ResourceNonOwner<const T>(m_resource.get(),
 #ifdef RESOURCE_DEBUG
-			[this] (ResourceNonOwner<const T>* instance) { nonOwnerResourceDeleteTracked(instance); }, [this] (ResourceNonOwner<const T>* instance) { addNonOwnerResourceTracked(instance); }, location
+			[this] (void* instance) { nonOwnerResourceDeleteTracked(instance); }, [this] (void* instance) { addNonOwnerResourceTracked(instance); }, location
 #else
 			[this] { nonOwnerResourceDeleteCommon(); }, [this] { addNonOwnerResourceCommon(); }
 #endif
@@ -230,14 +226,7 @@ namespace Wolf
 #ifdef RESOURCE_DEBUG
 	template <typename T>
 	template <typename U>
-	void ResourceUniqueOwner<T>::nonOwnerResourceDeleteTracked(ResourceNonOwner<U>* instance)
-	{
-		nonOwnerResourceDeleteCommon(reinterpret_cast<ResourceNonOwner<T>*>(instance));
-	}
-
-	template <typename T>
-	template <typename U>
-	void ResourceUniqueOwner<T>::nonOwnerResourceDeleteTracked(ResourceNonOwner<const U>* instance)
+	void ResourceUniqueOwner<T>::nonOwnerResourceDeleteTracked(void* instance)
 	{
 		nonOwnerResourceDeleteCommon(reinterpret_cast<ResourceNonOwner<T>*>(instance));
 	}
@@ -263,14 +252,7 @@ namespace Wolf
 #ifdef RESOURCE_DEBUG
 	template <typename T>
 	template <typename U>
-	void ResourceUniqueOwner<T>::addNonOwnerResourceTracked(ResourceNonOwner<U>* instance)
-	{
-		addNonOwnerResourceCommon(reinterpret_cast<ResourceNonOwner<T>*>(instance));
-	}
-
-	template <typename T>
-	template <typename U>
-	void ResourceUniqueOwner<T>::addNonOwnerResourceTracked(ResourceNonOwner<const U>* instance)
+	void ResourceUniqueOwner<T>::addNonOwnerResourceTracked(void* instance)
 	{
 		addNonOwnerResourceCommon(reinterpret_cast<ResourceNonOwner<T>*>(instance));
 	}

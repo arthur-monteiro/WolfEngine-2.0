@@ -23,7 +23,7 @@ namespace Wolf
 	public:
 		ResourceNonOwner(T* resource,
 #ifdef RESOURCE_DEBUG
-			const std::function<void(ResourceNonOwner<T>* instance)>& onDelete, const std::function<void(ResourceNonOwner<T>* instance)>& onDuplicate, const std::source_location& sourceLocation)
+			const std::function<void(void* instance)>& onDelete, const std::function<void(void* instance)>& onDuplicate, const std::source_location& sourceLocation)
 #else
 			const std::function<void()>& onDelete, const std::function<void()>& onDuplicate)
 #endif
@@ -124,6 +124,32 @@ namespace Wolf
 
 		[[nodiscard]] bool isSame(T* resource) const { return m_resource == resource; }
 
+		template <typename U>
+		ResourceNonOwner<U> duplicateAs() const
+		{
+			if (U* resourceAsNewType = dynamic_cast<U*>(m_resource))
+			{
+				return ResourceNonOwner<U>(resourceAsNewType,
+#ifdef RESOURCE_DEBUG
+					m_onDelete, m_onDuplicate, m_sourceLocation.back()
+#else
+					m_onDelete, m_onDuplicate
+#endif
+				);
+			}
+			else
+			{
+				Wolf::Debug::sendCriticalError("Can't dynamic cast resource");
+				return ResourceNonOwner<U>(nullptr,
+#ifdef RESOURCE_DEBUG
+					m_onDelete, m_onDuplicate, m_sourceLocation.back()
+#else
+					m_onDelete, m_onDuplicate
+#endif
+				);
+			}
+		}
+
 		~ResourceNonOwner();
 
 	private:
@@ -133,12 +159,12 @@ namespace Wolf
 
 #ifdef RESOURCE_DEBUG
 		std::vector<std::source_location> m_sourceLocation;
-		std::function<void(ResourceNonOwner<T>* instance)> m_onDelete;
-		std::function<void(ResourceNonOwner<T>* instance)> m_onDuplicate;
+		std::function<void(void* instance)> m_onDelete;
+		std::function<void(void* instance)> m_onDuplicate;
 #else
 		std::function<void()> m_onDelete;
 		std::function<void()> m_onDuplicate;
-#endif		
+#endif
 	};
 
 	template <typename T>
@@ -163,7 +189,7 @@ namespace Wolf
 		}
 		NullableResourceNonOwner() : m_resource(static_cast<T*>(nullptr),
 #ifdef RESOURCE_DEBUG
-			[](ResourceNonOwner<T>* instance) {}, [](ResourceNonOwner<T>* instance) {}, std::source_location::current()
+			[](void* instance) {}, [](void* instance) {}, std::source_location::current()
 #else
 			[]{}, [] {}
 #endif
@@ -201,7 +227,7 @@ namespace Wolf
 		{
 			m_resource = ResourceNonOwner<T>(static_cast<T*>(nullptr),
 #ifdef RESOURCE_DEBUG
-				[](ResourceNonOwner<T>* instance) {}, [](ResourceNonOwner<T>* instance) {}, std::source_location::current()
+				[](void* instance) {}, [](void* instance) {}, std::source_location::current()
 #else
 				[]{}, [] {}
 #endif
