@@ -47,14 +47,14 @@ struct MaterialInfo
 
 void clearMaterialInfo(inout MaterialInfo materialInfo)
 {
-    materialInfo.albedo = vec4(0.0f);
-    materialInfo.normal = vec3(0.0f);
-    materialInfo.roughness = 0.0f;
-    materialInfo.metalness = 0.0f;
-    materialInfo.matAO = 0.0f;
-    materialInfo.anisoStrength = 0.0f;
+    materialInfo.albedo = vec4(0.0);
+    materialInfo.normal = vec3(0.0);
+    materialInfo.roughness = 0.0;
+    materialInfo.metalness = 0.0;
+    materialInfo.matAO = 0.0;
+    materialInfo.anisoStrength = 0.0;
 
-    materialInfo.sixWaysLightmap1 = vec4(0.0f);
+    materialInfo.sixWaysLightmap1 = vec4(0.0);
 }
 
 void addToMaterialInfoFromTexCoords(in const vec2 texCoords, in const InputTextureSetInfo textureSetInfo, in float strength, in const mat3 matrixTBN, inout MaterialInfo materialInfo)
