@@ -42,7 +42,7 @@ namespace Wolf
 		virtual void recordBarrier(const CommandBuffer* commandBuffer, const BufferAccess& accessBefore, const BufferAccess& accessAfter) const = 0;
 
 		[[nodiscard]] virtual void* map(uint64_t size = 0) const = 0;
-		[[nodiscard]] virtual void unmap() const = 0;
+		virtual void unmap() const = 0;
 
 		virtual uint32_t getSize() const = 0;
 	};

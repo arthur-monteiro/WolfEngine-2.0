@@ -9,7 +9,6 @@ LOCAL_SRC_FILES := AndroidCacheHelper.cpp \
 	CameraList.cpp \
 	CommandRecordBase.cpp \
 	ConfigurationHelper.cpp \
-	DAEImporter.cpp \
 	DescriptorSetGenerator.cpp \
 	DescriptorSetLayoutGenerator.cpp \
 	ImageCompression.cpp \
@@ -19,7 +18,6 @@ LOCAL_SRC_FILES := AndroidCacheHelper.cpp \
 	MaterialsGPUManager.cpp \
 	Mesh.cpp \
 	MipMapGenerator.cpp \
-	ModelLoader.cpp \
 	MultiThreadTaskManager.cpp \
 	PipelineSet.cpp \
 	PushDataToGPU.cpp \
@@ -28,7 +26,6 @@ LOCAL_SRC_FILES := AndroidCacheHelper.cpp \
 	ShaderList.cpp \
 	ShaderParser.cpp \
 	SubMesh.cpp \
-	TextureSetLoader.cpp \
 	Timer.cpp \
 	VirtualTextureManager.cpp \
 	WolfEngine.cpp
