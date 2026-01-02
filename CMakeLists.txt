@@ -68,10 +68,11 @@ if (RESOURCE_TRACKING OR RESOURCE_DEBUG)
     )
 endif()
 
-add_custom_command(COMMAND "$<TARGET_FILE:GenerateCodeFileHashes>"
+add_custom_command(COMMAND "$<TARGET_FILE:GenerateCodeFileHashes>" "../Wolf-Engine-2.0"
         WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/Wolf-Engine-2.0"
         OUTPUT "${CMAKE_CURRENT_SOURCE_DIR}/Wolf-Engine-2.0/CodeFileHashes.h"
-        DEPENDS GenerateCodeFileHashes)
+        DEPENDS GenerateCodeFileHashes
+        VERBATIM)
 
 add_custom_target(
         GenerateHashesTarget

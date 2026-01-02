@@ -282,7 +282,7 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
     </Link>
     <PreBuildEvent>
-      <Command>"../x64/Debug - Graphic Tests/GenerateCodeFileHashes.exe"</Command>
+      <Command>"../x64/Debug - Graphic Tests/GenerateCodeFileHashes.exe" "../Wolf-Engine-2.0"</Command>
     </PreBuildEvent>
     <Lib>
       <AdditionalDependencies>%(AdditionalDependencies)</AdditionalDependencies>
@@ -361,7 +361,6 @@
     <ClCompile Include="CameraInterface.cpp" />
     <ClCompile Include="CameraList.cpp" />
     <ClCompile Include="ConfigurationHelper.cpp" />
-    <ClCompile Include="DAEImporter.cpp" />
     <ClCompile Include="DebugMarker.cpp" />
     <ClCompile Include="DebugMarkerSymbols.cpp" />
     <ClCompile Include="DepthPassBase.cpp" />
@@ -380,11 +379,9 @@
     <ClCompile Include="PhysicsManager.cpp" />
     <ClCompile Include="PushDataToGPU.cpp" />
     <ClCompile Include="ReadbackDataFromGPU.cpp" />
-    <ClCompile Include="TextureSetLoader.cpp" />
     <ClCompile Include="MaterialsGPUManager.cpp" />
     <ClCompile Include="Mesh.cpp" />
     <ClCompile Include="MipMapGenerator.cpp" />
-    <ClCompile Include="ModelLoader.cpp" />
     <ClCompile Include="CommandRecordBase.cpp" />
     <ClCompile Include="OrthographicCamera.cpp" />
     <ClCompile Include="PipelineSet.cpp" />
@@ -409,7 +406,6 @@
     <ClInclude Include="CameraList.h" />
     <ClInclude Include="CodeFileHashes.h" />
     <ClInclude Include="ConfigurationHelper.h" />
-    <ClInclude Include="DAEImporter.h" />
     <ClInclude Include="DebugMarker.h" />
     <ClInclude Include="DepthPassBase.h" />
     <ClInclude Include="DescriptorSetBindInfo.h" />
@@ -431,11 +427,9 @@
     <ClInclude Include="PhysicsManager.h" />
     <ClInclude Include="PushDataToGPU.h" />
     <ClInclude Include="ReadbackDataFromGPU.h" />
-    <ClInclude Include="TextureSetLoader.h" />
     <ClInclude Include="MaterialsGPUManager.h" />
     <ClInclude Include="Mesh.h" />
     <ClInclude Include="MipMapGenerator.h" />
-    <ClInclude Include="ModelLoader.h" />
     <ClInclude Include="CommandRecordBase.h" />
     <ClInclude Include="OrthographicCamera.h" />
     <ClInclude Include="PipelineSet.h" />

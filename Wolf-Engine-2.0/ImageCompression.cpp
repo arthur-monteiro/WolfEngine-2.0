@@ -9,6 +9,11 @@ uint64_t Wolf::ImageCompression::BC5::BC5Channel::toUInt64() const
     return bitmap;
 }
 
+template<> void Wolf::ImageCompression::compress<Wolf::ImageCompression::RGBA8>(const Extent3D& extent, const std::vector<RGBA8>& pixels, std::vector<Wolf::ImageCompression::RGBA8>& outBlocks)
+{
+    // Nothing to do
+}
+
 template<> void Wolf::ImageCompression::compress<Wolf::ImageCompression::BC1>(const Extent3D& extent, const std::vector<RGBA8>& pixels, std::vector<Wolf::ImageCompression::BC1>& outBlocks)
 {
     compressBC1(extent, pixels, outBlocks);
@@ -17,6 +22,11 @@ template<> void Wolf::ImageCompression::compress<Wolf::ImageCompression::BC1>(co
 template<> void Wolf::ImageCompression::compress<Wolf::ImageCompression::BC1>(const Extent3D& extent, const std::vector<RG32F>& pixels, std::vector<Wolf::ImageCompression::BC1>& outBlocks)
 {
     Debug::sendCriticalError("Can't compress to BC1 with RG32F pixels");
+}
+
+template<> void Wolf::ImageCompression::compress<Wolf::ImageCompression::BC1>(const Extent3D& extent, const std::vector<RGBA32F>& pixels, std::vector<Wolf::ImageCompression::BC1>& outBlocks)
+{
+    Debug::sendCriticalError("Can't compress to BC1 with RGBA32F pixels");
 }
 
 template<> void Wolf::ImageCompression::compress<Wolf::ImageCompression::BC3>(const Extent3D& extent, const std::vector<RGBA8>& pixels, std::vector<Wolf::ImageCompression::BC3>& outBlocks)
@@ -29,6 +39,11 @@ template<> void Wolf::ImageCompression::compress<Wolf::ImageCompression::BC3>(co
     Debug::sendCriticalError("Can't compress to BC3 with RG32F pixels");
 }
 
+template<> void Wolf::ImageCompression::compress<Wolf::ImageCompression::BC3>(const Extent3D& extent, const std::vector<RGBA32F>& pixels, std::vector<Wolf::ImageCompression::BC3>& outBlocks)
+{
+    Debug::sendCriticalError("Can't compress to BC3 with RGBA32F pixels");
+}
+
 template<> void Wolf::ImageCompression::compress<Wolf::ImageCompression::BC5>(const Extent3D& extent, const std::vector<RG32F>& pixels, std::vector<Wolf::ImageCompression::BC5>& outBlocks)
 {
     compressBC5(extent, pixels, outBlocks);
@@ -37,6 +52,11 @@ template<> void Wolf::ImageCompression::compress<Wolf::ImageCompression::BC5>(co
 template<> void Wolf::ImageCompression::compress<Wolf::ImageCompression::BC5>(const Extent3D& extent, const std::vector<RGBA8>& pixels, std::vector<Wolf::ImageCompression::BC5>& outBlocks)
 {
 	Debug::sendCriticalError("Can't compress to BC5 with RGBA8 pixels");
+}
+
+template<> void Wolf::ImageCompression::compress<Wolf::ImageCompression::BC5>(const Extent3D& extent, const std::vector<RGBA32F>& pixels, std::vector<Wolf::ImageCompression::BC5>& outBlocks)
+{
+    Debug::sendCriticalError("Can't compress to BC5 with RGBA32F pixels");
 }
 
 uint8_t Wolf::ImageCompression::RGBA8::mergeColor(uint8_t c00, uint8_t c01, uint8_t c10, uint8_t c11)

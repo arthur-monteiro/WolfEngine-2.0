@@ -4,12 +4,20 @@
 #include <fstream>
 #include <xxh64.hpp>
 
-int main()
+int main(int argc, char **argv)
 {
+    if (argc < 2)
+    {
+        std::cout << "Need path as argument\n";
+        return EXIT_FAILURE;
+    }
+
     std::cout << "Computing hashes..\n";
 
-	const std::string path = "../Wolf-Engine-2.0";
+	const std::string path = argv[1];
     const std::string outputFilepath = path + "/CodeFileHashes.h";
+
+    std::cout <<path << "\n";
 	std::ofstream outFile(outputFilepath);
     outFile << "// -- AUTO GENERATED FILE --\n\n";
     outFile << "#pragma once\n";

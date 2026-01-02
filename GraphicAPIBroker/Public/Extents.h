@@ -20,6 +20,11 @@ namespace Wolf
 		uint32_t width;
 		uint32_t height;
 		uint32_t depth;
+
+		bool operator==(const Extent3D& other) const
+		{
+			return width == other.width && height == other.height && depth == other.depth;
+		}
 	};
 
 	struct Offset3D
