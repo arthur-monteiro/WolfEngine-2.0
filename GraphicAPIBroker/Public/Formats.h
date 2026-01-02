@@ -1,4 +1,5 @@
 #pragma once
+#include "Debug.h"
 
 namespace Wolf
 {
@@ -30,6 +31,40 @@ namespace Wolf
 		D32_SFLOAT_S8_UINT,
 		D24_UNORM_S8_UINT
 	};
+
+	inline bool isSRGBFormat(Format format)
+	{
+		switch (format)
+		{
+			case Format::R8G8B8A8_SRGB:
+			case Format::BC1_RGB_SRGB_BLOCK:
+			case Format::BC3_SRGB_BLOCK:
+				return true;
+
+			case Format::UNDEFINED:
+			case Format::R8_UINT:
+			case Format::R32_UINT:
+			case Format::R8G8B8A8_UNORM:
+			case Format::B8G8R8A8_UNORM:
+			case Format::R16_SFLOAT:
+			case Format::R16G16B16_SFLOAT:
+			case Format::R16G16B16A16_SFLOAT:
+			case Format::R32_SFLOAT:
+			case Format::R32G32_SFLOAT:
+			case Format::R32G32B32_SFLOAT:
+			case Format::R32G32B32A32_SFLOAT:
+			case Format::BC1_RGBA_UNORM_BLOCK:
+			case Format::BC3_UNORM_BLOCK:
+			case Format::BC5_UNORM_BLOCK:
+			case Format::D32_SFLOAT:
+			case Format::D32_SFLOAT_S8_UINT:
+			case Format::D24_UNORM_S8_UINT:
+				return false;
+			default:
+				Wolf::Debug::sendError("Unhandled format");
+				return false;
+		}
+	}
 
 	enum SampleCountFlagBits : uint32_t
 	{

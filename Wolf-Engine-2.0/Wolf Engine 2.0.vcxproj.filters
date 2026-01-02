@@ -117,9 +117,6 @@
     <ClCompile Include="OrthographicCamera.cpp">
       <Filter>Camera</Filter>
     </ClCompile>
-    <ClCompile Include="ModelLoader.cpp">
-      <Filter>Model Management</Filter>
-    </ClCompile>
     <ClCompile Include="Mesh.cpp">
       <Filter>Model Management</Filter>
     </ClCompile>
@@ -141,9 +138,6 @@
     <ClCompile Include="MaterialsGPUManager.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="TextureSetLoader.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="DynamicStableArray.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -152,9 +146,6 @@
     </ClCompile>
     <ClCompile Include="..\ThirdParty\Tracy\TracyClient.cpp">
       <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="DAEImporter.cpp">
-      <Filter>Model Management</Filter>
     </ClCompile>
     <ClCompile Include="PhysicsManager.cpp">
       <Filter>Physics</Filter>
@@ -269,9 +260,6 @@
     <ClInclude Include="OrthographicCamera.h">
       <Filter>Camera</Filter>
     </ClInclude>
-    <ClInclude Include="ModelLoader.h">
-      <Filter>Model Management</Filter>
-    </ClInclude>
     <ClInclude Include="Mesh.h">
       <Filter>Model Management</Filter>
     </ClInclude>
@@ -296,9 +284,6 @@
     <ClInclude Include="MaterialsGPUManager.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="TextureSetLoader.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="DynamicStableArray.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -313,9 +298,6 @@
     </ClInclude>
     <ClInclude Include="ProfilerCommon.h">
       <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="DAEImporter.h">
-      <Filter>Model Management</Filter>
     </ClInclude>
     <ClInclude Include="PhysicShapes.h">
       <Filter>Physics</Filter>

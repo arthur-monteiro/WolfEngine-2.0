@@ -26,6 +26,7 @@ namespace Wolf
 
 		struct TextureSetInfo
 		{
+			std::array<NullableResourceNonOwner<Image>, TEXTURE_COUNT_PER_MATERIAL> images2;
 			std::array<ResourceUniqueOwner<Image>, TEXTURE_COUNT_PER_MATERIAL> images;
 			std::array<std::string, TEXTURE_COUNT_PER_MATERIAL> slicesFolders;
 
@@ -125,7 +126,10 @@ namespace Wolf
 			TextureCPUInfo(const std::string& slicesFolder, TextureType textureType, uint32_t width, uint32_t height, uint32_t virtualTextureIndirectionOffset)
 			: m_slicesFolder(slicesFolder), m_textureType(textureType), m_width(width), m_height(height), m_virtualTextureIndirectionOffset(virtualTextureIndirectionOffset)
 			{
-
+				if (m_width == 0 || m_height == 0)
+				{
+					Debug::sendCriticalError("Wrong width or height");
+				}
 			}
 		};
 		std::vector<TextureCPUInfo> m_texturesCPUInfo;
