@@ -180,6 +180,9 @@
     <ClInclude Include="Public\GPUSemaphore.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="Private\Vulkan\SemaphoreTracker.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Private\Vulkan\CommandPool.cpp">
@@ -300,6 +303,9 @@
       <Filter>API Elements</Filter>
     </ClCompile>
     <ClCompile Include="Public\GPUSemaphore.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Private\Vulkan\SemaphoreTracker.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
