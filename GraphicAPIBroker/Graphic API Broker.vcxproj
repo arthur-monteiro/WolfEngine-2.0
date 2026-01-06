@@ -51,6 +51,7 @@
     <ClInclude Include="Private\Vulkan\QueueFamilyIndices.h" />
     <ClInclude Include="Private\Vulkan\RenderPassVulkan.h" />
     <ClInclude Include="Private\Vulkan\SamplerVulkan.h" />
+    <ClInclude Include="Private\Vulkan\SemaphoreTracker.h" />
     <ClInclude Include="Private\Vulkan\SemaphoreVulkan.h" />
     <ClInclude Include="Private\Vulkan\ShaderStagesVulkan.h" />
     <ClInclude Include="Private\Vulkan\ShadingRateSymbols.h" />
@@ -103,6 +104,7 @@
     <ClCompile Include="Private\Vulkan\RayTracingSymbols.cpp" />
     <ClCompile Include="Private\Vulkan\RenderPassVulkan.cpp" />
     <ClCompile Include="Private\Vulkan\SamplerVulkan.cpp" />
+    <ClCompile Include="Private\Vulkan\SemaphoreTracker.cpp" />
     <ClCompile Include="Private\Vulkan\SemaphoreVulkan.cpp" />
     <ClCompile Include="Private\Vulkan\ShadingRateSymbols.cpp" />
     <ClCompile Include="Private\Vulkan\SwapChainVulkan.cpp" />

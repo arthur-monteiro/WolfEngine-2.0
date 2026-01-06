@@ -6,6 +6,7 @@
 
 #include "Configuration.h"
 #include "Debug.h"
+#include "GPUSemaphore.h"
 #include "InputHandler.h"
 #include "ProfilerCommon.h"
 #include "GPUSemaphore.h"
@@ -216,7 +217,7 @@ Wolf::UltraLight::UltraLightImplementation::UltraLightImplementation(uint32_t wi
 
     createOutputAndRecordCopyCommandBuffer(width, height, finalLayout);
 
-    m_copyImageSemaphore.reset(Semaphore::createSemaphore(VK_PIPELINE_STAGE_TRANSFER_BIT));
+    m_copyImageSemaphore.reset(Semaphore::createSemaphore(VK_PIPELINE_STAGE_TRANSFER_BIT, Semaphore::Type::TIMELINE));
 }
 
 void Wolf::UltraLight::UltraLightImplementation::OnFinishLoading(View* caller, uint64_t frame_id, bool is_main_frame, const String& url)
@@ -423,7 +424,7 @@ void Wolf::UltraLight::UltraLightImplementation::createOutputAndRecordCopyComman
 {
     CreateImageInfo createImageInfo;
     createImageInfo.extent = { width, height, 1 };
-    createImageInfo.aspect = VK_IMAGE_ASPECT_COLOR_BIT;
+    createImageInfo.aspectFlags = ImageAspectFlagBits::COLOR;
     createImageInfo.format = Format::R8G8B8A8_UNORM;
     createImageInfo.mipLevelCount = 1;
     createImageInfo.usage = ImageUsageFlagBits::SAMPLED | ImageUsageFlagBits::TRANSFER_DST | ImageUsageFlagBits::STORAGE;

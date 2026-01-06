@@ -19,6 +19,7 @@ LOCAL_SRC_FILES := Private/Vulkan/AccelerationStructureVulkan.cpp \
 	Private/Vulkan/RayTracingSymbols.cpp \
 	Private/Vulkan/RenderPassVulkan.cpp \
 	Private/Vulkan/SamplerVulkan.cpp \
+	Private/Vulkan/SemaphoreTracker.cpp \
 	Private/Vulkan/SemaphoreVulkan.cpp \
 	Private/Vulkan/ShadingRateSymbols.cpp \
 	Private/Vulkan/SwapChainVulkan.cpp \

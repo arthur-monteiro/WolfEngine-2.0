@@ -15,7 +15,7 @@ Wolf::LightManager::LightManager()
 	createCubeMapInfo.extent = { 4, 4, 1};
 	createCubeMapInfo.format = Format::R32G32B32A32_SFLOAT;
 	createCubeMapInfo.arrayLayerCount = 6;
-	createCubeMapInfo.aspect = VK_IMAGE_ASPECT_COLOR_BIT;
+	createCubeMapInfo.aspectFlags = ImageAspectFlagBits::COLOR;
 	createCubeMapInfo.mipLevelCount = 1;
 	createCubeMapInfo.usage = Wolf::ImageUsageFlagBits::TRANSFER_DST | Wolf::ImageUsageFlagBits::SAMPLED;
 	m_defaultSkyCubeMap.reset(Wolf::Image::createImage(createCubeMapInfo));

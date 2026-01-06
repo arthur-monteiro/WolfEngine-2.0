@@ -1,7 +1,7 @@
 #pragma once
 
-#include <array>
 #include <span>
+#include <vulkan/vulkan.h>
 
 #include "../../Public/Pipeline.h"
 
@@ -25,6 +25,13 @@ namespace Wolf
 
 	private:
 		static VkShaderModule createShaderModule(const std::vector<char>& code);
+		static VkPolygonMode wolfPolygonModeToVkPolygonMode(PolygonMode polygonMode);
+		static VkPrimitiveTopology wolfPrimitiveTopologyToVkPrimitiveTopology(PrimitiveTopology primitiveTopology);
+		static VkCullModeFlagBits wolfCullModeFlagBitsToVkCullModeFlagBits(CullModeFlagBits cullModeFlagBits);
+		static VkCullModeFlags wolfCullModeFlagsToVkCullModeFlags(CullModeFlags cullModeFlags);
+		static VkDynamicState wolfDynamicStateToVkDynamicState(DynamicState dynamicState);
+		static VkVertexInputRate wolfVertexInputRateToVkVertexInputRate(VertexInputRate vertexInputRate);
+		static VkRayTracingShaderGroupTypeKHR wolfRayTracingShaderGroupTypeToVkRayTracingShaderGroupType(RayTracingShaderGroupType rayTracingShaderGroup);
 
 		VkPipelineLayout m_pipelineLayout;
 		VkPipeline m_pipeline;

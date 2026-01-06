@@ -112,6 +112,8 @@ Wolf::Vulkan::Vulkan(GLFWwindow* glfwWindowPtr, bool useOVR)
 
 	m_descriptorPool.reset(new DescriptorPool(m_device));
 	m_depthFormat = findDepthFormat(m_physicalDevice);
+
+	m_semaphoreTracker.reset(new SemaphoreTracker);
 }
 
 void Wolf::Vulkan::waitIdle() const

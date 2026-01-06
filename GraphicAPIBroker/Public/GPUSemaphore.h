@@ -7,8 +7,14 @@ namespace Wolf
     class Semaphore
     {
     public:
-        static Semaphore* createSemaphore(uint32_t pipelineStage);
+        enum class Type { BINARY, TIMELINE };
+        static Semaphore* createSemaphore(uint32_t pipelineStage, Type type);
 
         virtual ~Semaphore() = default;
+
+        [[nodiscard]] Type getType() const { return m_type; }
+
+    protected:
+        Type m_type;
     };
 }

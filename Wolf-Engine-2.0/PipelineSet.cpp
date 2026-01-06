@@ -9,6 +9,7 @@
 #include "ProfilerCommon.h"
 #include "RenderPass.h"
 #include "ShaderList.h"
+#include "../GraphicAPIBroker/Private/Vulkan/FormatsVulkan.h"
 
 uint32_t Wolf::PipelineSet::addPipeline(const PipelineInfo& pipelineInfo, int32_t forceIdx)
 {
@@ -218,14 +219,14 @@ const Wolf::Pipeline* Wolf::PipelineSet::getOrCreatePipeline(uint32_t idx, Rende
 
 		// Rasterization
 		renderingPipelineCreateInfo.polygonMode = pipelineInfo.polygonMode;
-		renderingPipelineCreateInfo.cullMode = pipelineInfo.cullMode;
+		renderingPipelineCreateInfo.cullModeFlags = pipelineInfo.cullModeFlags;
 		renderingPipelineCreateInfo.enableConservativeRasterization = pipelineInfo.enableConservativeRasterization;
 		renderingPipelineCreateInfo.maxExtraPrimitiveOverestimationSize = pipelineInfo.maxExtraPrimitiveOverestimationSize;
 		renderingPipelineCreateInfo.depthBiasConstantFactor = pipelineInfo.depthBiasConstantFactor;
 		renderingPipelineCreateInfo.depthBiasSlopeFactor = pipelineInfo.depthBiasSlopeFactor;
 
 		// Multi-sampling
-		renderingPipelineCreateInfo.msaaSamples = pipelineInfo.msaaSamples;
+		renderingPipelineCreateInfo.msaaSamplesFlagBit = pipelineInfo.msaaSamplesFlagBit;
 
 		// Color Blend
 		renderingPipelineCreateInfo.blendModes = pipelineInfo.blendModes;

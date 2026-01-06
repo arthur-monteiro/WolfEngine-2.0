@@ -15,7 +15,7 @@ namespace Wolf
 	{
 	public:
 		ImageVulkan(const CreateImageInfo& createImageInfo);
-		ImageVulkan(VkImage image, Format format, VkImageAspectFlags aspect, VkExtent2D extent);
+		ImageVulkan(VkImage image, Format format, ImageAspectFlags aspect, VkExtent2D extent);
 		ImageVulkan(const ImageVulkan&) = delete;
 
 		~ImageVulkan() override;
@@ -38,7 +38,7 @@ namespace Wolf
 		[[nodiscard]] VkImage getImage() const { return m_image; }
 		[[nodiscard]] VkDeviceMemory getImageMemory() const { return m_imageMemory; }
 		[[nodiscard]] Format getFormat() const override { return m_imageFormat; }
-		[[nodiscard]] VkSampleCountFlagBits getSampleCount() const override { return m_sampleCount; }
+		[[nodiscard]] SampleCountFlagBits getSampleCount() const override { return m_sampleCount; }
 		[[nodiscard]] Extent3D getExtent() const override { return { m_extent.width, m_extent.height, m_extent.depth }; }
 		[[nodiscard]] VkImageLayout getImageLayout(uint32_t mipLevel = 0, uint32_t layer = 0) const override { return m_imageLayouts[layer][mipLevel]; }
 		[[nodiscard]] uint32_t getMipLevelCount() const override { return m_mipLevelCount; }
@@ -53,6 +53,8 @@ namespace Wolf
 		static VkImageUsageFlagBits wolfImageUsageFlagBitsToVkImageUsageFlagBits(ImageUsageFlagBits imageUsageFlagBits);
 		static VkImageUsageFlags wolfImageUsageFlagsToVkImageUsageFlags(ImageUsageFlags imageUsageFlags);
 		static VkBufferImageCopy wolfBufferImageCopyToVkBufferImageCopy(const BufferImageCopy& bufferImageCopy);
+		static VkImageAspectFlagBits wolfImageAspectFlagBitsToVkImageAspectFlagBits(ImageAspectFlagBits imageAspectFlagBits);
+		static VkImageAspectFlags wolfImageAspectFlagsToVkImageAspectFlags(ImageAspectFlags imageAspectFlags);
 
 	private:
 		VkImage m_image;
@@ -67,9 +69,9 @@ namespace Wolf
 
 		uint32_t m_mipLevelCount;
 		VkExtent3D m_extent;
-		VkSampleCountFlagBits m_sampleCount;
+		SampleCountFlagBits m_sampleCount;
 		uint32_t m_arrayLayerCount;
-		VkImageAspectFlags m_aspectFlags;
+		ImageAspectFlags m_aspectFlags;
 		VkMemoryPropertyFlags m_memoryProperties = 0x0;
 
 		VkDeviceSize m_allocationSize = 0;

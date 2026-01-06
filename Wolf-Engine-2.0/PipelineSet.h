@@ -11,6 +11,7 @@
 #include "DescriptorSet.h"
 #include "DescriptorSetBindInfo.h"
 #include "Enums.h"
+#include "Formats.h"
 #include "Pipeline.h"
 #include "ResourceReference.h"
 #include "ShaderParser.h"
@@ -41,9 +42,9 @@ namespace Wolf
 			std::vector<ShaderInfo> shaderInfos;
 
 			// IA
-			std::vector<VkVertexInputBindingDescription> vertexInputBindingDescriptions;
-			std::vector<VkVertexInputAttributeDescription> vertexInputAttributeDescriptions;
-			VkPrimitiveTopology topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
+			std::vector<VertexInputBindingDescription> vertexInputBindingDescriptions;
+			std::vector<VertexInputAttributeDescription> vertexInputAttributeDescriptions;
+			PrimitiveTopology topology = PrimitiveTopology::TRIANGLE_LIST;
 			bool primitiveRestartEnable = false;
 
 			// Resources layouts
@@ -58,14 +59,14 @@ namespace Wolf
 
 			// Rasterization
 			PolygonMode polygonMode = PolygonMode::FILL;
-			VkCullModeFlags cullMode = VK_CULL_MODE_BACK_BIT;
+			CullModeFlags cullModeFlags = CullModeFlagBits::BACK;
 			bool enableConservativeRasterization = false;
 			float maxExtraPrimitiveOverestimationSize = 0.75f;
 			float depthBiasConstantFactor = 0.0f;
 			float depthBiasSlopeFactor = 0.0f;
 
 			// Multi-sampling
-			VkSampleCountFlagBits msaaSamples = VK_SAMPLE_COUNT_1_BIT;
+			SampleCountFlagBits msaaSamplesFlagBit = SAMPLE_COUNT_1;
 
 			// Color Blend
 			std::vector<RenderingPipelineCreateInfo::BLEND_MODE> blendModes;
@@ -79,7 +80,7 @@ namespace Wolf
 			uint32_t patchControlPoint = 0;
 
 			// Dynamic state
-			std::vector<VkDynamicState> dynamicStates;
+			std::vector<DynamicState> dynamicStates;
 		};
 		uint32_t addPipeline(const PipelineInfo& pipelineInfo, int32_t forceIdx = -1);
 		uint32_t addEmptyPipeline(int32_t forceIdx = -1);

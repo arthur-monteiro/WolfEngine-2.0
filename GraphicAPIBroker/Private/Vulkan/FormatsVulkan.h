@@ -22,6 +22,8 @@ namespace Wolf
 				return VK_FORMAT_B8G8R8A8_UNORM;
 			case Format::R16_SFLOAT:
 				return VK_FORMAT_R16_SFLOAT;
+			case Format::R16G16_SFLOAT:
+				return VK_FORMAT_R16G16_SFLOAT;
 			case Format::R16G16B16_SFLOAT:
 				return VK_FORMAT_R16G16B16_SFLOAT;
 			case Format::R16G16B16A16_SFLOAT:
@@ -34,6 +36,8 @@ namespace Wolf
 				return VK_FORMAT_R32G32B32_SFLOAT;
 			case Format::R32G32B32A32_SFLOAT:
 				return VK_FORMAT_R32G32B32A32_SFLOAT;
+			case Format::R32G32B32A32_SINT:
+				return VK_FORMAT_R32G32B32A32_SINT;
 			case Format::BC1_RGB_SRGB_BLOCK:
 				return VK_FORMAT_BC1_RGB_SRGB_BLOCK;
 			case Format::BC1_RGBA_UNORM_BLOCK:
@@ -79,5 +83,4 @@ namespace Wolf
 				return VK_SAMPLE_COUNT_FLAG_BITS_MAX_ENUM;
 		}
 	}
-
 }

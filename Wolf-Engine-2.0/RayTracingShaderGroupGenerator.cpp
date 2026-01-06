@@ -2,14 +2,12 @@
 
 void Wolf::RayTracingShaderGroupGenerator::addRayGenShaderStage(uint32_t shaderIdx)
 {
-	VkRayTracingShaderGroupCreateInfoKHR groupInfo{};
-	groupInfo.sType = VK_STRUCTURE_TYPE_RAY_TRACING_SHADER_GROUP_CREATE_INFO_KHR;
-	groupInfo.pNext = nullptr;
-	groupInfo.type = VK_RAY_TRACING_SHADER_GROUP_TYPE_GENERAL_KHR;
+	RayTracingShaderGroupCreateInfo groupInfo{};
+	groupInfo.type = RayTracingShaderGroupType::GENERAL;
 	groupInfo.generalShader = shaderIdx;
-	groupInfo.closestHitShader = VK_SHADER_UNUSED_KHR;
-	groupInfo.anyHitShader = VK_SHADER_UNUSED_KHR;
-	groupInfo.intersectionShader = VK_SHADER_UNUSED_KHR;
+	groupInfo.closestHitShader = SHADER_UNUSED;
+	groupInfo.anyHitShader = SHADER_UNUSED;
+	groupInfo.intersectionShader = SHADER_UNUSED;
 	m_shaderGroups.emplace_back(groupInfo);
 
 	m_rayGenIndex = static_cast<uint32_t>(m_shaderGroups.size() - 1);
@@ -17,14 +15,12 @@ void Wolf::RayTracingShaderGroupGenerator::addRayGenShaderStage(uint32_t shaderI
 
 void Wolf::RayTracingShaderGroupGenerator::addMissShaderStage(uint32_t shaderIdx)
 {
-	VkRayTracingShaderGroupCreateInfoKHR groupInfo{};
-	groupInfo.sType = VK_STRUCTURE_TYPE_RAY_TRACING_SHADER_GROUP_CREATE_INFO_KHR;
-	groupInfo.pNext = nullptr;
-	groupInfo.type = VK_RAY_TRACING_SHADER_GROUP_TYPE_GENERAL_KHR;
+	RayTracingShaderGroupCreateInfo groupInfo{};
+	groupInfo.type = RayTracingShaderGroupType::GENERAL;
 	groupInfo.generalShader = shaderIdx;
-	groupInfo.closestHitShader = VK_SHADER_UNUSED_KHR;
-	groupInfo.anyHitShader = VK_SHADER_UNUSED_KHR;
-	groupInfo.intersectionShader = VK_SHADER_UNUSED_KHR;
+	groupInfo.closestHitShader = SHADER_UNUSED;
+	groupInfo.anyHitShader = SHADER_UNUSED;
+	groupInfo.intersectionShader = SHADER_UNUSED;
 	m_shaderGroups.emplace_back(groupInfo);
 
 	m_missIndices.push_back(static_cast<uint32_t>(m_shaderGroups.size()) - 1);
@@ -32,11 +28,9 @@ void Wolf::RayTracingShaderGroupGenerator::addMissShaderStage(uint32_t shaderIdx
 
 void Wolf::RayTracingShaderGroupGenerator::addHitGroup(HitGroup hitGroup)
 {
-	VkRayTracingShaderGroupCreateInfoKHR groupInfo{};
-	groupInfo.sType = VK_STRUCTURE_TYPE_RAY_TRACING_SHADER_GROUP_CREATE_INFO_KHR;
-	groupInfo.pNext = nullptr;
-	groupInfo.type = VK_RAY_TRACING_SHADER_GROUP_TYPE_TRIANGLES_HIT_GROUP_KHR;
-	groupInfo.generalShader = VK_SHADER_UNUSED_KHR;
+	RayTracingShaderGroupCreateInfo groupInfo{};
+	groupInfo.type = RayTracingShaderGroupType::TRIANGLES_HIT_GROUP;
+	groupInfo.generalShader = SHADER_UNUSED;
 	groupInfo.closestHitShader = hitGroup.closestHitShaderIdx;
 	groupInfo.anyHitShader = hitGroup.anyHitShaderIdx;
 	groupInfo.intersectionShader = hitGroup.intersectionShaderIdx;

@@ -172,13 +172,13 @@ void Wolf::SwapChainVulkan::initialize(const SwapChainCreateInfo& swapChainCreat
 	}
 	for (size_t i(0); i < imageCount; ++i)
 	{
-		m_images[i].reset(new ImageVulkan(temporarySwapChainImages[i], wolfFormat, VK_IMAGE_ASPECT_COLOR_BIT, extent));
+		m_images[i].reset(new ImageVulkan(temporarySwapChainImages[i], wolfFormat, ImageAspectFlagBits::COLOR, extent));
 	}
 
 	m_imageAvailableSemaphores.resize(imageCount);
 	for (uint32_t i = 0; i < imageCount; ++i)
 	{
-		m_imageAvailableSemaphores[i].reset(new SemaphoreVulkan(VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT));
+		m_imageAvailableSemaphores[i].reset(new SemaphoreVulkan(VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, Semaphore::Type::BINARY));
 	}
 
 	m_frameFences.resize(g_configuration->getMaxCachedFrames());
