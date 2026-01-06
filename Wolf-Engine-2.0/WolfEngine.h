@@ -142,6 +142,7 @@ namespace Wolf
 		ResourceUniqueOwner<MaterialsGPUManager> m_materialsManager;
 
 		// Saves
+		std::mutex m_savedUICommandsMutex;
 		std::vector<std::string> m_savedUICommands;
 
 		// Job executions

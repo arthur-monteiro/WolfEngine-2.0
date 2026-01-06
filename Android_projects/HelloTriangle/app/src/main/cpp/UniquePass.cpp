@@ -131,7 +131,7 @@ void UniquePass::createDepthImage(const InitializationContext& context)
     depthImageCreateInfo.extent.height = context.swapChainHeight;
     depthImageCreateInfo.extent.depth = 1;
     depthImageCreateInfo.mipLevelCount = 1;
-    depthImageCreateInfo.aspect = VK_IMAGE_ASPECT_DEPTH_BIT;
+    depthImageCreateInfo.aspectFlags = ImageAspectFlagBits::DEPTH;
     depthImageCreateInfo.usage = DEPTH_STENCIL_ATTACHMENT;
     m_depthImage.reset(Image::createImage(depthImageCreateInfo));
 }
@@ -149,11 +149,11 @@ void UniquePass::createPipeline(uint32_t width, uint32_t height)
     pipelineCreateInfo.shaderCreateInfos[1].stage = FRAGMENT;
 
     // IA
-    std::vector<VkVertexInputAttributeDescription> attributeDescriptions;
+    std::vector<Wolf::VertexInputAttributeDescription> attributeDescriptions;
     Vertex2D::getAttributeDescriptions(attributeDescriptions, 0);
     pipelineCreateInfo.vertexInputAttributeDescriptions = attributeDescriptions;
 
-    std::vector<VkVertexInputBindingDescription> bindingDescriptions(1);
+    std::vector<Wolf::VertexInputBindingDescription> bindingDescriptions(1);
     bindingDescriptions[0] = {};
     Vertex2D::getBindingDescription(bindingDescriptions[0], 0);
     pipelineCreateInfo.vertexInputBindingDescriptions = bindingDescriptions;

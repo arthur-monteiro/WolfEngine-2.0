@@ -8,7 +8,7 @@ namespace Wolf
     class SemaphoreVulkan : public Semaphore
     {
     public:
-        SemaphoreVulkan(VkPipelineStageFlags pipelineStage);
+        SemaphoreVulkan(VkPipelineStageFlags pipelineStage, Type type);
         ~SemaphoreVulkan() override;
         
         [[nodiscard]] VkSemaphore getSemaphore() const { return m_semaphore; }

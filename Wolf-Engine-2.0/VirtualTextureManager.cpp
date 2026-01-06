@@ -186,7 +186,7 @@ Wolf::VirtualTextureManager::AtlasInfo::AtlasInfo(uint32_t pageCountX, uint32_t 
 {
 	CreateImageInfo createImageInfo;
 	createImageInfo.extent = { m_pageCountX * PAGE_SIZE_WITH_BORDERS, m_pageCountY * PAGE_SIZE_WITH_BORDERS, 1 } ;
-	createImageInfo.aspect = VK_IMAGE_ASPECT_COLOR_BIT;
+	createImageInfo.aspectFlags = ImageAspectFlagBits::COLOR;
 	createImageInfo.format = m_format;
 	createImageInfo.mipLevelCount = 1;
 	createImageInfo.usage = ImageUsageFlagBits::TRANSFER_DST | ImageUsageFlagBits::SAMPLED;

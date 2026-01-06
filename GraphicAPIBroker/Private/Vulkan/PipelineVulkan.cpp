@@ -3,6 +3,7 @@
 #include <Debug.h>
 
 #include "DescriptorSetLayoutVulkan.h"
+#include "FormatsVulkan.h"
 #include "RenderPassVulkan.h"
 #include "ShaderStagesVulkan.h"
 #include "Vulkan.h"
@@ -13,28 +14,20 @@ VkCompareOp compareOpToVkType(Wolf::CompareOp in)
 	{
 		case Wolf::CompareOp::NEVER:
 			return VK_COMPARE_OP_NEVER;
-			break;
 		case Wolf::CompareOp::LESS:
 			return VK_COMPARE_OP_LESS;
-			break;
 		case Wolf::CompareOp::EQUAL:
 			return VK_COMPARE_OP_EQUAL;
-			break;
 		case Wolf::CompareOp::LESS_OR_EQUAL:
 			return VK_COMPARE_OP_LESS_OR_EQUAL;
-			break;
 		case Wolf::CompareOp::GREATER:
 			return VK_COMPARE_OP_GREATER;
-			break;
 		case Wolf::CompareOp::NOT_EQUAL:
 			return VK_COMPARE_OP_NOT_EQUAL;
-			break;
 		case Wolf::CompareOp::GREATER_OR_EQUAL:
 			return VK_COMPARE_OP_GREATER_OR_EQUAL;
-			break;
 		case Wolf::CompareOp::ALWAYS:
 			return VK_COMPARE_OP_ALWAYS;
-			break;
 	}
 
 	Wolf::Debug::sendCriticalError("Unsupported compare operation");
@@ -56,7 +49,7 @@ Wolf::PipelineVulkan::PipelineVulkan(const RenderingPipelineCreateInfo& renderin
 	pipelineLayoutInfo.pushConstantRangeCount = 0;
 
 	if (vkCreatePipelineLayout(g_vulkanInstance->getDevice(), &pipelineLayoutInfo, nullptr, &m_pipelineLayout) != VK_SUCCESS)
-		Debug::sendError("Error : create pipeline layout");
+		Debug::sendCriticalError("Failed to create pipeline layout");
 
 	/* Shaders */
 	std::vector<VkPipelineShaderStageCreateInfo> shaderStages;
@@ -82,14 +75,36 @@ Wolf::PipelineVulkan::PipelineVulkan(const RenderingPipelineCreateInfo& renderin
 	VkPipelineVertexInputStateCreateInfo vertexInputInfo = {};
 	vertexInputInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
 
-	vertexInputInfo.vertexBindingDescriptionCount = static_cast<uint32_t>(renderingPipelineCreateInfo.vertexInputBindingDescriptions.size());
-	vertexInputInfo.vertexAttributeDescriptionCount = static_cast<uint32_t>(renderingPipelineCreateInfo.vertexInputAttributeDescriptions.size());
-	vertexInputInfo.pVertexBindingDescriptions = renderingPipelineCreateInfo.vertexInputBindingDescriptions.data();
-	vertexInputInfo.pVertexAttributeDescriptions = renderingPipelineCreateInfo.vertexInputAttributeDescriptions.data();
+	std::vector<VkVertexInputBindingDescription> vkVertexInputBindingDescriptions(renderingPipelineCreateInfo.vertexInputBindingDescriptions.size());
+	for (uint32_t i = 0; i < renderingPipelineCreateInfo.vertexInputBindingDescriptions.size(); ++i)
+	{
+		VertexInputBindingDescription wolfBindingDescription = renderingPipelineCreateInfo.vertexInputBindingDescriptions[i];
+		VkVertexInputBindingDescription& vkBindingDescription = vkVertexInputBindingDescriptions[i];
+
+		vkBindingDescription.binding = wolfBindingDescription.binding;
+		vkBindingDescription.stride = wolfBindingDescription.stride;
+		vkBindingDescription.inputRate = wolfVertexInputRateToVkVertexInputRate(wolfBindingDescription.inputRate);
+	}
+	vertexInputInfo.vertexBindingDescriptionCount = static_cast<uint32_t>(vkVertexInputBindingDescriptions.size());
+	vertexInputInfo.pVertexBindingDescriptions = vkVertexInputBindingDescriptions.data();
+
+	std::vector<VkVertexInputAttributeDescription> vkVertexInputAttributeDescriptions(renderingPipelineCreateInfo.vertexInputAttributeDescriptions.size());
+	for (uint32_t i = 0; i < renderingPipelineCreateInfo.vertexInputAttributeDescriptions.size(); ++i)
+	{
+		VertexInputAttributeDescription wolfAttributeDescription = renderingPipelineCreateInfo.vertexInputAttributeDescriptions[i];
+		VkVertexInputAttributeDescription& vkAttributeDescription = vkVertexInputAttributeDescriptions[i];
+
+		vkAttributeDescription.binding = wolfAttributeDescription.binding;
+		vkAttributeDescription.format = wolfFormatToVkFormat(wolfAttributeDescription.format);
+		vkAttributeDescription.offset = wolfAttributeDescription.offset;
+		vkAttributeDescription.location = wolfAttributeDescription.location;
+	}
+	vertexInputInfo.vertexAttributeDescriptionCount = static_cast<uint32_t>(vkVertexInputAttributeDescriptions.size());
+	vertexInputInfo.pVertexAttributeDescriptions = vkVertexInputAttributeDescriptions.data();
 
 	VkPipelineInputAssemblyStateCreateInfo inputAssembly = {};
 	inputAssembly.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
-	inputAssembly.topology = renderingPipelineCreateInfo.topology;
+	inputAssembly.topology = wolfPrimitiveTopologyToVkPrimitiveTopology(renderingPipelineCreateInfo.topology);
 	inputAssembly.primitiveRestartEnable = renderingPipelineCreateInfo.primitiveRestartEnable;
 
 	/* Viewport */
@@ -117,23 +132,9 @@ Wolf::PipelineVulkan::PipelineVulkan(const RenderingPipelineCreateInfo& renderin
 	rasterizer.sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
 	rasterizer.depthClampEnable = VK_FALSE;
 	rasterizer.rasterizerDiscardEnable = VK_FALSE;
-	VkPolygonMode polygonMode;
-	switch (renderingPipelineCreateInfo.polygonMode) {
-		case PolygonMode::FILL:
-			polygonMode = VK_POLYGON_MODE_FILL;
-			break;
-		case PolygonMode::LINE:
-			polygonMode = VK_POLYGON_MODE_LINE;
-			break;
-		case PolygonMode::POINT:
-			polygonMode = VK_POLYGON_MODE_POINT;
-			break;
-		default:
-			Wolf::Debug::sendCriticalError("Unhandled polygon mode");
-	}
-	rasterizer.polygonMode = polygonMode;
+	rasterizer.polygonMode = wolfPolygonModeToVkPolygonMode(renderingPipelineCreateInfo.polygonMode);
 	rasterizer.lineWidth = 1.0f;
-	rasterizer.cullMode = renderingPipelineCreateInfo.cullMode;
+	rasterizer.cullMode = wolfCullModeFlagsToVkCullModeFlags(renderingPipelineCreateInfo.cullModeFlags);
 	rasterizer.frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE;
 	rasterizer.depthBiasEnable = renderingPipelineCreateInfo.depthBiasConstantFactor > 0.0f || renderingPipelineCreateInfo.depthBiasSlopeFactor > 0.0f;
 	rasterizer.depthBiasConstantFactor = renderingPipelineCreateInfo.depthBiasConstantFactor;
@@ -143,7 +144,7 @@ Wolf::PipelineVulkan::PipelineVulkan(const RenderingPipelineCreateInfo& renderin
 	VkPipelineMultisampleStateCreateInfo multisampling = {};
 	multisampling.sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
 	multisampling.sampleShadingEnable = VK_FALSE;
-	multisampling.rasterizationSamples = renderingPipelineCreateInfo.msaaSamples;
+	multisampling.rasterizationSamples = wolfSampleCountFlagBitsToVkSampleCountFlagBits(renderingPipelineCreateInfo.msaaSamplesFlagBit);
 
 	/* Color blend */
 	std::vector<VkPipelineColorBlendAttachmentState> colorBlendAttachments(renderingPipelineCreateInfo.blendModes.size());
@@ -238,17 +239,24 @@ Wolf::PipelineVulkan::PipelineVulkan(const RenderingPipelineCreateInfo& renderin
 	}
 
 	VkPipelineDynamicStateCreateInfo dynamicStateCreateInfo{};
+	std::vector<VkDynamicState> vkDynamicStates;
 	if (!renderingPipelineCreateInfo.dynamicStates.empty())
 	{
+		vkDynamicStates.reserve(renderingPipelineCreateInfo.dynamicStates.size());
+		for (const DynamicState& dynamicState : renderingPipelineCreateInfo.dynamicStates)
+		{
+			vkDynamicStates.push_back(wolfDynamicStateToVkDynamicState(dynamicState));
+		}
+
 		dynamicStateCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO;
-		dynamicStateCreateInfo.pDynamicStates = renderingPipelineCreateInfo.dynamicStates.data();
-		dynamicStateCreateInfo.dynamicStateCount = static_cast<uint32_t>(renderingPipelineCreateInfo.dynamicStates.size());
+		dynamicStateCreateInfo.pDynamicStates = vkDynamicStates.data();
+		dynamicStateCreateInfo.dynamicStateCount = static_cast<uint32_t>(vkDynamicStates.size());
 
 		pipelineInfo.pDynamicState = &dynamicStateCreateInfo;
 	}
 
 	if (vkCreateGraphicsPipelines(g_vulkanInstance->getDevice(), VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &m_pipeline) != VK_SUCCESS)
-		Debug::sendError("Error : graphic pipeline creation");
+		Debug::sendCriticalError("Failed to create graphic pipeline");
 
 	for (auto& shaderModule : shaderModules)
 		vkDestroyShaderModule(g_vulkanInstance->getDevice(), shaderModule, nullptr);
@@ -268,7 +276,7 @@ Wolf::PipelineVulkan::PipelineVulkan(const ShaderCreateInfo& computeShaderInfo, 
 	pipelineLayoutInfo.pushConstantRangeCount = 0;
 
 	if (vkCreatePipelineLayout(g_vulkanInstance->getDevice(), &pipelineLayoutInfo, nullptr, &m_pipelineLayout) != VK_SUCCESS)
-		Debug::sendError("Error : create pipeline layout");
+		Debug::sendCriticalError("Failed to create pipeline layout");
 
 	/* Shader */
 	const VkShaderModule computeShaderModule = createShaderModule(computeShaderInfo.shaderCode);
@@ -289,7 +297,7 @@ Wolf::PipelineVulkan::PipelineVulkan(const ShaderCreateInfo& computeShaderInfo, 
 	pipelineInfo.basePipelineHandle = VK_NULL_HANDLE;
 
 	if (vkCreateComputePipelines(g_vulkanInstance->getDevice(), VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &m_pipeline) != VK_SUCCESS)
-		Debug::sendError("Error : create compute pipeline");
+		Debug::sendCriticalError("Failed to create compute pipeline");
 
 	vkDestroyShaderModule(g_vulkanInstance->getDevice(), computeShaderModule, nullptr);
 }
@@ -311,7 +319,7 @@ Wolf::PipelineVulkan::PipelineVulkan(const RayTracingPipelineCreateInfo& rayTrac
 	pipelineLayoutCreateInfo.pPushConstantRanges = nullptr;
 
 	if (vkCreatePipelineLayout(g_vulkanInstance->getDevice(), &pipelineLayoutCreateInfo, nullptr, &m_pipelineLayout) != VK_SUCCESS)
-		Debug::sendError("Error : create pipeline layout");
+		Debug::sendCriticalError("Failed to create pipeline layout");
 
 	std::vector<VkPipelineShaderStageCreateInfo> shaderStages;
 	std::vector<VkShaderModule> shaderModules;
@@ -337,15 +345,31 @@ Wolf::PipelineVulkan::PipelineVulkan(const RayTracingPipelineCreateInfo& rayTrac
 	rayPipelineInfo.flags = 0;
 	rayPipelineInfo.stageCount = static_cast<uint32_t>(shaderStages.size());
 	rayPipelineInfo.pStages = shaderStages.data();
-	rayPipelineInfo.groupCount = static_cast<uint32_t>(rayTracingPipelineCreateInfo.shaderGroupsCreateInfos.size());
-	rayPipelineInfo.pGroups = rayTracingPipelineCreateInfo.shaderGroupsCreateInfos.data();
+
+	std::vector<VkRayTracingShaderGroupCreateInfoKHR> vkShaderGroups(rayTracingPipelineCreateInfo.shaderGroupsCreateInfos.size());
+	for (uint32_t i = 0; i < rayTracingPipelineCreateInfo.shaderGroupsCreateInfos.size(); ++i)
+	{
+		VkRayTracingShaderGroupCreateInfoKHR& vkShaderGroup = vkShaderGroups[i];
+		RayTracingShaderGroupCreateInfo wolfShaderGroup = rayTracingPipelineCreateInfo.shaderGroupsCreateInfos[i];
+
+		vkShaderGroup = {};
+		vkShaderGroup.sType = VK_STRUCTURE_TYPE_RAY_TRACING_SHADER_GROUP_CREATE_INFO_KHR;
+		vkShaderGroup.type = wolfRayTracingShaderGroupTypeToVkRayTracingShaderGroupType(wolfShaderGroup.type);
+		vkShaderGroup.anyHitShader = wolfShaderGroup.anyHitShader;
+		vkShaderGroup.closestHitShader = wolfShaderGroup.closestHitShader;
+		vkShaderGroup.generalShader = wolfShaderGroup.generalShader;
+		vkShaderGroup.intersectionShader = wolfShaderGroup.intersectionShader;
+	}
+
+	rayPipelineInfo.groupCount = static_cast<uint32_t>(vkShaderGroups.size());
+	rayPipelineInfo.pGroups = vkShaderGroups.data();
 	rayPipelineInfo.maxPipelineRayRecursionDepth = 2;
 	rayPipelineInfo.layout = m_pipelineLayout;
 	rayPipelineInfo.basePipelineHandle = VK_NULL_HANDLE;
 	rayPipelineInfo.basePipelineIndex = 0;
 
 	if (vkCreateRayTracingPipelinesKHR(g_vulkanInstance->getDevice(), VK_NULL_HANDLE, VK_NULL_HANDLE, 1, &rayPipelineInfo, nullptr, &m_pipeline) != VK_SUCCESS)
-		Debug::sendError("Error: create ray tracing pipeline");
+		Debug::sendCriticalError("Failed to create ray tracing pipeline");
 
 	for (const auto& shaderModule : shaderModules)
 		vkDestroyShaderModule(g_vulkanInstance->getDevice(), shaderModule, nullptr);
@@ -387,4 +411,108 @@ VkShaderModule Wolf::PipelineVulkan::createShaderModule(const std::vector<char>&
 		Debug::sendError("Error : create shader module");
 
 	return shaderModule;
+}
+
+VkPolygonMode Wolf::PipelineVulkan::wolfPolygonModeToVkPolygonMode(PolygonMode polygonMode)
+{
+	switch (polygonMode)
+	{
+		case PolygonMode::FILL:
+			return VK_POLYGON_MODE_FILL;
+		case PolygonMode::LINE:
+			return VK_POLYGON_MODE_LINE;
+		case PolygonMode::POINT:
+			return VK_POLYGON_MODE_POINT;
+	}
+
+	Debug::sendError("Unhandled polygon mode");
+	return VK_POLYGON_MODE_MAX_ENUM;
+}
+
+VkPrimitiveTopology Wolf::PipelineVulkan::wolfPrimitiveTopologyToVkPrimitiveTopology(PrimitiveTopology primitiveTopology)
+{
+	switch (primitiveTopology)
+	{
+		case PrimitiveTopology::TRIANGLE_LIST:
+			return VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
+		case PrimitiveTopology::PATCH_LIST:
+			return VK_PRIMITIVE_TOPOLOGY_PATCH_LIST;
+		case PrimitiveTopology::LINE_LIST:
+			return VK_PRIMITIVE_TOPOLOGY_LINE_LIST;
+	}
+
+	Debug::sendError("Unhandled primitive topology");
+	return VK_PRIMITIVE_TOPOLOGY_MAX_ENUM;
+}
+
+VkCullModeFlagBits Wolf::PipelineVulkan::wolfCullModeFlagBitsToVkCullModeFlagBits(CullModeFlagBits cullModeFlagBits)
+{
+	switch (cullModeFlagBits)
+	{
+		case NONE:
+			return VK_CULL_MODE_NONE;
+		case BACK:
+			return VK_CULL_MODE_BACK_BIT;
+		case FRONT:
+			return VK_CULL_MODE_FRONT_BIT;
+		case CULL_MODE_FLAG_BITS_MAX:
+			return VK_CULL_MODE_FLAG_BITS_MAX_ENUM;
+	}
+
+	Debug::sendError("Unhandled cull mode");
+	return VK_CULL_MODE_FLAG_BITS_MAX_ENUM;
+}
+
+VkCullModeFlags Wolf::PipelineVulkan::wolfCullModeFlagsToVkCullModeFlags(CullModeFlags cullModeFlags)
+{
+	VkCullModeFlags vkCullModeFlags = 0;
+
+#define ADD_FLAG_IF_PRESENT(flag) if (cullModeFlags & (flag)) vkCullModeFlags |= wolfCullModeFlagBitsToVkCullModeFlagBits(flag)
+
+	for (uint32_t flag = 1; flag < CULL_MODE_FLAG_BITS_MAX; flag <<= 1)
+		ADD_FLAG_IF_PRESENT(static_cast<CullModeFlagBits>(flag));
+
+#undef ADD_FLAG_IF_PRESENT
+
+	return vkCullModeFlags;
+}
+
+VkDynamicState Wolf::PipelineVulkan::wolfDynamicStateToVkDynamicState(DynamicState dynamicState)
+{
+	switch (dynamicState)
+	{
+		case DynamicState::VIEWPORT:
+			return VK_DYNAMIC_STATE_VIEWPORT;
+	}
+
+	Debug::sendError("Unhandled dynamic state");
+	return VK_DYNAMIC_STATE_MAX_ENUM;
+}
+
+VkVertexInputRate Wolf::PipelineVulkan::wolfVertexInputRateToVkVertexInputRate(VertexInputRate vertexInputRate)
+{
+	switch (vertexInputRate)
+	{
+		case VertexInputRate::VERTEX:
+			return VK_VERTEX_INPUT_RATE_VERTEX;
+		case VertexInputRate::INSTANCE:
+			return VK_VERTEX_INPUT_RATE_INSTANCE;
+	}
+
+	Debug::sendError("Unhandled vertex input rate");
+	return VK_VERTEX_INPUT_RATE_MAX_ENUM;
+}
+
+VkRayTracingShaderGroupTypeKHR Wolf::PipelineVulkan::wolfRayTracingShaderGroupTypeToVkRayTracingShaderGroupType(RayTracingShaderGroupType rayTracingShaderGroup)
+{
+	switch (rayTracingShaderGroup)
+	{
+		case RayTracingShaderGroupType::GENERAL:
+			return VK_RAY_TRACING_SHADER_GROUP_TYPE_GENERAL_KHR;
+		case RayTracingShaderGroupType::TRIANGLES_HIT_GROUP:
+			return VK_RAY_TRACING_SHADER_GROUP_TYPE_TRIANGLES_HIT_GROUP_KHR;
+	}
+
+	Debug::sendError("Unhandled ray tracing group type");
+	return VK_RAY_TRACING_SHADER_GROUP_TYPE_MAX_ENUM_KHR;
 }

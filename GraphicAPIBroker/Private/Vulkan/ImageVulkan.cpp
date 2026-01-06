@@ -17,7 +17,7 @@ Wolf::ImageVulkan::ImageVulkan(const CreateImageInfo& createImageInfo)
 	m_imageFormat = createImageInfo.format;
 	m_vkImageFormat = wolfFormatToVkFormat(createImageInfo.format);
 	m_extent = { createImageInfo.extent.width, createImageInfo.extent.height, createImageInfo.extent.depth };
-	m_sampleCount = createImageInfo.sampleCount;
+	m_sampleCount = createImageInfo.sampleCountFlagBit;
 	if (createImageInfo.mipLevelCount == UINT32_MAX)
 	{
 		int32_t mipCount = static_cast<int32_t>(std::floor(std::log2(std::max(m_extent.width, m_extent.height)))) - 1; // remove 2 mip levels as min size must be 4x4
@@ -31,7 +31,7 @@ Wolf::ImageVulkan::ImageVulkan(const CreateImageInfo& createImageInfo)
 	else
 		m_mipLevelCount = createImageInfo.mipLevelCount;
 	m_arrayLayerCount = createImageInfo.arrayLayerCount;
-	m_aspectFlags = createImageInfo.aspect;
+	m_aspectFlags = createImageInfo.aspectFlags;
 	resetAllLayouts();
 
 	VkImageCreateInfo imageInfo = {};
@@ -47,7 +47,7 @@ Wolf::ImageVulkan::ImageVulkan(const CreateImageInfo& createImageInfo)
 	imageInfo.tiling = createImageInfo.imageTiling;
 	imageInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
 	imageInfo.usage = wolfImageUsageFlagsToVkImageUsageFlags(createImageInfo.usage);
-	imageInfo.samples = m_sampleCount;
+	imageInfo.samples = wolfSampleCountFlagBitsToVkSampleCountFlagBits(m_sampleCount);
 	imageInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
 	imageInfo.flags = m_arrayLayerCount == 6 ? VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT : 0;
 
@@ -87,7 +87,7 @@ Wolf::ImageVulkan::ImageVulkan(const CreateImageInfo& createImageInfo)
 	GPUMemoryDebug::registerNewResource(GPUMemoryDebug::TYPE::TEXTURE, 0, totalRequestedSize, memRequirements.size);
 }
 
-Wolf::ImageVulkan::ImageVulkan(VkImage image, Format format, VkImageAspectFlags aspect, VkExtent2D extent)
+Wolf::ImageVulkan::ImageVulkan(VkImage image, Format format, ImageAspectFlags aspect, VkExtent2D extent)
 {
 	m_image = image;
 	m_imageMemory = VK_NULL_HANDLE;
@@ -97,7 +97,7 @@ Wolf::ImageVulkan::ImageVulkan(VkImage image, Format format, VkImageAspectFlags 
 	m_mipLevelCount = 1;
 	m_aspectFlags = aspect;
 	m_arrayLayerCount = 1;
-	m_sampleCount = VK_SAMPLE_COUNT_1_BIT;
+	m_sampleCount = SAMPLE_COUNT_1;
 
 	resetAllLayouts();
 
@@ -222,7 +222,7 @@ void Wolf::ImageVulkan::unmap() const
 void Wolf::ImageVulkan::getResourceLayout(VkSubresourceLayout& output) const
 {
 	VkImageSubresource subresource{};
-	subresource.aspectMask = m_aspectFlags;
+	subresource.aspectMask = wolfImageAspectFlagsToVkImageAspectFlags(m_aspectFlags);
 	subresource.mipLevel = 0;
 	subresource.arrayLayer = 0;
 	vkGetImageSubresourceLayout(g_vulkanInstance->getDevice(), m_image, &subresource, &output);
@@ -230,7 +230,7 @@ void Wolf::ImageVulkan::getResourceLayout(VkSubresourceLayout& output) const
 
 void Wolf::ImageVulkan::exportToBuffer(std::vector<uint8_t>& outBuffer) const
 {
-	if (m_sampleCount != VK_SAMPLE_COUNT_1_BIT)
+	if (m_sampleCount != SAMPLE_COUNT_1)
 	{
 		Debug::sendError("Can't export multi-sampled image");
 		return;
@@ -255,8 +255,8 @@ void Wolf::ImageVulkan::exportToBuffer(std::vector<uint8_t>& outBuffer) const
 	stagingCreateImageInfo.extent = { m_extent.width, m_extent.height, m_extent.depth };
 	stagingCreateImageInfo.format = m_imageFormat;
 	stagingCreateImageInfo.arrayLayerCount = m_arrayLayerCount;
-	stagingCreateImageInfo.aspect = m_aspectFlags;
-	stagingCreateImageInfo.sampleCount = m_sampleCount;
+	stagingCreateImageInfo.aspectFlags = m_aspectFlags;
+	stagingCreateImageInfo.sampleCountFlagBit = m_sampleCount;
 	stagingCreateImageInfo.usage = TRANSFER_DST;
 	stagingCreateImageInfo.memoryProperties = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
 	stagingCreateImageInfo.imageTiling = VK_IMAGE_TILING_LINEAR;
@@ -317,7 +317,7 @@ void Wolf::ImageVulkan::createImageView(VkFormat format)
 	viewInfo.image = m_image;
 	viewInfo.viewType = m_arrayLayerCount == 6 ? VK_IMAGE_VIEW_TYPE_CUBE : (m_extent.depth != 1 ? VK_IMAGE_VIEW_TYPE_3D : VK_IMAGE_VIEW_TYPE_2D);
 	viewInfo.format = format;
-	viewInfo.subresourceRange.aspectMask = m_aspectFlags;
+	viewInfo.subresourceRange.aspectMask = wolfImageAspectFlagsToVkImageAspectFlags(m_aspectFlags);
 	viewInfo.subresourceRange.baseMipLevel = 0;
 	viewInfo.subresourceRange.levelCount = m_mipLevelCount;
 	viewInfo.subresourceRange.baseArrayLayer = 0;
@@ -352,6 +352,7 @@ float Wolf::ImageVulkan::computeBPP() const
 		case VK_FORMAT_R32_SFLOAT:
 		case VK_FORMAT_R32_UINT:
 		case VK_FORMAT_R32_SINT:
+		case VK_FORMAT_R16G16_SFLOAT:
 			return 4.0f;
 			break;
 		case VK_FORMAT_R16_SFLOAT:
@@ -448,6 +449,36 @@ VkBufferImageCopy Wolf::ImageVulkan::wolfBufferImageCopyToVkBufferImageCopy(cons
 	vkBufferImageCopy.imageExtent.height = bufferImageCopy.imageExtent.height;
 	vkBufferImageCopy.imageExtent.depth = bufferImageCopy.imageExtent.depth;
 	return vkBufferImageCopy;
+}
+
+VkImageAspectFlagBits Wolf::ImageVulkan::wolfImageAspectFlagBitsToVkImageAspectFlagBits(ImageAspectFlagBits imageAspectFlagBits)
+{
+	switch (imageAspectFlagBits)
+	{
+		case ImageAspectFlagBits::COLOR:
+			return VK_IMAGE_ASPECT_COLOR_BIT;
+		case ImageAspectFlagBits::DEPTH:
+			return VK_IMAGE_ASPECT_DEPTH_BIT;
+		case ImageAspectFlagBits::STENCIL:
+			return VK_IMAGE_ASPECT_STENCIL_BIT;
+		default:
+			Debug::sendError("Unhandled image usage");
+			return VK_IMAGE_ASPECT_FLAG_BITS_MAX_ENUM;
+	}
+}
+
+VkImageAspectFlags Wolf::ImageVulkan::wolfImageAspectFlagsToVkImageAspectFlags(ImageAspectFlags imageAspectFlags)
+{
+	VkImageAspectFlags vkImageAspectFlags = 0;
+
+#define ADD_FLAG_IF_PRESENT(flag) if (imageAspectFlags & (flag)) vkImageAspectFlags |= wolfImageAspectFlagBitsToVkImageAspectFlagBits(flag)
+
+	for (uint32_t flag = 1; flag < IMAGE_ASPECT_FLAG_BITS_MAX; flag <<= 1)
+		ADD_FLAG_IF_PRESENT(static_cast<ImageAspectFlagBits>(flag));
+
+#undef ADD_FLAG_IF_PRESENT
+
+	return vkImageAspectFlags;
 }
 
 Wolf::ImageView Wolf::ImageVulkan::getImageView(Format format)

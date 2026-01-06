@@ -10,7 +10,7 @@ Wolf::GraphicCameraInterface::GraphicCameraInterface()
 		{
 			descriptorSetLayoutGenerator.reset(new DescriptorSetLayoutGenerator);
 			descriptorSetLayoutGenerator->addUniformBuffer(
-				ShaderStageFlagBits::VERTEX | ShaderStageFlagBits::FRAGMENT | ShaderStageFlagBits::COMPUTE | ShaderStageFlagBits::RAYGEN | ShaderStageFlagBits::TESSELLATION_EVALUATION | ShaderStageFlagBits::GEOMETRY,
+				ShaderStageFlagBits::VERTEX | ShaderStageFlagBits::FRAGMENT | ShaderStageFlagBits::COMPUTE | ShaderStageFlagBits::RAYGEN | ShaderStageFlagBits::TESSELLATION_CONTROL | ShaderStageFlagBits::TESSELLATION_EVALUATION | ShaderStageFlagBits::GEOMETRY,
 				0); // matrices
 		}));
 

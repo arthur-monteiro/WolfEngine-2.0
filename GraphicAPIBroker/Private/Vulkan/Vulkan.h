@@ -16,6 +16,8 @@
 #include "CommandPool.h"
 #include "DescriptorPool.h"
 #include "QueueFamilyIndices.h"
+#include "ResourceUniqueOwner.h"
+#include "SemaphoreTracker.h"
 
 namespace Wolf
 {
@@ -27,6 +29,7 @@ namespace Wolf
 #else
 		Vulkan(struct ANativeWindow* window);
 #endif
+		~Vulkan() override = default;
 
 		void waitIdle() const override;
 
@@ -118,6 +121,9 @@ namespace Wolf
 
 		/* Descriptor Pools */
 		std::unique_ptr<DescriptorPool> m_descriptorPool;
+
+		/* Debug */
+		ResourceUniqueOwner<SemaphoreTracker> m_semaphoreTracker;
 	};
 
 	extern const Vulkan* g_vulkanInstance;

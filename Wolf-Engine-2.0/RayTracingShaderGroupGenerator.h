@@ -1,8 +1,9 @@
 #pragma once
 
-#include <cstdint>
 #include <vector>
 #include <vulkan/vulkan_core.h>
+
+#include "RayTracingShaderGroupCreateInfo.h"
 
 namespace Wolf
 {
@@ -20,11 +21,11 @@ namespace Wolf
 		void addMissShaderStage(uint32_t shaderIdx);
 		void addHitGroup(HitGroup hitGroup);
 
-		std::vector<VkRayTracingShaderGroupCreateInfoKHR>& getShaderGroups() { return m_shaderGroups; }
+		std::vector<RayTracingShaderGroupCreateInfo>& getShaderGroups() { return m_shaderGroups; }
 
 	private:
 		// Shader groups
-		std::vector<VkRayTracingShaderGroupCreateInfoKHR> m_shaderGroups;
+		std::vector<RayTracingShaderGroupCreateInfo> m_shaderGroups;
 
 		// Indices
 		uint32_t m_rayGenIndex;

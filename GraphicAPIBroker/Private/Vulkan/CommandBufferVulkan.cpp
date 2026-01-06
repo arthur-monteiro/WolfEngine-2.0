@@ -44,7 +44,7 @@ Wolf::CommandBufferVulkan::CommandBufferVulkan(QueueType queueType, bool isTrans
 	allocInfo.commandBufferCount = static_cast<uint32_t>(m_commandBuffers.size());
 
 	if (vkAllocateCommandBuffers(g_vulkanInstance->getDevice(), &allocInfo, m_commandBuffers.data()) != VK_SUCCESS)
-		Debug::sendError("Error : command buffer allocation");
+		Debug::sendCriticalError("Command buffer allocation failed");
 
 	m_usedCommandPool = commandPool;
 	m_queueType = queueType;
@@ -69,7 +69,7 @@ void Wolf::CommandBufferVulkan::beginCommandBuffer() const
 void Wolf::CommandBufferVulkan::endCommandBuffer() const
 {
 	if (vkEndCommandBuffer(getCommandBuffer()) != VK_SUCCESS)
-		Debug::sendError("Error : end command buffer");
+		Debug::sendCriticalError("End command buffer failed");
 }
 
 void Wolf::CommandBufferVulkan::submit(const std::vector<const Semaphore*>& waitSemaphores, const std::vector<const Semaphore*>& signalSemaphores, const ResourceReference<const Fence>& fence) const
@@ -79,6 +79,29 @@ void Wolf::CommandBufferVulkan::submit(const std::vector<const Semaphore*>& wait
 		queue = g_vulkanInstance->getGraphicsQueue();
 	else
 		queue = g_vulkanInstance->getComputeQueue();
+
+	uint64_t frameNumber = g_runtimeContext->getCurrentCPUFrameNumber() + 1;
+
+	VkTimelineSemaphoreSubmitInfo timelineInfo;
+	timelineInfo.sType = VK_STRUCTURE_TYPE_TIMELINE_SEMAPHORE_SUBMIT_INFO;
+	timelineInfo.pNext = nullptr;
+
+	std::vector<uint64_t> waitSemaphoreValues;
+	for (const Semaphore* semaphore : waitSemaphores)
+	{
+		waitSemaphoreValues.push_back(semaphore->getType() == Semaphore::Type::TIMELINE ? frameNumber : 0);
+	}
+
+	std::vector<uint64_t> signalSemaphoreValues;
+	for (const Semaphore* semaphore : signalSemaphores)
+	{
+		signalSemaphoreValues.push_back(semaphore->getType() == Semaphore::Type::TIMELINE ? frameNumber : 0);
+	}
+
+	timelineInfo.waitSemaphoreValueCount = waitSemaphoreValues.size();
+	timelineInfo.pWaitSemaphoreValues = waitSemaphoreValues.data();
+	timelineInfo.signalSemaphoreValueCount = signalSemaphoreValues.size();
+	timelineInfo.pSignalSemaphoreValues = signalSemaphoreValues.data();
 
 	VkSubmitInfo submitInfo = {};
 	submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
@@ -97,19 +120,43 @@ void Wolf::CommandBufferVulkan::submit(const std::vector<const Semaphore*>& wait
 	std::vector<VkPipelineStageFlags> stages;
 	for (const Semaphore* waitSemaphore : waitSemaphores)
 	{
-		if (const SemaphoreVulkan* semaphoreVulkan = static_cast<const SemaphoreVulkan*>(waitSemaphore))
-		{
-			semaphores.push_back(semaphoreVulkan->getSemaphore());
-			stages.push_back(semaphoreVulkan->getPipelineStage());
-		}
+		const SemaphoreVulkan* semaphoreVulkan = static_cast<const SemaphoreVulkan*>(waitSemaphore);
+		semaphores.push_back(semaphoreVulkan->getSemaphore());
+		stages.push_back(semaphoreVulkan->getPipelineStage());
 	}
 	submitInfo.waitSemaphoreCount = static_cast<uint32_t>(semaphores.size());
 	submitInfo.pWaitSemaphores = semaphores.data();
 	submitInfo.pWaitDstStageMask = stages.data();
+	submitInfo.pNext = &timelineInfo;
+
+	// Sanity checks
+	for (size_t i = 0; i < waitSemaphores.size(); ++i)
+	{
+		if (waitSemaphores[i]->getType() == Semaphore::Type::TIMELINE)
+		{
+			uint64_t waitValue = waitSemaphoreValues[i];
+
+			if (!g_semaphoreTracker->isValidWait(waitSemaphores[i], waitValue))
+			{
+				Debug::sendCriticalError("Deadlock detected! Waiting for timeline value " + std::to_string(waitValue) + " but it was never signaled.");
+			}
+		}
+	}
 
 	if (const VkResult result = vkQueueSubmit(queue, 1, &submitInfo, !fence.isNull() ? fence.operator-><const FenceVulkan>()->getFence() : VK_NULL_HANDLE); result != VK_SUCCESS)
 	{
-		Debug::sendCriticalError("Error : submit to graphics queue");
+		Debug::sendCriticalError("Submit to queue failed");
+	}
+	else // success
+	{
+		for (size_t i = 0; i < signalSemaphores.size(); ++i)
+		{
+			if (signalSemaphores[i]->getType() == Semaphore::Type::TIMELINE)
+			{
+				uint64_t signalValue = signalSemaphoreValues[i];
+				g_semaphoreTracker->trackSignal(signalSemaphores[i], signalValue);
+			}
+		}
 	}
 }
 

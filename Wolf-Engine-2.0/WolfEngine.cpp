@@ -1,8 +1,5 @@
 #include "WolfEngine.h"
 
-#include <limits>
-
-#include "SwapChain.h"
 #include "SwapChain.h"
 
 #ifdef __ANDROID__
@@ -126,7 +123,7 @@ Wolf::WolfEngine::WolfEngine(const WolfInstanceCreateInfo& createInfo) : m_globa
 
 			CreateImageInfo createImageInfo;
 			createImageInfo.extent = { imageFileLoader.getWidth(), imageFileLoader.getHeight(), 1 };
-			createImageInfo.aspect = VK_IMAGE_ASPECT_COLOR_BIT;
+			createImageInfo.aspectFlags = ImageAspectFlagBits::COLOR;
 			createImageInfo.format = Format::R8G8B8A8_SRGB;
 			createImageInfo.mipLevelCount = mipmapGenerator.getMipLevelCount();
 			createImageInfo.usage = ImageUsageFlagBits::TRANSFER_DST | ImageUsageFlagBits::SAMPLED;
@@ -254,6 +251,12 @@ void Wolf::WolfEngine::frame(const std::span<ResourceNonOwner<CommandRecordBase>
 {
 	PROFILE_FUNCTION
 
+	// Sanity checks
+	if (frameEndedSemaphore->getType() != Semaphore::Type::BINARY)
+	{
+		Debug::sendCriticalError("Frame ended semaphore must be a binary semaphore");
+	}
+
 	uint32_t currentFrame = g_runtimeContext->getCurrentCPUFrameNumber();
 
 	if (passes.empty())
@@ -380,7 +383,9 @@ void Wolf::WolfEngine::evaluateUserInterfaceScript(const std::string& script)
 {
 	if (m_configuration->getUICommands())
 	{
+		m_savedUICommandsMutex.lock();
 		m_savedUICommands.push_back(script);
+		m_savedUICommandsMutex.unlock();
 	}
 	m_ultraLight->requestScriptEvaluation(script);
 }

@@ -28,7 +28,7 @@ void UniquePass::initializeResources(const InitializationContext& context)
 
 	CreateImageInfo shadingRateImageInfo{};
 	shadingRateImageInfo.extent = { vrsImageExtent.width, vrsImageExtent.height, 1 };
-	shadingRateImageInfo.aspect = VK_IMAGE_ASPECT_COLOR_BIT;
+	shadingRateImageInfo.aspectFlags = Wolf::ImageAspectFlagBits::COLOR;
 	shadingRateImageInfo.usage = Wolf::ImageUsageFlagBits::FRAGMENT_SHADING_RATE_ATTACHMENT | Wolf::ImageUsageFlagBits::TRANSFER_DST;
 	shadingRateImageInfo.format = Format::R8_UINT;
 	shadingRateImageInfo.mipLevelCount = 1;
@@ -80,7 +80,7 @@ void UniquePass::initializeResources(const InitializationContext& context)
 	ImageFileLoader imageFileLoader("Images/Vincent_Van_Gogh_-_Wheatfield_with_Crows.jpg");
 	CreateImageInfo createImageInfo;
 	createImageInfo.extent = { (uint32_t)imageFileLoader.getWidth(), (uint32_t)imageFileLoader.getHeight(), 1 };
-	createImageInfo.aspect = VK_IMAGE_ASPECT_COLOR_BIT;
+	createImageInfo.aspectFlags = Wolf::ImageAspectFlagBits::COLOR;
 	createImageInfo.format = Format::R8G8B8A8_UNORM;
 	createImageInfo.mipLevelCount = 1;
 	createImageInfo.usage = Wolf::ImageUsageFlagBits::TRANSFER_DST | Wolf::ImageUsageFlagBits::SAMPLED;
@@ -191,7 +191,7 @@ void UniquePass::createDepthImage(const InitializationContext& context)
 	depthImageCreateInfo.extent.height = context.swapChainHeight;
 	depthImageCreateInfo.extent.depth = 1;
 	depthImageCreateInfo.mipLevelCount = 1;
-	depthImageCreateInfo.aspect = VK_IMAGE_ASPECT_DEPTH_BIT;
+	depthImageCreateInfo.aspectFlags = Wolf::ImageAspectFlagBits::DEPTH;
 	depthImageCreateInfo.usage = Wolf::ImageUsageFlagBits::DEPTH_STENCIL_ATTACHMENT;
 	m_depthImage.reset(Image::createImage(depthImageCreateInfo));
 }
@@ -209,11 +209,11 @@ void UniquePass::createPipeline(uint32_t width, uint32_t height)
 	pipelineCreateInfo.shaderCreateInfos[1].stage = FRAGMENT;
 
 	// IA
-	std::vector<VkVertexInputAttributeDescription> attributeDescriptions;
+	std::vector<Wolf::VertexInputAttributeDescription> attributeDescriptions;
 	Vertex2DTextured::getAttributeDescriptions(attributeDescriptions, 0);
 	pipelineCreateInfo.vertexInputAttributeDescriptions = attributeDescriptions;
 
-	std::vector<VkVertexInputBindingDescription> bindingDescriptions(1);
+	std::vector<Wolf::VertexInputBindingDescription> bindingDescriptions(1);
 	bindingDescriptions[0] = {};
 	Vertex2DTextured::getBindingDescription(bindingDescriptions[0], 0);
 	pipelineCreateInfo.vertexInputBindingDescriptions = bindingDescriptions;

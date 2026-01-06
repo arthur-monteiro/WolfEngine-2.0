@@ -5,13 +5,13 @@
 #include <string>
 #include <vector>
 
-// TEMP
-#include <vulkan/vulkan.h>
-
 #include "Enums.h"
 #include "Extents.h"
+#include "Formats.h"
+#include "RayTracingShaderGroupCreateInfo.h"
 #include "ResourceReference.h"
 #include "ShaderStages.h"
+#include "VertexInputs.h"
 
 namespace Wolf
 {
@@ -20,6 +20,16 @@ namespace Wolf
 	static const std::string defaultEntryPointName = "main";
 
 	enum class PolygonMode { FILL, LINE, POINT };
+	enum class PrimitiveTopology { TRIANGLE_LIST, PATCH_LIST, LINE_LIST };
+	enum CullModeFlagBits : uint32_t
+	{
+		NONE = 1 << 0,
+		BACK = 1 << 1,
+		FRONT = 1 << 2,
+		CULL_MODE_FLAG_BITS_MAX = 1 << 3
+	};
+	using CullModeFlags = uint32_t;
+	enum class DynamicState { VIEWPORT };
 
 	struct ShaderCreateInfo
 	{
@@ -36,9 +46,9 @@ namespace Wolf
 		std::vector<ShaderCreateInfo> shaderCreateInfos;
 
 		// IA
-		std::vector<VkVertexInputBindingDescription> vertexInputBindingDescriptions;
-		std::vector<VkVertexInputAttributeDescription> vertexInputAttributeDescriptions;
-		VkPrimitiveTopology topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
+		std::vector<VertexInputBindingDescription> vertexInputBindingDescriptions;
+		std::vector<VertexInputAttributeDescription> vertexInputAttributeDescriptions;
+		PrimitiveTopology topology = PrimitiveTopology::TRIANGLE_LIST;
 		bool primitiveRestartEnable = false;
 
 		// Resources
@@ -51,14 +61,14 @@ namespace Wolf
 
 		// Rasterization
 		PolygonMode polygonMode = PolygonMode::FILL;
-		VkCullModeFlags cullMode = VK_CULL_MODE_BACK_BIT;
+		CullModeFlags cullModeFlags = CullModeFlagBits::BACK;
 		bool enableConservativeRasterization = false;
 		float maxExtraPrimitiveOverestimationSize = 0.75f;
 		float depthBiasConstantFactor = 0.0f;
 		float depthBiasSlopeFactor = 0.0f;
 
 		// Multi-sampling
-		VkSampleCountFlagBits msaaSamples = VK_SAMPLE_COUNT_1_BIT;
+		SampleCountFlagBits msaaSamplesFlagBit = SAMPLE_COUNT_1;
 
 		// Color Blend
 		enum class BLEND_MODE { OPAQUE, TRANS_ADD, TRANS_ALPHA };
@@ -73,13 +83,13 @@ namespace Wolf
 		uint32_t patchControlPoint = 0;
 
 		// Dynamic state
-		std::vector<VkDynamicState> dynamicStates;
+		std::vector<DynamicState> dynamicStates;
 	};
 
 	struct RayTracingPipelineCreateInfo
 	{
 		std::span<ShaderCreateInfo> shaderCreateInfos;
-		std::span<VkRayTracingShaderGroupCreateInfoKHR> shaderGroupsCreateInfos;
+		std::span<RayTracingShaderGroupCreateInfo> shaderGroupsCreateInfos;
 	};
 
 	class Pipeline

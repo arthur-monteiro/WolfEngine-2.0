@@ -58,7 +58,7 @@ void Wolf::DepthPassBase::createDepthImage(const InitializationContext& context)
 	depthImageCreateInfo.extent.height = getHeight();
 	depthImageCreateInfo.extent.depth = 1;
 	depthImageCreateInfo.mipLevelCount = 1;
-	depthImageCreateInfo.aspect = VK_IMAGE_ASPECT_DEPTH_BIT;
+	depthImageCreateInfo.aspectFlags = ImageAspectFlagBits::DEPTH;
 	depthImageCreateInfo.usage = ImageUsageFlagBits::DEPTH_STENCIL_ATTACHMENT | getAdditionalUsages();
 	m_depthImage.reset(Image::createImage(depthImageCreateInfo));
 }

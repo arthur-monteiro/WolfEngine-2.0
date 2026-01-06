@@ -29,13 +29,22 @@ namespace Wolf
 	};
 	using ImageUsageFlags = uint32_t;
 
+	enum ImageAspectFlagBits : uint32_t
+	{
+		COLOR = 1 << 0,
+		DEPTH = 1 << 1,
+		STENCIL = 1 << 2,
+		IMAGE_ASPECT_FLAG_BITS_MAX = 1 << 3
+	};
+	using ImageAspectFlags = uint32_t;
+
 	struct CreateImageInfo
 	{
 		Extent3D extent = { 0, 0, 0 };
 		ImageUsageFlags usage = ImageUsageFlagBits::SAMPLED;
 		Format format = Format::UNDEFINED;
-		VkSampleCountFlagBits sampleCount = VK_SAMPLE_COUNT_1_BIT;
-		VkImageAspectFlags aspect = VK_IMAGE_ASPECT_COLOR_BIT;
+		SampleCountFlagBits sampleCountFlagBit = SAMPLE_COUNT_1;
+		ImageAspectFlags aspectFlags = ImageAspectFlagBits::COLOR;
 #define MAX_MIP_COUNT UINT32_MAX
 		uint32_t mipLevelCount = MAX_MIP_COUNT;
 		uint32_t arrayLayerCount = 1;
@@ -98,7 +107,7 @@ namespace Wolf
 		virtual ImageView getDefaultImageView() = 0;
 
 		[[nodiscard]] virtual Format getFormat() const = 0;
-		[[nodiscard]] virtual VkSampleCountFlagBits getSampleCount() const = 0;
+		[[nodiscard]] virtual SampleCountFlagBits getSampleCount() const = 0;
 		[[nodiscard]] virtual Extent3D getExtent() const = 0;
 		[[nodiscard]] virtual VkImageLayout getImageLayout(uint32_t mipLevel = 0, uint32_t layer = 0) const = 0;
 		[[nodiscard]] virtual uint32_t getMipLevelCount() const = 0;
