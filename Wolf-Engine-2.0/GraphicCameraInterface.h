@@ -54,6 +54,8 @@ namespace Wolf
 			glm::f32  far;
 			glm::uint frameIndex;
 			glm::uint extentWidth;
+
+			glm::vec4 frustumPlanes[6]; // left, right, bottom, top, near, far
 		};
 
 		std::unique_ptr<DescriptorSet> m_descriptorSet;

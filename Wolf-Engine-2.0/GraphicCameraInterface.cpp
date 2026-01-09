@@ -42,6 +42,14 @@ void Wolf::GraphicCameraInterface::updateGraphic(const glm::vec2& pixelJitter, c
 	ubData.frameIndex = m_currentFrameIndex;
 	ubData.extentWidth = context.swapChainExtent.width;
 
+	const glm::mat4 transposedViewProjection = glm::transpose(ubData.projection * ubData.view);
+	ubData.frustumPlanes[0] = transposedViewProjection[3] + transposedViewProjection[0]; // left
+	ubData.frustumPlanes[1] = transposedViewProjection[3] - transposedViewProjection[0]; // right
+	ubData.frustumPlanes[2] = transposedViewProjection[3] + transposedViewProjection[1]; // bottom
+	ubData.frustumPlanes[3] = transposedViewProjection[3] - transposedViewProjection[1]; // top
+	ubData.frustumPlanes[4] = transposedViewProjection[3] + transposedViewProjection[2]; // near
+	ubData.frustumPlanes[5] = transposedViewProjection[3] - transposedViewProjection[2]; // far
+
 	m_matricesUniformBuffer->transferCPUMemory(&ubData, sizeof(ubData), 0);
 
 	m_currentFrameIndex++;
