@@ -1,5 +1,6 @@
 #include "Debug.h"
 
+#include <algorithm>
 #include <xxh64.hpp>
 
 void Wolf::Debug::sendMessageOnce(const std::string& message, Severity severity, const void* instancePtr)

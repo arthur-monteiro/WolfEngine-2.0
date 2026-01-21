@@ -2,6 +2,7 @@
 
 #ifndef __ANDROID__
 
+#include <cstring>
 #include <map>
 #include <mutex>
 

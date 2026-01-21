@@ -32,14 +32,14 @@ Wolf::WolfEngine::WolfEngine(const WolfInstanceCreateInfo& createInfo) : m_globa
 #ifdef _WIN32
 	SetUnhandledExceptionFilter(unhandledExceptionFilter);
 #endif
-	Debug::setCallback(createInfo.debugCallback);
+	Debug::setCallback(createInfo.m_debugCallback);
 
-	m_resizeCallback = createInfo.resizeCallback;
+	m_resizeCallback = createInfo.m_resizeCallback;
 
 #ifndef __ANDROID__
-	m_configuration.reset(new Configuration(createInfo.configFilename));
+	m_configuration.reset(new Configuration(createInfo.m_configFilename));
 #else
-    m_configuration.reset(new Configuration(createInfo.configFilename, createInfo.assetManager));
+    m_configuration.reset(new Configuration(createInfo.m_configFilename, createInfo.assetManager));
 #endif
 	g_configuration = m_configuration.get();
 
@@ -56,11 +56,11 @@ Wolf::WolfEngine::WolfEngine(const WolfInstanceCreateInfo& createInfo) : m_globa
 	}
 
 #ifndef __ANDROID__
-	m_window.reset(new Window(createInfo.applicationName, m_configuration->getWindowWidth(), m_configuration->getWindowHeight(), this, windowResizeCallback));
+	m_window.reset(new Window(createInfo.m_applicationName, m_configuration->getWindowWidth(), m_configuration->getWindowHeight(), this, windowResizeCallback));
 #endif
 
 #ifndef __ANDROID__
-	m_graphicAPIManager.reset(GraphicAPIManager::instanciateGraphicAPIManager(m_window->getWindow(), createInfo.useOVR));
+	m_graphicAPIManager.reset(GraphicAPIManager::instanciateGraphicAPIManager(m_window->getWindow(), createInfo.m_useOVR));
 #else
 	m_graphicAPIManager.reset(GraphicAPIManager::instanciateGraphicAPIManager(createInfo.androidWindow));
 #endif
@@ -100,14 +100,21 @@ Wolf::WolfEngine::WolfEngine(const WolfInstanceCreateInfo& createInfo) : m_globa
 #ifndef __ANDROID__
 	m_inputHandler.reset(new InputHandler(m_window.createConstNonOwnerResource()));
 
-	if (createInfo.htmlURL)
+	if (createInfo.m_htmlURL)
 	{
-		m_ultraLight.reset(new UltraLight(createInfo.htmlURL, createInfo.uiFinalLayout, createInfo.bindUltralightCallbacks, m_inputHandler.createNonOwnerResource()));
+		m_ultraLight.reset(new UltraLight(createInfo.m_htmlURL, createInfo.m_uiFinalLayout, createInfo.m_bindUltralightCallbacks, m_inputHandler.createNonOwnerResource()));
 		m_ultraLight->waitInitializationDone();
 	}
 #endif
 
-	if (createInfo.useBindlessDescriptor)
+	m_pushDataToGPU = createInfo.m_pushDataToGPU;
+	if (!m_pushDataToGPU)
+	{
+		m_defaultPushDataToGPU.reset(new DefaultGPUDataTransfersManager);
+		m_pushDataToGPU = m_defaultPushDataToGPU.createNonOwnerResource<GPUDataTransfersManagerInterface>();
+	}
+
+	if (createInfo.m_useBindlessDescriptor)
 	{
 		constexpr std::array defaultImageFilename = {
 			"Textures/no_texture_albedo.png",
@@ -139,7 +146,7 @@ Wolf::WolfEngine::WolfEngine(const WolfInstanceCreateInfo& createInfo) : m_globa
 			defaultImageDescription[i].imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 		}
 
-		m_materialsManager.reset(new MaterialsGPUManager(defaultImageDescription));
+		m_materialsManager.reset(new MaterialsGPUManager(defaultImageDescription, m_pushDataToGPU));
 	}
 
 	m_lightManager.reset(new LightManager);
@@ -147,7 +154,7 @@ Wolf::WolfEngine::WolfEngine(const WolfInstanceCreateInfo& createInfo) : m_globa
 	m_physicsManager.reset(new Physics::PhysicsManager);
 
 	m_multiThreadTaskManager.reset(new MultiThreadTaskManager);
-	m_beforeFrameAndRecordThreadGroupId = m_multiThreadTaskManager->createThreadGroup(createInfo.threadCountBeforeFrameAndRecord, "Before frame and record");
+	m_beforeFrameAndRecordThreadGroupId = m_multiThreadTaskManager->createThreadGroup(createInfo.m_threadCountBeforeFrameAndRecord, "Before frame and record");
 
 	if (m_configuration->getForcedTimerMsPerFrame() > 0)
 	{

@@ -8,11 +8,10 @@
 #include <RuntimeContext.h>
 
 #include "ProfilerCommon.h"
-#include "PushDataToGPU.h"
-#include "ReadbackDataFromGPU.h"
+#include "GPUDataTransfersManager.h"
 #include "VirtualTextureUtils.h"
 
-Wolf::VirtualTextureManager::VirtualTextureManager(Extent2D extent)
+Wolf::VirtualTextureManager::VirtualTextureManager(Extent2D extent, const ResourceNonOwner<GPUDataTransfersManagerInterface>& pushDataToGPU) : m_pushDataToGPUHandler(pushDataToGPU)
 {
 	createFeedbackBuffer(extent);
 	m_indirectionBuffer.reset(Buffer::createBuffer(MAX_INDIRECTION_COUNT * sizeof(uint32_t), VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT));
@@ -28,7 +27,7 @@ void Wolf::VirtualTextureManager::updateBeforeFrame()
 {
 	if (!m_indirectionBufferInitialized)
 	{
-		fillGPUBuffer(INVALID_INDIRECTION, MAX_INDIRECTION_COUNT * sizeof(uint32_t), m_indirectionBuffer.createNonOwnerResource(), 0);
+		m_pushDataToGPUHandler->fillGPUBuffer(INVALID_INDIRECTION, MAX_INDIRECTION_COUNT * sizeof(uint32_t), m_indirectionBuffer.createNonOwnerResource(), 0);
 		m_indirectionBufferInitialized = true;
 	}
 
@@ -77,11 +76,12 @@ void Wolf::VirtualTextureManager::uploadData(AtlasIndex atlasIndex, const std::v
 	}
 
 	glm::ivec2 atlasOffset = { (entryId % atlasInfo.getPageCountY()) * PAGE_SIZE_WITH_BORDERS, (entryId / atlasInfo.getPageCountX()) * PAGE_SIZE_WITH_BORDERS };
-	pushDataToGPUImage(data.data(), m_atlases[atlasIndex]->getImage(), Image::SampledInFragmentShader(), 0, { sliceExtent.width, sliceExtent.height }, atlasOffset);
+	GPUDataTransfersManagerInterface::PushDataToGPUImageInfo pushDataToGpuImageInfo(data.data(), m_atlases[atlasIndex]->getImage(), Image::SampledInFragmentShader(), 0, { sliceExtent.width, sliceExtent.height }, atlasOffset);
+	m_pushDataToGPUHandler->pushDataToGPUImage(pushDataToGpuImageInfo);
 
 	uint32_t indirectionId = computeVirtualTextureIndirectionId(sliceX, sliceY, sliceCountX, sliceCountY, mipLevel);
 	uint32_t indirectionInfo = entryId;
-	pushDataToGPUBuffer(&indirectionInfo, sizeof(uint32_t), m_indirectionBuffer.createNonOwnerResource(), (indirectionId + indirectionOffset) * sizeof(uint32_t));
+	m_pushDataToGPUHandler->pushDataToGPUBuffer(&indirectionInfo, sizeof(uint32_t), m_indirectionBuffer.createNonOwnerResource(), (indirectionId + indirectionOffset) * sizeof(uint32_t));
 
 	m_loadedFeedbacks[*reinterpret_cast<const uint32_t*>(&feedbackInfo)] = { atlasIndex, entryId };
 }
@@ -93,12 +93,12 @@ void Wolf::VirtualTextureManager::rejectRequest(const FeedbackInfo& feedbackInfo
 
 void Wolf::VirtualTextureManager::clearReadbackBuffer()
 {
-	fillGPUBuffer(-1, m_feedbackBufferSize, m_feedbackBuffer.createNonOwnerResource(), 0);
+	m_pushDataToGPUHandler->fillGPUBuffer(-1, m_feedbackBufferSize, m_feedbackBuffer.createNonOwnerResource(), 0);
 }
 
 void Wolf::VirtualTextureManager::requestReadbackCopyRecord()
 {
-	requestGPUBufferReadbackRecord(m_feedbackBuffer.createNonOwnerResource(), 0, m_feedbackReadableBuffer.createNonOwnerResource(), m_feedbackBufferSize);
+	m_pushDataToGPUHandler->requestGPUBufferReadbackRecord(m_feedbackBuffer.createNonOwnerResource(), 0, m_feedbackReadableBuffer.createNonOwnerResource(), m_feedbackBufferSize);
 }
 
 Wolf::ResourceNonOwner<Wolf::Image> Wolf::VirtualTextureManager::getAtlasImage(uint32_t atlasIdx)

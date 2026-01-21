@@ -35,8 +35,6 @@ target_compile_definitions(WolfEngine PUBLIC MATERIAL_DEBUG)
 target_compile_definitions(WolfEngine PUBLIC TRACY_ENABLE)
 target_compile_definitions(WolfEngine PUBLIC TRACY_ON_DEMAND)
 target_compile_definitions(WolfEngine PUBLIC _CRT_SECURE_NO_WARNINGS)
-target_compile_definitions(WolfEngine PUBLIC CUSTOM_PUSH_DATA_TO_GPU)
-target_compile_definitions(WolfEngine PUBLIC CUSTOM_READBACK_DATA_FROM_GPU)
 
 option(RESOURCE_TRACKING "Enable resource tracking features" OFF)
 option(RESOURCE_DEBUG "Enable resource debug features" OFF)

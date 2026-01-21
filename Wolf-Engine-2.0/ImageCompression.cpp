@@ -1,5 +1,6 @@
 #include "ImageCompression.h"
 
+#include <cstring>
 #include <glm/glm.hpp>
 
 #include <Debug.h>

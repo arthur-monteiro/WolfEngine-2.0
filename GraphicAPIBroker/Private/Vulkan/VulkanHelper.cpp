@@ -1,6 +1,9 @@
 #include "VulkanHelper.h"
 
-#include "Debug.h"
+#include <cstring>
+
+#include <Debug.h>
+
 #include "FormatsVulkan.h"
 
 void Wolf::querySwapChainSupport(SwapChainSupportDetails& details, VkPhysicalDevice physicalDevice, VkSurfaceKHR surface)

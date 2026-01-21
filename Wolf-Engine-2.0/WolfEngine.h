@@ -4,6 +4,8 @@
 #include <memory>
 #include <span>
 
+#include "GPUDataTransfersManager.h"
+
 #ifdef __ANDROID__
 #include <android/asset_manager.h>
 #endif
@@ -35,30 +37,32 @@ namespace Wolf
 {
 	struct WolfInstanceCreateInfo
 	{
-		uint32_t majorVersion;
-		uint32_t minorVersion;
-		std::string applicationName;
+		uint32_t m_majorVersion;
+		uint32_t m_minorVersion;
+		std::string m_applicationName;
 
-		std::string configFilename;
+		std::string m_configFilename;
 
-		const char* htmlURL = nullptr;
-		VkImageLayout uiFinalLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+		const char* m_htmlURL = nullptr;
+		VkImageLayout m_uiFinalLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 #ifndef __ANDROID__
-		std::function<void(ultralight::JSObject& jsObject)> bindUltralightCallbacks;
+		std::function<void(ultralight::JSObject& jsObject)> m_bindUltralightCallbacks;
 #endif
 
-		bool useOVR = false;
-		bool useBindlessDescriptor = false;
+		bool m_useOVR = false;
+		bool m_useBindlessDescriptor = false;
 
-		std::function<void(Debug::Severity, Debug::Type, const std::string&)> debugCallback;
-		std::function<void(uint32_t, uint32_t)> resizeCallback;
+		std::function<void(Debug::Severity, Debug::Type, const std::string&)> m_debugCallback;
+		std::function<void(uint32_t, uint32_t)> m_resizeCallback;
 
-		uint32_t threadCountBeforeFrameAndRecord = 1;
+		uint32_t m_threadCountBeforeFrameAndRecord = 1;
 
 #ifdef __ANDROID__
-        ANativeWindow* androidWindow;
-		AAssetManager* assetManager;
+        ANativeWindow* m_androidWindow;
+		AAssetManager* m_assetManager;
 #endif
+
+		NullableResourceNonOwner<GPUDataTransfersManagerInterface> m_pushDataToGPU;
 	};
 
 	class WolfEngine
@@ -135,11 +139,14 @@ namespace Wolf
 		bool m_resizeIsNeeded = false;
 		std::function<void(uint32_t, uint32_t)> m_resizeCallback;
 
-		// Mesh render
+		// Graphics
 		ResourceUniqueOwner<RenderMeshList> m_renderMeshList;
 		ShaderList m_shaderList;
 		std::array<std::unique_ptr<Image>, 5> m_defaultImages;
 		ResourceUniqueOwner<MaterialsGPUManager> m_materialsManager;
+
+		ResourceUniqueOwner<DefaultGPUDataTransfersManager> m_defaultPushDataToGPU;
+		NullableResourceNonOwner<GPUDataTransfersManagerInterface> m_pushDataToGPU;
 
 		// Saves
 		std::mutex m_savedUICommandsMutex;

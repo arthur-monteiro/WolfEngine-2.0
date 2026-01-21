@@ -2,6 +2,7 @@
 
 #ifndef __ANDROID__
 
+#include <condition_variable>
 #include <mutex>
 #include <thread>
 
