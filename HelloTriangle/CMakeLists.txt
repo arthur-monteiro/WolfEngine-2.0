@@ -31,6 +31,13 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
 
 add_executable(Hello_Triangle ${SRC})
 
+target_compile_definitions(
+        Hello_Triangle
+        PRIVATE
+        $<$<BOOL:RESOURCE_TRACKING>:RESOURCE_TRACKING>
+        $<$<BOOL:RESOURCE_DEBUG>:RESOURCE_DEBUG>
+)
+
 target_compile_definitions(Hello_Triangle PUBLIC WOLF_VULKAN)
 target_link_libraries(Hello_Triangle vulkan-1.lib)
 target_link_libraries(Hello_Triangle glfw3.lib)
