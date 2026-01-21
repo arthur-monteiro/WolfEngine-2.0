@@ -409,6 +409,11 @@ void Wolf::JSONReader::readFromLines(const Lines& lines)
 	}
 }
 
+bool Wolf::JSONReader::JSONObject::hasProperty(const std::string& propertyName)
+{
+	return properties.contains(propertyName);
+}
+
 float Wolf::JSONReader::JSONObject::getPropertyFloat(const std::string& propertyName)
 {
 	return properties[propertyName]->floatValue;

@@ -39,7 +39,7 @@ Wolf::WolfEngine::WolfEngine(const WolfInstanceCreateInfo& createInfo) : m_globa
 #ifndef __ANDROID__
 	m_configuration.reset(new Configuration(createInfo.m_configFilename));
 #else
-    m_configuration.reset(new Configuration(createInfo.m_configFilename, createInfo.assetManager));
+    m_configuration.reset(new Configuration(createInfo.m_configFilename, createInfo.m_assetManager));
 #endif
 	g_configuration = m_configuration.get();
 
@@ -62,13 +62,13 @@ Wolf::WolfEngine::WolfEngine(const WolfInstanceCreateInfo& createInfo) : m_globa
 #ifndef __ANDROID__
 	m_graphicAPIManager.reset(GraphicAPIManager::instanciateGraphicAPIManager(m_window->getWindow(), createInfo.m_useOVR));
 #else
-	m_graphicAPIManager.reset(GraphicAPIManager::instanciateGraphicAPIManager(createInfo.androidWindow));
+	m_graphicAPIManager.reset(GraphicAPIManager::instanciateGraphicAPIManager(createInfo.m_androidWindow));
 #endif
 	g_graphicAPIManagerInstance = m_graphicAPIManager.get();
 
 #ifdef __ANDROID__
-	int32_t width = ANativeWindow_getWidth(createInfo.androidWindow);
-	int32_t height = 2340; // ANativeWindow_getHeight(createInfo.androidWindow);
+	int32_t width = ANativeWindow_getWidth(createInfo.m_androidWindow);
+	int32_t height = 2340; // ANativeWindow_getHeight(createInfo.m_androidWindow);
 	Extent2D extent = { static_cast<uint32_t>(width), static_cast<uint32_t>(height) };
 #else
 	Extent2D extent = chooseExtent(m_window->getWindow());

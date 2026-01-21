@@ -11,6 +11,7 @@ LOCAL_SRC_FILES := AndroidCacheHelper.cpp \
 	ConfigurationHelper.cpp \
 	DescriptorSetGenerator.cpp \
 	DescriptorSetLayoutGenerator.cpp \
+	GPUDataTransfersManager.cpp \
 	ImageCompression.cpp \
 	ImageFileLoader.cpp \
 	JSONReader.cpp \
@@ -20,8 +21,6 @@ LOCAL_SRC_FILES := AndroidCacheHelper.cpp \
 	MipMapGenerator.cpp \
 	MultiThreadTaskManager.cpp \
 	PipelineSet.cpp \
-	PushDataToGPU.cpp \
-	ReadbackDataFromGPU.cpp \
 	RenderMeshList.cpp \
 	ShaderList.cpp \
 	ShaderParser.cpp \

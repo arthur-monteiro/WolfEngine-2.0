@@ -9,7 +9,7 @@
 
 #include <WolfEngine.h>
 
-#include "UniquePass.h."
+#include "UniquePass.h"
 
 struct VulkanEngine
 {
@@ -53,10 +53,10 @@ static void HandleCmd(struct android_app *app, int32_t cmd) {
         if (engine->app->window != nullptr)
         {
             Wolf::WolfInstanceCreateInfo wolfInstanceCreateInfo;
-            wolfInstanceCreateInfo.configFilename = "";
-            wolfInstanceCreateInfo.debugCallback = debugCallback;
-            wolfInstanceCreateInfo.androidWindow = engine->app->window;
-            wolfInstanceCreateInfo.assetManager = app->activity->assetManager;
+            wolfInstanceCreateInfo.m_configFilename = "";
+            wolfInstanceCreateInfo.m_debugCallback = debugCallback;
+            wolfInstanceCreateInfo.m_androidWindow = engine->app->window;
+            wolfInstanceCreateInfo.m_assetManager = app->activity->assetManager;
 
             Wolf::WolfEngine* vulkanBackend = new Wolf::WolfEngine(wolfInstanceCreateInfo);
 
