@@ -31,6 +31,13 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
 
 add_executable(Variable_Rate_Shading ${SRC})
 
+target_compile_definitions(
+        Variable_Rate_Shading
+        PRIVATE
+        $<$<BOOL:RESOURCE_TRACKING>:RESOURCE_TRACKING>
+        $<$<BOOL:RESOURCE_DEBUG>:RESOURCE_DEBUG>
+)
+
 target_compile_definitions(Variable_Rate_Shading PUBLIC WOLF_VULKAN)
 target_link_libraries(Variable_Rate_Shading vulkan-1.lib)
 target_link_libraries(Variable_Rate_Shading glfw3.lib)

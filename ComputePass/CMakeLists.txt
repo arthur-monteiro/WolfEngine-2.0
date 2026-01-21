@@ -31,6 +31,13 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
 
 add_executable(Compute_Pass ${SRC})
 
+target_compile_definitions(
+        Compute_Pass
+        PRIVATE
+        $<$<BOOL:RESOURCE_TRACKING>:RESOURCE_TRACKING>
+        $<$<BOOL:RESOURCE_DEBUG>:RESOURCE_DEBUG>
+)
+
 target_compile_definitions(Compute_Pass PUBLIC WOLF_VULKAN)
 target_link_libraries(Compute_Pass vulkan-1.lib)
 target_link_libraries(Compute_Pass glfw3.lib)
