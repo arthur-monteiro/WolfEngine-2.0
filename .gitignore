@@ -381,7 +381,6 @@ FodyWeavers.xsd
 *.class
                             
 # generated files
-bin/
 gen/
 .cxx/
                             
