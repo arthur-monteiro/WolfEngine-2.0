@@ -21,7 +21,7 @@ namespace Wolf
 		uint64_t getElapsedTimeSinceLastUpdateInMs() const { return m_elapsedTimeSinceLastUpdateInMs; }
 
 	private:
-		std::chrono::steady_clock::time_point m_startTimePoint;
+		std::chrono::high_resolution_clock::time_point m_startTimePoint;
 		std::string m_name;
 
 		uint64_t m_cachedMillisecondsDuration = 0;

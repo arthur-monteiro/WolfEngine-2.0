@@ -263,10 +263,7 @@ namespace Wolf
 	{
 		if (m_nonOwnedResourceCount > 0)
 		{
-#ifdef RESOURCE_DEBUG
-			__debugbreak();
-#endif
-			Debug::sendError("Deleting a resource currently used by others");
+			Debug::sendCriticalError("Deleting a resource currently used by others");
 		}
 	}
 #else

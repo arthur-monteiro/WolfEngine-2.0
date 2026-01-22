@@ -260,7 +260,13 @@ void Wolf::ShaderParser::parseAndCompile()
     outFileGLSL.close();
 
 #ifndef __ANDROID__
-    std::string commandToCompile = "glslc.exe ";
+#ifdef _WIN32
+    std::string compiler = "glslc.exe";
+#else
+    std::string compiler = "glslc";
+#endif
+
+    std::string commandToCompile = compiler + " ";
     commandToCompile += parsedFilename;
     commandToCompile += " -o ";
     commandToCompile += compiledFilename;

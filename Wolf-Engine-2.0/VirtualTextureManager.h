@@ -9,6 +9,7 @@
 #include <ReadableBuffer.h>
 
 #include "DynamicResourceUniqueOwnerArray.h"
+#include "GPUDataTransfersManager.h"
 
 namespace Wolf
 {
@@ -19,7 +20,7 @@ namespace Wolf
 		static constexpr uint32_t BORDER_SIZE = 4; // minimum for block compressed formats
 		static constexpr uint32_t PAGE_SIZE_WITH_BORDERS = VIRTUAL_PAGE_SIZE + 2 * BORDER_SIZE;
 
-		explicit VirtualTextureManager(Extent2D extent);
+		explicit VirtualTextureManager(Extent2D extent, const ResourceNonOwner<GPUDataTransfersManagerInterface>& pushDataToGPU);
 
 		using AtlasIndex = uint32_t;
 		AtlasIndex createAtlas(uint32_t pageCountX, uint32_t pageCountY, Format format);
@@ -71,6 +72,8 @@ namespace Wolf
 		void updateAtlasesAvailabilities();
 		void clearReadbackBuffer();
 		void requestReadbackCopyRecord();
+
+		const ResourceNonOwner<GPUDataTransfersManagerInterface>& m_pushDataToGPUHandler;
 
 		class AtlasInfo
 		{

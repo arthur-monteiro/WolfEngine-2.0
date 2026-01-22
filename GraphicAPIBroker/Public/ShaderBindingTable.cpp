@@ -1,5 +1,7 @@
 #include "ShaderBindingTable.h"
 
+#include <cstring>
+
 #include <Debug.h>
 
 #ifdef WOLF_VULKAN

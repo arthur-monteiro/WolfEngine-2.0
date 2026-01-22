@@ -242,7 +242,7 @@ void Wolf::UltraLight::UltraLightImplementation::LogMessage(LogLevel log_level, 
         Debug::sendInfo(String(message).utf8().data());
         break;
     default:
-        __debugbreak();
+        Debug::sendCriticalError("Unhandled log level");
         break;
     }
 }

@@ -26,6 +26,8 @@ namespace Wolf
 		class JSONObjectInterface
 		{
 		public:
+			virtual bool hasProperty(const std::string& propertyName) = 0;
+
 			virtual float getPropertyFloat(const std::string& propertyName) = 0;
 			virtual const std::vector<float>& getPropertyFloatArray(const std::string& propertyName) = 0;
 			virtual const std::string& getPropertyString(const std::string& propertyName) = 0;
@@ -89,6 +91,8 @@ namespace Wolf
 		{
 		public:
 			std::unordered_map<std::string, JSONPropertyValue*> properties;
+
+			bool hasProperty(const std::string& propertyName) override;
 
 			float getPropertyFloat(const std::string& propertyName) override;
 			const std::vector<float>& getPropertyFloatArray(const std::string& propertyName) override;

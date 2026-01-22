@@ -10,6 +10,7 @@
 
 #include "DescriptorSetGenerator.h"
 #include "LazyInitSharedResource.h"
+#include "GPUDataTransfersManager.h"
 #include "ResourceUniqueOwner.h"
 #include "VirtualTextureManager.h"
 
@@ -22,7 +23,7 @@ namespace Wolf
 	public:
 		static constexpr uint32_t TEXTURE_COUNT_PER_MATERIAL = 3;
 
-		MaterialsGPUManager(const std::vector<DescriptorSetGenerator::ImageDescription>& firstImages);
+		MaterialsGPUManager(const std::vector<DescriptorSetGenerator::ImageDescription>& firstImages, const ResourceNonOwner<GPUDataTransfersManagerInterface>& pushDataToGPU);
 
 		struct TextureSetInfo
 		{
@@ -109,6 +110,8 @@ namespace Wolf
 		uint32_t addImagesToBindless(const std::vector<DescriptorSetGenerator::ImageDescription>& images);
 		void updateImageInBindless(const DescriptorSetGenerator::ImageDescription& image, uint32_t bindlessOffset) const;
 		static uint32_t computeSliceCount(uint32_t textureWidth, uint32_t textureHeight);
+
+		const ResourceNonOwner<GPUDataTransfersManagerInterface>& m_pushDataToGPUHandler;
 
 		struct TextureCPUInfo
 		{

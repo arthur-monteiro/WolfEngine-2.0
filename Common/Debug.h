@@ -36,8 +36,10 @@ namespace Wolf
 		{
 #ifdef __ANDROID__
 			raise(SIGTRAP);
-#else
+#elif _WIN32
 			__debugbreak();
+#elif __linux__
+			__asm__ volatile("int $3");
 #endif
 		}
 		static void sendVulkanMessage(const std::string& message, Severity severity)

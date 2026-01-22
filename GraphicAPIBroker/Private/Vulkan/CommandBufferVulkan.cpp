@@ -1,6 +1,8 @@
 #ifdef WOLF_VULKAN
 #include "CommandBufferVulkan.h"
 
+#include <cstring>
+
 #include <Configuration.h>
 #include <Debug.h>
 #include <RuntimeContext.h>

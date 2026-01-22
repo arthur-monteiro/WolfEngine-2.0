@@ -381,7 +381,6 @@ FodyWeavers.xsd
 *.class
                             
 # generated files
-bin/
 gen/
 .cxx/
                             
@@ -422,3 +421,6 @@ Hello triangle/x64/*
 DescriptorSet/x64/*
 HTML UI/x64/*
 Wolf Engine 2.0/x64/*
+
+# Nix
+.lib_links/*

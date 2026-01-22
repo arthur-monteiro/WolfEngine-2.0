@@ -9,12 +9,11 @@
 #include "DescriptorSetLayoutGenerator.h"
 #include "MipMapGenerator.h"
 #include "ProfilerCommon.h"
-#include "PushDataToGPU.h"
 #include "Timer.h"
 
 std::vector<std::string> Wolf::MaterialsGPUManager::MaterialInfo::SHADING_MODE_STRING_LIST = { "GGX", "Aniso GGX", "Six ways lighting", "Alpha only" };
 
-Wolf::MaterialsGPUManager::MaterialsGPUManager(const std::vector<DescriptorSetGenerator::ImageDescription>& firstImages)
+Wolf::MaterialsGPUManager::MaterialsGPUManager(const std::vector<DescriptorSetGenerator::ImageDescription>& firstImages, const ResourceNonOwner<GPUDataTransfersManagerInterface>& pushDataToGPU) : m_pushDataToGPUHandler(pushDataToGPU)
 {
 	DescriptorSetLayoutGenerator descriptorSetLayoutGenerator;
 
@@ -37,7 +36,7 @@ Wolf::MaterialsGPUManager::MaterialsGPUManager(const std::vector<DescriptorSetGe
 
 	if (g_configuration->getUseVirtualTexture())
 	{
-		m_virtualTextureManager.reset(new VirtualTextureManager({ g_configuration->getWindowWidth(), g_configuration->getWindowHeight() }));
+		m_virtualTextureManager.reset(new VirtualTextureManager({ g_configuration->getWindowWidth(), g_configuration->getWindowHeight() }, m_pushDataToGPUHandler));
 		m_albedoAtlasIdx = m_virtualTextureManager->createAtlas(16, 16, Format::BC1_RGB_SRGB_BLOCK); // note that page count per side is a constant in shader
 		m_normalAtlasIdx = m_virtualTextureManager->createAtlas(16, 16, Format::BC5_UNORM_BLOCK);
 		m_combinedAtlasIdx = m_virtualTextureManager->createAtlas(16, 16, Format::BC3_UNORM_BLOCK);
@@ -178,7 +177,7 @@ void Wolf::MaterialsGPUManager::updateBeforeFrame()
 
 	if (!m_newMaterialInfo.empty())
 	{
-		pushDataToGPUBuffer(m_newMaterialInfo.data(), static_cast<uint32_t>(m_newMaterialInfo.size()) * sizeof(MaterialGPUInfo), m_materialsBuffer.createNonOwnerResource(),
+		m_pushDataToGPUHandler->pushDataToGPUBuffer(m_newMaterialInfo.data(), static_cast<uint32_t>(m_newMaterialInfo.size()) * sizeof(MaterialGPUInfo), m_materialsBuffer.createNonOwnerResource(),
 			m_currentMaterialCount * sizeof(MaterialGPUInfo));
 		m_currentMaterialCount += static_cast<uint32_t>(m_newMaterialInfo.size());
 		m_newMaterialInfo.clear();
@@ -186,7 +185,7 @@ void Wolf::MaterialsGPUManager::updateBeforeFrame()
 
 	if (!m_newTextureSetsInfo.empty())
 	{
-		pushDataToGPUBuffer(m_newTextureSetsInfo.data(), static_cast<uint32_t>(m_newTextureSetsInfo.size()) * sizeof(TextureSetGPUInfo), m_textureSetsBuffer.createNonOwnerResource(),
+		m_pushDataToGPUHandler->pushDataToGPUBuffer(m_newTextureSetsInfo.data(), static_cast<uint32_t>(m_newTextureSetsInfo.size()) * sizeof(TextureSetGPUInfo), m_textureSetsBuffer.createNonOwnerResource(),
 			m_currentTextureSetCount * sizeof(TextureSetGPUInfo));
 		m_currentTextureSetCount += static_cast<uint32_t>(m_newTextureSetsInfo.size());
 		m_newTextureSetsInfo.clear();
@@ -194,7 +193,7 @@ void Wolf::MaterialsGPUManager::updateBeforeFrame()
 
 	if (!m_newTextureInfo.empty())
 	{
-		pushDataToGPUBuffer(m_newTextureInfo.data(), static_cast<uint32_t>(m_newTextureInfo.size()) * sizeof(TextureGPUInfo), m_texturesInfoBuffer.createNonOwnerResource(),
+		m_pushDataToGPUHandler->pushDataToGPUBuffer(m_newTextureInfo.data(), static_cast<uint32_t>(m_newTextureInfo.size()) * sizeof(TextureGPUInfo), m_texturesInfoBuffer.createNonOwnerResource(),
 			m_currentTextureInfoCount * sizeof(TextureGPUInfo));
 		m_currentTextureInfoCount += static_cast<uint32_t>(m_newTextureInfo.size());
 		m_newTextureInfo.clear();
@@ -284,7 +283,7 @@ void Wolf::MaterialsGPUManager::updateBeforeFrame()
 				uint32_t virtualTextureIndirectionOffset = m_virtualTextureManager->createNewIndirection(indirectionCount);
 
 				m_texturesCPUInfo[textureId].m_virtualTextureIndirectionOffset = virtualTextureIndirectionOffset;
-				pushDataToGPUBuffer(&virtualTextureIndirectionOffset, sizeof(uint32_t), m_texturesInfoBuffer.createNonOwnerResource(), textureId * sizeof(TextureGPUInfo) + offsetof(TextureGPUInfo, virtualTextureIndirectionOffset));
+				m_pushDataToGPUHandler->pushDataToGPUBuffer(&virtualTextureIndirectionOffset, sizeof(uint32_t), m_texturesInfoBuffer.createNonOwnerResource(), textureId * sizeof(TextureGPUInfo) + offsetof(TextureGPUInfo, virtualTextureIndirectionOffset));
 			}
 
 			uint8_t sliceCountX = m_texturesCPUInfo[textureId].m_height / VirtualTextureManager::VIRTUAL_PAGE_SIZE;
@@ -344,18 +343,18 @@ void Wolf::MaterialsGPUManager::unlockMaterials()
 #ifdef MATERIAL_DEBUG
 void Wolf::MaterialsGPUManager::changeMaterialShadingModeBeforeFrame(uint32_t materialIdx, uint32_t newShadingMode)
 {
-	pushDataToGPUBuffer(&newShadingMode, sizeof(uint32_t), m_materialsBuffer.createNonOwnerResource(), materialIdx * sizeof(MaterialGPUInfo) + offsetof(MaterialGPUInfo, shadingMode));
+	m_pushDataToGPUHandler->pushDataToGPUBuffer(&newShadingMode, sizeof(uint32_t), m_materialsBuffer.createNonOwnerResource(), materialIdx * sizeof(MaterialGPUInfo) + offsetof(MaterialGPUInfo, shadingMode));
 }
 
 void Wolf::MaterialsGPUManager::changeTextureSetIdxBeforeFrame(uint32_t materialIdx,uint32_t indexOfTextureSetInMaterial, uint32_t newTextureSetIdx)
 {
-	pushDataToGPUBuffer(&newTextureSetIdx, sizeof(uint32_t), m_materialsBuffer.createNonOwnerResource(),
+	m_pushDataToGPUHandler->pushDataToGPUBuffer(&newTextureSetIdx, sizeof(uint32_t), m_materialsBuffer.createNonOwnerResource(),
 		materialIdx * sizeof(MaterialGPUInfo) + offsetof(MaterialGPUInfo, textureSetIndices) + indexOfTextureSetInMaterial * sizeof(uint32_t));
 }
 
 void Wolf::MaterialsGPUManager::changeStrengthBeforeFrame(uint32_t materialIdx, uint32_t indexOfTextureSetInMaterial, float newStrength)
 {
-	pushDataToGPUBuffer(&newStrength, sizeof(float), m_materialsBuffer.createNonOwnerResource(),
+	m_pushDataToGPUHandler->pushDataToGPUBuffer(&newStrength, sizeof(float), m_materialsBuffer.createNonOwnerResource(),
 		materialIdx * sizeof(MaterialGPUInfo) + offsetof(MaterialGPUInfo, strengths) + indexOfTextureSetInMaterial * sizeof(float));
 }
 
@@ -375,8 +374,8 @@ void Wolf::MaterialsGPUManager::changeExistingTextureSetBeforeFrame(TextureSetCa
 				uint32_t width = std::stoi(ConfigurationHelper::readInfoFromFile(slicesFolder + "info.txt", "width"));
 				uint32_t height = std::stoi(ConfigurationHelper::readInfoFromFile(slicesFolder + "info.txt", "height"));
 
-				pushDataToGPUBuffer(&width, sizeof(uint32_t), m_texturesInfoBuffer.createNonOwnerResource(), textureIdx * sizeof(TextureGPUInfo) + offsetof(TextureGPUInfo, width));
-				pushDataToGPUBuffer(&height, sizeof(uint32_t), m_texturesInfoBuffer.createNonOwnerResource(), textureIdx * sizeof(TextureGPUInfo) + offsetof(TextureGPUInfo, height));
+				m_pushDataToGPUHandler->pushDataToGPUBuffer(&width, sizeof(uint32_t), m_texturesInfoBuffer.createNonOwnerResource(), textureIdx * sizeof(TextureGPUInfo) + offsetof(TextureGPUInfo, width));
+				m_pushDataToGPUHandler->pushDataToGPUBuffer(&height, sizeof(uint32_t), m_texturesInfoBuffer.createNonOwnerResource(), textureIdx * sizeof(TextureGPUInfo) + offsetof(TextureGPUInfo, height));
 			}
 		};
 
@@ -385,7 +384,7 @@ void Wolf::MaterialsGPUManager::changeExistingTextureSetBeforeFrame(TextureSetCa
 			if (textureSetCacheInfo.albedoIdx == 0)
 			{
 				textureSetCacheInfo.albedoIdx = static_cast<uint32_t>(m_texturesCPUInfo.size());
-				pushDataToGPUBuffer(&textureSetCacheInfo.albedoIdx, sizeof(uint32_t), m_textureSetsBuffer.createNonOwnerResource(),
+				m_pushDataToGPUHandler->pushDataToGPUBuffer(&textureSetCacheInfo.albedoIdx, sizeof(uint32_t), m_textureSetsBuffer.createNonOwnerResource(),
 						textureSetCacheInfo.textureSetIdx * sizeof(TextureSetGPUInfo) + offsetof(TextureSetGPUInfo, albedoIdx));
 				addSlicedImage(textureSetInfo.slicesFolders[0], TextureCPUInfo::TextureType::ALBEDO);
 			}
@@ -400,7 +399,7 @@ void Wolf::MaterialsGPUManager::changeExistingTextureSetBeforeFrame(TextureSetCa
 			if (textureSetCacheInfo.normalIdx == 1)
 			{
 				textureSetCacheInfo.normalIdx = static_cast<uint32_t>(m_texturesCPUInfo.size());
-				pushDataToGPUBuffer(&textureSetCacheInfo.normalIdx, sizeof(uint32_t), m_textureSetsBuffer.createNonOwnerResource(),
+				m_pushDataToGPUHandler->pushDataToGPUBuffer(&textureSetCacheInfo.normalIdx, sizeof(uint32_t), m_textureSetsBuffer.createNonOwnerResource(),
 						textureSetCacheInfo.textureSetIdx * sizeof(TextureSetGPUInfo) + offsetof(TextureSetGPUInfo, normalIdx));
 				addSlicedImage(textureSetInfo.slicesFolders[1], TextureCPUInfo::TextureType::NORMAL);
 			}
@@ -415,7 +414,7 @@ void Wolf::MaterialsGPUManager::changeExistingTextureSetBeforeFrame(TextureSetCa
 			if (textureSetCacheInfo.roughnessMetalnessAOIdx == 2)
 			{
 				textureSetCacheInfo.roughnessMetalnessAOIdx = static_cast<uint32_t>(m_texturesCPUInfo.size());
-				pushDataToGPUBuffer(&textureSetCacheInfo.roughnessMetalnessAOIdx, sizeof(uint32_t), m_textureSetsBuffer.createNonOwnerResource(),
+				m_pushDataToGPUHandler->pushDataToGPUBuffer(&textureSetCacheInfo.roughnessMetalnessAOIdx, sizeof(uint32_t), m_textureSetsBuffer.createNonOwnerResource(),
 						textureSetCacheInfo.textureSetIdx * sizeof(TextureSetGPUInfo) + offsetof(TextureSetGPUInfo, roughnessMetalnessAOIdx));
 				addSlicedImage(textureSetInfo.slicesFolders[2], TextureCPUInfo::TextureType::COMBINED_ROUGHNESS_METALNESS_AO);
 			}
@@ -434,7 +433,7 @@ void Wolf::MaterialsGPUManager::changeExistingTextureSetBeforeFrame(TextureSetCa
 			if (textureSetCacheInfo.albedoIdx == 0)
 			{
 				textureSetCacheInfo.albedoIdx = m_currentBindlessCount++;
-				pushDataToGPUBuffer(&textureSetCacheInfo.albedoIdx, sizeof(uint32_t), m_textureSetsBuffer.createNonOwnerResource(),
+				m_pushDataToGPUHandler->pushDataToGPUBuffer(&textureSetCacheInfo.albedoIdx, sizeof(uint32_t), m_textureSetsBuffer.createNonOwnerResource(),
 					textureSetCacheInfo.textureSetIdx * sizeof(TextureSetGPUInfo) + offsetof(TextureSetGPUInfo, albedoIdx));
 			}
 
@@ -447,7 +446,7 @@ void Wolf::MaterialsGPUManager::changeExistingTextureSetBeforeFrame(TextureSetCa
 			if (textureSetCacheInfo.normalIdx == 1)
 			{
 				textureSetCacheInfo.normalIdx = m_currentBindlessCount++;
-				pushDataToGPUBuffer(&textureSetCacheInfo.normalIdx, sizeof(uint32_t), m_textureSetsBuffer.createNonOwnerResource(),
+				m_pushDataToGPUHandler->pushDataToGPUBuffer(&textureSetCacheInfo.normalIdx, sizeof(uint32_t), m_textureSetsBuffer.createNonOwnerResource(),
 					textureSetCacheInfo.textureSetIdx * sizeof(TextureSetGPUInfo) + offsetof(TextureSetGPUInfo, normalIdx));
 			}
 
@@ -460,7 +459,7 @@ void Wolf::MaterialsGPUManager::changeExistingTextureSetBeforeFrame(TextureSetCa
 			if (textureSetCacheInfo.roughnessMetalnessAOIdx == 2)
 			{
 				textureSetCacheInfo.roughnessMetalnessAOIdx = m_currentBindlessCount++;
-				pushDataToGPUBuffer(&textureSetCacheInfo.roughnessMetalnessAOIdx, sizeof(uint32_t), m_textureSetsBuffer.createNonOwnerResource(),
+				m_pushDataToGPUHandler->pushDataToGPUBuffer(&textureSetCacheInfo.roughnessMetalnessAOIdx, sizeof(uint32_t), m_textureSetsBuffer.createNonOwnerResource(),
 					textureSetCacheInfo.textureSetIdx * sizeof(TextureSetGPUInfo) + offsetof(TextureSetGPUInfo, roughnessMetalnessAOIdx));
 			}
 
@@ -473,12 +472,12 @@ void Wolf::MaterialsGPUManager::changeExistingTextureSetBeforeFrame(TextureSetCa
 void Wolf::MaterialsGPUManager::changeSamplingModeBeforeFrame(uint32_t textureSetIdx, TextureSetInfo::SamplingMode newSamplingMode)
 {
 	uint32_t newSamplingModeUInt = static_cast<uint32_t>(newSamplingMode);
-	pushDataToGPUBuffer(&newSamplingModeUInt, sizeof(uint32_t), m_textureSetsBuffer.createNonOwnerResource(), textureSetIdx * sizeof(TextureSetGPUInfo) + offsetof(TextureSetGPUInfo, samplingMode));
+	m_pushDataToGPUHandler->pushDataToGPUBuffer(&newSamplingModeUInt, sizeof(uint32_t), m_textureSetsBuffer.createNonOwnerResource(), textureSetIdx * sizeof(TextureSetGPUInfo) + offsetof(TextureSetGPUInfo, samplingMode));
 }
 
 void Wolf::MaterialsGPUManager::changeScaleBeforeFrame(uint32_t textureSetIdx, glm::vec3 newScale)
 {
-	pushDataToGPUBuffer(&newScale, sizeof(glm::vec3), m_textureSetsBuffer.createNonOwnerResource(), textureSetIdx * sizeof(TextureSetGPUInfo) + offsetof(TextureSetGPUInfo, scale));
+	m_pushDataToGPUHandler->pushDataToGPUBuffer(&newScale, sizeof(glm::vec3), m_textureSetsBuffer.createNonOwnerResource(), textureSetIdx * sizeof(TextureSetGPUInfo) + offsetof(TextureSetGPUInfo, scale));
 }
 #endif
 
