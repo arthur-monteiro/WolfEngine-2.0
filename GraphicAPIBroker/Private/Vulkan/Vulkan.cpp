@@ -78,8 +78,17 @@ Wolf::Vulkan::Vulkan(GLFWwindow* glfwWindowPtr, bool useOVR)
 #endif
 
 #ifndef __ANDROID__
-	m_deviceExtensions = { VK_KHR_SWAPCHAIN_EXTENSION_NAME, VK_KHR_EXTERNAL_MEMORY_EXTENSION_NAME, "VK_KHR_external_memory_win32", VK_KHR_EXTERNAL_SEMAPHORE_EXTENSION_NAME,
-		"VK_KHR_external_semaphore_win32", VK_KHR_GET_MEMORY_REQUIREMENTS_2_EXTENSION_NAME, "VK_KHR_external_fence", "VK_KHR_external_fence_win32", "VK_KHR_buffer_device_address"};
+	m_deviceExtensions = { VK_KHR_SWAPCHAIN_EXTENSION_NAME, VK_KHR_EXTERNAL_MEMORY_EXTENSION_NAME, VK_KHR_EXTERNAL_SEMAPHORE_EXTENSION_NAME,
+		VK_KHR_GET_MEMORY_REQUIREMENTS_2_EXTENSION_NAME, "VK_KHR_external_fence", "VK_KHR_buffer_device_address"};
+#ifdef _WIN32
+	m_deviceExtensions.push_back("VK_KHR_external_memory_win32");
+	m_deviceExtensions.push_back("VK_KHR_external_semaphore_win32");
+	m_deviceExtensions.push_back("VK_KHR_external_fence_win32");
+#else
+	m_deviceExtensions.push_back("VK_KHR_external_memory_fd");
+	m_deviceExtensions.push_back("VK_KHR_external_semaphore_fd");
+	m_deviceExtensions.push_back("VK_KHR_external_fence_fd");
+#endif
 
 	if (!useVIL)
 	{
@@ -271,8 +280,18 @@ bool checkDeviceExtensionSupport(VkPhysicalDevice device, const std::vector<cons
 
 	std::set<std::string> requiredExtensions(deviceExtensions.begin(), deviceExtensions.end());
 
-	for (const auto& extension : availableExtensions)
+	for (const VkExtensionProperties& extension : availableExtensions)
 		requiredExtensions.erase(extension.extensionName);
+
+	if (!requiredExtensions.empty())
+	{
+		std::string missingExtensions;
+		for (const std::string& extension : requiredExtensions)
+		{
+			missingExtensions += " - " + extension;
+		}
+		Wolf::Debug::sendInfo("Missing extension while fetching device: " + missingExtensions);
+	}
 
 	return requiredExtensions.empty();
 }
@@ -415,7 +434,14 @@ void Wolf::Vulkan::createDevice()
 
 	VkPhysicalDeviceFeatures2 supportedFeatures = {};
 	supportedFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
-	supportedFeatures.pNext = &variableShadingRateFeatures;
+	if (m_availableFeatures.variableShadingRate)
+	{
+		supportedFeatures.pNext = &variableShadingRateFeatures;
+	}
+	else
+	{
+		supportedFeatures.pNext = &accelerationStructureFeature;
+	}
 	supportedFeatures.features.shaderStorageImageMultisample = VK_TRUE;
 	vkGetPhysicalDeviceFeatures2(m_physicalDevice, &supportedFeatures);
 

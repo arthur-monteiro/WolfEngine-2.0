@@ -25,8 +25,16 @@ if(WIN32)
 elseif(UNIX AND NOT APPLE)
     include_directories(../ThirdParty/UltraLight/linux/include)
     find_package(Vulkan REQUIRED)
+    find_package(Threads REQUIRED)
     find_package(PkgConfig REQUIRED)
     pkg_check_modules(GLFW REQUIRED glfw3)
+    pkg_check_modules(GTK3 REQUIRED gtk+-3.0)
+    pkg_check_modules(CAIRO REQUIRED cairo)
+    pkg_check_modules(PANGO REQUIRED pango)
+    pkg_check_modules(X11 REQUIRED x11)
+    pkg_check_modules(BZIP2 REQUIRED bzip2)
+    pkg_check_modules(FONTCONFIG REQUIRED fontconfig)
+    pkg_check_modules(FREETYPE REQUIRED freetype2)
 endif()
 
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
@@ -64,19 +72,28 @@ elseif(UNIX AND NOT APPLE)
     set(ULTRALIGHT_LIB_PATH "${CMAKE_CURRENT_SOURCE_DIR}/../ThirdParty/UltraLight/linux/bin")
 
     target_link_libraries(Hello_Triangle PRIVATE
-            Vulkan::Vulkan
-            ${GLFW_LIBRARIES}
-            Threads::Threads
-            dl
+            ${WOLF_LIB_PATH}/libWolfEngine.a
+            ${WOLF_LIB_PATH}/libGraphicAPIBroker.a
+            ${WOLF_LIB_PATH}/libCommon.a
 
             ${ULTRALIGHT_LIB_PATH}/libAppCore.so
             ${ULTRALIGHT_LIB_PATH}/libUltralight.so
             ${ULTRALIGHT_LIB_PATH}/libUltralightCore.so
             ${ULTRALIGHT_LIB_PATH}/libWebCore.so
 
-            ${WOLF_LIB_PATH}/libWolfEngine.a
-            ${WOLF_LIB_PATH}/libGraphicAPIBroker.a
-            ${WOLF_LIB_PATH}/libCommon.a
+            # The system dependencies found by PkgConfig
+            ${GTK3_LIBRARIES}
+            ${CAIRO_LIBRARIES}
+            ${PANGO_LIBRARIES}
+            ${X11_LIBRARIES}
+            ${BZIP2_LIBRARIES}
+            ${FONTCONFIG_LIBRARIES}
+            z
+
+            Vulkan::Vulkan
+            ${GLFW_LIBRARIES}
+            Threads::Threads
+            dl
     )
 endif()
 
