@@ -405,6 +405,7 @@ output.json
 #NDK
 obj/
 .externalNativeBuild
+ThirdParty/android/*
 
 # WolfEngine Generated
 *.bin
@@ -420,6 +421,8 @@ Hello triangle/x64/*
 DescriptorSet/x64/*
 HTML UI/x64/*
 Wolf Engine 2.0/x64/*
+ndk-builds/*
 
 # Nix
 .lib_links/*
+.android_sdk_mirror/*
