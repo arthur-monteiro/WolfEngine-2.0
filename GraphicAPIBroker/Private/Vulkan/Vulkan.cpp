@@ -77,6 +77,11 @@ Wolf::Vulkan::Vulkan(GLFWwindow* glfwWindowPtr, bool useOVR)
 	vkCreateAndroidSurfaceKHR(m_instance, &create_info, nullptr /* pAllocator */, &m_surface);
 #endif
 
+    m_raytracingDeviceExtensions = { VK_KHR_ACCELERATION_STRUCTURE_EXTENSION_NAME, VK_KHR_RAY_TRACING_PIPELINE_EXTENSION_NAME, VK_KHR_DEFERRED_HOST_OPERATIONS_EXTENSION_NAME,
+                                     VK_EXT_DESCRIPTOR_INDEXING_EXTENSION_NAME, VK_KHR_BUFFER_DEVICE_ADDRESS_EXTENSION_NAME, VK_KHR_SPIRV_1_4_EXTENSION_NAME };
+    //m_meshShaderDeviceExtensions = { VK_NV_MESH_SHADER_EXTENSION_NAME };
+    m_shadingRateDeviceExtensions = { VK_KHR_FRAGMENT_SHADING_RATE_EXTENSION_NAME };
+
 #ifndef __ANDROID__
 	m_deviceExtensions = { VK_KHR_SWAPCHAIN_EXTENSION_NAME, VK_KHR_EXTERNAL_MEMORY_EXTENSION_NAME, VK_KHR_EXTERNAL_SEMAPHORE_EXTENSION_NAME,
 		VK_KHR_GET_MEMORY_REQUIREMENTS_2_EXTENSION_NAME, "VK_KHR_external_fence", "VK_KHR_buffer_device_address"};
@@ -90,17 +95,10 @@ Wolf::Vulkan::Vulkan(GLFWwindow* glfwWindowPtr, bool useOVR)
 	m_deviceExtensions.push_back("VK_KHR_external_fence_fd");
 #endif
 
-	if (!useVIL)
-	{
-		m_raytracingDeviceExtensions = { VK_KHR_ACCELERATION_STRUCTURE_EXTENSION_NAME, VK_KHR_RAY_TRACING_PIPELINE_EXTENSION_NAME, VK_KHR_DEFERRED_HOST_OPERATIONS_EXTENSION_NAME,
-			VK_EXT_DESCRIPTOR_INDEXING_EXTENSION_NAME, VK_KHR_BUFFER_DEVICE_ADDRESS_EXTENSION_NAME, VK_KHR_SPIRV_1_4_EXTENSION_NAME,  };
-	}
-	m_shadingRateDeviceExtensions = { VK_KHR_FRAGMENT_SHADING_RATE_EXTENSION_NAME };
 	if(useDebugMarkers)
 	{
 		m_deviceExtensions.push_back(VK_EXT_DEBUG_MARKER_EXTENSION_NAME);
 	}
-	//m_meshShaderDeviceExtensions = { VK_NV_MESH_SHADER_EXTENSION_NAME };
 #else
     m_deviceExtensions = { VK_KHR_SWAPCHAIN_EXTENSION_NAME, VK_KHR_EXTERNAL_MEMORY_EXTENSION_NAME, "VK_KHR_buffer_device_address" };
 #endif
@@ -438,10 +436,14 @@ void Wolf::Vulkan::createDevice()
 	{
 		supportedFeatures.pNext = &variableShadingRateFeatures;
 	}
-	else
+	else if (m_availableFeatures.rayTracing)
 	{
 		supportedFeatures.pNext = &accelerationStructureFeature;
 	}
+    else
+    {
+        supportedFeatures.pNext = &features13;
+    }
 	supportedFeatures.features.shaderStorageImageMultisample = VK_TRUE;
 	vkGetPhysicalDeviceFeatures2(m_physicalDevice, &supportedFeatures);
 
@@ -469,7 +471,8 @@ void Wolf::Vulkan::createDevice()
 //	createInfo.enabledLayerCount = 0;
 //#endif
 
-	if (vkCreateDevice(m_physicalDevice, &createInfo, nullptr, &m_device) != VK_SUCCESS)
+    VkResult result = vkCreateDevice(m_physicalDevice, &createInfo, nullptr, &m_device);
+    if (result != VK_SUCCESS)
 		Debug::sendCriticalError("Error : create device");
 
 	vkGetDeviceQueue(m_device, m_queueFamilyIndices.graphicsFamily, 0, &m_graphicsQueue);
