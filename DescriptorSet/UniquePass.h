@@ -25,6 +25,8 @@ public:
 	void record(const Wolf::RecordContext& context) override;
 	void submit(const Wolf::SubmitContext& context) override;
 
+	void requestScreenshot();
+
 private:
 	void createDepthImage(const Wolf::InitializationContext& context);
 	void createPipeline(uint32_t width, uint32_t height);
@@ -51,4 +53,7 @@ private:
 
 	std::unique_ptr<Wolf::DescriptorSetLayout> m_descriptorSetLayout;
 	std::unique_ptr<Wolf::DescriptorSet> m_descriptorSet;
+
+	Wolf::Image* m_lastSwapChainImage = nullptr;
+	bool m_screenshotRequested = false;
 };

@@ -16,5 +16,5 @@ void main()
 
     traceRayEXT(topLevelAS, gl_RayFlagsOpaqueEXT, 0xff, 0 /*sbtRecordOffset*/, 0 /*sbtRecordStride*/, 0 /*missIndex*/, vec3(d.x, d.y, -1.0), tmin, vec3(0, 0, 1), tmax, 0 /*payload*/);
 
-    imageStore(image, ivec2(gl_LaunchIDEXT.xy), vec4(hitValue, 0.0));
+    imageStore(image, ivec2(gl_LaunchIDEXT.xy), vec4(hitValue, 1.0));
 }

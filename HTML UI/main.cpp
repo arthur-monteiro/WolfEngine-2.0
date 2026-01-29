@@ -34,9 +34,10 @@ void setTriangleColor(const ultralight::JSObject& thisObject, const ultralight::
 int main()
 {
 	Wolf::WolfInstanceCreateInfo wolfInstanceCreateInfo;
-	wolfInstanceCreateInfo.configFilename = "config/config.ini";
-	wolfInstanceCreateInfo.debugCallback = debugCallback;
-	wolfInstanceCreateInfo.htmlURL = "UI/UI.html";
+	wolfInstanceCreateInfo.m_configFilename = "config/config.ini";
+	wolfInstanceCreateInfo.m_debugCallback = debugCallback;
+	wolfInstanceCreateInfo.m_htmlURL = "UI/UI.html";
+	wolfInstanceCreateInfo.m_uiFinalLayout = VK_IMAGE_LAYOUT_GENERAL;
 
 	Wolf::WolfEngine wolfInstance(wolfInstanceCreateInfo);
 
