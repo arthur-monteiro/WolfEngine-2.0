@@ -37,7 +37,7 @@ pkgs.mkShell {
     freetype
   ];
 
-  shellHook = ''
+  shellHook = ''  
     export WOLF_VARS="${pkgs.lib.makeLibraryPath [ 
       pkgs.vulkan-loader 
       pkgs.libGL
@@ -59,8 +59,9 @@ pkgs.mkShell {
     
     export VK_LAYER_PATH="${pkgs.vulkan-validation-layers}/share/vulkan/explicit_layer.d"
     export LD_LIBRARY_PATH="${pkgs.vulkan-validation-layers}/lib:$LD_LIBRARY_PATH"
+    export VK_ICD_FILENAMES="/run/opengl-driver/share/vulkan/icd.d/nvidia_icd.x86_64.json:/run/opengl-driver-32/share/vulkan/icd.d/nvidia_icd.i686.json"
 
-    echo "--- Wolf engine environment loaded ---"
-    echo "Use LD_LIBRARY_PATH=$WOLF_VARS"
+    echo "--- Environment loaded ---"
+    echo "Use LD_LIBRARY_PATH=\$WOLF_VARS"
   '';
 }

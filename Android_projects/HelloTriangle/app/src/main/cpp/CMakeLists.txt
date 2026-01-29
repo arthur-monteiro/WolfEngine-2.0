@@ -21,9 +21,15 @@ add_library(${PROJECT_NAME} SHARED
 set(CMAKE_SHARED_LINKER_FLAGS
         "${CMAKE_SHARED_LINKER_FLAGS} -u Java_com_google_androidgamesdk_GameActivity_initializeNativeCode")
 
-get_filename_component(SHADERC_SRC
-        ${ANDROID_NDK}/sources/third_party/shaderc
-        ABSOLUTE)
+if(WIN32)
+	get_filename_component(SHADERC_SRC
+		${ANDROID_NDK}/sources/third_party/shaderc
+		ABSOLUTE)
+elseif(UNIX AND NOT APPLE)
+	get_filename_component(SHADERC_SRC
+		${CMAKE_CURRENT_SOURCE_DIR}/../../../../../../ThirdParty/android/libshaderc
+		ABSOLUTE)
+endif()
 
 add_library(shaderc_lib STATIC IMPORTED)
 set_target_properties(shaderc_lib PROPERTIES IMPORTED_LOCATION
