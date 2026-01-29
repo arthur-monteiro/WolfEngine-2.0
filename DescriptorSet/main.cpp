@@ -22,16 +22,33 @@ void debugCallback(Wolf::Debug::Severity severity, Wolf::Debug::Type type, const
 	std::cout << message << std::endl;
 }
 
-int main()
+int main(int argc, char* argv[])
 {
+	bool doScreenshot = false;
+	bool exitAfterFirstFrame = false;
+	if (argc >= 2)
+	{
+		const std::string option = argv[1];
+		if (option == "--screenshotThenQuit")
+		{
+			doScreenshot = true;
+			exitAfterFirstFrame = true;
+		}
+	}
+
 	Wolf::WolfInstanceCreateInfo wolfInstanceCreateInfo;
-	wolfInstanceCreateInfo.configFilename = "config/config.ini";
-	wolfInstanceCreateInfo.debugCallback = debugCallback;
+	wolfInstanceCreateInfo.m_configFilename = "config/config.ini";
+	wolfInstanceCreateInfo.m_debugCallback = debugCallback;
 
 	Wolf::WolfEngine wolfInstance(wolfInstanceCreateInfo);
 
 	Wolf::ResourceUniqueOwner<UniquePass> pass(new UniquePass);
 	wolfInstance.initializePass(pass.createNonOwnerResource<Wolf::CommandRecordBase>());
+
+	if (doScreenshot)
+	{
+		pass->requestScreenshot();
+	}
 
 	while (!wolfInstance.windowShouldClose())
 	{
@@ -41,6 +58,11 @@ int main()
 		wolfInstance.updateBeforeFrame();
 		uint32_t swapChainImageIdx = wolfInstance.acquireNextSwapChainImage();
 		wolfInstance.frame(passes, pass->getSemaphore(swapChainImageIdx), swapChainImageIdx);
+
+		if (exitAfterFirstFrame)
+		{
+			break;
+		}
 	}
 
 	wolfInstance.waitIdle();

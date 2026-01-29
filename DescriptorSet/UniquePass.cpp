@@ -2,6 +2,8 @@
 
 #include <filesystem>
 #include <fstream>
+#define STB_IMAGE_WRITE_IMPLEMENTATION
+#include <stb_image_write.h>
 
 #include <Attachment.h>
 #include <DescriptorSetGenerator.h>
@@ -130,6 +132,8 @@ void UniquePass::record(const RecordContext& context)
 	m_commandBuffer->endRenderPass();
 
 	m_commandBuffer->endCommandBuffer();
+
+	m_lastSwapChainImage = context.swapchainImage;
 }
 
 void UniquePass::submit(const SubmitContext& context)
@@ -147,6 +151,26 @@ void UniquePass::submit(const SubmitContext& context)
 		context.graphicAPIManager->waitIdle();
 		createPipeline(m_swapChainWidth, m_swapChainHeight);
 	}
+
+	if (m_screenshotRequested)
+	{
+		context.graphicAPIManager->waitIdle();
+
+		std::vector<uint8_t> fullImageData;
+		m_lastSwapChainImage->exportToBuffer(fullImageData);
+
+		Wolf::Extent3D swapchainExtent = m_lastSwapChainImage->getExtent();
+
+		uint32_t channelCount = 4;
+		stbi_write_png("screenshot.png", swapchainExtent.width, swapchainExtent.height, channelCount, fullImageData.data(), swapchainExtent.width * channelCount);
+
+		m_screenshotRequested = false;
+	}
+}
+
+void UniquePass::requestScreenshot()
+{
+	m_screenshotRequested = true;
 }
 
 void UniquePass::createDepthImage(const InitializationContext& context)
