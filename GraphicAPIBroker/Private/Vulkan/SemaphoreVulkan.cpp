@@ -9,9 +9,9 @@ Wolf::SemaphoreVulkan::SemaphoreVulkan(VkPipelineStageFlags pipelineStage, Type 
     VkSemaphoreCreateInfo semaphoreInfo = {};
     semaphoreInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
 
+    VkSemaphoreTypeCreateInfo timelineCreateInfo{};
     if (type == Type::TIMELINE)
     {
-        VkSemaphoreTypeCreateInfo timelineCreateInfo;
         timelineCreateInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_TYPE_CREATE_INFO;
         timelineCreateInfo.pNext = nullptr;
         timelineCreateInfo.semaphoreType = VK_SEMAPHORE_TYPE_TIMELINE;

@@ -1,17 +1,84 @@
 #include "UltraLight.h"
 
 #include <chrono>
+#include <fstream>
 #include <iostream>
 #include <thread>
+#include <vector>
+
+#include <Ultralight/platform/FileSystem.h>
+#include <Ultralight/Buffer.h>
 
 #include "Configuration.h"
 #include "Debug.h"
 #include "GPUSemaphore.h"
 #include "InputHandler.h"
 #include "ProfilerCommon.h"
-#include "GPUSemaphore.h"
-#include "Timer.h"
 #include "Window.h"
+
+class CustomFileSystem : public ultralight::FileSystem
+{
+public:
+    CustomFileSystem() {}
+    ~CustomFileSystem() override {}
+
+    bool FileExists(const ultralight::String& path) override
+    {
+        std::ifstream f(path.utf8().data());
+        return f.good();
+    }
+
+    ultralight::RefPtr<ultralight::Buffer> OpenFile(const ultralight::String& path) override
+    {
+        Wolf::Debug::sendInfo("Ultralight CustomFileSystem: requesting: " + std::string(path.utf8().data()));
+        std::string p = path.utf8().data();
+
+        std::ifstream file(p, std::ios::binary | std::ios::ate);
+        if (!file.is_open())
+            {
+            Wolf::Debug::sendError("Failed to open: " + p);
+            return nullptr;
+        }
+
+        std::streamsize size = file.tellg();
+        file.seekg(0, std::ios::beg);
+
+        if (size <= 0)
+            {
+            return nullptr;
+        }
+
+        std::vector<char> buffer(size);
+        if (file.read(buffer.data(), size))
+        {
+            return ultralight::Buffer::CreateFromCopy(buffer.data(), size);
+        }
+
+        return nullptr;
+    }
+
+    ultralight::String GetFileMimeType(const ultralight::String& path) override
+    {
+        std::string p = path.utf8().data();
+        size_t dot = p.find_last_of(".");
+        if (dot == std::string::npos) return "application/octet-stream";
+
+        std::string ext = p.substr(dot + 1);
+        if (ext == "html" || ext == "htm") return "text/html";
+        if (ext == "css") return "text/css";
+        if (ext == "js")  return "text/javascript";
+        if (ext == "png") return "image/png";
+        if (ext == "jpg" || ext == "jpeg") return "image/jpeg";
+        if (ext == "svg") return "image/svg+xml";
+
+        return "application/octet-stream";
+    }
+
+    ultralight::String GetFileCharset(const ultralight::String& path) override
+    {
+        return "utf-8";
+    }
+};
 
 using namespace ultralight;
 
@@ -96,7 +163,7 @@ void Wolf::UltraLight::processImplementation(const char* htmlURL, ImageLayout fi
 {
 #ifdef _WIN32
     SetThreadDescription(GetCurrentThread(), L"UltraLight - Update");
-#endif 
+#endif
 
     std::string currentPath = std::filesystem::current_path().string();
     std::ranges::replace(currentPath, '\\', '/');
@@ -162,7 +229,7 @@ void Wolf::UltraLight::processImplementation(const char* htmlURL, ImageLayout fi
 
         m_ultraLightImplementation->update(m_inputHandler);
         m_ultraLightImplementation->render();
-        
+
         m_needUpdate = false;
     }
 }
@@ -171,25 +238,28 @@ Wolf::UltraLight::UltraLightImplementation::UltraLightImplementation(uint32_t wi
     const std::function<void(ultralight::JSObject& jsObject)>& bindCallbacks)
 	: m_finalLayout(finalLayout), m_filePath(std::move(filePath)), m_bindUltralightCallbacks(bindCallbacks)
 {
+    Debug::sendInfo("Loading " + absoluteURL);
+
     m_lastUpdated = std::filesystem::last_write_time(m_filePath);
     m_viewListener.reset(new UltralightViewListener(inputHandler));
 
     Config config;
+    config.resource_path_prefix = "./resources/";
+
     ViewConfig viewConfig;
     viewConfig.initial_device_scale = 1.0;
     viewConfig.is_accelerated = false;
     viewConfig.is_transparent = true;
 
+    Platform::instance().set_file_system(new CustomFileSystem());
     Platform::instance().set_surface_factory(&m_surfaceFactory);
     Platform::instance().set_config(config);
     Platform::instance().set_font_loader(GetPlatformFontLoader());
-    Platform::instance().set_file_system(GetPlatformFileSystem("."));
     Platform::instance().set_logger(this);
     m_renderer = Renderer::Create();
     m_view = m_renderer->CreateView(width, height, viewConfig, nullptr);
     m_view->set_load_listener(this);
     m_view->set_view_listener(m_viewListener.get());
-    //m_view->LoadHTML(htmlString);
     m_view->LoadURL(absoluteURL.c_str());
     m_view->Focus();
 
@@ -310,7 +380,7 @@ void Wolf::UltraLight::UltraLightImplementation::update(const ResourceNonOwner<I
     mouseEvent.button = MouseEvent::kButton_Left;
 
     m_view->FireMouseEvent(mouseEvent);
-    
+
     if (inputHandler->mouseButtonPressedThisFrame(GLFW_MOUSE_BUTTON_LEFT, this))
     {
         mouseEvent.type = MouseEvent::kType_MouseDown;
@@ -386,7 +456,7 @@ void Wolf::UltraLight::UltraLightImplementation::update(const ResourceNonOwner<I
 
     inputHandler->clearCache(this);
     inputHandler->unlockCache(this);
-    
+
     m_renderer->Update();
 }
 
