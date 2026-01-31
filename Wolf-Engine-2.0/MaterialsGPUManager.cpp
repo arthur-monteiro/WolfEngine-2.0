@@ -19,7 +19,7 @@ Wolf::MaterialsGPUManager::MaterialsGPUManager(const std::vector<DescriptorSetGe
 
 	descriptorSetLayoutGenerator.reset();
 	descriptorSetLayoutGenerator.addImages(DescriptorType::SAMPLED_IMAGE, ShaderStageFlagBits::FRAGMENT | ShaderStageFlagBits::CLOSEST_HIT, BINDING_SLOT, MAX_IMAGES,
-		VK_DESCRIPTOR_BINDING_PARTIALLY_BOUND_BIT | VK_DESCRIPTOR_BINDING_UPDATE_AFTER_BIND_BIT);
+		DESCRIPTOR_BINDING_PARTIALLY_BOUND_BIT | DESCRIPTOR_BINDING_UPDATE_AFTER_BIND_BIT);
 	descriptorSetLayoutGenerator.addSampler(ShaderStageFlagBits::FRAGMENT | ShaderStageFlagBits::CLOSEST_HIT, BINDING_SLOT + 1);
 	descriptorSetLayoutGenerator.addStorageBuffer(ShaderStageFlagBits::FRAGMENT | ShaderStageFlagBits::CLOSEST_HIT, BINDING_SLOT + 2); // Texture sets
 	descriptorSetLayoutGenerator.addStorageBuffer(ShaderStageFlagBits::FRAGMENT | ShaderStageFlagBits::CLOSEST_HIT, BINDING_SLOT + 3); // Materials
