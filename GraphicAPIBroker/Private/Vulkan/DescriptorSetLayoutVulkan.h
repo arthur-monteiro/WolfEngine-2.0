@@ -1,6 +1,7 @@
 #pragma once
 
 #include <span>
+#include <vulkan/vulkan_core.h>
 
 #include "../../Public/DescriptorSetLayout.h"
 
@@ -25,5 +26,9 @@ namespace Wolf
 		VkDescriptorSetLayout m_descriptorSetLayout = 0;
 #endif
 		bool m_containsUniformBuffer = false;
+
+	private:
+		static VkDescriptorBindingFlagBits wolfDescriptorBindingFlagToVkType(DescriptorBindingFlagBits descriptorBindingFlagBits);
+		static VkDescriptorBindingFlags wolfDescriptorBindingFlagsToVkType(DescriptorBindingFlags descriptorBindingFlags);
 	};
 }

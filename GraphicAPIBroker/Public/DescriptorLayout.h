@@ -1,7 +1,5 @@
 #pragma once
 
-#include <vulkan/vulkan_core.h>
-
 #include "ShaderStages.h"
 
 namespace Wolf
@@ -17,6 +15,14 @@ namespace Wolf
 		ACCELERATION_STRUCTURE
 	};
 
+	enum DescriptorBindingFlagBits : uint32_t
+	{
+		DESCRIPTOR_BINDING_UPDATE_AFTER_BIND_BIT = 1 << 0,
+		DESCRIPTOR_BINDING_PARTIALLY_BOUND_BIT = 1 << 1,
+		DESCRIPTOR_BINDING_FLAG_MAX_BIT = 1 << 1,
+	};
+	using DescriptorBindingFlags = uint32_t;
+
 	struct DescriptorLayout
 	{
 		DescriptorType descriptorType;
@@ -25,6 +31,6 @@ namespace Wolf
 		uint32_t count = 1;
 		uint32_t arrayIndex = 0;
 
-		VkDescriptorBindingFlags bindingFlags = 0;
+		DescriptorBindingFlags bindingFlags = 0;
 	};
 }

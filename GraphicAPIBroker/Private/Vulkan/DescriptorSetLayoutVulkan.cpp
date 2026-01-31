@@ -52,7 +52,7 @@ Wolf::DescriptorSetLayoutVulkan::DescriptorSetLayoutVulkan(const std::span<const
 
 		bindings.push_back(descriptorSetLayoutBinding);
 
-		bindingFlags.push_back(descriptorLayout.bindingFlags);
+		bindingFlags.push_back(wolfDescriptorBindingFlagsToVkType(descriptorLayout.bindingFlags));
 	}
 
 	VkDescriptorSetLayoutBindingFlagsCreateInfo bindingFlagsCreateInfo{};
@@ -75,4 +75,32 @@ Wolf::DescriptorSetLayoutVulkan::DescriptorSetLayoutVulkan(const std::span<const
 Wolf::DescriptorSetLayoutVulkan::~DescriptorSetLayoutVulkan()
 {
 	vkDestroyDescriptorSetLayout(g_vulkanInstance->getDevice(), m_descriptorSetLayout, nullptr);
+}
+
+VkDescriptorBindingFlagBits Wolf::DescriptorSetLayoutVulkan::wolfDescriptorBindingFlagToVkType(DescriptorBindingFlagBits descriptorBindingFlagBits)
+{
+	switch (descriptorBindingFlagBits)
+	{
+		case DESCRIPTOR_BINDING_UPDATE_AFTER_BIND_BIT:
+			return VK_DESCRIPTOR_BINDING_UPDATE_AFTER_BIND_BIT;
+		case DESCRIPTOR_BINDING_PARTIALLY_BOUND_BIT:
+			return VK_DESCRIPTOR_BINDING_PARTIALLY_BOUND_BIT;
+		default:
+			Debug::sendCriticalError("Unhandled descriptor layout");
+			return VK_DESCRIPTOR_BINDING_FLAG_BITS_MAX_ENUM;
+	}
+}
+
+VkDescriptorBindingFlags Wolf::DescriptorSetLayoutVulkan::wolfDescriptorBindingFlagsToVkType(DescriptorBindingFlags descriptorBindingFlags)
+{
+	VkDescriptorBindingFlags vkDescriptorBindingFlags = 0;
+
+#define ADD_FLAG_IF_PRESENT(flag) if (vkDescriptorBindingFlags & (flag)) vkDescriptorBindingFlags |= wolfDescriptorBindingFlagToVkType(flag)
+
+	for (uint32_t flag = 1; flag < DESCRIPTOR_BINDING_FLAG_MAX_BIT; flag <<= 1)
+		ADD_FLAG_IF_PRESENT(static_cast<DescriptorBindingFlagBits>(flag));
+
+#undef ADD_FLAG_IF_PRESENT
+
+	return vkDescriptorBindingFlags;
 }

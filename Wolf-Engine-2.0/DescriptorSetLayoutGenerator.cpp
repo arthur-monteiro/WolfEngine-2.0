@@ -30,7 +30,7 @@ void Wolf::DescriptorSetLayoutGenerator::addStorageBuffer(ShaderStageFlags acces
 	m_descriptorLayouts.push_back(descriptorLayout);
 }
 
-void Wolf::DescriptorSetLayoutGenerator::addStorageBuffers(ShaderStageFlags accessibility, uint32_t binding, uint32_t count, VkDescriptorBindingFlags bindingFlags)
+void Wolf::DescriptorSetLayoutGenerator::addStorageBuffers(ShaderStageFlags accessibility, uint32_t binding, uint32_t count, DescriptorBindingFlags bindingFlags)
 {
 	DescriptorLayout descriptorLayout;
 	descriptorLayout.accessibility = accessibility;
@@ -62,7 +62,7 @@ void Wolf::DescriptorSetLayoutGenerator::addSampler(ShaderStageFlags accessibili
 	m_descriptorLayouts.push_back(descriptorLayout);
 }
 
-void Wolf::DescriptorSetLayoutGenerator::addImages(DescriptorType descriptorType, ShaderStageFlags accessibility, uint32_t binding, uint32_t count, VkDescriptorBindingFlags bindingFlags)
+void Wolf::DescriptorSetLayoutGenerator::addImages(DescriptorType descriptorType, ShaderStageFlags accessibility, uint32_t binding, uint32_t count, DescriptorBindingFlags bindingFlags)
 {
 	DescriptorLayout descriptorLayout;
 	descriptorLayout.accessibility = accessibility;

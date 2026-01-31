@@ -1,5 +1,7 @@
 #pragma once
 
+#include <vulkan/vulkan_core.h>
+
 #include "../../Public/DescriptorSet.h"
 
 namespace Wolf
