@@ -407,12 +407,13 @@ void Wolf::Vulkan::createDevice()
 	VkPhysicalDeviceVulkan12Features features12{};
 	features12.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_2_FEATURES;
 	features12.bufferDeviceAddress = VK_TRUE;
+	features12.timelineSemaphore = VK_TRUE;
 	features12.pNext = &features11;
 
 	VkPhysicalDeviceVulkan13Features features13{};
 	features13.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_3_FEATURES;
-	features13.pNext = &features12;
 	features13.synchronization2 = VK_TRUE;
+	features13.pNext = &features12;
 
 	VkPhysicalDeviceRayTracingPipelineFeaturesKHR rayTracingPipelineFeatures{};
 	rayTracingPipelineFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_PIPELINE_FEATURES_KHR;
@@ -444,12 +445,17 @@ void Wolf::Vulkan::createDevice()
     {
         supportedFeatures.pNext = &features13;
     }
+
 	supportedFeatures.features.shaderStorageImageMultisample = VK_TRUE;
 	vkGetPhysicalDeviceFeatures2(m_physicalDevice, &supportedFeatures);
 
 	if (features12.bufferDeviceAddress == VK_FALSE)
 	{
 		Debug::sendWarning("bufferDeviceAddress not supported");
+	}
+	if (features12.timelineSemaphore == VK_FALSE)
+	{
+		Debug::sendWarning("timelineSemaphore not supported");
 	}
 
 	VkDeviceCreateInfo createInfo = {};

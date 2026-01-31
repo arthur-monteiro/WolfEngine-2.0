@@ -6,6 +6,10 @@
 #include <android/native_window_jni.h>
 #endif
 
+#ifdef __linux__
+#include <dlfcn.h>
+#endif
+
 #include <Configuration.h>
 #include <RuntimeContext.h>
 
@@ -49,6 +53,12 @@ Wolf::WolfEngine::WolfEngine(const WolfInstanceCreateInfo& createInfo) : m_globa
 	{
 #ifdef _WIN32
 		LoadLibraryW(L"renderdoc.dll");
+#elif __linux__
+		void* handle = dlopen("librenderdoc.so", RTLD_NOW | RTLD_LOCAL);
+		if (!handle)
+		{
+			Debug::sendError("Can't open renderdoc so");
+		}
 #else
 		Debug::sendError("Can't open renderdoc dll");
 #endif
