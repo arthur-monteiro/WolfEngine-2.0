@@ -8,7 +8,7 @@ Wolf::GraphicAPIManager* Wolf::GraphicAPIManager::instanciateGraphicAPIManager
 #ifndef __ANDROID__
 	(GLFWwindow* glfwWindowPtr, bool useOVR)
 #else
-	(struct ANativeWindow* window)
+	(ANativeWindow* window)
 #endif
 {
 #ifdef WOLF_VULKAN

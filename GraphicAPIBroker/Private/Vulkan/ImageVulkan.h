@@ -33,17 +33,18 @@ namespace Wolf
 
 		void setImageLayout(const TransitionLayoutInfo& transitionLayoutInfo) override;
 		void transitionImageLayout(const CommandBuffer& commandBuffer, const TransitionLayoutInfo& transitionLayoutInfo) override;
-		void setImageLayoutWithoutOperation(VkImageLayout newImageLayout, uint32_t baseMipLevel = 0, uint32_t levelCount = MAX_MIP_COUNT) override;
+		void setImageLayoutWithoutOperation(ImageLayout newImageLayout, uint32_t baseMipLevel = 0, uint32_t levelCount = MAX_MIP_COUNT) override;
 
 		[[nodiscard]] VkImage getImage() const { return m_image; }
 		[[nodiscard]] VkDeviceMemory getImageMemory() const { return m_imageMemory; }
 		[[nodiscard]] Format getFormat() const override { return m_imageFormat; }
 		[[nodiscard]] SampleCountFlagBits getSampleCount() const override { return m_sampleCount; }
 		[[nodiscard]] Extent3D getExtent() const override { return { m_extent.width, m_extent.height, m_extent.depth }; }
-		[[nodiscard]] VkImageLayout getImageLayout(uint32_t mipLevel = 0, uint32_t layer = 0) const override { return m_imageLayouts[layer][mipLevel]; }
 		[[nodiscard]] uint32_t getMipLevelCount() const override { return m_mipLevelCount; }
 		ImageView getImageView(Format format) override;
 		ImageView getDefaultImageView() override;
+
+		[[nodiscard]] VkImageLayout getImageLayout(uint32_t mipLevel = 0, uint32_t layer = 0) const { return m_imageLayouts[layer][mipLevel]; }
 
 	private:
 		void createImageView(VkFormat format);

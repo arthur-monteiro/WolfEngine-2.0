@@ -45,7 +45,7 @@ void Wolf::UltraLightSurface::Resize(uint32_t width, uint32_t height)
 	for (ResourceUniqueOwner<Image>& image : m_images)
 	{
 		image.reset(Image::createImage(createImageInfo));
-		image->setImageLayout({ VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, VK_ACCESS_TRANSFER_READ_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT });
+		image->setImageLayout({ ImageLayout::TRANSFER_SRC_OPTIMAL, VK_ACCESS_TRANSFER_READ_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT });
 		image->getResourceLayout(m_imageResourceLayout);
 	}
 

@@ -15,7 +15,7 @@
 
 using namespace ultralight;
 
-Wolf::UltraLight::UltraLight(const char* htmlURL, VkImageLayout finalLayout, const std::function<void(ultralight::JSObject& jsObject)>& bindCallbacks, const ResourceNonOwner<InputHandler>& inputHandler) : m_inputHandler(inputHandler)
+Wolf::UltraLight::UltraLight(const char* htmlURL, ImageLayout finalLayout, const std::function<void(ultralight::JSObject& jsObject)>& bindCallbacks, const ResourceNonOwner<InputHandler>& inputHandler) : m_inputHandler(inputHandler)
 {
     m_thread = std::thread(&UltraLight::processImplementation, this, htmlURL, finalLayout, bindCallbacks);
 }
@@ -92,7 +92,7 @@ void Wolf::UltraLight::resize(uint32_t width, uint32_t height)
 #include <Windows.h>
 #endif
 
-void Wolf::UltraLight::processImplementation(const char* htmlURL, VkImageLayout finalLayout, const std::function<void(ultralight::JSObject& jsObject)>& bindCallbacks)
+void Wolf::UltraLight::processImplementation(const char* htmlURL, ImageLayout finalLayout, const std::function<void(ultralight::JSObject& jsObject)>& bindCallbacks)
 {
 #ifdef _WIN32
     SetThreadDescription(GetCurrentThread(), L"UltraLight - Update");
@@ -167,7 +167,7 @@ void Wolf::UltraLight::processImplementation(const char* htmlURL, VkImageLayout 
     }
 }
 
-Wolf::UltraLight::UltraLightImplementation::UltraLightImplementation(uint32_t width, uint32_t height, VkImageLayout finalLayout, const std::string& absoluteURL, std::string filePath, const ResourceNonOwner<InputHandler>& inputHandler,
+Wolf::UltraLight::UltraLightImplementation::UltraLightImplementation(uint32_t width, uint32_t height, ImageLayout finalLayout, const std::string& absoluteURL, std::string filePath, const ResourceNonOwner<InputHandler>& inputHandler,
     const std::function<void(ultralight::JSObject& jsObject)>& bindCallbacks)
 	: m_finalLayout(finalLayout), m_filePath(std::move(filePath)), m_bindUltralightCallbacks(bindCallbacks)
 {
@@ -420,7 +420,7 @@ void Wolf::UltraLight::UltraLightImplementation::submitCopyImageCommandBuffer() 
     m_copyImageCommandBuffers[imageIdx]->submit(waitSemaphores, signalSemaphores, nullptr);
 }
 
-void Wolf::UltraLight::UltraLightImplementation::createOutputAndRecordCopyCommandBuffer(uint32_t width, uint32_t height, VkImageLayout finalLayout)
+void Wolf::UltraLight::UltraLightImplementation::createOutputAndRecordCopyCommandBuffer(uint32_t width, uint32_t height, ImageLayout finalLayout)
 {
     CreateImageInfo createImageInfo;
     createImageInfo.extent = { width, height, 1 };
@@ -440,11 +440,11 @@ void Wolf::UltraLight::UltraLightImplementation::createOutputAndRecordCopyComman
     transitionLayoutInfo.baseArrayLayer = 0;
     transitionLayoutInfo.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
 
-    if (finalLayout == VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL)
+    if (finalLayout == ImageLayout::SHADER_READ_ONLY_OPTIMAL)
     {
         transitionLayoutInfo.dstPipelineStageFlags = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
     }
-    else if (finalLayout == VK_IMAGE_LAYOUT_GENERAL)
+    else if (finalLayout == ImageLayout::GENERAL)
     {
         transitionLayoutInfo.dstPipelineStageFlags = VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT;
     }
@@ -474,7 +474,7 @@ void Wolf::UltraLight::UltraLightImplementation::createOutputAndRecordCopyComman
         copyRegion.extent = { width, height, 1 };
 
         const UltraLightSurface* surface = dynamic_cast<UltraLightSurface*>(m_view->surface());
-        m_userInterfaceImage->transitionImageLayout(*commandBuffer, { VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_ACCESS_TRANSFER_WRITE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, 0, 1 });
+        m_userInterfaceImage->transitionImageLayout(*commandBuffer, { ImageLayout::TRANSFER_DST_OPTIMAL, VK_ACCESS_TRANSFER_WRITE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, 0, 1 });
         m_userInterfaceImage->recordCopyGPUImage(surface->getImage(i), copyRegion, *commandBuffer);
         m_userInterfaceImage->transitionImageLayout(*commandBuffer, transitionLayoutInfo);
 

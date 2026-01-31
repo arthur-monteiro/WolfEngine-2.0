@@ -5,6 +5,7 @@
 #include "BufferVulkan.h"
 #include "Configuration.h"
 #include "DescriptorSetLayoutVulkan.h"
+#include "ImageLayoutVulkan.h"
 #include "RuntimeContext.h"
 #include "SamplerVulkan.h"
 #include "TopLevelAccelerationStructureVulkan.h"
@@ -71,7 +72,7 @@ void Wolf::DescriptorSetVulkan::update(const DescriptorSetUpdateInfo& descriptor
 			{
 				if (descriptorImage.images[j].imageView)
 				{
-					descriptorImageInfos[i][j].imageLayout = descriptorImage.images[j].imageLayout;
+					descriptorImageInfos[i][j].imageLayout = wolfImageLayoutToVulkanImageLayout(descriptorImage.images[j].imageLayout);
 					descriptorImageInfos[i][j].imageView = static_cast<VkImageView>(descriptorImage.images[j].imageView);
 				}
 				if (descriptorImage.images[j].sampler)

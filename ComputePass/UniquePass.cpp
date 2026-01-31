@@ -48,7 +48,7 @@ void UniquePass::record(const RecordContext& context)
 
 	const uint32_t outputImageIdx = context.swapChainImageIdx;
 
-	context.swapchainImage->transitionImageLayout(*m_commandBuffer, { VK_IMAGE_LAYOUT_GENERAL, VK_ACCESS_SHADER_WRITE_BIT, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT });
+	context.swapchainImage->transitionImageLayout(*m_commandBuffer, { ImageLayout::GENERAL, VK_ACCESS_SHADER_WRITE_BIT, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT });
 
 	m_commandBuffer->bindDescriptorSet(m_descriptorSets[outputImageIdx].get(), 0, *m_pipeline);
 	m_commandBuffer->bindPipeline(m_pipeline.get());
@@ -58,7 +58,7 @@ void UniquePass::record(const RecordContext& context)
 	const uint32_t groupSizeY = m_swapChainHeight % dispatchGroups.height != 0 ? m_swapChainHeight / dispatchGroups.height + 1 : m_swapChainHeight / dispatchGroups.height;
 	m_commandBuffer->dispatch(groupSizeX, groupSizeY, dispatchGroups.depth);
 
-	context.swapchainImage->transitionImageLayout(*m_commandBuffer, { VK_IMAGE_LAYOUT_PRESENT_SRC_KHR, 0, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT });
+	context.swapchainImage->transitionImageLayout(*m_commandBuffer, { ImageLayout::PRESENT_SRC_KHR, 0, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT });
 
 	m_commandBuffer->endCommandBuffer();
 
@@ -130,7 +130,7 @@ void UniquePass::createDescriptorSets(const std::vector<Image*>& outputImages)
 	for (uint32_t i = 0; i < outputImages.size(); ++i)
 	{
 		DescriptorSetGenerator descriptorSetGenerator(m_descriptorSetLayoutGenerator.getDescriptorLayouts());
-		DescriptorSetGenerator::ImageDescription image(VK_IMAGE_LAYOUT_GENERAL, outputImages[i]->getDefaultImageView());
+		DescriptorSetGenerator::ImageDescription image(ImageLayout::GENERAL, outputImages[i]->getDefaultImageView());
 		descriptorSetGenerator.setImage(0, image);
 
 		if(!m_descriptorSets[i])

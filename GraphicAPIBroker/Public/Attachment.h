@@ -1,10 +1,9 @@
 #pragma once
 
-#include <vulkan/vulkan_core.h>
-
 #include "Extents.h"
 #include "Image.h"
 #include "Formats.h"
+#include "ImageLayout.h"
 #include "ImageView.h"
 
 namespace Wolf
@@ -28,15 +27,15 @@ namespace Wolf
 		Extent2D extent = { 0, 0 };
 		Format format;
 		SampleCountFlagBits sampleCount;
-		VkImageLayout initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-		VkImageLayout finalLayout;
+		ImageLayout initialLayout = ImageLayout::UNDEFINED;
+		ImageLayout finalLayout;
 		AttachmentLoadOp loadOperation = AttachmentLoadOp::CLEAR;
 		AttachmentStoreOp storeOperation;
 		ImageView imageView;
 
 		ImageUsageFlags usageType;
 
-		Attachment(Extent2D extent, Format format, SampleCountFlagBits sampleCount, VkImageLayout finalLayout,
+		Attachment(Extent2D extent, Format format, SampleCountFlagBits sampleCount, ImageLayout finalLayout,
 			AttachmentStoreOp storeOperation, ImageUsageFlags usageType, ImageView imageView)
 		{
 			this->extent = extent;

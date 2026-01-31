@@ -35,9 +35,9 @@ namespace Wolf
 		void setFragmentShadingRate(FragmentShadingRateCombinerOp fragmentShadingRateCombinerOps[2], const Extent2D& fragmentExtent) const override;
 		void setViewport(const Viewport& viewport) const override;
 
-		void clearColorImage(const Image& image, VkImageLayout imageLayout, ColorFloat clearColor, const VkImageSubresourceRange& range) const override;
+		void clearColorImage(const Image& image, ImageLayout imageLayout, ColorFloat clearColor, const VkImageSubresourceRange& range) const override;
 		void fillBuffer(const Buffer& buffer, uint64_t  dstOffset, uint64_t size, uint32_t data) const override;
-		void imageCopy(const Image& imageSrc, VkImageLayout srcImageLayout, const Image& imageDst, VkImageLayout dstImageLayout, const ImageCopyInfo& imageCopyInfo) const override;
+		void imageCopy(const Image& imageSrc, ImageLayout srcImageLayout, const Image& imageDst, ImageLayout dstImageLayout, const ImageCopyInfo& imageCopyInfo) const override;
 
 		void draw(uint32_t vertexCount, uint32_t instanceCount, uint32_t firstVertex, uint32_t firstInstance) const override;
 		void drawIndexed(uint32_t indexCount, uint32_t instanceCount, uint32_t firstIndex, int32_t vertexOffset, uint32_t firstInstance) const override;

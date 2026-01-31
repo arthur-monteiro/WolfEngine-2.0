@@ -11,6 +11,10 @@
 #include <mutex>
 #include <vector>
 
+#ifdef __ANDROID__
+#include <android/native_window.h>
+#endif
+
 #include "../../Public/GraphicAPIManager.h"
 
 #include "CommandPool.h"
@@ -27,7 +31,7 @@ namespace Wolf
 #ifndef __ANDROID__
 		Vulkan(GLFWwindow* glfwWindowPtr, bool useOVR);
 #else
-		Vulkan(struct ANativeWindow* window);
+		Vulkan(::ANativeWindow* window);
 #endif
 		~Vulkan() override = default;
 

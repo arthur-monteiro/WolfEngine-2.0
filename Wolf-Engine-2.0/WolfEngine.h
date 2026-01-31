@@ -7,6 +7,7 @@
 #include "GPUDataTransfersManager.h"
 
 #ifdef __ANDROID__
+#include <android/native_window.h>
 #include <android/asset_manager.h>
 #endif
 
@@ -44,7 +45,7 @@ namespace Wolf
 		std::string m_configFilename;
 
 		const char* m_htmlURL = nullptr;
-		VkImageLayout m_uiFinalLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+		ImageLayout m_uiFinalLayout = ImageLayout::SHADER_READ_ONLY_OPTIMAL;
 #ifndef __ANDROID__
 		std::function<void(ultralight::JSObject& jsObject)> m_bindUltralightCallbacks;
 #endif
@@ -58,7 +59,7 @@ namespace Wolf
 		uint32_t m_threadCountBeforeFrameAndRecord = 1;
 
 #ifdef __ANDROID__
-        ANativeWindow* m_androidWindow;
+        ::ANativeWindow* m_androidWindow;
 		AAssetManager* m_assetManager;
 #endif
 

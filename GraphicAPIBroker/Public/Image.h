@@ -8,6 +8,7 @@
 
 #include "Extents.h"
 #include "Formats.h"
+#include "ImageLayout.h"
 #include "ImageView.h"
 
 namespace Wolf
@@ -61,7 +62,7 @@ namespace Wolf
 
 		struct TransitionLayoutInfo
 		{
-			VkImageLayout dstLayout;
+			ImageLayout dstLayout;
 			VkAccessFlags dstAccessMask;
 			VkPipelineStageFlags dstPipelineStageFlags;
 			uint32_t baseMipLevel = 0;
@@ -69,7 +70,7 @@ namespace Wolf
 			uint32_t baseArrayLayer = 0;
 			uint32_t layerCount = 1;
 
-			VkImageLayout oldLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+			ImageLayout oldLayout = ImageLayout::UNDEFINED;
 		};
 
 		virtual void copyCPUBuffer(const unsigned char* pixels, const TransitionLayoutInfo& finalLayout, uint32_t mipLevel = 0, uint32_t baseArrayLayer = 0) = 0;
@@ -93,13 +94,13 @@ namespace Wolf
 		virtual void getResourceLayout(VkSubresourceLayout& output) const = 0;
 		virtual void exportToBuffer(std::vector<uint8_t>& outBuffer) const = 0;
 
-		static constexpr TransitionLayoutInfo SampledInFragmentShader(uint32_t mipLevel = 0, VkImageLayout oldLayout = VK_IMAGE_LAYOUT_UNDEFINED, uint32_t baseArrayLayer = 0, uint32_t layerCount = 1)
+		static constexpr TransitionLayoutInfo SampledInFragmentShader(uint32_t mipLevel = 0, ImageLayout oldLayout = ImageLayout::UNDEFINED, uint32_t baseArrayLayer = 0, uint32_t layerCount = 1)
 		{
-			return { VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_ACCESS_SHADER_READ_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, mipLevel, 1, baseArrayLayer, layerCount, oldLayout };
+			return { ImageLayout::SHADER_READ_ONLY_OPTIMAL, VK_ACCESS_SHADER_READ_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, mipLevel, 1, baseArrayLayer, layerCount, oldLayout };
 		}
 		virtual void setImageLayout(const TransitionLayoutInfo& transitionLayoutInfo) = 0;
 		virtual void transitionImageLayout(const CommandBuffer& commandBuffer, const TransitionLayoutInfo& transitionLayoutInfo) = 0;
-		virtual void setImageLayoutWithoutOperation(VkImageLayout newImageLayout, uint32_t baseMipLevel = 0, uint32_t levelCount = MAX_MIP_COUNT) = 0;
+		virtual void setImageLayoutWithoutOperation(ImageLayout newImageLayout, uint32_t baseMipLevel = 0, uint32_t levelCount = MAX_MIP_COUNT) = 0;
 
 		float getBPP() const { return m_bpp; }
 
@@ -109,7 +110,6 @@ namespace Wolf
 		[[nodiscard]] virtual Format getFormat() const = 0;
 		[[nodiscard]] virtual SampleCountFlagBits getSampleCount() const = 0;
 		[[nodiscard]] virtual Extent3D getExtent() const = 0;
-		[[nodiscard]] virtual VkImageLayout getImageLayout(uint32_t mipLevel = 0, uint32_t layer = 0) const = 0;
 		[[nodiscard]] virtual uint32_t getMipLevelCount() const = 0;
 
 	protected:
