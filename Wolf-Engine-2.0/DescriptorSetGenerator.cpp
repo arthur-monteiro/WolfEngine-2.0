@@ -81,7 +81,7 @@ void Wolf::DescriptorSetGenerator::setUniformBuffer(uint32_t binding, const Unif
 	}
 }
 
-void Wolf::DescriptorSetGenerator::setCombinedImageSampler(uint32_t binding, VkImageLayout imageLayout, ImageView imageView, const Sampler& sampler)
+void Wolf::DescriptorSetGenerator::setCombinedImageSampler(uint32_t binding, ImageLayout imageLayout, ImageView imageView, const Sampler& sampler)
 {
 	const std::pair<DescriptorType, uint32_t /* descriptor index */>& descriptor = m_mapBindingCreateInfo[binding];
 

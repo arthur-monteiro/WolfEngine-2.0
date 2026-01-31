@@ -37,7 +37,7 @@ int main()
 	wolfInstanceCreateInfo.m_configFilename = "config/config.ini";
 	wolfInstanceCreateInfo.m_debugCallback = debugCallback;
 	wolfInstanceCreateInfo.m_htmlURL = "UI/UI.html";
-	wolfInstanceCreateInfo.m_uiFinalLayout = VK_IMAGE_LAYOUT_GENERAL;
+	wolfInstanceCreateInfo.m_uiFinalLayout = Wolf::ImageLayout::GENERAL;
 
 	Wolf::WolfEngine wolfInstance(wolfInstanceCreateInfo);
 

@@ -13,6 +13,7 @@
 #include "ImageVulkan.h"
 #include "FenceVulkan.h"
 #include "FrameBufferVulkan.h"
+#include "ImageLayoutVulkan.h"
 #include "PipelineVulkan.h"
 #include "RenderPassVulkan.h"
 #include "SemaphoreVulkan.h"
@@ -260,10 +261,10 @@ void Wolf::CommandBufferVulkan::setViewport(const Viewport& viewport) const
 	vkCmdSetViewport(getCommandBuffer(), 0, 1, &vkViewport);
 }
 
-void Wolf::CommandBufferVulkan::clearColorImage(const Image& image, VkImageLayout imageLayout, ColorFloat clearColor, const VkImageSubresourceRange& range) const
+void Wolf::CommandBufferVulkan::clearColorImage(const Image& image, ImageLayout imageLayout, ColorFloat clearColor, const VkImageSubresourceRange& range) const
 {
 	const VkClearColorValue color = { clearColor.components[0], clearColor.components[1], clearColor.components[2], clearColor.components[3] };
-	vkCmdClearColorImage(getCommandBuffer(), static_cast<const ImageVulkan*>(&image)->getImage(), imageLayout, &color, 1, &range);
+	vkCmdClearColorImage(getCommandBuffer(), static_cast<const ImageVulkan*>(&image)->getImage(), wolfImageLayoutToVulkanImageLayout(imageLayout), &color, 1, &range);
 }
 
 void Wolf::CommandBufferVulkan::fillBuffer(const Buffer& buffer, uint64_t dstOffset, uint64_t size, uint32_t data) const
@@ -271,8 +272,7 @@ void Wolf::CommandBufferVulkan::fillBuffer(const Buffer& buffer, uint64_t dstOff
 	vkCmdFillBuffer(getCommandBuffer(), static_cast<const BufferVulkan*>(&buffer)->getBuffer(), dstOffset, size, data);
 }
 
-void Wolf::CommandBufferVulkan::imageCopy(const Image& imageSrc, VkImageLayout srcImageLayout, const Image& imageDst,
-	VkImageLayout dstImageLayout, const ImageCopyInfo& imageCopyInfo) const
+void Wolf::CommandBufferVulkan::imageCopy(const Image& imageSrc, ImageLayout srcImageLayout, const Image& imageDst, ImageLayout dstImageLayout, const ImageCopyInfo& imageCopyInfo) const
 {
 	VkImageCopy copyRegion{};
 
@@ -290,7 +290,8 @@ void Wolf::CommandBufferVulkan::imageCopy(const Image& imageSrc, VkImageLayout s
 
 	copyRegion.extent = { imageCopyInfo.extent.x, imageCopyInfo.extent.y, imageCopyInfo.extent.z };
 
-	vkCmdCopyImage(getCommandBuffer(), static_cast<const ImageVulkan*>(&imageSrc)->getImage(), srcImageLayout, static_cast<const ImageVulkan*>(&imageDst)->getImage(), dstImageLayout, 1, &copyRegion);
+	vkCmdCopyImage(getCommandBuffer(), static_cast<const ImageVulkan*>(&imageSrc)->getImage(), wolfImageLayoutToVulkanImageLayout(srcImageLayout), static_cast<const ImageVulkan*>(&imageDst)->getImage(),
+		wolfImageLayoutToVulkanImageLayout(dstImageLayout), 1, &copyRegion);
 }
 
 void Wolf::CommandBufferVulkan::draw(uint32_t vertexCount, uint32_t instanceCount, uint32_t firstVertex, uint32_t firstInstance) const

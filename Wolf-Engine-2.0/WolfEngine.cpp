@@ -3,7 +3,6 @@
 #include "SwapChain.h"
 
 #ifdef __ANDROID__
-#include <android/native_window.h>
 #include <android/native_window_jni.h>
 #endif
 
@@ -67,8 +66,10 @@ Wolf::WolfEngine::WolfEngine(const WolfInstanceCreateInfo& createInfo) : m_globa
 	g_graphicAPIManagerInstance = m_graphicAPIManager.get();
 
 #ifdef __ANDROID__
-	int32_t width = ANativeWindow_getWidth(createInfo.m_androidWindow);
-	int32_t height = 2340; // ANativeWindow_getHeight(createInfo.m_androidWindow);
+	ANativeWindow* nativeWindow = createInfo.m_androidWindow;
+
+	int32_t width = ANativeWindow_getWidth(nativeWindow);
+	int32_t height = 2340; // ANativeWindow_getHeight(nativeWindow);
 	Extent2D extent = { static_cast<uint32_t>(width), static_cast<uint32_t>(height) };
 #else
 	Extent2D extent = chooseExtent(m_window->getWindow());
@@ -143,7 +144,7 @@ Wolf::WolfEngine::WolfEngine(const WolfInstanceCreateInfo& createInfo) : m_globa
 			}
 
 			defaultImageDescription[i].imageView = m_defaultImages[i]->getDefaultImageView();
-			defaultImageDescription[i].imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+			defaultImageDescription[i].imageLayout = ImageLayout::SHADER_READ_ONLY_OPTIMAL;
 		}
 
 		m_materialsManager.reset(new MaterialsGPUManager(defaultImageDescription, m_pushDataToGPU));

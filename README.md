@@ -33,11 +33,14 @@ A foundational utility library containing shared helpers, resource tracking, and
 - **Vulkan SDK:** 1.4.321.1 or higher.
 - **Compiler:** C++17/20 compliant compiler (MSVC, Clang, or GCC).
 
-### Build Instructions
+### Build instructions
 1. Clone the project:
    ```bash
    git clone https://github.com/arthur-monteiro/WolfEngine-2.0
 2. Build using CMake.
+
+#### Android setup
+For Android compilation, you need to compile `${ANDROID_NDK}/sources/third_party/shaderc` and copy the libs into `ThirdParty/android/libshaderc/libs`
 
 --- 
 
@@ -45,32 +48,40 @@ A foundational utility library containing shared helpers, resource tracking, and
 
 The following projects serve as both minimal implementation references and **automated graphic integration tests** to ensure API stability across updates:
 
-### HelloTriangle
+### Desktop
+#### HelloTriangle
 Standard graphics pipeline validation including vertex/fragment shader stages and swapchain presentation.
 <p align="center">
   <img src="./HelloTriangle/referenceGraphicTest.png"  width="1080"/>
 </p>
 
-### ComputePass
+#### ComputePass
 GPGPU workflow validation, testing compute shader dispatch.
 <p align="center">
   <img src="./ComputePass/referenceGraphicTest.png"  width="1080"/>
 </p>
 
-### DescriptorSet
+#### DescriptorSet
 Validation of shader resource binding, and descriptor pool management.
 <p align="center">
   <img src="./DescriptorSet/referenceGraphicTest.png"  width="1080"/>
 </p>
 
-### HelloRayTracing
+#### HelloRayTracing
 Validation of the hardware-accelerated ray tracing pipeline (`VK_KHR_ray_tracing`) including BLAS/TLAS building and ray-gen shaders.
 <p align="center">
   <img src="./HelloRayTracing/referenceGraphicTest.png"  width="1080"/>
 </p>
 
-### VariableRateShading
+#### VariableRateShading
 Validation of the `VK_KHR_fragment_shading_rate` extension. This test demonstrates the ability to dynamically adjust the shading rate across the frame to optimize fragment shader performance in areas with low visual detail.
 <p align="center">
   <img src="./VariableRateShading/referenceGraphicTest.png"  width="1080"/>
+</p>
+
+### Android
+#### HelloTriangle
+Standard graphics pipeline validation including vertex/fragment shader stages and swapchain presentation.
+<p align="center">
+  <img src="./Android_projects/HelloTriangle/referenceGraphicTest.png"  width="540"/>
 </p>

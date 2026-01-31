@@ -15,7 +15,7 @@ void registerGlobalDeviceForDebugMarker(VkDevice device);
 #endif
 
 #ifdef __ANDROID__
-Wolf::Vulkan::Vulkan(struct ANativeWindow* window)
+Wolf::Vulkan::Vulkan(::ANativeWindow* window)
 #else
 Wolf::Vulkan::Vulkan(GLFWwindow* glfwWindowPtr, bool useOVR)
 #endif

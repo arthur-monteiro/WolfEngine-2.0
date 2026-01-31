@@ -110,7 +110,7 @@ void Wolf::LightManager::updateDescriptorSet()
 {
 	Wolf::DescriptorSetGenerator descriptorSetGenerator(m_descriptorSetLayoutGenerator.getDescriptorLayouts());
 	descriptorSetGenerator.setUniformBuffer(0, *m_uniformBuffer);
-	descriptorSetGenerator.setCombinedImageSampler(1, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, m_skyCubeMap->getDefaultImageView(), *m_cubeMapSampler);
+	descriptorSetGenerator.setCombinedImageSampler(1, ImageLayout::SHADER_READ_ONLY_OPTIMAL, m_skyCubeMap->getDefaultImageView(), *m_cubeMapSampler);
 
 	m_descriptorSet->update(descriptorSetGenerator.getDescriptorSetCreateInfo());
 }

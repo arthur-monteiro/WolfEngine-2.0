@@ -76,9 +76,9 @@ Wolf::MaterialsGPUManager::MaterialsGPUManager(const std::vector<DescriptorSetGe
 		descriptorSetGenerator.setBuffer(BINDING_SLOT + 5, *m_virtualTextureManager->getFeedbackBuffer());
 
 		std::vector<DescriptorSetGenerator::ImageDescription> atlases(3);
-		atlases[0] = { VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, m_virtualTextureManager->getAtlasImage(m_albedoAtlasIdx)->getDefaultImageView()};
-		atlases[1] = { VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, m_virtualTextureManager->getAtlasImage(m_normalAtlasIdx)->getDefaultImageView()};
-		atlases[2] = { VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, m_virtualTextureManager->getAtlasImage(m_combinedAtlasIdx)->getDefaultImageView() };
+		atlases[0] = { ImageLayout::SHADER_READ_ONLY_OPTIMAL, m_virtualTextureManager->getAtlasImage(m_albedoAtlasIdx)->getDefaultImageView()};
+		atlases[1] = { ImageLayout::SHADER_READ_ONLY_OPTIMAL, m_virtualTextureManager->getAtlasImage(m_normalAtlasIdx)->getDefaultImageView()};
+		atlases[2] = { ImageLayout::SHADER_READ_ONLY_OPTIMAL, m_virtualTextureManager->getAtlasImage(m_combinedAtlasIdx)->getDefaultImageView() };
 
 		descriptorSetGenerator.setImages(BINDING_SLOT + 6, atlases);
 		descriptorSetGenerator.setSampler(BINDING_SLOT + 7, *m_virtualTextureSampler);
@@ -133,7 +133,7 @@ void Wolf::MaterialsGPUManager::addNewTextureSet(const TextureSetInfo& textureSe
 		{
 			if (const NullableResourceNonOwner<Image>& image = textureSetInfo.images2[i])
 			{
-				imagesCleaned.emplace_back(VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, image->getDefaultImageView());
+				imagesCleaned.emplace_back(ImageLayout::SHADER_READ_ONLY_OPTIMAL, image->getDefaultImageView());
 			}
 		}
 
@@ -437,7 +437,7 @@ void Wolf::MaterialsGPUManager::changeExistingTextureSetBeforeFrame(TextureSetCa
 					textureSetCacheInfo.textureSetIdx * sizeof(TextureSetGPUInfo) + offsetof(TextureSetGPUInfo, albedoIdx));
 			}
 
-			DescriptorSetGenerator::ImageDescription imageToUpdate{ VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, textureSetInfo.images2[0]->getDefaultImageView() };
+			DescriptorSetGenerator::ImageDescription imageToUpdate{ ImageLayout::SHADER_READ_ONLY_OPTIMAL, textureSetInfo.images2[0]->getDefaultImageView() };
 			updateImageInBindless(imageToUpdate, textureSetCacheInfo.albedoIdx);
 		}
 
@@ -450,7 +450,7 @@ void Wolf::MaterialsGPUManager::changeExistingTextureSetBeforeFrame(TextureSetCa
 					textureSetCacheInfo.textureSetIdx * sizeof(TextureSetGPUInfo) + offsetof(TextureSetGPUInfo, normalIdx));
 			}
 
-			DescriptorSetGenerator::ImageDescription imageToUpdate{ VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, textureSetInfo.images2[1]->getDefaultImageView() };
+			DescriptorSetGenerator::ImageDescription imageToUpdate{ ImageLayout::SHADER_READ_ONLY_OPTIMAL, textureSetInfo.images2[1]->getDefaultImageView() };
 			updateImageInBindless(imageToUpdate, textureSetCacheInfo.normalIdx);
 		}
 
@@ -463,7 +463,7 @@ void Wolf::MaterialsGPUManager::changeExistingTextureSetBeforeFrame(TextureSetCa
 					textureSetCacheInfo.textureSetIdx * sizeof(TextureSetGPUInfo) + offsetof(TextureSetGPUInfo, roughnessMetalnessAOIdx));
 			}
 
-			DescriptorSetGenerator::ImageDescription imageToUpdate{ VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, textureSetInfo.images2[2]->getDefaultImageView() };
+			DescriptorSetGenerator::ImageDescription imageToUpdate{ ImageLayout::SHADER_READ_ONLY_OPTIMAL, textureSetInfo.images2[2]->getDefaultImageView() };
 			updateImageInBindless(imageToUpdate, textureSetCacheInfo.roughnessMetalnessAOIdx);
 		}
 	}

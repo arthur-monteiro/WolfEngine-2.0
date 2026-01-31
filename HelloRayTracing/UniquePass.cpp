@@ -99,14 +99,14 @@ void UniquePass::record(const RecordContext& context)
 
 	m_commandBuffer->beginCommandBuffer();
 
-	context.swapchainImage->transitionImageLayout(*m_commandBuffer, { VK_IMAGE_LAYOUT_GENERAL, VK_ACCESS_SHADER_WRITE_BIT, VK_PIPELINE_STAGE_RAY_TRACING_SHADER_BIT_KHR });
+	context.swapchainImage->transitionImageLayout(*m_commandBuffer, { Wolf::ImageLayout::GENERAL, VK_ACCESS_SHADER_WRITE_BIT, VK_PIPELINE_STAGE_RAY_TRACING_SHADER_BIT_KHR });
 
 	m_commandBuffer->bindPipeline(m_pipeline.get());
 	m_commandBuffer->bindDescriptorSet(m_descriptorSets[context.swapChainImageIdx].get(), 0, *m_pipeline);
 
 	m_commandBuffer->traceRays(m_shaderBindingTable.get(), context.swapchainImage->getExtent());
 
-	context.swapchainImage->transitionImageLayout(*m_commandBuffer, { VK_IMAGE_LAYOUT_PRESENT_SRC_KHR, 0, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT });
+	context.swapchainImage->transitionImageLayout(*m_commandBuffer, { Wolf::ImageLayout::PRESENT_SRC_KHR, 0, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT });
 
 	m_commandBuffer->endCommandBuffer();
 
@@ -191,7 +191,7 @@ void UniquePass::createDescriptorSets(const InitializationContext& context)
 {
 	for (uint32_t i = 0; i < context.swapChainImageCount; ++i)
 	{
-		DescriptorSetGenerator::ImageDescription image(VK_IMAGE_LAYOUT_GENERAL, context.swapChainImages[i]->getDefaultImageView());
+		DescriptorSetGenerator::ImageDescription image(Wolf::ImageLayout::GENERAL, context.swapChainImages[i]->getDefaultImageView());
 
 		DescriptorSetGenerator descriptorSetGenerator(m_descriptorSetLayoutGenerator.getDescriptorLayouts());
 		descriptorSetGenerator.setAccelerationStructure(0, *m_tlas);

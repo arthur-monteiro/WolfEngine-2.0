@@ -31,7 +31,7 @@ namespace Wolf
 		virtual void recordDraws(const RecordContext& context) = 0;
 		virtual const CommandBuffer& getCommandBuffer(const RecordContext& context) = 0;
 		virtual ImageUsageFlags getAdditionalUsages() { return 0; }
-		virtual VkImageLayout getFinalLayout() { return VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL; }
+		virtual ImageLayout getFinalLayout() { return ImageLayout::DEPTH_STENCIL_ATTACHMENT_OPTIMAL; }
 
 		/* Parameters */
 		std::unique_ptr<RenderPass> m_renderPass;

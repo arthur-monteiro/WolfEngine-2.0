@@ -3,6 +3,7 @@
 #include <vector>
 
 #include "DescriptorLayout.h"
+#include "ImageLayout.h"
 #include "ImageView.h"
 
 namespace Wolf
@@ -25,7 +26,7 @@ namespace Wolf
 
 		struct ImageData
 		{
-			VkImageLayout imageLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+			ImageLayout imageLayout = ImageLayout::UNDEFINED;
 			ImageView imageView = IMAGE_VIEW_NULL;
 			const Sampler* sampler = nullptr;
 		};

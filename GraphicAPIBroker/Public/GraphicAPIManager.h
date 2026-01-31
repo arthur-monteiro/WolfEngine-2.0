@@ -1,9 +1,6 @@
 #pragma once
 
 #ifdef WOLF_VULKAN
-// START TEMP
-#include <vulkan/vulkan.h>
-// END TEMP
 
 #define WOLF_VULKAN_1_1
 #ifndef WOLF_VULKAN_FORCE_1_1
@@ -12,7 +9,10 @@
 #define WOLF_VULKAN_1_3
 #endif
 #endif
+#endif
 
+#ifdef __ANDROID__
+#include <android/native_window.h>
 #endif
 
 #include "Formats.h"
@@ -28,7 +28,7 @@ namespace Wolf
 #ifndef __ANDROID__
 			(GLFWwindow* glfwWindowPtr, bool useOVR)
 #else
-			(struct ANativeWindow* window)
+			(ANativeWindow* window)
 #endif
 		;
 		virtual ~GraphicAPIManager() = default;

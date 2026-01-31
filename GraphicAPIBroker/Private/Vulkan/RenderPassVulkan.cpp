@@ -4,6 +4,7 @@
 
 #include "../../Public/Image.h"
 #include "FormatsVulkan.h"
+#include "ImageLayoutVulkan.h"
 #include "Vulkan.h"
 
 Wolf::RenderPassVulkan::RenderPassVulkan(const std::vector<Attachment>& attachments)
@@ -38,8 +39,8 @@ Wolf::RenderPassVulkan::RenderPassVulkan(const std::vector<Attachment>& attachme
 		attachmentDescriptions[i].storeOp = wolfAttachmentStoreOpToVkAttachmentStoreOp(attachments[i].storeOperation);
 		attachmentDescriptions[i].stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
 		attachmentDescriptions[i].stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-		attachmentDescriptions[i].initialLayout = attachments[i].initialLayout;
-		attachmentDescriptions[i].finalLayout = attachments[i].finalLayout;
+		attachmentDescriptions[i].initialLayout = wolfImageLayoutToVulkanImageLayout(attachments[i].initialLayout);
+		attachmentDescriptions[i].finalLayout = wolfImageLayoutToVulkanImageLayout(attachments[i].finalLayout);
 #ifdef WOLF_VULKAN_1_2
 		attachmentDescriptions[i].pNext = nullptr;
 #endif

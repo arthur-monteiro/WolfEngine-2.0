@@ -3,8 +3,6 @@
 #if !defined(__ANDROID__) or __ANDROID_MIN_SDK_VERSION__ > 30
 
 #include <span>
-// TEMP
-#include <vulkan/vulkan_core.h>
 
 #include "Formats.h"
 

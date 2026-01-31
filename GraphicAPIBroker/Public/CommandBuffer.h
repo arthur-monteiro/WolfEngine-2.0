@@ -3,7 +3,7 @@
 #include <cstdint>
 #include <vector>
 
-// TEMP VkImageLayout + VkImageSubresourceRange
+// TEMP VkImageSubresourceRange
 #include <vulkan/vulkan_core.h>
 
 #include "Buffer.h"
@@ -11,6 +11,7 @@
 #include "Enums.h"
 #include "Extents.h"
 #include "Fence.h"
+#include "ImageLayout.h"
 #include "ResourceReference.h"
 #include "Structs.h"
 
@@ -54,9 +55,9 @@ namespace Wolf
 		virtual void setViewport(const Viewport& viewport) const = 0;
 
 		// Commands
-		virtual void clearColorImage(const Image& image, VkImageLayout imageLayout, ColorFloat clearColor, const VkImageSubresourceRange& range) const = 0;
+		virtual void clearColorImage(const Image& image, ImageLayout imageLayout, ColorFloat clearColor, const VkImageSubresourceRange& range) const = 0;
 		virtual void fillBuffer(const Buffer& buffer, uint64_t  dstOffset, uint64_t size, uint32_t data) const = 0;
-		virtual void imageCopy(const Image& imageSrc, VkImageLayout srcImageLayout, const Image& imageDst, VkImageLayout dstImageLayout, const ImageCopyInfo& imageCopyInfo) const = 0;
+		virtual void imageCopy(const Image& imageSrc, ImageLayout srcImageLayout, const Image& imageDst, ImageLayout dstImageLayout, const ImageCopyInfo& imageCopyInfo) const = 0;
 
 		virtual void draw(uint32_t vertexCount, uint32_t instanceCount, uint32_t firstVertex, uint32_t firstInstance) const = 0;
 		virtual void drawIndexed(uint32_t indexCount, uint32_t instanceCount, uint32_t firstIndex, int32_t vertexOffset, uint32_t firstInstance) const = 0;
