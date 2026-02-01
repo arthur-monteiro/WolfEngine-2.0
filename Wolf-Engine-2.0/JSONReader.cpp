@@ -12,11 +12,11 @@ std::string ws2s(const std::wstring& wstr)
 	if (wstr.empty())
 		return "";
 
-	if (wstr.size() > 512)
+	if (wstr.size() > 2048)
 		Wolf::Debug::sendCriticalError("Input is too big");
 
-	char str[512];
-	if (std::wcstombs(str, wstr.c_str(), 512) == 0)
+	char str[2048];
+	if (std::wcstombs(str, wstr.c_str(), 2048) == 0)
 		Wolf::Debug::sendError("Conversion doesn't seem to work");
 
 	return { str };
@@ -93,10 +93,17 @@ void Wolf::JSONReader::readFromLines(const Lines& lines)
 				// Check if it's not in a string
 				bool isInString = false;
 				size_t beginQuotePos = line.find('"');
+				size_t endQuotePosMin = beginQuotePos + 1;
 				while (beginQuotePos != std::wstring::npos)
 				{
-					if (const size_t endQuotePos = line.find('"', beginQuotePos + 1); endQuotePos != std::wstring::npos)
+					if (const size_t endQuotePos = line.find('"', endQuotePosMin); endQuotePos != std::wstring::npos)
 					{
+						if (line[endQuotePos - 1] == '\\')
+						{
+							endQuotePosMin = endQuotePos + 1;
+							continue;
+						}
+
 						if (beginQuotePos < commentPos && endQuotePos > commentPos)
 						{
 							isInString = true;
@@ -104,6 +111,11 @@ void Wolf::JSONReader::readFromLines(const Lines& lines)
 						}
 
 						beginQuotePos = line.find('"', endQuotePos + 1);
+						endQuotePosMin = beginQuotePos + 1;
+					}
+					else
+					{
+						Debug::sendCriticalError("Incorrect line");
 					}
 				}
 					
