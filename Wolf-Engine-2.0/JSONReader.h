@@ -71,7 +71,7 @@ namespace Wolf
 
 		class JSONObject;
 
-		enum class JSONPropertyType { String, Object, Float, UnknownArray, ObjectArray, FloatArray, StringArray, Bool, Unknown };
+		enum class JSONPropertyType { String, Object, Float, UnknownArray, ObjectArray, FloatArray, StringArray, Bool, Unknown, Null };
 		struct JSONPropertyValue
 		{
 			JSONPropertyType type;
