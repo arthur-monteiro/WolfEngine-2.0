@@ -157,7 +157,7 @@ void Wolf::JSONReader::readFromLines(const Lines& lines)
 	int32_t currentLineNumber = -1;
 	auto getLine = [&]()
 		{
-			if (line.empty())
+			if (line.empty() || line == L"\r")
 			{
 				currentLineNumber++;
 				return lines.getNextLine(line);
@@ -313,6 +313,14 @@ void Wolf::JSONReader::readFromLines(const Lines& lines)
 					currentLookingFor = LookingFor::Comma;
 				}
 			}
+			else if (nextCharacter == 'N')
+			{
+				currentPropertyStack.top()->type = JSONPropertyType::Null;
+				const size_t propertyValueEnding = line.find('l') + 1;
+				line = line.substr(propertyValueEnding + 1);
+				currentPropertyStack.pop();
+				currentLookingFor = LookingFor::Comma;
+			}
 			else if (bracePos < quotePos && bracePos < bracketPos)
 			{
 				currentPropertyStack.top()->type = JSONPropertyType::Object;
@@ -367,6 +375,7 @@ void Wolf::JSONReader::readFromLines(const Lines& lines)
 
 			const size_t bracePos = lineWithoutSpace.find('{');
 			const size_t quotePos = lineWithoutSpace.find('"');
+			const size_t endOfArrayPos = lineWithoutSpace.find(']');
 
 			if (bracePos == 0)
 			{
@@ -392,6 +401,11 @@ void Wolf::JSONReader::readFromLines(const Lines& lines)
 				}
 				else
 					Debug::sendError("JSON seems wrong: property string value doesn't end");
+			}
+			else if (endOfArrayPos == 0)
+			{
+				currentPropertyStack.top()->type = JSONPropertyType::UnknownArray;
+				currentLookingFor = LookingFor::Comma;
 			}
 			else
 			{
