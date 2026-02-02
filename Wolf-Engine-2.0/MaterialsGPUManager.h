@@ -111,7 +111,7 @@ namespace Wolf
 		void updateImageInBindless(const DescriptorSetGenerator::ImageDescription& image, uint32_t bindlessOffset) const;
 		static uint32_t computeSliceCount(uint32_t textureWidth, uint32_t textureHeight);
 
-		const ResourceNonOwner<GPUDataTransfersManagerInterface>& m_pushDataToGPUHandler;
+		ResourceNonOwner<GPUDataTransfersManagerInterface> m_pushDataToGPUHandler;
 
 		struct TextureCPUInfo
 		{

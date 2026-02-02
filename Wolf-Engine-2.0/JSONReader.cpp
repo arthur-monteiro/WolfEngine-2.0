@@ -12,14 +12,17 @@ std::string ws2s(const std::wstring& wstr)
 	if (wstr.empty())
 		return "";
 
-	if (wstr.size() > 2048)
-		Wolf::Debug::sendCriticalError("Input is too big");
+	size_t sizeNeeded = std::wcstombs(nullptr, wstr.c_str(), 0);
+	if (sizeNeeded == static_cast<size_t>(-1))
+	{
+		Wolf::Debug::sendError("Conversion failed: invalid multibyte sequence");
+		return "";
+	}
 
-	char str[2048];
-	if (std::wcstombs(str, wstr.c_str(), 2048) == 0)
-		Wolf::Debug::sendError("Conversion doesn't seem to work");
+	std::vector<char> str(sizeNeeded + 1);
+	std::wcstombs(str.data(), wstr.c_str(), str.size());
 
-	return { str };
+	return { str.data() };
 }
 
 Wolf::JSONReader::JSONReader(const FileReadInfo& fileReadInfo)
@@ -214,7 +217,7 @@ void Wolf::JSONReader::readFromLines(const Lines& lines)
 					currentLookingFor = LookingFor::Colon;
 				}
 				else
-					Debug::sendError("JSON seems wrong: property doesn't end");
+					Debug::sendCriticalError("JSON seems wrong: property doesn't end");
 			}
 			else if (endObjectPos != std::string::npos)
 			{
@@ -353,7 +356,7 @@ void Wolf::JSONReader::readFromLines(const Lines& lines)
 					if (propertyStringEnding > 0 && line[propertyStringEnding - 1] == '\\')
 					{
 						line.erase(propertyStringEnding - 1, 1);
-						propertyStringEnding = line.find('"', propertyStringEnding + 1);
+						propertyStringEnding = line.find('"', propertyStringEnding);
 						continue;
 					}
 					break;
