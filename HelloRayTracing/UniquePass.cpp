@@ -95,22 +95,22 @@ void UniquePass::resize(const InitializationContext& context)
 
 void UniquePass::record(const RecordContext& context)
 {
-	uint32_t frameBufferIdx = context.swapChainImageIdx;
+	uint32_t frameBufferIdx = context.m_swapChainImageIdx;
 
 	m_commandBuffer->beginCommandBuffer();
 
-	context.swapchainImage->transitionImageLayout(*m_commandBuffer, { Wolf::ImageLayout::GENERAL, VK_ACCESS_SHADER_WRITE_BIT, VK_PIPELINE_STAGE_RAY_TRACING_SHADER_BIT_KHR });
+	context.m_swapchainImage->transitionImageLayout(*m_commandBuffer, { Wolf::ImageLayout::GENERAL, VK_ACCESS_SHADER_WRITE_BIT, VK_PIPELINE_STAGE_RAY_TRACING_SHADER_BIT_KHR });
 
 	m_commandBuffer->bindPipeline(m_pipeline.get());
-	m_commandBuffer->bindDescriptorSet(m_descriptorSets[context.swapChainImageIdx].get(), 0, *m_pipeline);
+	m_commandBuffer->bindDescriptorSet(m_descriptorSets[context.m_swapChainImageIdx].get(), 0, *m_pipeline);
 
-	m_commandBuffer->traceRays(m_shaderBindingTable.get(), context.swapchainImage->getExtent());
+	m_commandBuffer->traceRays(m_shaderBindingTable.get(), context.m_swapchainImage->getExtent());
 
-	context.swapchainImage->transitionImageLayout(*m_commandBuffer, { Wolf::ImageLayout::PRESENT_SRC_KHR, 0, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT });
+	context.m_swapchainImage->transitionImageLayout(*m_commandBuffer, { Wolf::ImageLayout::PRESENT_SRC_KHR, 0, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT });
 
 	m_commandBuffer->endCommandBuffer();
 
-	m_lastSwapChainImage = context.swapchainImage;
+	m_lastSwapChainImage = context.m_swapchainImage;
 }
 
 void UniquePass::submit(const SubmitContext& context)

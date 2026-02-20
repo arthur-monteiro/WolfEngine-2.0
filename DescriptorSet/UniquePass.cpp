@@ -114,7 +114,7 @@ void UniquePass::record(const RecordContext& context)
 	m_uniformBuffer->transferCPUMemory(&offset, sizeof(float), 0 /* srcOffet */);
 
 	/* Command buffer record */
-	const uint32_t frameBufferIdx = context.swapChainImageIdx;
+	const uint32_t frameBufferIdx = context.m_swapChainImageIdx;
 
 	m_commandBuffer->beginCommandBuffer();
 
@@ -133,7 +133,7 @@ void UniquePass::record(const RecordContext& context)
 
 	m_commandBuffer->endCommandBuffer();
 
-	m_lastSwapChainImage = context.swapchainImage;
+	m_lastSwapChainImage = context.m_swapchainImage;
 }
 
 void UniquePass::submit(const SubmitContext& context)

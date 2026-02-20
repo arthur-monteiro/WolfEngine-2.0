@@ -46,9 +46,9 @@ void UniquePass::record(const RecordContext& context)
 	/* Command buffer record */
 	m_commandBuffer->beginCommandBuffer();
 
-	const uint32_t outputImageIdx = context.swapChainImageIdx;
+	const uint32_t outputImageIdx = context.m_swapChainImageIdx;
 
-	context.swapchainImage->transitionImageLayout(*m_commandBuffer, { ImageLayout::GENERAL, VK_ACCESS_SHADER_WRITE_BIT, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT });
+	context.m_swapchainImage->transitionImageLayout(*m_commandBuffer, { ImageLayout::GENERAL, VK_ACCESS_SHADER_WRITE_BIT, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT });
 
 	m_commandBuffer->bindDescriptorSet(m_descriptorSets[outputImageIdx].get(), 0, *m_pipeline);
 	m_commandBuffer->bindPipeline(m_pipeline.get());
@@ -58,11 +58,11 @@ void UniquePass::record(const RecordContext& context)
 	const uint32_t groupSizeY = m_swapChainHeight % dispatchGroups.height != 0 ? m_swapChainHeight / dispatchGroups.height + 1 : m_swapChainHeight / dispatchGroups.height;
 	m_commandBuffer->dispatch(groupSizeX, groupSizeY, dispatchGroups.depth);
 
-	context.swapchainImage->transitionImageLayout(*m_commandBuffer, { ImageLayout::PRESENT_SRC_KHR, 0, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT });
+	context.m_swapchainImage->transitionImageLayout(*m_commandBuffer, { ImageLayout::PRESENT_SRC_KHR, 0, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT });
 
 	m_commandBuffer->endCommandBuffer();
 
-	m_lastSwapChainImage = context.swapchainImage;
+	m_lastSwapChainImage = context.m_swapchainImage;
 }
 
 void UniquePass::submit(const SubmitContext& context)
