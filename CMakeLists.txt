@@ -56,7 +56,9 @@ target_compile_definitions(WolfEngine PUBLIC _CRT_SECURE_NO_WARNINGS)
 option(RESOURCE_TRACKING "Enable resource tracking features" OFF)
 option(RESOURCE_DEBUG "Enable resource debug features" OFF)
 
-add_subdirectory("GenerateCodeFileHashes")
+if(NOT ANDROID)
+    add_subdirectory("GenerateCodeFileHashes")
+endif()
 add_subdirectory("Common")
 add_subdirectory("GraphicAPIBroker")
 
@@ -83,19 +85,21 @@ if (RESOURCE_TRACKING OR RESOURCE_DEBUG)
     )
 endif()
 
+if(NOT ANDROID)
 add_custom_command(COMMAND "$<TARGET_FILE:GenerateCodeFileHashes>" "../Wolf-Engine-2.0"
         WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/Wolf-Engine-2.0"
         OUTPUT "${CMAKE_CURRENT_SOURCE_DIR}/Wolf-Engine-2.0/CodeFileHashes.h"
         DEPENDS GenerateCodeFileHashes
         VERBATIM)
 
-add_custom_target(
-        GenerateHashesTarget
-        ALL
-        DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/Wolf-Engine-2.0/CodeFileHashes.h"
-)
-
+    add_custom_target(
+            GenerateHashesTarget
+            ALL
+            DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/Wolf-Engine-2.0/CodeFileHashes.h"
+    )
 add_dependencies(WolfEngine GenerateHashesTarget)
+endif()
+
 
 if(ANDROID)
     set(ABI_DIR "/${ANDROID_ABI}")
