@@ -59,15 +59,15 @@ set_target_properties(ogl_compiler_lib PROPERTIES IMPORTED_LOCATION
 
 add_library(wolf_engine_lib STATIC IMPORTED)
 set_target_properties(wolf_engine_lib PROPERTIES IMPORTED_LOCATION
-        ${CMAKE_CURRENT_SOURCE_DIR}/../../../../../../ndk-builds/${ANDROID_ABI}/libwolf-engine_vulkan.a)
+        ${CMAKE_CURRENT_SOURCE_DIR}/../../../../../../x64/Debug/${ANDROID_ABI}/libwolf-engine_vulkan.a)
 
 add_library(common_lib STATIC IMPORTED)
 set_target_properties(common_lib PROPERTIES IMPORTED_LOCATION
-        ${CMAKE_CURRENT_SOURCE_DIR}/../../../../../../ndk-builds/${ANDROID_ABI}/libcommon.a)
+        ${CMAKE_CURRENT_SOURCE_DIR}/../../../../../../x64/Debug/${ANDROID_ABI}/libcommon.a)
 
 add_library(graphic_api_broker_lib STATIC IMPORTED)
 set_target_properties(graphic_api_broker_lib PROPERTIES IMPORTED_LOCATION
-        ${CMAKE_CURRENT_SOURCE_DIR}/../../../../../../ndk-builds/${ANDROID_ABI}/libgraphic_api_broker_vulkan_1_3.a)
+        ${CMAKE_CURRENT_SOURCE_DIR}/../../../../../../x64/Debug/${ANDROID_ABI}/libgraphic_api_broker_vulkan_1_3.a)
 
 # add lib dependencies
 target_link_libraries(${PROJECT_NAME} PUBLIC
