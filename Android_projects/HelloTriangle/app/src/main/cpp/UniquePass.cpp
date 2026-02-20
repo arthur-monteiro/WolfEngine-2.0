@@ -85,7 +85,7 @@ void UniquePass::resize(const InitializationContext& context)
 
 void UniquePass::record(const RecordContext& context)
 {
-    const uint32_t frameBufferIdx = context.swapChainImageIdx;
+    const uint32_t frameBufferIdx = context.m_swapChainImageIdx;
 
     m_commandBuffer->beginCommandBuffer();
 
