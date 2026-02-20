@@ -1,13 +1,12 @@
-#!/usr/bin/env bash
+set -e
+echo "Starting Wolf-Engine android build..."
+chmod +x gradlew
+./gradlew assembleDebug copyStaticLibs
+if [ $? -ne 0 ]; then
+    echo ""
+    echo "Build failed with code $?"
+    exit $?
+fi
 
-# Get the directory where this script is located
-SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
-
-# Change the working directory to that location
-cd "$SCRIPT_DIR"
-
-cd Common && ./compile_android.sh
-cd ..
-cd GraphicAPIBroker && ./compile_android_vulkan_1_3.sh
-cd ..
-cd "Wolf-Engine-2.0" && ./compile_android_vulkan.sh
+echo ""
+echo "Build successful!"

@@ -11,6 +11,8 @@
 #include "Vulkan.h"
 #include "VulkanHelper.h"
 
+Wolf::TopLevelAccelerationStructureVulkan::~TopLevelAccelerationStructureVulkan() = default;
+
 Wolf::TopLevelAccelerationStructureVulkan::TopLevelAccelerationStructureVulkan(uint32_t instanceCount) : m_instanceCount(instanceCount)
 {
 	m_instanceBuffer.reset(new BufferVulkan(m_instanceCount * sizeof(VkAccelerationStructureInstanceKHR), VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT | VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_BUILD_INPUT_READ_ONLY_BIT_KHR | VK_BUFFER_USAGE_TRANSFER_DST_BIT,

@@ -426,3 +426,14 @@ ndk-builds/*
 # Nix
 .lib_links/*
 .android_sdk_mirror/*
+
+# Android
+.cxx/
+# Legacy NDK build folders
+obj/
+libs/
+*.so
+*.a
+*.log
+
+

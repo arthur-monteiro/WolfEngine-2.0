@@ -1,0 +1,70 @@
+plugins {
+    id 'com.android.library' version '9.0.1'
+}
+
+android {
+    namespace 'com.wolfengine'
+    compileSdk 33
+
+    buildFeatures {
+        prefab true
+    }
+
+    defaultConfig {
+        minSdk 33
+        externalNativeBuild {
+            cmake {
+                arguments "-DANDROID_STL=c++_static", "-DBUILD_SHARED_LIBS=OFF"
+                abiFilters "arm64-v8a", "armeabi-v7a", "x86", "x86_64"
+                targets "WolfEngine", "Common", "GraphicAPIBroker"
+            }
+        }
+    }
+
+    externalNativeBuild {
+        cmake {
+            path "CMakeLists.txt"
+        }
+    }
+}
+
+dependencies {
+    implementation "androidx.games:games-activity:2.0.2"
+}
+
+tasks.register("copyStaticLibs") {
+    group = "wolf-engine"
+    description = "Copies compiled .a files to the x64/Debug/lib folder"
+
+    doLast {
+        def searchDir = new File(projectDir, "build/intermediates/cmake/debug/obj")
+        if (!searchDir.exists()) {
+            searchDir = new File(projectDir, ".cxx/Debug")
+        }
+        
+        def destinationBase = new File(projectDir, "x64/Debug/lib")
+        def abis = ["arm64-v8a", "armeabi-v7a", "x86", "x86_64"]
+
+        if (!searchDir.exists()) {
+            println "Error: Could not find build output directory. Did the build fail?"
+            return
+        }
+
+        abis.each { abi ->
+            copy {
+                from searchDir
+                into new File(destinationBase, abi)
+                include "**/${abi}/*.a"
+                eachFile { path = name } // Flatten folders: lib/arm64/libXX.a -> libXX.a
+                includeEmptyDirs = false
+            }
+        }
+        println "SUCCESS: Static libraries copied to ${destinationBase}"
+    }
+}
+
+afterEvaluate {
+    tasks.matching { it.name.contains("externalNativeBuildDebug") }.configureEach { task ->
+        task.finalizedBy("copyStaticLibs")
+    }
+}

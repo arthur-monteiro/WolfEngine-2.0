@@ -19,7 +19,7 @@ namespace Wolf
 		void recordBuildBarriers(const CommandBuffer* commandBuffer);
 		uint32_t getInstanceCount() const override { return m_instanceCount; }
 
-		~TopLevelAccelerationStructureVulkan() override = default;
+		~TopLevelAccelerationStructureVulkan() override;
 
 	private:
 		uint32_t m_instanceCount;
