@@ -76,17 +76,16 @@ Wolf::WolfEngine::WolfEngine(const WolfInstanceCreateInfo& createInfo) : m_globa
 	g_graphicAPIManagerInstance = m_graphicAPIManager.get();
 
 #ifdef __ANDROID__
-	ANativeWindow* nativeWindow = createInfo.m_androidWindow;
-
-	int32_t width = ANativeWindow_getWidth(nativeWindow);
-	int32_t height = 2340; // ANativeWindow_getHeight(nativeWindow);
-	Extent2D extent = { static_cast<uint32_t>(width), static_cast<uint32_t>(height) };
+	Extent2D extent = { 0u, 0u }; // on Android, extent is guessed from capabilities
 #else
 	Extent2D extent = chooseExtent(m_window->getWindow());
 #endif
 
 	SwapChain::SwapChainCreateInfo swapChainCreateInfo{};
 	swapChainCreateInfo.extent = extent;
+#ifdef __ANDROID__
+    swapChainCreateInfo.m_resizeCallback = [this](int width, int height) { resize(width, height); };
+#endif
 
 	switch (m_configuration->getColorSpace())
 	{
@@ -108,9 +107,15 @@ Wolf::WolfEngine::WolfEngine(const WolfInstanceCreateInfo& createInfo) : m_globa
 
 	m_gameContexts.resize(m_configuration->getMaxCachedFrames());
 
+	m_inputHandler.reset(new InputHandler(
 #ifndef __ANDROID__
-	m_inputHandler.reset(new InputHandler(m_window.createConstNonOwnerResource()));
+        m_window.createConstNonOwnerResource()
+#else
+        createInfo.m_androidApp
+#endif
+    ));
 
+#ifndef __ANDROID__
 	if (createInfo.m_htmlURL)
 	{
 		m_ultraLight.reset(new UltraLight(createInfo.m_htmlURL, createInfo.m_uiFinalLayout, createInfo.m_bindUltralightCallbacks, m_inputHandler.createNonOwnerResource()));
@@ -125,12 +130,12 @@ Wolf::WolfEngine::WolfEngine(const WolfInstanceCreateInfo& createInfo) : m_globa
 		m_pushDataToGPU = m_defaultPushDataToGPU.createNonOwnerResource<GPUDataTransfersManagerInterface>();
 	}
 
-	if (createInfo.m_useBindlessDescriptor)
+	if (createInfo.m_useMaterialGPUManager)
 	{
 		constexpr std::array defaultImageFilename = {
-			"Textures/no_texture_albedo.png",
-			"Textures/no_texture_normal.png",
-			"Textures/no_texture_roughness_metalness_ao.png"
+			"textures/no_texture_albedo.png",
+			"textures/no_texture_normal.png",
+			"textures/no_texture_roughness_metalness_ao.png"
 		};
 
 		std::vector<DescriptorSetGenerator::ImageDescription> defaultImageDescription(defaultImageFilename.size());
@@ -215,18 +220,12 @@ void Wolf::WolfEngine::updateBeforeFrame()
 	m_window->pollEvents();
 #endif
 
-#ifndef __ANDROID__
 	m_inputHandler->moveToNextFrame();
-#endif
 
-	CameraUpdateContext context
-#ifndef __ANDROID__
-	(m_inputHandler.createConstNonOwnerResource());
-#else
-	{};
-#endif
-	context.frameIdx = currentFrame;
-	context.swapChainExtent = m_swapChain->getImage(0)->getExtent();
+	CameraUpdateContext context(m_inputHandler.createConstNonOwnerResource());
+	context.m_frameIdx = currentFrame;
+	context.m_swapChainExtent = m_swapChain->getImage(0)->getExtent();
+    context.m_screenRotationInDegrees = m_swapChain->getRotationInDegrees();
 	m_cameraList.moveToNextFrame(context);
 	
 	m_renderMeshList->moveToNextFrame();
@@ -315,19 +314,20 @@ void Wolf::WolfEngine::frame(const std::span<ResourceNonOwner<CommandRecordBase>
 		PROFILE_SCOPED("Record GPU passes")
 
 		RecordContext recordContext(m_lightManager.createNonOwnerResource(), m_renderMeshList.createNonOwnerResource());
-		recordContext.currentFrameIdx = currentFrame;
-		recordContext.swapChainImageIdx = currentSwapChainImageIndex;
-		recordContext.swapchainImage = m_swapChain->getImage(currentSwapChainImageIndex);
+		recordContext.m_currentFrameIdx = currentFrame;
+		recordContext.m_swapChainImageIdx = currentSwapChainImageIndex;
+		recordContext.m_swapchainImage = m_swapChain->getImage(currentSwapChainImageIndex);
+		recordContext.m_swapchainRotation = m_swapChain->getRotationInDegrees();
 #ifndef __ANDROID__
-		recordContext.glfwWindow = m_window->getWindow();
+		recordContext.m_glfwWindow = m_window->getWindow();
 #endif
-		recordContext.cameraList = &m_cameraList;
-		recordContext.gameContext = m_gameContexts[currentFrame % g_configuration->getMaxCachedFrames()];
+		recordContext.m_cameraList = &m_cameraList;
+		recordContext.m_gameContext = m_gameContexts[currentFrame % g_configuration->getMaxCachedFrames()];
 		if (m_materialsManager)
-			recordContext.bindlessDescriptorSet = m_materialsManager->getDescriptorSet();
-		recordContext.globalTimer = &m_globalTimer;
-		recordContext.graphicAPIManager = m_graphicAPIManager.get();
-		recordContext.invalidateFrame = &invalidateFrame;
+			recordContext.m_materialGPUManagerDescriptorSet = m_materialsManager->getDescriptorSet();
+		recordContext.m_globalTimer = &m_globalTimer;
+		recordContext.m_graphicAPIManager = m_graphicAPIManager.get();
+		recordContext.m_invalidateFrame = &invalidateFrame;
 
 		for (const ResourceNonOwner<CommandRecordBase>& pass : passes)
 		{

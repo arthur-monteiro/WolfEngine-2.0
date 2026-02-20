@@ -92,7 +92,7 @@ void Wolf::RenderMeshList::draw(const RecordContext& context, const CommandBuffe
 {
 	PROFILE_FUNCTION
 
-	ResourceReference<const DescriptorSet> lightDescriptorSet(context.lightManager->getDescriptorSet().createConstNonOwnerResource());
+	ResourceReference<const DescriptorSet> lightDescriptorSet(context.m_lightManager->getDescriptorSet().createConstNonOwnerResource());
 	std::vector<DescriptorSetBindInfo> descriptorSetsBindInfo;
 
 	uint32_t meshCount = m_transientMeshesCurrentFrame.size() + m_meshes.size() + m_transientInstancedMeshesCurrentFrame.size() + m_instancedMeshes.size();
@@ -119,9 +119,9 @@ void Wolf::RenderMeshList::draw(const RecordContext& context, const CommandBuffe
 		else
 		{
 			if (i < m_transientMeshesCurrentFrame.size())
-				meshToRender = &m_transientMeshesCurrentFrame[i].meshToRender;
+				meshToRender = &m_transientMeshesCurrentFrame[i].m_meshToRender;
 			else if (i < m_transientMeshesCurrentFrame.size() + m_meshes.size())
-				meshToRender = &m_meshes[i - m_transientMeshesCurrentFrame.size()].meshToRender;
+				meshToRender = &m_meshes[i - m_transientMeshesCurrentFrame.size()].m_meshToRender;
 			else if (i < m_transientMeshesCurrentFrame.size() + m_meshes.size() + m_transientInstancedMeshesCurrentFrame.size())
 			{
 				meshToRender = &m_transientInstancedMeshesCurrentFrame[i - m_transientMeshesCurrentFrame.size() - m_meshes.size()].instancedMesh.mesh;
@@ -135,19 +135,19 @@ void Wolf::RenderMeshList::draw(const RecordContext& context, const CommandBuffe
 		}
 
 
-		if (meshToRender->pipelineSet->getPipelineHash(pipelineIdx) == 0)
+		if (meshToRender->m_pipelineSet->getPipelineHash(pipelineIdx) == 0)
 			continue;
 
-		if (meshToRender->pipelineSet != currentPipelineSet)
+		if (meshToRender->m_pipelineSet != currentPipelineSet)
 		{
-			currentPipelineSet = meshToRender->pipelineSet;
+			currentPipelineSet = meshToRender->m_pipelineSet;
 
 			descriptorSetsBindInfo.clear();
 			descriptorSetsBindInfo.reserve(descriptorSetsToBind.size());
 
 			for (const AdditionalDescriptorSet& additionalDescriptorSet : descriptorSetsToBind)
 			{
-				if (additionalDescriptorSet.mask == 0 || additionalDescriptorSet.mask & meshToRender->pipelineSet->getCustomMask(pipelineIdx))
+				if (additionalDescriptorSet.mask == 0 || additionalDescriptorSet.mask & meshToRender->m_pipelineSet->getCustomMask(pipelineIdx))
 				{
 					descriptorSetsBindInfo.push_back(additionalDescriptorSet.descriptorSetBindInfo);
 				}
@@ -157,13 +157,13 @@ void Wolf::RenderMeshList::draw(const RecordContext& context, const CommandBuffe
 		std::vector<PipelineSet::ShaderCodeToAddForStage> realShadersCodeToAdd;
 		for (const PipelineSet::ShaderCodeToAddForStage& requestedShaderCode : shadersCodeToAdd)
 		{
-			if (requestedShaderCode.requiredMask == 0 || requestedShaderCode.requiredMask & meshToRender->pipelineSet->getCustomMask(pipelineIdx))
+			if (requestedShaderCode.requiredMask == 0 || requestedShaderCode.requiredMask & meshToRender->m_pipelineSet->getCustomMask(pipelineIdx))
 			{
 				realShadersCodeToAdd.push_back(requestedShaderCode);
 			}
 		}
 
-		if (const Pipeline* meshPipeline = meshToRender->pipelineSet->getOrCreatePipeline(pipelineIdx, renderPass, meshToRender->perPipelineDescriptorSets[pipelineIdx], descriptorSetsBindInfo,
+		if (const Pipeline* meshPipeline = meshToRender->m_pipelineSet->getOrCreatePipeline(pipelineIdx, renderPass, meshToRender->m_perPipelineDescriptorSets[pipelineIdx], descriptorSetsBindInfo,
 			realShadersCodeToAdd, *m_shaderList); meshPipeline != currentPipeline)
 		{
 			PROFILE_SCOPED("Bind pipeline and default descriptor sets")
@@ -178,19 +178,19 @@ void Wolf::RenderMeshList::draw(const RecordContext& context, const CommandBuffe
 
 			if (cameraIdx != NO_CAMERA_IDX)
 			{
-				const uint32_t cameraDescriptorSlot = meshToRender->pipelineSet->getCameraDescriptorSlot(pipelineIdx);
+				const uint32_t cameraDescriptorSlot = meshToRender->m_pipelineSet->getCameraDescriptorSlot(pipelineIdx);
 				if (cameraDescriptorSlot == static_cast<uint32_t>(-1))
 					Debug::sendError("Trying to bind camera descriptor set but slot hasn't been defined");
 
-				commandBuffer.bindDescriptorSet(context.cameraList->getCamera(cameraIdx)->getDescriptorSet(), cameraDescriptorSlot, *meshPipeline);
+				commandBuffer.bindDescriptorSet(context.m_cameraList->getCamera(cameraIdx)->getDescriptorSet(), cameraDescriptorSlot, *meshPipeline);
 			}
 
-			if (const uint32_t bindlessDescriptorSlot = meshToRender->pipelineSet->getBindlessDescriptorSlot(pipelineIdx); bindlessDescriptorSlot != static_cast<uint32_t>(-1))
+			if (const uint32_t bindlessDescriptorSlot = meshToRender->m_pipelineSet->getBindlessDescriptorSlot(pipelineIdx); bindlessDescriptorSlot != static_cast<uint32_t>(-1))
 			{
-				commandBuffer.bindDescriptorSet(context.bindlessDescriptorSet, bindlessDescriptorSlot, *meshPipeline);
+				commandBuffer.bindDescriptorSet(context.m_materialGPUManagerDescriptorSet, bindlessDescriptorSlot, *meshPipeline);
 			}
 
-			if (const uint32_t lightDescriptorSlot = meshToRender->pipelineSet->getLightDescriptorSlot(pipelineIdx); lightDescriptorSlot != static_cast<uint32_t>(-1))
+			if (const uint32_t lightDescriptorSlot = meshToRender->m_pipelineSet->getLightDescriptorSlot(pipelineIdx); lightDescriptorSlot != static_cast<uint32_t>(-1))
 			{
 				commandBuffer.bindDescriptorSet(lightDescriptorSet, lightDescriptorSlot, *meshPipeline);
 			}
@@ -198,7 +198,7 @@ void Wolf::RenderMeshList::draw(const RecordContext& context, const CommandBuffe
 
 		// Bind custom descriptor sets
 		{
-			for (const DescriptorSetBindInfo& descriptorSetBindInfo : meshToRender->perPipelineDescriptorSets[pipelineIdx])
+			for (const DescriptorSetBindInfo& descriptorSetBindInfo : meshToRender->m_perPipelineDescriptorSets[pipelineIdx])
 			{
 				commandBuffer.bindDescriptorSet(descriptorSetBindInfo.getDescriptorSet(), descriptorSetBindInfo.getBindingSlot(), *currentPipeline);
 			}
@@ -210,20 +210,20 @@ void Wolf::RenderMeshList::draw(const RecordContext& context, const CommandBuffe
 
 			if (internalInstancedMesh->instancedMesh.instanceBuffer)
 			{
-				uint32_t bindingIdx = meshToRender->mesh->hasVertexBuffer() ? 1 : 0;
+				uint32_t bindingIdx = meshToRender->m_mesh->hasVertexBuffer() ? 1 : 0;
 				commandBuffer.bindVertexBuffer(*internalInstancedMesh->instancedMesh.instanceBuffer, bindingIdx);
 			}
 
 			for (const InternalInstancedMesh::OffsetAndCount& offsetAndCount : internalInstancedMesh->offsetAndCounts)
 			{
-				meshToRender->mesh->draw(commandBuffer, cameraIdx, offsetAndCount.count, offsetAndCount.offset, meshToRender->overrideIndexBuffer);
+				meshToRender->m_mesh->draw(commandBuffer, cameraIdx, offsetAndCount.count, offsetAndCount.offset, meshToRender->m_overrideIndexBuffer);
 			}
 		}
 		else
 		{
 			PROFILE_SCOPED("Draw command")
 
-			meshToRender->mesh->draw(commandBuffer, cameraIdx, 1, 0, meshToRender->overrideIndexBuffer);
+			meshToRender->m_mesh->draw(commandBuffer, cameraIdx, 1, 0, meshToRender->m_overrideIndexBuffer);
 		}
 	}
 }

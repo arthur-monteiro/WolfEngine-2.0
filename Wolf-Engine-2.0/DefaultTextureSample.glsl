@@ -6,6 +6,6 @@ layout (binding = 1, set = @BINDLESS_DESCRIPTOR_SLOT) uniform sampler textureSam
 
 vec4 sampleTexture(in uint textureIdx, in const vec2 texCoords, in const uint unused)
 {
-	return texture(sampler2D(textures[textureIdx], textureSampler), texCoords).rgba;
+	return texture(sampler2D(textures[nonuniformEXT(textureIdx)], textureSampler), texCoords).rgba;
 }
 )"

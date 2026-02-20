@@ -16,6 +16,8 @@
 #include "ProfilerCommon.h"
 #include "Window.h"
 
+#ifndef __ANDROID__
+
 class CustomFileSystem : public ultralight::FileSystem
 {
 public:
@@ -551,3 +553,5 @@ void Wolf::UltraLight::UltraLightImplementation::createOutputAndRecordCopyComman
         commandBuffer->endCommandBuffer();
     }
 }
+
+#endif

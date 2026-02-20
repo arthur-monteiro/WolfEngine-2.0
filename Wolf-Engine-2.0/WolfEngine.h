@@ -36,128 +36,131 @@
 
 namespace Wolf
 {
-	struct WolfInstanceCreateInfo
-	{
-		uint32_t m_majorVersion;
-		uint32_t m_minorVersion;
-		std::string m_applicationName;
+    struct WolfInstanceCreateInfo
+    {
+        uint32_t m_majorVersion;
+        uint32_t m_minorVersion;
+        std::string m_applicationName;
 
-		std::string m_configFilename;
+        std::string m_configFilename;
 
-		const char* m_htmlURL = nullptr;
-		ImageLayout m_uiFinalLayout = ImageLayout::SHADER_READ_ONLY_OPTIMAL;
+        const char* m_htmlURL = nullptr;
+        ImageLayout m_uiFinalLayout = ImageLayout::SHADER_READ_ONLY_OPTIMAL;
 #ifndef __ANDROID__
-		std::function<void(ultralight::JSObject& jsObject)> m_bindUltralightCallbacks;
+        std::function<void(ultralight::JSObject& jsObject)> m_bindUltralightCallbacks;
 #endif
 
-		bool m_useOVR = false;
-		bool m_useBindlessDescriptor = false;
+        bool m_useOVR = false;
+        bool m_useMaterialGPUManager = false;
 
-		std::function<void(Debug::Severity, Debug::Type, const std::string&)> m_debugCallback;
-		std::function<void(uint32_t, uint32_t)> m_resizeCallback;
+        std::function<void(Debug::Severity, Debug::Type, const std::string&)> m_debugCallback;
+        std::function<void(uint32_t, uint32_t)> m_resizeCallback;
 
-		uint32_t m_threadCountBeforeFrameAndRecord = 1;
+        uint32_t m_threadCountBeforeFrameAndRecord = 1;
 
 #ifdef __ANDROID__
+        android_app* m_androidApp;
         ::ANativeWindow* m_androidWindow;
-		AAssetManager* m_assetManager;
+        AAssetManager* m_assetManager;
 #endif
 
-		NullableResourceNonOwner<GPUDataTransfersManagerInterface> m_pushDataToGPU;
-	};
+        NullableResourceNonOwner<GPUDataTransfersManagerInterface> m_pushDataToGPU;
+    };
 
-	class WolfEngine
-	{
-	public:
-		WolfEngine(const WolfInstanceCreateInfo& createInfo);
+    class WolfEngine
+    {
+    public:
+        WolfEngine(const WolfInstanceCreateInfo& createInfo);
 
-		void initializePass(const ResourceNonOwner<CommandRecordBase>& pass) const;
+        void initializePass(const ResourceNonOwner<CommandRecordBase>& pass) const;
 
-		bool windowShouldClose() const;
-		void updateBeforeFrame();
-		uint32_t acquireNextSwapChainImage();
-		void frame(const std::span<ResourceNonOwner<CommandRecordBase>>& passes, Semaphore* frameEndedSemaphore, uint32_t currentSwapChainImageIndex);
+        bool windowShouldClose() const;
+        void updateBeforeFrame();
+        uint32_t acquireNextSwapChainImage();
+        void frame(const std::span<ResourceNonOwner<CommandRecordBase>>& passes, Semaphore* frameEndedSemaphore, uint32_t currentSwapChainImageIndex);
 
-		void addJobBeforeFrame(const MultiThreadTaskManager::Job& job, bool runAfterAllJobs = false);
+        void addJobBeforeFrame(const MultiThreadTaskManager::Job& job, bool runAfterAllJobs = false);
 
-		void waitIdle() const;
+        void waitIdle() const;
 
 #ifndef __ANDROID__
-		void getUserInterfaceJSObject(ultralight::JSObject& outObject) const;
+        void getUserInterfaceJSObject(ultralight::JSObject& outObject) const;
 		void evaluateUserInterfaceScript(const std::string& script);
-		[[nodiscard]] ResourceNonOwner<InputHandler> getInputHandler() { return m_inputHandler.createNonOwnerResource(); }
 #endif
-		[[nodiscard]] Extent3D getSwapChainExtent() const { return m_swapChain->getImage(0)->getExtent(); }
-		[[nodiscard]] SwapChain::SwapChainCreateInfo::ColorSpace getSwapChainColorSpace() const { return m_swapChain->getColorSpace(); }
+        [[nodiscard]] ResourceNonOwner<InputHandler> getInputHandler() { return m_inputHandler.createNonOwnerResource(); }
+        [[nodiscard]] Extent3D getSwapChainExtent() const { return m_swapChain->getImage(0)->getExtent(); }
+        [[nodiscard]] SwapChain::SwapChainCreateInfo::ColorSpace getSwapChainColorSpace() const { return m_swapChain->getColorSpace(); }
 
-		[[nodiscard]] bool isRayTracingAvailable() const { return m_graphicAPIManager->isRayTracingAvailable(); }
-		[[nodiscard]] GraphicAPIManager* getGraphicAPIManager() { return m_graphicAPIManager.get(); }
+        [[nodiscard]] bool isRayTracingAvailable() const { return m_graphicAPIManager->isRayTracingAvailable(); }
+        [[nodiscard]] GraphicAPIManager* getGraphicAPIManager() { return m_graphicAPIManager.get(); }
 
-		void setGameContexts(const std::vector<void*>& gameContexts) { m_gameContexts = gameContexts; }
+        void setGameContexts(const std::vector<void*>& gameContexts) { m_gameContexts = gameContexts; }
 
-		[[nodiscard]] CameraList& getCameraList() { return m_cameraList; }
-		[[nodiscard]] ResourceNonOwner<RenderMeshList> getRenderMeshList() { return m_renderMeshList.createNonOwnerResource(); }
-		[[nodiscard]] ResourceUniqueOwner<LightManager>& getLightManager() { return m_lightManager; }
-		[[nodiscard]] ResourceNonOwner<MaterialsGPUManager> getMaterialsManager() { return m_materialsManager.createNonOwnerResource(); }
-		[[nodiscard]] const std::vector<std::string>& getSavedUICommands() const { return m_savedUICommands; }
-		[[nodiscard]] const Timer& getGlobalTimer() const { return m_globalTimer; }
-		[[nodiscard]] ResourceNonOwner<Physics::PhysicsManager> getPhysicsManager() { return m_physicsManager.createNonOwnerResource(); }
+        [[nodiscard]] CameraList& getCameraList() { return m_cameraList; }
+        [[nodiscard]] ResourceNonOwner<RenderMeshList> getRenderMeshList() { return m_renderMeshList.createNonOwnerResource(); }
+        [[nodiscard]] ResourceUniqueOwner<LightManager>& getLightManager() { return m_lightManager; }
+        [[nodiscard]] ResourceNonOwner<MaterialsGPUManager> getMaterialsManager() { return m_materialsManager.createNonOwnerResource(); }
+        [[nodiscard]] const std::vector<std::string>& getSavedUICommands() const { return m_savedUICommands; }
+        [[nodiscard]] const Timer& getGlobalTimer() const { return m_globalTimer; }
+        [[nodiscard]] ResourceNonOwner<Physics::PhysicsManager> getPhysicsManager() { return m_physicsManager.createNonOwnerResource(); }
+        [[nodiscard]] ResourceNonOwner<GPUDataTransfersManagerInterface> getGPUDataTransfersManager() { return m_pushDataToGPU; }
 
-	private:
-		void fillInitializeContext(InitializationContext& context) const;
+    private:
+        void fillInitializeContext(InitializationContext& context) const;
 
-		static void windowResizeCallback(void* systemManagerInstance, int width, int height)
-		{
-			static_cast<WolfEngine*>(systemManagerInstance)->resize(width, height);
-		}
-		void resize(int width, int height);
+        static void windowResizeCallback(void* systemManagerInstance, int width, int height)
+        {
+            static_cast<WolfEngine*>(systemManagerInstance)->resize(width, height);
+        }
+        void resize(int width, int height);
 
-	private:
-		std::unique_ptr<Configuration> m_configuration;
-		std::unique_ptr<RuntimeContext> m_runtimeContext;
-		std::unique_ptr<GraphicAPIManager> m_graphicAPIManager;
+    private:
+        std::unique_ptr<Configuration> m_configuration;
+        std::unique_ptr<RuntimeContext> m_runtimeContext;
+        std::unique_ptr<GraphicAPIManager> m_graphicAPIManager;
 #ifndef __ANDROID__
-		ResourceUniqueOwner<Window> m_window;
+        ResourceUniqueOwner<Window> m_window;
 #endif
-		ResourceUniqueOwner<SwapChain> m_swapChain;
-		uint32_t m_lastAcquiredSwapChainImageIndex;
-		bool m_previousFrameHasBeenReset = false;
+        ResourceUniqueOwner<SwapChain> m_swapChain;
+        uint32_t m_lastAcquiredSwapChainImageIndex;
+        bool m_previousFrameHasBeenReset = false;
+
+        ResourceUniqueOwner<InputHandler> m_inputHandler;
 #ifndef __ANDROID__
-		ResourceUniqueOwner<InputHandler> m_inputHandler;
-		ResourceUniqueOwner<UltraLight> m_ultraLight;
+        ResourceUniqueOwner<UltraLight> m_ultraLight;
 		//std::unique_ptr<OVR> m_ovr;
 #endif
-		ResourceUniqueOwner<Physics::PhysicsManager> m_physicsManager;
+        ResourceUniqueOwner<Physics::PhysicsManager> m_physicsManager;
 
-		// Timer
-		Timer m_globalTimer;
+        // Timer
+        Timer m_globalTimer;
 
-		// Gameplay
-		CameraList m_cameraList;
-		std::vector<void*> m_gameContexts;
-		ResourceUniqueOwner<LightManager> m_lightManager;
+        // Gameplay
+        CameraList m_cameraList;
+        std::vector<void*> m_gameContexts;
+        ResourceUniqueOwner<LightManager> m_lightManager;
 
-		bool m_resizeIsNeeded = false;
-		std::function<void(uint32_t, uint32_t)> m_resizeCallback;
+        bool m_resizeIsNeeded = false;
+        std::function<void(uint32_t, uint32_t)> m_resizeCallback;
 
-		// Graphics
-		ResourceUniqueOwner<RenderMeshList> m_renderMeshList;
-		ShaderList m_shaderList;
-		std::array<std::unique_ptr<Image>, 5> m_defaultImages;
-		ResourceUniqueOwner<MaterialsGPUManager> m_materialsManager;
+        // Graphics
+        ResourceUniqueOwner<RenderMeshList> m_renderMeshList;
+        ShaderList m_shaderList;
+        std::array<std::unique_ptr<Image>, 5> m_defaultImages;
+        ResourceUniqueOwner<MaterialsGPUManager> m_materialsManager;
 
-		ResourceUniqueOwner<DefaultGPUDataTransfersManager> m_defaultPushDataToGPU;
-		NullableResourceNonOwner<GPUDataTransfersManagerInterface> m_pushDataToGPU;
+        ResourceUniqueOwner<DefaultGPUDataTransfersManager> m_defaultPushDataToGPU;
+        NullableResourceNonOwner<GPUDataTransfersManagerInterface> m_pushDataToGPU;
 
-		// Saves
-		std::mutex m_savedUICommandsMutex;
-		std::vector<std::string> m_savedUICommands;
+        // Saves
+        std::mutex m_savedUICommandsMutex;
+        std::vector<std::string> m_savedUICommands;
 
-		// Job executions
-		ResourceUniqueOwner<MultiThreadTaskManager> m_multiThreadTaskManager;
-		MultiThreadTaskManager::ThreadGroupId m_beforeFrameAndRecordThreadGroupId;
-		std::vector<MultiThreadTaskManager::Job> m_jobsToExecuteAfterMTJobs;
-	};
+        // Job executions
+        ResourceUniqueOwner<MultiThreadTaskManager> m_multiThreadTaskManager;
+        MultiThreadTaskManager::ThreadGroupId m_beforeFrameAndRecordThreadGroupId;
+        std::vector<MultiThreadTaskManager::Job> m_jobsToExecuteAfterMTJobs;
+    };
 
-	extern const GraphicAPIManager* g_graphicAPIManagerInstance;
+    extern const GraphicAPIManager* g_graphicAPIManagerInstance;
 }

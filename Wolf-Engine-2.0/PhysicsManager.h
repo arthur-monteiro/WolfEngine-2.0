@@ -34,14 +34,18 @@ namespace Wolf
 		private:
 			struct StaticShape
 			{
-				ResourceUniqueOwner<Shape> shape;
+				ResourceUniqueOwner<Shape> m_shape;
+
+                explicit StaticShape(ResourceUniqueOwner<Shape> shape) : m_shape(std::move(shape)) {}
 			};
 			std::vector<StaticShape> m_staticShapes;
 
 			struct DynamicShape
 			{
-				ResourceUniqueOwner<Shape> shape;
-				void* instance;
+				ResourceUniqueOwner<Shape> m_shape;
+				void* m_instance;
+
+                DynamicShape(ResourceUniqueOwner<Shape> shape, void* instance) : m_shape(std::move(shape)), m_instance(instance) {}
 			};
 			std::vector<DynamicShape> m_dynamicShapes;
 			std::vector<uint32_t> m_holesInDynamicShapesArray;

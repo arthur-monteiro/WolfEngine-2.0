@@ -6,7 +6,7 @@
 #ifdef __ANDROID__
 #include <shaderc/shaderc.hpp>
 
-#include <AndroidCacheHelper.h>
+#include "AndroidCacheHelper.h"
 #endif
 
 #include <xxh64.hpp>
@@ -106,7 +106,8 @@ void Wolf::ShaderParser::parseAndCompile()
 {
 #ifdef __ANDROID__
     const std::string appFolderName = "shader_cache";
-    copyCompressedFileToStorage(m_filename, appFolderName, m_filename);
+    std::string inputFilename = m_filename;
+    copyCompressedFileToStorage(inputFilename, appFolderName, m_filename);
 #endif
 
     std::ifstream inFile(m_filename);

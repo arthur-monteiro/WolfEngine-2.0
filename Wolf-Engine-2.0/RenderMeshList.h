@@ -35,11 +35,13 @@ namespace Wolf
 
 		struct MeshToRender
 		{
-			ResourceNonOwner<MeshInterface> mesh;
-			ResourceNonOwner<const PipelineSet> pipelineSet;
-			std::array<std::vector<DescriptorSetBindInfo>, PipelineSet::MAX_PIPELINE_COUNT> perPipelineDescriptorSets;
+			ResourceNonOwner<MeshInterface> m_mesh;
+			ResourceNonOwner<const PipelineSet> m_pipelineSet;
+			std::array<std::vector<DescriptorSetBindInfo>, PipelineSet::MAX_PIPELINE_COUNT> m_perPipelineDescriptorSets;
 
-			NullableResourceNonOwner<Buffer> overrideIndexBuffer;
+			NullableResourceNonOwner<Buffer> m_overrideIndexBuffer;
+
+			MeshToRender(const ResourceNonOwner<MeshInterface>& mesh, const ResourceNonOwner<const PipelineSet>& pipeline) : m_mesh(mesh), m_pipelineSet(pipeline) {}
 		};
 		uint32_t registerMesh(const MeshToRender& mesh);
 		void addTransientMesh(const MeshToRender& mesh);
@@ -71,10 +73,9 @@ namespace Wolf
 	private:
 		struct InternalMesh
 		{
-			MeshToRender meshToRender;
+			MeshToRender m_meshToRender;
 
-			InternalMesh() = default;
-			InternalMesh(MeshToRender meshToRender) : meshToRender(std::move(meshToRender)) {}
+			InternalMesh(MeshToRender meshToRender) : m_meshToRender(std::move(meshToRender)) {}
 		};
 		std::vector<InternalMesh> m_meshes;
 		std::vector<InternalMesh> m_transientMeshesCurrentFrame;
@@ -94,7 +95,6 @@ namespace Wolf
 
 			std::vector<bool> activatedInstances;
 
-			InternalInstancedMesh() = default;
 			InternalInstancedMesh(InstancedMesh instancedMesh) : instancedMesh(std::move(instancedMesh)) {}
 		};
 		std::vector<InternalInstancedMesh> m_instancedMeshes;

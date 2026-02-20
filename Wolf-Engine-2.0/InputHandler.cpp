@@ -6,10 +6,9 @@
 
 #include "ProfilerCommon.h"
 
-#ifndef __ANDROID__
-
 inline static Wolf::InputHandler* inputHandlerInstance;
 
+#ifndef __ANDROID__
 void keyCallback(GLFWwindow* window, int key, int scancode, int action, int mods)
 {
 	inputHandlerInstance->inputHandlerKeyCallback(window, key, scancode, action, mods);
@@ -34,7 +33,9 @@ void joystickCallback(int jid, int event)
 {
 	inputHandlerInstance->inputHandlerJoystickCallback(jid, event);
 }
+#endif
 
+#ifndef __ANDROID__
 Wolf::InputHandler::InputHandler(const ResourceNonOwner<const Window>& window) : m_window(window)
 {
 	inputHandlerInstance = this;
@@ -51,50 +52,91 @@ Wolf::InputHandler::InputHandler(const ResourceNonOwner<const Window>& window) :
 	}
 	glfwSetJoystickCallback(joystickCallback);
 }
+#else
+Wolf::InputHandler::InputHandler(struct android_app* androidApp)
+: m_androidApp(androidApp), m_internalAndroidJoystickData { InternalAndroidJoystickData(glm::vec2(0.0f, 0.25f), glm::vec2(0.5f, 1.0f)), InternalAndroidJoystickData(glm::vec2(0.5f, 0.25f),  glm::vec2(1.0f, 1.0f)) }
+{
+    m_data.m_gamepadCaches[0].isActive = true; // activate the first gamepad
+
+    android_app_set_motion_event_filter(m_androidApp, [](const GameActivityMotionEvent* event)
+    {
+        int32_t source = event->source;
+
+        if ((source & AINPUT_SOURCE_TOUCHSCREEN) || (source & AINPUT_SOURCE_JOYSTICK))
+        {
+            return true;
+        }
+        return false;
+    });
+}
+#endif
 
 Wolf::InputHandler::~InputHandler()
 {
-	inputHandlerInstance = nullptr;
+    inputHandlerInstance = nullptr;
 
-	glfwSetKeyCallback(m_window->getWindow(), nullptr);
+#ifndef __ANDROID__
+    glfwSetKeyCallback(m_window->getWindow(), nullptr);
 	glfwSetCharCallback(m_window->getWindow(), nullptr);
 	glfwSetMouseButtonCallback(m_window->getWindow(), nullptr);
+#endif
 }
 
 void Wolf::InputHandler::moveToNextFrame()
 {
-	PROFILE_FUNCTION
+    PROFILE_FUNCTION
 
-	auto moveInputToNextFrame = [&](InputCache& inputCache)
-	{
-		// Release key released
-		for (int key : inputCache.inputReleasedForNextFrame)
-		{
-			std::erase(inputCache.inputPressedThisFrame, key);
-			std::erase(inputCache.inputMaintained, key);
-		}
-		inputCache.inputReleasedThisFrame.clear();
-		inputCache.inputReleasedForNextFrame.swap(inputCache.inputReleasedThisFrame);
+    m_frameIdx++;
 
-		// Move key pressed to maintained
-		for (int key : inputCache.inputPressedThisFrame)
-		{
-			inputCache.inputMaintained.push_back(key);
-		}
+    auto moveInputToNextFrame = [&](InputCache& inputCache)
+    {
+        // Release key released
+        for (int key : inputCache.inputReleasedForNextFrame)
+        {
+            std::erase(inputCache.inputPressedThisFrame, key);
+            std::erase(inputCache.inputMaintained, key);
+        }
+        inputCache.inputReleasedThisFrame.clear();
+        inputCache.inputReleasedForNextFrame.swap(inputCache.inputReleasedThisFrame);
 
-		inputCache.inputPressedThisFrame.swap(inputCache.inputPressedForNextFrame);
-		inputCache.inputPressedForNextFrame.clear();
-	};
+        // Move key pressed to maintained
+        for (int key : inputCache.inputPressedThisFrame)
+        {
+            inputCache.inputMaintained.push_back(key);
+        }
 
-	moveInputToNextFrame(m_data.m_keysCache);
+        inputCache.inputPressedThisFrame.swap(inputCache.inputPressedForNextFrame);
+        inputCache.inputPressedForNextFrame.clear();
+    };
 
-	m_data.m_charCache.inputPressedThisFrame.clear();
-	m_data.m_charCache.inputMaintained.clear();
-	moveInputToNextFrame(m_data.m_charCache);
+    moveInputToNextFrame(m_data.m_keysCache);
 
-	moveInputToNextFrame(m_data.m_mouseButtonsCache);
+    m_data.m_charCache.inputPressedThisFrame.clear();
+    m_data.m_charCache.inputMaintained.clear();
+    moveInputToNextFrame(m_data.m_charCache);
 
-	double currentMousePosX, currentMousePosY;
+    moveInputToNextFrame(m_data.m_mouseButtonsCache);
+
+#ifdef __ANDROID__
+    handleAndroidInputs();
+
+    const uint8_t gamepadIdx = 0;
+    GamepadCache& gamepadCache = m_data.m_gamepadCaches[gamepadIdx];
+
+    if (!gamepadCache.isActive)
+    {
+        Debug::sendMessageOnce("Gamepad 0 is not active", Debug::Severity::ERROR, this);
+        return;
+    }
+
+    for (uint8_t joystickIdx = 0; joystickIdx < GAMEPAD_JOYSTICK_COUNT; ++joystickIdx)
+    {
+        const InternalAndroidJoystickData& internalAndroidJoystickData = m_internalAndroidJoystickData[joystickIdx];
+        gamepadCache.joystickEvent[joystickIdx].offsetX = internalAndroidJoystickData.getOffsetX();
+        gamepadCache.joystickEvent[joystickIdx].offsetY = internalAndroidJoystickData.getOffsetY();
+    }
+#else
+    double currentMousePosX, currentMousePosY;
 	glfwGetCursorPos(m_window->getWindow(), &currentMousePosX, &currentMousePosY);
 	m_data.m_mousePosX = static_cast<float>(currentMousePosX);
 	m_data.m_mousePosY = static_cast<float>(currentMousePosY);
@@ -150,31 +192,33 @@ void Wolf::InputHandler::moveToNextFrame()
 			}
 		}
 	}
+#endif
 }
 
 void Wolf::InputHandler::lockCache(const void* instancePtr)
 {
-	m_dataCache[instancePtr].second.lock();
+    m_dataCache[instancePtr].second.lock();
 }
 
 void Wolf::InputHandler::pushDataToCache(const void* instancePtr)
 {
-	if (m_dataCache.contains(instancePtr))
-		m_dataCache[instancePtr].first.concatenate(m_data);
-	else
-		Debug::sendCriticalError("No cache found");
+    if (m_dataCache.contains(instancePtr))
+        m_dataCache[instancePtr].first.concatenate(m_data);
+    else
+        Debug::sendCriticalError("No cache found");
 }
 
 void Wolf::InputHandler::clearCache(const void* instancePtr)
 {
-	m_dataCache[instancePtr].first.clear();
+    m_dataCache[instancePtr].first.clear();
 }
 
 void Wolf::InputHandler::unlockCache(const void* instancePtr)
 {
-	m_dataCache.at(instancePtr).second.unlock();
+    m_dataCache.at(instancePtr).second.unlock();
 }
 
+#ifndef __ANDROID__
 bool Wolf::InputHandler::keyPressedThisFrame(int key, const void* instancePtr) const
 {
 	if (instancePtr)
@@ -306,66 +350,230 @@ void Wolf::InputHandler::getScroll(float& outX, float& outY) const
 	outY = m_data.m_scrollCache.scrollEventsThisFrame.offsetY;
 }
 
-void Wolf::InputHandler::getJoystickSpeedForGamepad(uint8_t gamepadIdx, uint8_t joystickIdx, float& outX, float& outY, const void* instancePtr)
+#endif
+
+void Wolf::InputHandler::getJoystickSpeedForGamepad(uint8_t gamepadIdx, uint8_t joystickIdx, float& outX, float& outY, const void* instancePtr) const
 {
-	GamepadCache* gamepadCache = nullptr;
+    const GamepadCache* gamepadCache = nullptr;
 
-	if (instancePtr)
-		gamepadCache = &m_dataCache.at(instancePtr).first.m_gamepadCaches[gamepadIdx];
-	else
-		gamepadCache = &m_data.m_gamepadCaches[gamepadIdx];
+    if (instancePtr)
+        gamepadCache = &m_dataCache.at(instancePtr).first.m_gamepadCaches[gamepadIdx];
+    else
+        gamepadCache = &m_data.m_gamepadCaches[gamepadIdx];
 
-	if (gamepadCache->isActive)
-	{
-		outX = gamepadCache->joystickEvent[joystickIdx].offsetX;
-		outY = gamepadCache->joystickEvent[joystickIdx].offsetY;
-	}
-	else
-	{
-		Debug::sendMessageOnce("Requesting joystick speed for an inactive controller", Debug::Severity::WARNING, this);
-		outX = 0.0f;
-		outY = 0.0f;
-	}
+    if (gamepadCache->isActive)
+    {
+        outX = gamepadCache->joystickEvent[joystickIdx].offsetX;
+        outY = gamepadCache->joystickEvent[joystickIdx].offsetY;
+    }
+    else
+    {
+        Debug::sendMessageOnce("Requesting joystick speed for an inactive controller", Debug::Severity::WARNING, this);
+        outX = 0.0f;
+        outY = 0.0f;
+    }
 }
 
 float Wolf::InputHandler::getTriggerValueForGamepad(uint8_t gamepadIdx, uint8_t triggerIdx, const void* instancePtr)
 {
-	GamepadCache* gamepadCache = nullptr;
+    GamepadCache* gamepadCache = nullptr;
 
-	if (instancePtr)
-		gamepadCache = &m_dataCache.at(instancePtr).first.m_gamepadCaches[gamepadIdx];
-	else
-		gamepadCache = &m_data.m_gamepadCaches[gamepadIdx];
+    if (instancePtr)
+        gamepadCache = &m_dataCache.at(instancePtr).first.m_gamepadCaches[gamepadIdx];
+    else
+        gamepadCache = &m_data.m_gamepadCaches[gamepadIdx];
 
-	if (gamepadCache->isActive)
-	{
-		return gamepadCache->triggerEvents[triggerIdx];
-	}
-	else
-	{
-		Debug::sendMessageOnce("Requesting trigger value for an inactive controller", Debug::Severity::WARNING, this);
-		return 0.0f;
-	}
+    if (gamepadCache->isActive)
+    {
+        return gamepadCache->triggerEvents[triggerIdx];
+    }
+    else
+    {
+        Debug::sendMessageOnce("Requesting trigger value for an inactive controller", Debug::Severity::WARNING, this);
+        return 0.0f;
+    }
 }
 
 bool Wolf::InputHandler::isGamepadButtonPressed(uint8_t gamepadIdx, uint8_t buttonIdx, const void* instancePtr)
 {
-	GamepadCache* gamepadCache = nullptr;
+    GamepadCache* gamepadCache = nullptr;
 
-	if (instancePtr)
-		gamepadCache = &m_dataCache.at(instancePtr).first.m_gamepadCaches[gamepadIdx];
-	else
-		gamepadCache = &m_data.m_gamepadCaches[gamepadIdx];
+    if (instancePtr)
+        gamepadCache = &m_dataCache.at(instancePtr).first.m_gamepadCaches[gamepadIdx];
+    else
+        gamepadCache = &m_data.m_gamepadCaches[gamepadIdx];
 
-	if (gamepadCache->isActive)
-	{
-		return gamepadCache->buttons[buttonIdx] == GamepadCache::GamepadButtonState::PRESSED;
-	}
-	else
-	{
-		Debug::sendMessageOnce("Requesting button value for an inactive controller", Debug::Severity::WARNING, this);
-		return false;
-	}
+    if (gamepadCache->isActive)
+    {
+        return gamepadCache->buttons[buttonIdx] == GamepadCache::GamepadButtonState::PRESSED;
+    }
+    else
+    {
+        Debug::sendMessageOnce("Requesting button value for an inactive controller", Debug::Severity::WARNING, this);
+        return false;
+    }
+}
+
+#ifdef __ANDROID__
+void Wolf::InputHandler::handleAndroidInputs()
+{
+    android_input_buffer* inputBuffer = android_app_swap_input_buffers(m_androidApp);
+    if (inputBuffer && inputBuffer->motionEventsCount > 0)
+    {
+        for (uint64_t i = 0; i < inputBuffer->motionEventsCount; ++i)
+        {
+            GameActivityMotionEvent* event = &inputBuffer->motionEvents[i];
+
+            int32_t action = event->action & AMOTION_EVENT_ACTION_MASK;
+            int32_t actionIdx = (event->action & AMOTION_EVENT_ACTION_POINTER_INDEX_MASK) >> AMOTION_EVENT_ACTION_POINTER_INDEX_SHIFT;
+
+            if (event->source & AINPUT_SOURCE_TOUCHSCREEN)
+            {
+                int32_t windowWidth = ANativeWindow_getWidth(m_androidApp->window);
+                int32_t windowHeight = ANativeWindow_getHeight(m_androidApp->window);
+
+                if (action == AMOTION_EVENT_ACTION_DOWN || action == AMOTION_EVENT_ACTION_POINTER_DOWN)
+                {
+                    int32_t id = event->pointers[actionIdx].id;
+                    glm::vec2 pos = glm::vec2(event->pointers[actionIdx].rawX / static_cast<float>(windowWidth), event->pointers[actionIdx].rawY / static_cast<float>(windowHeight));
+
+                    for (InternalAndroidJoystickData& joystick : m_internalAndroidJoystickData)
+                    {
+                        joystick.tryActivate(id, pos);
+                    }
+                }
+                else if (action == AMOTION_EVENT_ACTION_MOVE)
+                {
+                    if (actionIdx != 0)
+                    {
+                        Debug::sendError("Here actionIdx is supposed to be 0 but it's " + std::to_string(actionIdx));
+                    }
+
+                    for (uint32_t pointerIdx = 0; pointerIdx < event->pointerCount; ++pointerIdx)
+                    {
+                        int32_t id = event->pointers[pointerIdx].id;
+                        glm::vec2 pos = glm::vec2(event->pointers[pointerIdx].rawX / static_cast<float>(windowWidth), event->pointers[pointerIdx].rawY / static_cast<float>(windowHeight));
+
+                        for (InternalAndroidJoystickData& joystick : m_internalAndroidJoystickData)
+                        {
+                            joystick.tryMove(id, pos);
+                        }
+                    }
+                }
+                else if (action == AMOTION_EVENT_ACTION_UP || action == AMOTION_EVENT_ACTION_CANCEL || action == AMOTION_EVENT_ACTION_POINTER_UP)
+                {
+                    int32_t id = event->pointers[actionIdx].id;
+
+                    for (InternalAndroidJoystickData& joystick : m_internalAndroidJoystickData)
+                    {
+                        joystick.tryDeactivate(id);
+                    }
+                }
+            }
+
+            if (event->source & AINPUT_SOURCE_JOYSTICK)
+            {
+                float axisX = GameActivityPointerAxes_getAxisValue(&event->pointers[0], AMOTION_EVENT_AXIS_X);
+                float axisY = GameActivityPointerAxes_getAxisValue(&event->pointers[0], AMOTION_EVENT_AXIS_Y);
+
+                m_data.m_gamepadCaches[0].isActive = true;
+                m_data.m_gamepadCaches[0].joystickEvent[0].offsetX = axisX;
+                m_data.m_gamepadCaches[0].joystickEvent[0].offsetY = axisY;
+            }
+        }
+        android_app_clear_motion_events(inputBuffer);
+
+        if (inputBuffer->keyEventsCount > 0)
+        {
+            android_app_clear_key_events(inputBuffer);
+        }
+    }
+
+    for (InternalAndroidJoystickData& joystick : m_internalAndroidJoystickData)
+    {
+        joystick.touch(m_frameIdx);
+    }
+}
+
+const glm::vec2& Wolf::InputHandler::getJoystickPosForVirtualGamepad(uint8_t joystickIdx) const
+{
+    return m_internalAndroidJoystickData[joystickIdx].getPosition();
+}
+
+const glm::vec2 &Wolf::InputHandler::getJoystickCenterForVirtualGamepad(uint8_t joystickIdx) const
+{
+    return m_internalAndroidJoystickData[joystickIdx].getCenter();
+}
+
+uint32_t Wolf::InputHandler::getLastActiveFrameIdxForVirtualGamepad(uint8_t joystickIdx) const
+{
+    return m_internalAndroidJoystickData[joystickIdx].getLastActiveFrameIndex();
+}
+
+Wolf::InputHandler::InternalAndroidJoystickData::InternalAndroidJoystickData(const glm::vec2 &minActivationPos, const glm::vec2 &maxActivationPos)
+        : m_minActivationPos(minActivationPos), m_maxActivationPos(maxActivationPos)
+{
+}
+
+bool Wolf::InputHandler::InternalAndroidJoystickData::tryActivate(int32_t id, const glm::vec2& normalizedPos)
+{
+    if (normalizedPos.x > m_minActivationPos.x && normalizedPos.x < m_maxActivationPos.x &&
+        normalizedPos.y > m_minActivationPos.y && normalizedPos.y < m_maxActivationPos.y)
+    {
+        if (m_id != -1)
+        {
+            Debug::sendInfo("Joystick already activated");
+            return false;
+        }
+
+        m_center = normalizedPos;
+        m_position = normalizedPos;
+        m_id = id;
+
+        return true;
+    }
+
+    return false;
+}
+
+bool Wolf::InputHandler::InternalAndroidJoystickData::tryMove(int32_t id, const glm::vec2 &normalizedPos)
+{
+    if (m_id != id)
+    {
+        return false;
+    }
+
+    m_position = normalizedPos;
+    m_direction = m_position - m_center;
+
+    if (glm::length(m_direction) > 0.1f)
+    {
+        m_center = m_position - glm::normalize(m_direction) * 0.1f;
+    }
+
+    m_direction = glm::clamp(glm::vec2(-1.0f), glm::vec2(1.0f), m_direction / 0.1f);
+    m_direction.y = -m_direction.y;
+
+    return true;
+}
+
+bool Wolf::InputHandler::InternalAndroidJoystickData::tryDeactivate(int32_t id)
+{
+    if (m_id != id)
+    {
+        return false;
+    }
+
+    m_id = -1;
+    return true;
+}
+
+void Wolf::InputHandler::InternalAndroidJoystickData::touch(uint32_t frameIdx)
+{
+    if (m_id != -1)
+    {
+        m_lastActiveFrameIndex = frameIdx;
+    }
 }
 
 #endif

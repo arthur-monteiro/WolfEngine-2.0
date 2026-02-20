@@ -27,8 +27,10 @@ namespace Wolf
 
 		struct TextureSetInfo
 		{
-			std::array<NullableResourceNonOwner<Image>, TEXTURE_COUNT_PER_MATERIAL> images2;
-			std::array<ResourceUniqueOwner<Image>, TEXTURE_COUNT_PER_MATERIAL> images;
+			// TODO: temp, editor should use its own struct
+			std::array<uint32_t, TEXTURE_COUNT_PER_MATERIAL> imageAssetIds;
+
+			std::array<NullableResourceNonOwner<Image>, TEXTURE_COUNT_PER_MATERIAL> images;
 			std::array<std::string, TEXTURE_COUNT_PER_MATERIAL> slicesFolders;
 
 			enum class SamplingMode { TEXTURE_COORDS = 0, TRIPLANAR = 1 };

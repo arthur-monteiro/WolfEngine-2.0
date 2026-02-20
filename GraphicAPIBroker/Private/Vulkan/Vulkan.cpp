@@ -2,6 +2,13 @@
 
 #include <set>
 
+#ifdef __ANDROID__
+#ifndef VK_USE_PLATFORM_ANDROID_KHR
+#define VK_USE_PLATFORM_ANDROID_KHR
+#endif
+#include <vulkan/vulkan_android.h>
+#endif
+
 #include "Configuration.h"
 #include "Debug.h"
 #include "ShadingRateSymbols.h"

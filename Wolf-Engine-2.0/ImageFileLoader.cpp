@@ -1,30 +1,37 @@
 #include "ImageFileLoader.h"
 
+#include <fstream>
+#include <glm/gtc/packing.hpp>
 #define STB_IMAGE_STATIC
 #define STB_IMAGE_IMPLEMENTATION
-#include <fstream>
 #include <stb_image.h>
-#include <glm/gtc/packing.hpp>
+#include <sstream>
 
 #include <Debug.h>
-#include <sstream>
+
+#include "AndroidCacheHelper.h"
 
 Wolf::ImageFileLoader::ImageFileLoader(const std::string& fullFilePath, bool loadFloat)
 {
 	std::string fileExtension = fullFilePath.substr(fullFilePath.find_last_of(".") + 1);
+    std::string filename = fullFilePath;
+
+#ifdef __ANDROID__
+    Wolf::copyCompressedFileToStorage(fullFilePath, "bin_cache", filename);
+#endif
 
 	if (fileExtension == "dds")
 	{
-		loadDDS(fullFilePath);
+		loadDDS(filename);
 	}
 	else if (fileExtension == "cube")
 	{
-		loadCube(fullFilePath);
+		loadCube(filename);
 	}
 	else if (fileExtension == "hdr" || loadFloat)
 	{
         int iWidth(0), iHeight(0), iChannels(0);
-		float* pixels = stbi_loadf(fullFilePath.c_str(), &iWidth, &iHeight, &iChannels, STBI_rgb_alpha);
+		float* pixels = stbi_loadf(filename.c_str(), &iWidth, &iHeight, &iChannels, STBI_rgb_alpha);
         m_width = static_cast<uint32_t>(iWidth);
         m_height = static_cast<uint32_t>(iHeight);
         m_channels = static_cast<uint32_t>(iChannels);
@@ -34,12 +41,12 @@ Wolf::ImageFileLoader::ImageFileLoader(const std::string& fullFilePath, bool loa
 		m_format = Format::R32G32B32A32_SFLOAT;
 
 		if (!pixels)
-			Debug::sendError("Error loading file " + fullFilePath + " !");
+			Debug::sendError("Error loading file " + filename + " !");
 	}
 	else
 	{
         int iWidth(0), iHeight(0), iChannels(0);
-		stbi_uc* pixels = stbi_load(fullFilePath.c_str(), &iWidth, &iHeight, &iChannels, STBI_rgb_alpha);
+		stbi_uc* pixels = stbi_load(filename.c_str(), &iWidth, &iHeight, &iChannels, STBI_rgb_alpha);
         m_width = static_cast<uint32_t>(iWidth);
         m_height = static_cast<uint32_t>(iHeight);
         m_channels = static_cast<uint32_t>(iChannels);
@@ -49,7 +56,7 @@ Wolf::ImageFileLoader::ImageFileLoader(const std::string& fullFilePath, bool loa
 		m_format = Format::R8G8B8A8_UNORM;
 
 		if (!pixels)
-			Debug::sendError("Error : loading image " + fullFilePath);
+			Debug::sendError("Error : loading image " + filename);
 	}
 }
 

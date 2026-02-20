@@ -37,23 +37,24 @@ namespace Wolf
 
 	struct RecordContext
 	{
-		uint32_t currentFrameIdx = 0;
-		uint32_t swapChainImageIdx = 0;
-		Image* swapchainImage = nullptr;
+		uint32_t m_currentFrameIdx = 0;
+		uint32_t m_swapChainImageIdx = 0;
+		Image* m_swapchainImage = nullptr;
+        float m_swapchainRotation = 0.0f;
 #ifndef __ANDROID__
-		GLFWwindow* glfwWindow = nullptr;
+		GLFWwindow* m_glfwWindow = nullptr;
 #endif
-		CameraList* cameraList = nullptr;
-		const void* gameContext = nullptr;
-		ResourceNonOwner<RenderMeshList> renderMeshList;
-		const DescriptorSet* bindlessDescriptorSet = nullptr;
-		ResourceNonOwner<LightManager> lightManager;
-		const Timer* globalTimer = nullptr;
-		GraphicAPIManager* graphicAPIManager;
-		bool* invalidateFrame;
+		CameraList* m_cameraList = nullptr;
+		const void* m_gameContext = nullptr;
+		ResourceNonOwner<RenderMeshList> m_renderMeshList;
+		const DescriptorSet* m_materialGPUManagerDescriptorSet = nullptr;
+		ResourceNonOwner<LightManager> m_lightManager;
+		const Timer* m_globalTimer = nullptr;
+		GraphicAPIManager* m_graphicAPIManager;
+		bool* m_invalidateFrame;
 
 		RecordContext(const ResourceNonOwner<LightManager>& lightManager, const ResourceNonOwner<RenderMeshList>& renderMeshList)
-			: renderMeshList(renderMeshList), lightManager(lightManager) {}
+			: m_renderMeshList(renderMeshList), m_lightManager(lightManager) {}
 	};
 
 	struct SubmitContext

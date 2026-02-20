@@ -27,8 +27,8 @@ void Wolf::FirstPersonCamera::update(const CameraUpdateContext& context)
 	{
 		const uint32_t JITTER_OFFSET_COUNT = static_cast<uint32_t>(std::size(JITTER_OFFSET));
 
-		pixelJitter.x = ((JITTER_OFFSET[context.frameIdx % JITTER_OFFSET_COUNT].x - 0.5f) * 2.0f) / static_cast<float>(context.swapChainExtent.width);
-		pixelJitter.y = ((JITTER_OFFSET[context.frameIdx % JITTER_OFFSET_COUNT].y - 0.5f) * 2.0f) / static_cast<float>(context.swapChainExtent.height);
+		pixelJitter.x = ((JITTER_OFFSET[context.m_frameIdx % JITTER_OFFSET_COUNT].x - 0.5f) * 2.0f) / static_cast<float>(context.m_swapChainExtent.width);
+		pixelJitter.y = ((JITTER_OFFSET[context.m_frameIdx % JITTER_OFFSET_COUNT].y - 0.5f) * 2.0f) / static_cast<float>(context.m_swapChainExtent.height);
 	}
 
 	if (m_overrideViewMatrices)
@@ -39,47 +39,83 @@ void Wolf::FirstPersonCamera::update(const CameraUpdateContext& context)
 		return;
 	}
 
-	if (m_oldMousePosX < 0 || m_locked)
-	{
-		context.inputHandler->getMousePosition(m_oldMousePosX, m_oldMousePosY);
-	}
-
 	const auto currentTime = std::chrono::high_resolution_clock::now();
 	const long long microsecondOffset = std::chrono::duration_cast<std::chrono::microseconds>(currentTime - m_startTime).count();
 	const float secondOffset = static_cast<float>(microsecondOffset) / 1'000'000.0f;
 	m_startTime = currentTime;
 
-	float currentMousePosX, currentMousePosY;
-	context.inputHandler->getMousePosition(currentMousePosX, currentMousePosY);
 
-	updateOrientation(static_cast<float>(currentMousePosX - m_oldMousePosX), static_cast<float>(currentMousePosY - m_oldMousePosY));
-	m_oldMousePosX = currentMousePosX;
-	m_oldMousePosY = currentMousePosY;
-
-	if (!m_locked)
+#ifndef __ANDROID__
+	if (context.m_inputHandler->getPreferredInputType() == InputHandler::InputType::KEYBOARD_MOUSE)
 	{
-		if (context.inputHandler->keyPressedThisFrameOrMaintained(GLFW_KEY_W) || context.inputHandler->keyPressedThisFrameOrMaintained(GLFW_KEY_Z))
+		if (m_oldMousePosX < 0 || m_locked)
 		{
-			m_position = m_position + m_orientation * (secondOffset * m_speed);
-			m_target = m_position + m_orientation;
-		}
-		else if (context.inputHandler->keyPressedThisFrameOrMaintained(GLFW_KEY_S))
-		{
-			m_position = m_position - m_orientation * (secondOffset * m_speed);
-			m_target = m_position + m_orientation;
+			context.m_inputHandler->getMousePosition(m_oldMousePosX, m_oldMousePosY);
 		}
 
-		if (context.inputHandler->keyPressedThisFrameOrMaintained(GLFW_KEY_A) || context.inputHandler->keyPressedThisFrameOrMaintained(GLFW_KEY_Q))
+		float currentMousePosX, currentMousePosY;
+		context.m_inputHandler->getMousePosition(currentMousePosX, currentMousePosY);
+
+		updateOrientation(static_cast<float>(currentMousePosX - m_oldMousePosX), static_cast<float>(currentMousePosY - m_oldMousePosY));
+		m_oldMousePosX = currentMousePosX;
+		m_oldMousePosY = currentMousePosY;
+
+		if (!m_locked)
 		{
-			m_position = m_position + m_lateralDirection * (secondOffset * m_speed);
-			m_target = m_position + m_orientation;
+			if (context.m_inputHandler->keyPressedThisFrameOrMaintained(GLFW_KEY_W) || context.m_inputHandler->keyPressedThisFrameOrMaintained(GLFW_KEY_Z))
+			{
+				m_position = m_position + m_orientation * (secondOffset * m_speed);
+				m_target = m_position + m_orientation;
+			}
+			else if (context.m_inputHandler->keyPressedThisFrameOrMaintained(GLFW_KEY_S))
+			{
+				m_position = m_position - m_orientation * (secondOffset * m_speed);
+				m_target = m_position + m_orientation;
+			}
+
+			if (context.m_inputHandler->keyPressedThisFrameOrMaintained(GLFW_KEY_A) || context.m_inputHandler->keyPressedThisFrameOrMaintained(GLFW_KEY_Q))
+			{
+				m_position = m_position + m_lateralDirection * (secondOffset * m_speed);
+				m_target = m_position + m_orientation;
+			}
+
+			else if (context.m_inputHandler->keyPressedThisFrameOrMaintained(GLFW_KEY_D))
+			{
+				m_position = m_position - m_lateralDirection * (secondOffset * m_speed);
+				m_target = m_position + m_orientation;
+			}
+		}
+	}
+#endif
+	if (context.m_inputHandler->getPreferredInputType() == InputHandler::InputType::GAMEPAD && !m_locked)
+	{
+		float rotX, rotY;
+		context.m_inputHandler->getJoystickSpeedForGamepad(0, 1, rotX, rotY);
+
+		// Sensitivity factor for rotation speed (degrees/radians per second)
+		const float rotationSensitivity = 100.0f;
+		if (std::abs(rotX) > 0.1f || std::abs(rotY) > 0.1f) // Basic deadzone check
+		{
+			updateOrientation(rotX * rotationSensitivity * secondOffset,
+							  rotY * rotationSensitivity * secondOffset);
 		}
 
-		else if (context.inputHandler->keyPressedThisFrameOrMaintained(GLFW_KEY_D))
+		// 3. Handle Movement (Left Stick - usually index 0)
+		float moveX, moveY;
+		context.m_inputHandler->getJoystickSpeedForGamepad(0, 0, moveX, moveY);
+
+		if (std::abs(moveY) > 0.1f)
 		{
-			m_position = m_position - m_lateralDirection * (secondOffset * m_speed);
-			m_target = m_position + m_orientation;
+			m_position = m_position - m_orientation * (moveY * secondOffset * m_speed);
 		}
+
+		if (std::abs(moveX) > 0.1f)
+		{
+			m_position = m_position - m_lateralDirection * (moveX * secondOffset * m_speed);
+		}
+
+		// 4. Finalize Target
+		m_target = m_position + m_orientation;
 	}
 
 	m_previousViewMatrix = m_viewMatrix;
@@ -87,6 +123,12 @@ void Wolf::FirstPersonCamera::update(const CameraUpdateContext& context)
 
 	m_projectionMatrix = glm::perspective(m_radFOV, m_aspect, m_near, m_far);
 	m_projectionMatrix[1][1] *= -1;
+
+    if (context.m_screenRotationInDegrees != 0.0f)
+    {
+        glm::mat4 rotation = glm::rotate(glm::mat4(1.0f), glm::radians(context.m_screenRotationInDegrees), glm::vec3(0.0f, 0.0f, 1.0f));
+        m_projectionMatrix = rotation * m_projectionMatrix;
+    }
 
 	updateGraphic(pixelJitter, context);
 }

@@ -111,7 +111,7 @@ const Wolf::Pipeline* Wolf::PipelineSet::getOrCreatePipeline(uint32_t idx, Rende
 				shaderCodeChanged(shaderParser);
 			});
 			addShaderInfo.cameraDescriptorSlot = pipelineInfo.cameraDescriptorSlot;
-			addShaderInfo.bindlessDescriptorSlot = pipelineInfo.shaderInfos[i].stage == ShaderStageFlagBits::FRAGMENT ? pipelineInfo.bindlessDescriptorSlot : -1;
+			addShaderInfo.bindlessDescriptorSlot = pipelineInfo.shaderInfos[i].stage == ShaderStageFlagBits::FRAGMENT ? pipelineInfo.materialsDescriptorSlot : -1;
 			addShaderInfo.lightDescriptorSlot = pipelineInfo.shaderInfos[i].stage == ShaderStageFlagBits::FRAGMENT ? pipelineInfo.lightDescriptorSlot : -1;
 			addShaderInfo.materialFetchProcedure = pipelineInfo.shaderInfos[i].materialFetchProcedure;
 			for (const ShaderCodeToAddForStage& shaderCodeToAddForStage : shadersCodeToAdd)
@@ -155,10 +155,10 @@ const Wolf::Pipeline* Wolf::PipelineSet::getOrCreatePipeline(uint32_t idx, Rende
 			if (pipelineInfo.cameraDescriptorSlot > maxSlot)
 				maxSlot = pipelineInfo.cameraDescriptorSlot;
 		}
-		if (pipelineInfo.bindlessDescriptorSlot != static_cast<uint32_t>(-1))
+		if (pipelineInfo.materialsDescriptorSlot != static_cast<uint32_t>(-1))
 		{
-			if (pipelineInfo.bindlessDescriptorSlot > maxSlot)
-				maxSlot = pipelineInfo.bindlessDescriptorSlot;
+			if (pipelineInfo.materialsDescriptorSlot > maxSlot)
+				maxSlot = pipelineInfo.materialsDescriptorSlot;
 		}
 		if (pipelineInfo.lightDescriptorSlot != static_cast<uint32_t>(-1))
 		{
@@ -194,7 +194,7 @@ const Wolf::Pipeline* Wolf::PipelineSet::getOrCreatePipeline(uint32_t idx, Rende
 					renderingPipelineCreateInfo.descriptorSetLayouts.emplace_back(GraphicCameraInterface::getDescriptorSetLayout().createConstNonOwnerResource());
 					slotFound = true;
 				}
-				else if (pipelineInfo.bindlessDescriptorSlot == slot)
+				else if (pipelineInfo.materialsDescriptorSlot == slot)
 				{
 					renderingPipelineCreateInfo.descriptorSetLayouts.emplace_back(MaterialsGPUManager::getDescriptorSetLayout().createConstNonOwnerResource());
 					slotFound = true;

@@ -32,6 +32,7 @@ void UltralightViewListener::OnAddConsoleMessage(ultralight::View* caller, const
 
 void UltralightViewListener::OnChangeCursor(ultralight::View* caller, ultralight::Cursor cursor)
 {
+#ifndef __ANDROID__
     if (cursor != m_currentCursor)
     {
         m_currentCursor = cursor;
@@ -61,4 +62,5 @@ void UltralightViewListener::OnChangeCursor(ultralight::View* caller, ultralight
 
         m_inputHandler->setCursorType(windowCursorType);
     }
+#endif
 }

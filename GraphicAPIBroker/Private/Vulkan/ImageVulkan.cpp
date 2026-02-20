@@ -285,7 +285,7 @@ void Wolf::ImageVulkan::exportToBuffer(std::vector<uint8_t>& outBuffer) const
 	stagingImage.copyGPUImage(*this, copyRegion);
 
 	const uint8_t* pixels = static_cast<uint8_t*>(stagingImage.map());
-	outBuffer.assign(pixels, pixels + static_cast<size_t>(m_extent.width) * m_extent.height * static_cast<size_t>(computeBPP()));
+	outBuffer.assign(pixels, pixels + static_cast<size_t>(m_extent.width) * m_extent.height * static_cast<size_t>(Image::computeBPPFromFormat(m_imageFormat)));
 
 	stagingImage.unmap();
 }
@@ -332,54 +332,9 @@ void Wolf::ImageVulkan::createImageView(VkFormat format)
 	m_imageViews[hash] = imageView;
 }
 
-float Wolf::ImageVulkan::computeBPP() const
-{
-	switch (m_vkImageFormat)
-	{
-		case VK_FORMAT_R32G32B32A32_SFLOAT:
-			return 16.0f;
-			break;
-		case VK_FORMAT_R32G32B32_SFLOAT:
-			return 12.0f;
-			break;
-		case VK_FORMAT_R32G32_SFLOAT:
-		case VK_FORMAT_R16G16B16A16_SFLOAT:
-			return 8.0f;
-			break;
-		case VK_FORMAT_R8G8B8A8_UNORM:
-		case VK_FORMAT_B8G8R8A8_UNORM:
-		case VK_FORMAT_R8G8B8A8_SRGB:
-		case VK_FORMAT_D32_SFLOAT:
-		case VK_FORMAT_R32_SFLOAT:
-		case VK_FORMAT_R32_UINT:
-		case VK_FORMAT_R32_SINT:
-		case VK_FORMAT_R16G16_SFLOAT:
-			return 4.0f;
-			break;
-		case VK_FORMAT_R16_SFLOAT:
-		case VK_FORMAT_R16_UNORM:
-			return 2.0f;
-			break;
-		case VK_FORMAT_BC3_UNORM_BLOCK:
-		case VK_FORMAT_BC3_SRGB_BLOCK:
-		case VK_FORMAT_BC5_UNORM_BLOCK:
-		case VK_FORMAT_R8_UINT:
-			return 1.0f;
-			break;
-		case VK_FORMAT_BC1_RGB_UNORM_BLOCK:
-		case VK_FORMAT_BC1_RGB_SRGB_BLOCK:
-			return 0.5f;
-			break;
-		default:
-			Debug::sendError("Unsupported image format");
-			return 1.0f;
-			break;
-	}
-}
-
 void Wolf::ImageVulkan::setBPP()
 {
-	m_bpp = computeBPP();
+	m_bpp = computeBPPFromFormat(m_imageFormat);
 }
 
 void Wolf::ImageVulkan::resetAllLayouts()

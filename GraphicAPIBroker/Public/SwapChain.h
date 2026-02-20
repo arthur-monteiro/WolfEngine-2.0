@@ -24,6 +24,11 @@ namespace Wolf
 			Extent2D extent;
 			Format format;
 			enum class ColorSpace { S_RGB, SC_RGB, PQ, LINEAR } colorSpace = ColorSpace::S_RGB;
+
+#ifdef __ANDROID__
+            // On Android, the swapchain is responsible of detecting a resize
+            std::function<void(int, int)> m_resizeCallback;
+#endif
 		};
 
 		static SwapChain* createSwapChain(const SwapChainCreateInfo& swapChainCreateInfo);
@@ -42,6 +47,7 @@ namespace Wolf
 		[[nodiscard]] const Semaphore* getImageAvailableSemaphore(uint32_t index) const { return m_imageAvailableSemaphores[index].get(); }
 		[[nodiscard]] Fence* getFrameFence(uint32_t index) const { return m_frameFences[index].get(); }
 		[[nodiscard]] SwapChainCreateInfo::ColorSpace getColorSpace() const { return m_colorSpace; }
+        [[nodiscard]] float getRotationInDegrees() const { return m_rotationInDegrees; }
 
 	protected:
 		std::vector<std::unique_ptr<Image>> m_images;
@@ -50,5 +56,10 @@ namespace Wolf
 		std::vector<std::unique_ptr<Fence>> m_frameFences;
 
 		SwapChainCreateInfo::ColorSpace m_colorSpace = SwapChainCreateInfo::ColorSpace::S_RGB;
+        float m_rotationInDegrees = 0.0f;
+
+#ifdef __ANDROID__
+        std::function<void(int, int)> m_resizeCallback;
+#endif
 	};
 }

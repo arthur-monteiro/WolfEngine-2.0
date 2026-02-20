@@ -32,7 +32,7 @@ The `source` should contain the data encoded using meshopt codecs; `count` repre
 
 Given a valid encoded buffer and the correct input parameters, these functions always succeed; they fail if the input data is malformed.
 
-When decoding attribute (vertex) data, additionally one of the decoding filters can be applied to further post-process the decoded data. `filter` must be equal to `"OCTAHEDRAL"`, `"QUATERNION"` or `"EXPONENTIAL"` to activate this extra step. The description of filters can be found in [the specification for EXT_meshopt_compression](https://github.com/KhronosGroup/glTF/blob/master/extensions/2.0/Vendor/EXT_meshopt_compression/README.md).
+When decoding attribute (vertex) data, additionally one of the decoding filters can be applied to further post-process the decoded data. `filter` must be equal to `"OCTAHEDRAL"`, `"QUATERNION"` or `"EXPONENTIAL"` to tryActivate this extra step. The description of filters can be found in [the specification for EXT_meshopt_compression](https://github.com/KhronosGroup/glTF/blob/master/extensions/2.0/Vendor/EXT_meshopt_compression/README.md).
 
 To simplify the decoding further, a wrapper function is provided that automatically calls the correct version of the decoding based on `mode` - which should be `"ATTRIBUTES"`, `"TRIANGLES"` or `"INDICES"`. The difference in terminology is due to the fact that the JavaScript API uses the terms established in the glTF extension, whereas the function names match that of the meshoptimizer C++ API.
 

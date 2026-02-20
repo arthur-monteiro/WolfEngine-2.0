@@ -66,7 +66,18 @@ Wolf::MaterialsGPUManager::MaterialsGPUManager(const std::vector<DescriptorSetGe
 	m_descriptorSet.reset(DescriptorSet::createDescriptorSet(*m_descriptorSetLayout->getResource()));
 
 	DescriptorSetGenerator descriptorSetGenerator(descriptorSetLayoutGenerator.getDescriptorLayouts());
-	descriptorSetGenerator.setImages(BINDING_SLOT, firstImages);
+
+    std::vector<DescriptorSetGenerator::ImageDescription> initImages(MAX_IMAGES);
+    for (uint32_t i = 0; i < firstImages.size(); ++i)
+    {
+        initImages[i] = firstImages[i];
+    }
+    for (uint32_t i = firstImages.size(); i < MAX_IMAGES; ++i)
+    {
+        initImages[i] = firstImages[0];
+    }
+
+	descriptorSetGenerator.setImages(BINDING_SLOT, initImages);
 	descriptorSetGenerator.setSampler(BINDING_SLOT + 1, *m_sampler);
 	descriptorSetGenerator.setBuffer(BINDING_SLOT + 2, *m_textureSetsBuffer);
 	descriptorSetGenerator.setBuffer(BINDING_SLOT + 3, *m_materialsBuffer);
@@ -96,7 +107,7 @@ Wolf::MaterialsGPUManager::MaterialsGPUManager(const std::vector<DescriptorSetGe
 
 void Wolf::MaterialsGPUManager::addNewTextureSet(const TextureSetInfo& textureSetInfo)
 {
-	if (textureSetInfo.images2.size() != TEXTURE_COUNT_PER_MATERIAL)
+	if (textureSetInfo.images.size() != TEXTURE_COUNT_PER_MATERIAL)
 	{
 		Debug::sendCriticalError("Texture set doesn't have the right number of images");
 	}
@@ -127,11 +138,11 @@ void Wolf::MaterialsGPUManager::addNewTextureSet(const TextureSetInfo& textureSe
 	{
 		// Clean images to remove nullptr
 		std::vector<DescriptorSetGenerator::ImageDescription> imagesCleaned;
-		imagesCleaned.reserve(textureSetInfo.images2.size());
+		imagesCleaned.reserve(textureSetInfo.images.size());
 
-		for (uint32_t i = 0; i < textureSetInfo.images2.size(); i++)
+		for (uint32_t i = 0; i < textureSetInfo.images.size(); i++)
 		{
-			if (const NullableResourceNonOwner<Image>& image = textureSetInfo.images2[i])
+			if (const NullableResourceNonOwner<Image>& image = textureSetInfo.images[i])
 			{
 				imagesCleaned.emplace_back(ImageLayout::SHADER_READ_ONLY_OPTIMAL, image->getDefaultImageView());
 			}
@@ -139,11 +150,11 @@ void Wolf::MaterialsGPUManager::addNewTextureSet(const TextureSetInfo& textureSe
 
 		uint32_t currentBindlessOffset = addImagesToBindless(imagesCleaned);
 
-		if (textureSetInfo.images2[0])
+		if (textureSetInfo.images[0])
 			newTextureSetInfo.albedoIdx = currentBindlessOffset++;
-		if (textureSetInfo.images2[1])
+		if (textureSetInfo.images[1])
 			newTextureSetInfo.normalIdx = currentBindlessOffset++;
-		if (textureSetInfo.images2[2])
+		if (textureSetInfo.images[2])
 			newTextureSetInfo.roughnessMetalnessAOIdx = currentBindlessOffset++;
 	}
 
@@ -428,7 +439,7 @@ void Wolf::MaterialsGPUManager::changeExistingTextureSetBeforeFrame(TextureSetCa
 	}
 	else
 	{
-		if (textureSetInfo.images2[0])
+		if (textureSetInfo.images[0])
 		{
 			if (textureSetCacheInfo.albedoIdx == 0)
 			{
@@ -437,11 +448,11 @@ void Wolf::MaterialsGPUManager::changeExistingTextureSetBeforeFrame(TextureSetCa
 					textureSetCacheInfo.textureSetIdx * sizeof(TextureSetGPUInfo) + offsetof(TextureSetGPUInfo, albedoIdx));
 			}
 
-			DescriptorSetGenerator::ImageDescription imageToUpdate{ ImageLayout::SHADER_READ_ONLY_OPTIMAL, textureSetInfo.images2[0]->getDefaultImageView() };
+			DescriptorSetGenerator::ImageDescription imageToUpdate{ ImageLayout::SHADER_READ_ONLY_OPTIMAL, textureSetInfo.images[0]->getDefaultImageView() };
 			updateImageInBindless(imageToUpdate, textureSetCacheInfo.albedoIdx);
 		}
 
-		if (textureSetInfo.images2[1])
+		if (textureSetInfo.images[1])
 		{
 			if (textureSetCacheInfo.normalIdx == 1)
 			{
@@ -450,11 +461,11 @@ void Wolf::MaterialsGPUManager::changeExistingTextureSetBeforeFrame(TextureSetCa
 					textureSetCacheInfo.textureSetIdx * sizeof(TextureSetGPUInfo) + offsetof(TextureSetGPUInfo, normalIdx));
 			}
 
-			DescriptorSetGenerator::ImageDescription imageToUpdate{ ImageLayout::SHADER_READ_ONLY_OPTIMAL, textureSetInfo.images2[1]->getDefaultImageView() };
+			DescriptorSetGenerator::ImageDescription imageToUpdate{ ImageLayout::SHADER_READ_ONLY_OPTIMAL, textureSetInfo.images[1]->getDefaultImageView() };
 			updateImageInBindless(imageToUpdate, textureSetCacheInfo.normalIdx);
 		}
 
-		if (textureSetInfo.images2[2])
+		if (textureSetInfo.images[2])
 		{
 			if (textureSetCacheInfo.roughnessMetalnessAOIdx == 2)
 			{
@@ -463,7 +474,7 @@ void Wolf::MaterialsGPUManager::changeExistingTextureSetBeforeFrame(TextureSetCa
 					textureSetCacheInfo.textureSetIdx * sizeof(TextureSetGPUInfo) + offsetof(TextureSetGPUInfo, roughnessMetalnessAOIdx));
 			}
 
-			DescriptorSetGenerator::ImageDescription imageToUpdate{ ImageLayout::SHADER_READ_ONLY_OPTIMAL, textureSetInfo.images2[2]->getDefaultImageView() };
+			DescriptorSetGenerator::ImageDescription imageToUpdate{ ImageLayout::SHADER_READ_ONLY_OPTIMAL, textureSetInfo.images[2]->getDefaultImageView() };
 			updateImageInBindless(imageToUpdate, textureSetCacheInfo.roughnessMetalnessAOIdx);
 		}
 	}

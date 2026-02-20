@@ -11,8 +11,8 @@ Wolf::Physics::PhysicsManager::DynamicShapeId Wolf::Physics::PhysicsManager::add
 	{
 		uint32_t shapeId = m_holesInDynamicShapesArray.back();
 		m_holesInDynamicShapesArray.pop_back();
-		m_dynamicShapes[shapeId].shape.reset(new Rectangle(rectangle));
-		m_dynamicShapes[shapeId].instance = instance;
+		m_dynamicShapes[shapeId].m_shape.reset(new Rectangle(rectangle));
+		m_dynamicShapes[shapeId].m_instance = instance;
 		return shapeId;
 	}
 
@@ -26,8 +26,8 @@ Wolf::Physics::PhysicsManager::DynamicShapeId Wolf::Physics::PhysicsManager::add
 	{
 		uint32_t shapeId = m_holesInDynamicShapesArray.back();
 		m_holesInDynamicShapesArray.pop_back();
-		m_dynamicShapes[shapeId].shape.reset(new Box(box));
-		m_dynamicShapes[shapeId].instance = instance;
+		m_dynamicShapes[shapeId].m_shape.reset(new Box(box));
+		m_dynamicShapes[shapeId].m_instance = instance;
 		return shapeId;
 	}
 
@@ -37,7 +37,7 @@ Wolf::Physics::PhysicsManager::DynamicShapeId Wolf::Physics::PhysicsManager::add
 
 void Wolf::Physics::PhysicsManager::removeDynamicShape(DynamicShapeId shapeId)
 {
-	m_dynamicShapes[shapeId].shape.reset(nullptr);
+	m_dynamicShapes[shapeId].m_shape.reset(nullptr);
 	m_holesInDynamicShapesArray.push_back(shapeId);
 }
 
@@ -45,12 +45,12 @@ Wolf::Physics::PhysicsManager::RayCastResult Wolf::Physics::PhysicsManager::rayC
 {
 	for (StaticShape& staticShape : m_staticShapes)
 	{
-		Shape::ShapeRayCastResult shapeRayCastResult = staticShape.shape->rayCast(rayOrigin, rayEnd);
+		Shape::ShapeRayCastResult shapeRayCastResult = staticShape.m_shape->rayCast(rayOrigin, rayEnd);
 		if (shapeRayCastResult.collision)
 		{
 			RayCastResult rayCastResult;
 			rayCastResult.collision = true;
-			rayCastResult.shape = staticShape.shape.createNonOwnerResource();
+			rayCastResult.shape = staticShape.m_shape.createNonOwnerResource();
 			rayCastResult.hitPoint = shapeRayCastResult.hitPoint;
 			return rayCastResult;
 		}
@@ -60,15 +60,15 @@ Wolf::Physics::PhysicsManager::RayCastResult Wolf::Physics::PhysicsManager::rayC
 	{
 		DynamicShape& dynamicShape = m_dynamicShapes[i];
 
-		Shape::ShapeRayCastResult shapeRayCastResult = dynamicShape.shape->rayCast(rayOrigin, rayEnd);
+		Shape::ShapeRayCastResult shapeRayCastResult = dynamicShape.m_shape->rayCast(rayOrigin, rayEnd);
 		if (shapeRayCastResult.collision)
 		{
 			RayCastResult rayCastResult;
 			rayCastResult.collision = true;
-			rayCastResult.shape = dynamicShape.shape.createNonOwnerResource();
+			rayCastResult.shape = dynamicShape.m_shape.createNonOwnerResource();
 			rayCastResult.hitPoint = shapeRayCastResult.hitPoint;
 			rayCastResult.dynamicShapeId = i;
-			rayCastResult.instance = dynamicShape.instance;
+			rayCastResult.instance = dynamicShape.m_instance;
 			return rayCastResult;
 		}
 	}
@@ -86,12 +86,12 @@ Wolf::Physics::PhysicsManager::RayCastResult Wolf::Physics::PhysicsManager::rayC
 
 	for (StaticShape& staticShape : m_staticShapes)
 	{
-		Shape::ShapeRayCastResult shapeRayCastResult = staticShape.shape->rayCast(rayOrigin, rayEnd);
+		Shape::ShapeRayCastResult shapeRayCastResult = staticShape.m_shape->rayCast(rayOrigin, rayEnd);
 		if (shapeRayCastResult.collision)
 		{
 			RayCastResult rayCastResult;
 			rayCastResult.collision = true;
-			rayCastResult.shape = staticShape.shape.createNonOwnerResource();
+			rayCastResult.shape = staticShape.m_shape.createNonOwnerResource();
 			rayCastResult.hitPoint = shapeRayCastResult.hitPoint;
 
 			float distanceWithOrigin = glm::distance(rayCastResult.hitPoint, rayOrigin);
@@ -107,15 +107,15 @@ Wolf::Physics::PhysicsManager::RayCastResult Wolf::Physics::PhysicsManager::rayC
 	{
 		DynamicShape& dynamicShape = m_dynamicShapes[i];
 
-		Shape::ShapeRayCastResult shapeRayCastResult = dynamicShape.shape->rayCast(rayOrigin, rayEnd);
+		Shape::ShapeRayCastResult shapeRayCastResult = dynamicShape.m_shape->rayCast(rayOrigin, rayEnd);
 		if (shapeRayCastResult.collision)
 		{
 			RayCastResult rayCastResult;
 			rayCastResult.collision = true;
-			rayCastResult.shape = dynamicShape.shape.createNonOwnerResource();
+			rayCastResult.shape = dynamicShape.m_shape.createNonOwnerResource();
 			rayCastResult.hitPoint = shapeRayCastResult.hitPoint;
 			rayCastResult.dynamicShapeId = i;
-			rayCastResult.instance = dynamicShape.instance;
+			rayCastResult.instance = dynamicShape.m_instance;
 
 			float distanceWithOrigin = glm::distance(rayCastResult.hitPoint, rayOrigin);
 			if (distanceWithOrigin < distance)

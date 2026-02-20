@@ -48,7 +48,6 @@ namespace Wolf
 
 	private:
 		void createImageView(VkFormat format);
-		float computeBPP() const;
 		void setBPP();
 		void resetAllLayouts();
 		static VkImageUsageFlagBits wolfImageUsageFlagBitsToVkImageUsageFlagBits(ImageUsageFlagBits imageUsageFlagBits);

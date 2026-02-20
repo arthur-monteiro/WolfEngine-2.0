@@ -1,5 +1,7 @@
 #include "Window.h"
 
+#ifndef __ANDROID__
+
 #include <utility>
 
 Wolf::Window::Window(const std::string& appName, uint32_t width, uint32_t height, void* systemManagerInstance, std::function<void(void*, int, int)> resizeCallback)
@@ -43,3 +45,5 @@ void Wolf::Window::setCursorType(CursorType cursorType) const
 {
 	glfwSetCursor(m_window, m_cursors[static_cast<uint32_t>(cursorType)]);
 }
+
+#endif

@@ -81,6 +81,9 @@ VkPresentModeKHR choosePresentMode(const std::vector<VkPresentModeKHR>& availabl
 Wolf::SwapChainVulkan::SwapChainVulkan(const SwapChainCreateInfo& swapChainCreateInfo)
 {
 	m_format = swapChainCreateInfo.format;
+#ifdef __ANDROID__
+    m_resizeCallback = swapChainCreateInfo.m_resizeCallback;
+#endif
 	initialize(swapChainCreateInfo);
 }
 
@@ -88,8 +91,24 @@ void Wolf::SwapChainVulkan::initialize(const SwapChainCreateInfo& swapChainCreat
 {
 	VkExtent2D extent = { swapChainCreateInfo.extent.width, swapChainCreateInfo.extent.height };
 
-	SwapChainSupportDetails swapChainSupport;
+    SwapChainSupportDetails swapChainSupport;
 	querySwapChainSupport(swapChainSupport, g_vulkanInstance->getPhysicalDevice(), g_vulkanInstance->getSurface());
+
+#ifdef __ANDROID__
+    VkExtent2D newExtent = swapChainSupport.capabilities.currentExtent;
+    if (newExtent.width == 0xFFFFFFFF || newExtent.width == 0)
+    {
+        Debug::sendCriticalError("Can't get new extent");
+    }
+    extent = newExtent;
+
+    const bool needExtentSwap = swapChainSupport.capabilities.currentTransform & VK_SURFACE_TRANSFORM_ROTATE_90_BIT_KHR || swapChainSupport.capabilities.currentTransform & VK_SURFACE_TRANSFORM_ROTATE_270_BIT_KHR;
+    if (needExtentSwap)
+    {
+        extent.width = newExtent.height;
+        extent.height = newExtent.width;
+    }
+#endif
 
 	if(swapChainSupport.capabilities.currentExtent.width != std::numeric_limits<uint32_t>::max() && swapChainSupport.capabilities.currentExtent.width < swapChainCreateInfo.extent.width)
 	{
@@ -133,6 +152,16 @@ void Wolf::SwapChainVulkan::initialize(const SwapChainCreateInfo& swapChainCreat
 		createInfo.imageSharingMode = VK_SHARING_MODE_EXCLUSIVE;
 
 	createInfo.preTransform = swapChainSupport.capabilities.currentTransform;
+
+    if (createInfo.preTransform == VK_SURFACE_TRANSFORM_ROTATE_90_BIT_KHR)
+    {
+        m_rotationInDegrees = 90.0f;
+    }
+    else if (createInfo.preTransform == VK_SURFACE_TRANSFORM_ROTATE_270_BIT_KHR)
+    {
+        m_rotationInDegrees = 270.0f;
+    }
+
 #ifdef __ANDROID__
 	createInfo.compositeAlpha = VK_COMPOSITE_ALPHA_INHERIT_BIT_KHR;
 #else
@@ -240,8 +269,16 @@ void Wolf::SwapChainVulkan::present(const Semaphore* waitSemaphore, uint32_t ima
 	{
 		// It's most likely that window is not visible
 	}
+    else if (result == VK_SUBOPTIMAL_KHR)
+    {
+#ifdef __ANDROID__
+        // TODO
+#endif
+    }
 	else if (result != VK_SUCCESS)
-		Debug::sendCriticalError("Can't present image");
+    {
+        Debug::sendCriticalError("Can't present image");
+    }
 }
 
 void Wolf::SwapChainVulkan::resetAllFences()

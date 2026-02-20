@@ -56,6 +56,41 @@ namespace Wolf
 	class Image
 	{
 	public:
+		static float computeBPPFromFormat(Format format)
+		{
+			switch (format)
+			{
+				case Format::R32G32B32A32_SFLOAT:
+					return 16.0f;
+				case Format::R32G32B32_SFLOAT:
+					return 12.0f;
+				case Format::R32G32_SFLOAT:
+				case Format::R16G16B16A16_SFLOAT:
+					return 8.0f;
+				case Format::R8G8B8A8_UNORM:
+				case Format::B8G8R8A8_UNORM:
+				case Format::R8G8B8A8_SRGB:
+				case Format::D32_SFLOAT:
+				case Format::R32_SFLOAT:
+				case Format::R32_UINT:
+				case Format::R16G16_SFLOAT:
+					return 4.0f;
+				case Format::R16_SFLOAT:
+					return 2.0f;
+				case Format::BC3_UNORM_BLOCK:
+				case Format::BC3_SRGB_BLOCK:
+				case Format::BC5_UNORM_BLOCK:
+				case Format::R8_UINT:
+					return 1.0f;
+				case Format::BC1_RGBA_UNORM_BLOCK:
+				case Format::BC1_RGB_SRGB_BLOCK:
+					return 0.5f;
+				default:
+					Debug::sendError("Unsupported image format");
+					return 1.0f;
+			}
+		}
+
 		static Image* createImage(const CreateImageInfo& createImageInfo);
 
 		virtual ~Image() = default;

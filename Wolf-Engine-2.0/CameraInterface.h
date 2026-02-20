@@ -19,15 +19,12 @@ namespace Wolf
 
 	struct CameraUpdateContext
 	{
-#ifndef __ANDROID__
-		const ResourceNonOwner<const InputHandler> inputHandler;
-#endif
-		uint32_t frameIdx = 0;
-		Extent3D swapChainExtent = {};
+		const ResourceNonOwner<const InputHandler> m_inputHandler;
+		uint32_t m_frameIdx = 0;
+		Extent3D m_swapChainExtent = {};
+        float m_screenRotationInDegrees = 0.0f;
 
-#ifndef  __ANDROID__
-		CameraUpdateContext(const ResourceNonOwner<const InputHandler>& inputHandler) : inputHandler(inputHandler) {}
-#endif	
+		CameraUpdateContext(const ResourceNonOwner<const InputHandler>& inputHandler) : m_inputHandler(inputHandler) {}
 	};
 
 	class CameraInterface
