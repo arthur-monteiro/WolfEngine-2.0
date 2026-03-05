@@ -1,7 +1,7 @@
 @echo off
 echo Starting Wolf-Engine android build...
 
-call gradlew.bat assembleDebug copyStaticLibs
+call gradlew.bat clean assembleDebug copyStaticLibs
 
 echo.
 if %ERRORLEVEL% NEQ 0 (

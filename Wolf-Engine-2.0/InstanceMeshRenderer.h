@@ -120,6 +120,8 @@ namespace Wolf
         {
             uint32_t m_cameraIdx;
             uint32_t m_batchesMask;
+
+            ActiveCamera(uint32_t cameraIdx, uint32_t batchesMask) : m_cameraIdx(cameraIdx), m_batchesMask(batchesMask) {}
         };
         std::vector<ActiveCamera> m_activeCamerasNextFrame;
         std::vector<ActiveCamera> m_activeCamerasThisFrame;
