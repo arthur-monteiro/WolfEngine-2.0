@@ -1,5 +1,6 @@
 #include "WolfEngine.h"
 
+#include "GraphicCameraInterface.h"
 #include "SwapChain.h"
 
 #ifdef __ANDROID__
@@ -180,6 +181,11 @@ Wolf::WolfEngine::WolfEngine(const WolfInstanceCreateInfo& createInfo) : m_globa
 	}
 
 	m_defaultMeshBufferPool.reset(new DefaultMeshBufferPool(268'435'456));
+}
+
+Wolf::WolfEngine::~WolfEngine()
+{
+	GraphicCameraInterface::destroyStaticResources();
 }
 
 void Wolf::WolfEngine::initializePass(const ResourceNonOwner<CommandRecordBase>& pass) const

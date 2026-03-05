@@ -73,6 +73,7 @@ namespace Wolf
     {
     public:
         WolfEngine(const WolfInstanceCreateInfo& createInfo);
+        ~WolfEngine();
 
         void initializePass(const ResourceNonOwner<CommandRecordBase>& pass) const;
 
@@ -148,14 +149,14 @@ namespace Wolf
         std::function<void(uint32_t, uint32_t)> m_resizeCallback;
 
         // Graphics
+        ResourceUniqueOwner<DefaultGPUDataTransfersManager> m_defaultPushDataToGPU;
+        NullableResourceNonOwner<GPUDataTransfersManagerInterface> m_pushDataToGPU;
+
         ResourceUniqueOwner<DefaultMeshRenderer> m_defaultMeshRenderer;
         ResourceUniqueOwner<InstanceMeshRenderer> m_instanceMeshRenderer;
         ShaderList m_shaderList;
         std::array<std::unique_ptr<Image>, 5> m_defaultImages;
         ResourceUniqueOwner<MaterialsGPUManager> m_materialsManager;
-
-        ResourceUniqueOwner<DefaultGPUDataTransfersManager> m_defaultPushDataToGPU;
-        NullableResourceNonOwner<GPUDataTransfersManagerInterface> m_pushDataToGPU;
 
         // Saves
         std::mutex m_savedUICommandsMutex;

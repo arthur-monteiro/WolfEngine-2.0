@@ -4,18 +4,13 @@
 #include "CameraInterface.h"
 #include "DescriptorSetGenerator.h"
 
-uint32_t Wolf::GraphicCameraInterface::s_instanceCount = 0;
 Wolf::ResourceUniqueOwner<Wolf::DescriptorSetLayoutGenerator> Wolf::GraphicCameraInterface::s_descriptorSetLayoutGenerator;
 Wolf::ResourceUniqueOwner<Wolf::DescriptorSetLayout> Wolf::GraphicCameraInterface::s_descriptorSetLayout;
 
-Wolf::GraphicCameraInterface::~GraphicCameraInterface()
+void Wolf::GraphicCameraInterface::destroyStaticResources()
 {
-	s_instanceCount--;
-	if (s_instanceCount == 0)
-	{
-		s_descriptorSetLayoutGenerator.reset(nullptr);
-		s_descriptorSetLayout.reset(nullptr);
-	}
+	s_descriptorSetLayoutGenerator.reset(nullptr);
+	s_descriptorSetLayout.reset(nullptr);
 }
 
 Wolf::ResourceUniqueOwner<Wolf::DescriptorSetLayout>& Wolf::GraphicCameraInterface::getDescriptorSetLayout()
@@ -27,7 +22,6 @@ Wolf::ResourceUniqueOwner<Wolf::DescriptorSetLayout>& Wolf::GraphicCameraInterfa
 Wolf::GraphicCameraInterface::GraphicCameraInterface()
 {
 	initDescriptorSetLayoutIfNeeded();
-	s_instanceCount++;
 
 	m_descriptorSet.reset(DescriptorSet::createDescriptorSet(*s_descriptorSetLayout));
 	DescriptorSetGenerator descriptorSetGenerator(s_descriptorSetLayoutGenerator->getDescriptorLayouts());

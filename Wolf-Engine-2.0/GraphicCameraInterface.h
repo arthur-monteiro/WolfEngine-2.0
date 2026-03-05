@@ -16,7 +16,8 @@ namespace Wolf
 	class GraphicCameraInterface
 	{
 	public:
-		virtual ~GraphicCameraInterface();
+		virtual ~GraphicCameraInterface() = default;
+		static void destroyStaticResources();
 
 		[[nodiscard]] virtual const glm::mat4& getViewMatrix() const = 0;
 		[[nodiscard]] virtual const glm::mat4& getPreviousViewMatrix() const = 0;
@@ -34,7 +35,6 @@ namespace Wolf
 		static void initDescriptorSetLayoutIfNeeded();
 
 	private:
-		static uint32_t s_instanceCount;
 		static ResourceUniqueOwner<DescriptorSetLayoutGenerator> s_descriptorSetLayoutGenerator;
 		static ResourceUniqueOwner<DescriptorSetLayout> s_descriptorSetLayout;
 
