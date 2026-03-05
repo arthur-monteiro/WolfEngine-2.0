@@ -1,4 +1,4 @@
-#include "RenderMeshList.h"
+#include "DefaultMeshRenderer.h"
 
 #include "CameraList.h"
 #include "CommandRecordBase.h"
@@ -9,7 +9,7 @@
 #include "PipelineSet.h"
 #include "ProfilerCommon.h"
 
-void Wolf::RenderMeshList::moveToNextFrame()
+void Wolf::DefaultMeshRenderer::moveToNextFrame()
 {
 	PROFILE_FUNCTION
 
@@ -20,7 +20,7 @@ void Wolf::RenderMeshList::moveToNextFrame()
 	m_transientInstancedMeshesCurrentFrame.swap(m_transientInstancedMeshesNextFrame);
 }
 
-void Wolf::RenderMeshList::clear()
+void Wolf::DefaultMeshRenderer::clear()
 {
 	m_transientMeshesCurrentFrame.clear();
 	m_transientMeshesNextFrame.clear();
@@ -32,18 +32,18 @@ void Wolf::RenderMeshList::clear()
 	m_instancedMeshes.clear();
 }
 
-uint32_t Wolf::RenderMeshList::registerMesh(const MeshToRender& mesh)
+uint32_t Wolf::DefaultMeshRenderer::registerMesh(const MeshToRender& mesh)
 {
 	m_meshes.emplace_back(mesh);
 	return static_cast<uint32_t>(m_meshes.size()) - 1;
 }
 
-void Wolf::RenderMeshList::addTransientMesh(const MeshToRender& mesh)
+void Wolf::DefaultMeshRenderer::addTransientMesh(const MeshToRender& mesh)
 {
 	m_transientMeshesNextFrame.emplace_back(mesh);
 }
 
-uint32_t Wolf::RenderMeshList::registerInstancedMesh(const InstancedMesh& mesh, uint32_t maxInstanceCount, uint32_t instanceIdx)
+uint32_t Wolf::DefaultMeshRenderer::registerInstancedMesh(const InstancedMesh& mesh, uint32_t maxInstanceCount, uint32_t instanceIdx)
 {
 	m_instancedMeshes.emplace_back(mesh);
 
@@ -57,37 +57,37 @@ uint32_t Wolf::RenderMeshList::registerInstancedMesh(const InstancedMesh& mesh, 
 	return static_cast<uint32_t>(m_instancedMeshes.size()) - 1;
 }
 
-void Wolf::RenderMeshList::addInstance(uint32_t instancedMeshIdx, uint32_t instanceIdx)
+void Wolf::DefaultMeshRenderer::addInstance(uint32_t instancedMeshIdx, uint32_t instanceIdx)
 {
 	m_instancedMeshes[instancedMeshIdx].activatedInstances[instanceIdx] = true;
 	m_instancedMeshes[instancedMeshIdx].buildOffsetAndCounts();
 }
 
-void Wolf::RenderMeshList::removeInstance(uint32_t instancedMeshIdx, uint32_t instanceIdx)
+void Wolf::DefaultMeshRenderer::removeInstance(uint32_t instancedMeshIdx, uint32_t instanceIdx)
 {
 	m_instancedMeshes[instancedMeshIdx].activatedInstances[instanceIdx] = false;
 	m_instancedMeshes[instancedMeshIdx].buildOffsetAndCounts();
 }
 
-void Wolf::RenderMeshList::addTransientInstancedMesh(const InstancedMesh& mesh, uint32_t instanceCount)
+void Wolf::DefaultMeshRenderer::addTransientInstancedMesh(const InstancedMesh& mesh, uint32_t instanceCount)
 {
 	m_transientInstancedMeshesNextFrame.emplace_back(mesh);
-	m_transientInstancedMeshesNextFrame.back().offsetAndCounts.push_back({ 0, instanceCount });
+	m_transientInstancedMeshesNextFrame.back().m_offsetAndCounts.push_back({ 0, instanceCount });
 }
 
-void Wolf::RenderMeshList::isolateInstanceMesh(uint32_t instancedMeshIdx, uint32_t instanceIdx)
+void Wolf::DefaultMeshRenderer::isolateInstanceMesh(uint32_t instancedMeshIdx, uint32_t instanceIdx)
 {
 	m_isolatedInfo.enabled = true;
 	m_isolatedInfo.instancedMeshIdx = instancedMeshIdx;
 	m_isolatedInfo.instanceIdx = instanceIdx;
 }
 
-void Wolf::RenderMeshList::removeIsolation()
+void Wolf::DefaultMeshRenderer::removeIsolation()
 {
 	m_isolatedInfo.enabled = false;
 }
 
-void Wolf::RenderMeshList::draw(const RecordContext& context, const CommandBuffer& commandBuffer, RenderPass* renderPass, uint32_t pipelineIdx, uint32_t cameraIdx, const std::vector<AdditionalDescriptorSet>& descriptorSetsToBind,
+void Wolf::DefaultMeshRenderer::draw(const RecordContext& context, const CommandBuffer& commandBuffer, RenderPass* renderPass, uint32_t pipelineIdx, uint32_t cameraIdx, const std::vector<AdditionalDescriptorSet>& descriptorSetsToBind,
 	const std::vector<PipelineSet::ShaderCodeToAddForStage>& shadersCodeToAdd) const
 {
 	PROFILE_FUNCTION
@@ -113,7 +113,7 @@ void Wolf::RenderMeshList::draw(const RecordContext& context, const CommandBuffe
 
 		if (m_isolatedInfo.enabled)
 		{
-			meshToRender = &m_instancedMeshes[m_isolatedInfo.instancedMeshIdx].instancedMesh.mesh;
+			meshToRender = &m_instancedMeshes[m_isolatedInfo.instancedMeshIdx].m_instancedMesh.m_mesh;
 			internalInstancedMesh = &m_instancedMeshes[m_isolatedInfo.instancedMeshIdx];
 		}
 		else
@@ -124,12 +124,12 @@ void Wolf::RenderMeshList::draw(const RecordContext& context, const CommandBuffe
 				meshToRender = &m_meshes[i - m_transientMeshesCurrentFrame.size()].m_meshToRender;
 			else if (i < m_transientMeshesCurrentFrame.size() + m_meshes.size() + m_transientInstancedMeshesCurrentFrame.size())
 			{
-				meshToRender = &m_transientInstancedMeshesCurrentFrame[i - m_transientMeshesCurrentFrame.size() - m_meshes.size()].instancedMesh.mesh;
+				meshToRender = &m_transientInstancedMeshesCurrentFrame[i - m_transientMeshesCurrentFrame.size() - m_meshes.size()].m_instancedMesh.m_mesh;
 				internalInstancedMesh = &m_transientInstancedMeshesCurrentFrame[i - m_transientMeshesCurrentFrame.size() - m_meshes.size()];
 			}
 			else
 			{
-				meshToRender = &m_instancedMeshes[i - m_transientMeshesCurrentFrame.size() - m_meshes.size() - m_transientInstancedMeshesCurrentFrame.size()].instancedMesh.mesh;
+				meshToRender = &m_instancedMeshes[i - m_transientMeshesCurrentFrame.size() - m_meshes.size() - m_transientInstancedMeshesCurrentFrame.size()].m_instancedMesh.m_mesh;
 				internalInstancedMesh = &m_instancedMeshes[i - m_transientMeshesCurrentFrame.size() - m_meshes.size() - m_transientInstancedMeshesCurrentFrame.size()];
 			}
 		}
@@ -147,9 +147,9 @@ void Wolf::RenderMeshList::draw(const RecordContext& context, const CommandBuffe
 
 			for (const AdditionalDescriptorSet& additionalDescriptorSet : descriptorSetsToBind)
 			{
-				if (additionalDescriptorSet.mask == 0 || additionalDescriptorSet.mask & meshToRender->m_pipelineSet->getCustomMask(pipelineIdx))
+				if (additionalDescriptorSet.m_mask == 0 || additionalDescriptorSet.m_mask & meshToRender->m_pipelineSet->getCustomMask(pipelineIdx))
 				{
-					descriptorSetsBindInfo.push_back(additionalDescriptorSet.descriptorSetBindInfo);
+					descriptorSetsBindInfo.push_back(additionalDescriptorSet.m_descriptorSetBindInfo);
 				}
 			}
 		}
@@ -185,7 +185,7 @@ void Wolf::RenderMeshList::draw(const RecordContext& context, const CommandBuffe
 				commandBuffer.bindDescriptorSet(context.m_cameraList->getCamera(cameraIdx)->getDescriptorSet(), cameraDescriptorSlot, *meshPipeline);
 			}
 
-			if (const uint32_t bindlessDescriptorSlot = meshToRender->m_pipelineSet->getBindlessDescriptorSlot(pipelineIdx); bindlessDescriptorSlot != static_cast<uint32_t>(-1))
+			if (const uint32_t bindlessDescriptorSlot = meshToRender->m_pipelineSet->getMaterialsDescriptorSlot(pipelineIdx); bindlessDescriptorSlot != static_cast<uint32_t>(-1))
 			{
 				commandBuffer.bindDescriptorSet(context.m_materialGPUManagerDescriptorSet, bindlessDescriptorSlot, *meshPipeline);
 			}
@@ -208,15 +208,15 @@ void Wolf::RenderMeshList::draw(const RecordContext& context, const CommandBuffe
 		{
 			PROFILE_SCOPED("Draw instanced command")
 
-			if (internalInstancedMesh->instancedMesh.instanceBuffer)
+			if (internalInstancedMesh->m_instancedMesh.m_instanceBuffer)
 			{
 				uint32_t bindingIdx = meshToRender->m_mesh->hasVertexBuffer() ? 1 : 0;
-				commandBuffer.bindVertexBuffer(*internalInstancedMesh->instancedMesh.instanceBuffer, bindingIdx);
+				commandBuffer.bindVertexBuffer(*internalInstancedMesh->m_instancedMesh.m_instanceBuffer, internalInstancedMesh->m_instancedMesh.m_instanceBufferOffset, bindingIdx);
 			}
 
-			for (const InternalInstancedMesh::OffsetAndCount& offsetAndCount : internalInstancedMesh->offsetAndCounts)
+			for (const InternalInstancedMesh::OffsetAndCount& offsetAndCount : internalInstancedMesh->m_offsetAndCounts)
 			{
-				meshToRender->m_mesh->draw(commandBuffer, cameraIdx, offsetAndCount.count, offsetAndCount.offset, meshToRender->m_overrideIndexBuffer);
+				meshToRender->m_mesh->draw(commandBuffer, cameraIdx, offsetAndCount.m_count, offsetAndCount.m_offset, meshToRender->m_overrideIndexBuffer);
 			}
 		}
 		else
@@ -228,9 +228,9 @@ void Wolf::RenderMeshList::draw(const RecordContext& context, const CommandBuffe
 	}
 }
 
-void Wolf::RenderMeshList::InternalInstancedMesh::buildOffsetAndCounts()
+void Wolf::DefaultMeshRenderer::InternalInstancedMesh::buildOffsetAndCounts()
 {
-	offsetAndCounts.clear();
+	m_offsetAndCounts.clear();
 
 	uint32_t startOffset = 0;
 	uint32_t currentCount = 0;
@@ -249,7 +249,7 @@ void Wolf::RenderMeshList::InternalInstancedMesh::buildOffsetAndCounts()
 		}
 		else if (!activatedInstances[i] && previous)
 		{
-			offsetAndCounts.push_back({ startOffset, currentCount });
+			m_offsetAndCounts.push_back({ startOffset, currentCount });
 		}
 
 		previous = activatedInstances[i];
@@ -257,6 +257,6 @@ void Wolf::RenderMeshList::InternalInstancedMesh::buildOffsetAndCounts()
 
 	if (previous)
 	{
-		offsetAndCounts.push_back({ startOffset, currentCount });
+		m_offsetAndCounts.push_back({ startOffset, currentCount });
 	}
 }

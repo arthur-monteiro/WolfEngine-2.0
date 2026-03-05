@@ -13,3 +13,13 @@ bool Wolf::NoVertexMesh::hasVertexBuffer() const
 {
     return false;
 }
+
+Wolf::NullableResourceNonOwner<Wolf::Buffer> Wolf::NoVertexMesh::getVertexBuffer() const
+{
+    return NullableResourceNonOwner<Buffer>();
+}
+
+Wolf::NullableResourceNonOwner<Wolf::Buffer> Wolf::NoVertexMesh::getIndexBuffer() const
+{
+    return NullableResourceNonOwner<Buffer>();
+}

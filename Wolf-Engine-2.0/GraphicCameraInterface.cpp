@@ -4,23 +4,33 @@
 #include "CameraInterface.h"
 #include "DescriptorSetGenerator.h"
 
+uint32_t Wolf::GraphicCameraInterface::s_instanceCount = 0;
+Wolf::ResourceUniqueOwner<Wolf::DescriptorSetLayoutGenerator> Wolf::GraphicCameraInterface::s_descriptorSetLayoutGenerator;
+Wolf::ResourceUniqueOwner<Wolf::DescriptorSetLayout> Wolf::GraphicCameraInterface::s_descriptorSetLayout;
+
+Wolf::GraphicCameraInterface::~GraphicCameraInterface()
+{
+	s_instanceCount--;
+	if (s_instanceCount == 0)
+	{
+		s_descriptorSetLayoutGenerator.reset(nullptr);
+		s_descriptorSetLayout.reset(nullptr);
+	}
+}
+
+Wolf::ResourceUniqueOwner<Wolf::DescriptorSetLayout>& Wolf::GraphicCameraInterface::getDescriptorSetLayout()
+{
+	initDescriptorSetLayoutIfNeeded();
+	return s_descriptorSetLayout;
+}
+
 Wolf::GraphicCameraInterface::GraphicCameraInterface()
 {
-	m_descriptorSetLayoutGenerator.reset(new LazyInitSharedResource<DescriptorSetLayoutGenerator, GraphicCameraInterface>([](ResourceUniqueOwner<DescriptorSetLayoutGenerator>& descriptorSetLayoutGenerator)
-		{
-			descriptorSetLayoutGenerator.reset(new DescriptorSetLayoutGenerator);
-			descriptorSetLayoutGenerator->addUniformBuffer(
-				ShaderStageFlagBits::VERTEX | ShaderStageFlagBits::FRAGMENT | ShaderStageFlagBits::COMPUTE | ShaderStageFlagBits::RAYGEN | ShaderStageFlagBits::TESSELLATION_CONTROL | ShaderStageFlagBits::TESSELLATION_EVALUATION | ShaderStageFlagBits::GEOMETRY,
-				0); // matrices
-		}));
+	initDescriptorSetLayoutIfNeeded();
+	s_instanceCount++;
 
-	m_descriptorSetLayout.reset(new LazyInitSharedResource<DescriptorSetLayout, GraphicCameraInterface>([this](ResourceUniqueOwner<DescriptorSetLayout>& descriptorSetLayout)
-		{
-			descriptorSetLayout.reset(DescriptorSetLayout::createDescriptorSetLayout(m_descriptorSetLayoutGenerator->getResource()->getDescriptorLayouts()));
-		}));
-
-	m_descriptorSet.reset(DescriptorSet::createDescriptorSet(*m_descriptorSetLayout->getResource()));
-	DescriptorSetGenerator descriptorSetGenerator(m_descriptorSetLayoutGenerator->getResource()->getDescriptorLayouts());
+	m_descriptorSet.reset(DescriptorSet::createDescriptorSet(*s_descriptorSetLayout));
+	DescriptorSetGenerator descriptorSetGenerator(s_descriptorSetLayoutGenerator->getDescriptorLayouts());
 	m_matricesUniformBuffer.reset(new UniformBuffer(sizeof(UniformBufferData)));
 	descriptorSetGenerator.setUniformBuffer(0, *m_matricesUniformBuffer);
 	m_descriptorSet->update(descriptorSetGenerator.getDescriptorSetCreateInfo());
@@ -42,15 +52,34 @@ void Wolf::GraphicCameraInterface::updateGraphic(const glm::vec2& pixelJitter, c
 	ubData.frameIndex = m_currentFrameIndex;
 	ubData.extentWidth = context.m_swapChainExtent.width;
 
-	const glm::mat4 transposedViewProjection = glm::transpose(ubData.projection * ubData.view);
-	ubData.frustumPlanes[0] = transposedViewProjection[3] + transposedViewProjection[0]; // left
-	ubData.frustumPlanes[1] = transposedViewProjection[3] - transposedViewProjection[0]; // right
-	ubData.frustumPlanes[2] = transposedViewProjection[3] + transposedViewProjection[1]; // bottom
-	ubData.frustumPlanes[3] = transposedViewProjection[3] - transposedViewProjection[1]; // top
-	ubData.frustumPlanes[4] = transposedViewProjection[3] + transposedViewProjection[2]; // near
-	ubData.frustumPlanes[5] = transposedViewProjection[3] - transposedViewProjection[2]; // far
+	const glm::mat4 transposedViewProj = glm::transpose(ubData.projection * ubData.view);
+	ubData.frustumPlanes[0] = transposedViewProj[3] + transposedViewProj[0]; // left
+	ubData.frustumPlanes[1] = transposedViewProj[3] - transposedViewProj[0]; // right
+	ubData.frustumPlanes[2] = transposedViewProj[3] + transposedViewProj[1]; // bottom
+	ubData.frustumPlanes[3] = transposedViewProj[3] - transposedViewProj[1]; // top
+	ubData.frustumPlanes[4] = transposedViewProj[2]; // near
+	ubData.frustumPlanes[5] = transposedViewProj[3] - transposedViewProj[2]; // far
+
+	for (glm::vec4& frustumPlane : ubData.frustumPlanes)
+	{
+		const float length = glm::length(glm::vec3(frustumPlane));
+		frustumPlane /= length;
+	}
 
 	m_matricesUniformBuffer->transferCPUMemory(&ubData, sizeof(ubData), 0);
 
 	m_currentFrameIndex++;
+}
+
+void Wolf::GraphicCameraInterface::initDescriptorSetLayoutIfNeeded()
+{
+	if (s_descriptorSetLayoutGenerator)
+		return;
+
+	s_descriptorSetLayoutGenerator.reset(new DescriptorSetLayoutGenerator);
+	s_descriptorSetLayoutGenerator->addUniformBuffer(
+		ShaderStageFlagBits::VERTEX | ShaderStageFlagBits::FRAGMENT | ShaderStageFlagBits::COMPUTE | ShaderStageFlagBits::RAYGEN | ShaderStageFlagBits::TESSELLATION_CONTROL | ShaderStageFlagBits::TESSELLATION_EVALUATION | ShaderStageFlagBits::GEOMETRY,
+		0);
+
+	s_descriptorSetLayout.reset(DescriptorSetLayout::createDescriptorSetLayout(s_descriptorSetLayoutGenerator->getDescriptorLayouts()));
 }

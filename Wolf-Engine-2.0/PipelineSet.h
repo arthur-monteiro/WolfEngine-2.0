@@ -100,7 +100,7 @@ namespace Wolf
 
 		uint64_t getPipelineHash(uint32_t idx) const { return (idx < m_infoForPipelines.size() && m_infoForPipelines[idx]) ? m_infoForPipelines[idx]->getHash() : 0; }
 		uint32_t getCameraDescriptorSlot(uint32_t idx) const { return m_infoForPipelines[idx]->getPipelineInfo().cameraDescriptorSlot; }
-		uint32_t getBindlessDescriptorSlot(uint32_t idx) const { return m_infoForPipelines[idx]->getPipelineInfo().materialsDescriptorSlot; }
+		uint32_t getMaterialsDescriptorSlot(uint32_t idx) const { return m_infoForPipelines[idx]->getPipelineInfo().materialsDescriptorSlot; }
 		uint32_t getLightDescriptorSlot(uint32_t idx) const { return m_infoForPipelines[idx]->getPipelineInfo().lightDescriptorSlot; }
 		uint32_t getCustomMask(uint32_t idx) const { return m_infoForPipelines[idx]->getPipelineInfo().customMask; }
 

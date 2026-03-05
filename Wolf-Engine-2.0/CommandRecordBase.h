@@ -19,8 +19,9 @@ namespace Wolf
 	class CameraList;
 	class DescriptorSet;
 	class Image;
+	class InstanceMeshRenderer;
 	class LightManager;
-	class RenderMeshList;
+	class DefaultMeshRenderer;
 	class Timer;
 
 	struct InitializationContext
@@ -46,15 +47,16 @@ namespace Wolf
 #endif
 		CameraList* m_cameraList = nullptr;
 		const void* m_gameContext = nullptr;
-		ResourceNonOwner<RenderMeshList> m_renderMeshList;
+		ResourceNonOwner<DefaultMeshRenderer> m_defaultMeshRenderer;
+		ResourceNonOwner<InstanceMeshRenderer> m_instanceMeshRenderer;
 		const DescriptorSet* m_materialGPUManagerDescriptorSet = nullptr;
 		ResourceNonOwner<LightManager> m_lightManager;
 		const Timer* m_globalTimer = nullptr;
 		GraphicAPIManager* m_graphicAPIManager;
 		bool* m_invalidateFrame;
 
-		RecordContext(const ResourceNonOwner<LightManager>& lightManager, const ResourceNonOwner<RenderMeshList>& renderMeshList)
-			: m_renderMeshList(renderMeshList), m_lightManager(lightManager) {}
+		RecordContext(const ResourceNonOwner<LightManager>& lightManager, const ResourceNonOwner<DefaultMeshRenderer>& defaultMeshRenderer, const ResourceNonOwner<InstanceMeshRenderer>& instanceMeshRenderer)
+			: m_defaultMeshRenderer(defaultMeshRenderer), m_instanceMeshRenderer(instanceMeshRenderer), m_lightManager(lightManager) {}
 	};
 
 	struct SubmitContext
@@ -62,6 +64,7 @@ namespace Wolf
 		uint32_t currentFrameIdx;
 		const Semaphore* swapChainImageAvailableSemaphore;
 		const Semaphore* userInterfaceImageAvailableSemaphore;
+		const Semaphore* instanceRendererBuffersAvailableSemaphore;
 		Fence* frameFence;
 		GraphicAPIManager* graphicAPIManager;
 		uint32_t swapChainImageIndex;

@@ -16,7 +16,7 @@ namespace Wolf
 	class GraphicCameraInterface
 	{
 	public:
-		virtual ~GraphicCameraInterface() = default;
+		virtual ~GraphicCameraInterface();
 
 		[[nodiscard]] virtual const glm::mat4& getViewMatrix() const = 0;
 		[[nodiscard]] virtual const glm::mat4& getPreviousViewMatrix() const = 0;
@@ -24,16 +24,19 @@ namespace Wolf
 		[[nodiscard]] virtual float getNear() const = 0;
 		[[nodiscard]] virtual float getFar() const = 0;
 
-		static ResourceUniqueOwner<DescriptorSetLayout>& getDescriptorSetLayout() { return LazyInitSharedResource<DescriptorSetLayout, GraphicCameraInterface>::getResource(); }
+		static ResourceUniqueOwner<DescriptorSetLayout>& getDescriptorSetLayout();
 		virtual const DescriptorSet* getDescriptorSet() const { return m_descriptorSet.get(); }
 
 	protected:
 		GraphicCameraInterface();
 		void updateGraphic(const glm::vec2& pixelJitter, const CameraUpdateContext& context);
 
+		static void initDescriptorSetLayoutIfNeeded();
+
 	private:
-		std::unique_ptr<LazyInitSharedResource<DescriptorSetLayoutGenerator, GraphicCameraInterface>> m_descriptorSetLayoutGenerator;
-		std::unique_ptr<LazyInitSharedResource<DescriptorSetLayout, GraphicCameraInterface>> m_descriptorSetLayout;
+		static uint32_t s_instanceCount;
+		static ResourceUniqueOwner<DescriptorSetLayoutGenerator> s_descriptorSetLayoutGenerator;
+		static ResourceUniqueOwner<DescriptorSetLayout> s_descriptorSetLayout;
 
 		struct UniformBufferData
 		{

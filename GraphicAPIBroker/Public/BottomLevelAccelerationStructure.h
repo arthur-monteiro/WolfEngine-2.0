@@ -15,11 +15,13 @@ namespace Wolf
 		struct MeshInfo
 		{
 			const Buffer* vertexBuffer;
+			uint32_t vertexBufferOffset;
 			uint32_t vertexCount;
 			uint32_t vertexSize;
 			Format vertexFormat;
 
 			const Buffer* indexBuffer;
+			uint32_t indexBufferOffset;
 			uint32_t indexCount;
 		};
 		MeshInfo mesh;

@@ -166,7 +166,9 @@ Wolf::WolfEngine::WolfEngine(const WolfInstanceCreateInfo& createInfo) : m_globa
 	}
 
 	m_lightManager.reset(new LightManager);
-	m_renderMeshList.reset(new RenderMeshList(m_shaderList));
+	m_defaultMeshRenderer.reset(new DefaultMeshRenderer(m_shaderList));
+	m_instanceMeshRenderer.reset(new InstanceMeshRenderer(m_shaderList, m_pushDataToGPU));
+	initializePass(m_instanceMeshRenderer.createNonOwnerResource<CommandRecordBase>());
 	m_physicsManager.reset(new Physics::PhysicsManager);
 
 	m_multiThreadTaskManager.reset(new MultiThreadTaskManager);
@@ -176,6 +178,8 @@ Wolf::WolfEngine::WolfEngine(const WolfInstanceCreateInfo& createInfo) : m_globa
 	{
 		m_globalTimer.forceFixedTimerEachUpdate(m_configuration->getForcedTimerMsPerFrame());
 	}
+
+	m_defaultMeshBufferPool.reset(new DefaultMeshBufferPool(268'435'456));
 }
 
 void Wolf::WolfEngine::initializePass(const ResourceNonOwner<CommandRecordBase>& pass) const
@@ -228,7 +232,8 @@ void Wolf::WolfEngine::updateBeforeFrame()
     context.m_screenRotationInDegrees = m_swapChain->getRotationInDegrees();
 	m_cameraList.moveToNextFrame(context);
 	
-	m_renderMeshList->moveToNextFrame();
+	m_defaultMeshRenderer->moveToNextFrame();
+	m_instanceMeshRenderer->moveToNextFrame();
 	m_shaderList.checkForModifiedShader();
 
 	if (static_cast<bool>(m_materialsManager))
@@ -313,7 +318,7 @@ void Wolf::WolfEngine::frame(const std::span<ResourceNonOwner<CommandRecordBase>
 	{
 		PROFILE_SCOPED("Record GPU passes")
 
-		RecordContext recordContext(m_lightManager.createNonOwnerResource(), m_renderMeshList.createNonOwnerResource());
+		RecordContext recordContext(m_lightManager.createNonOwnerResource(), m_defaultMeshRenderer.createNonOwnerResource(), m_instanceMeshRenderer.createNonOwnerResource());
 		recordContext.m_currentFrameIdx = currentFrame;
 		recordContext.m_swapChainImageIdx = currentSwapChainImageIndex;
 		recordContext.m_swapchainImage = m_swapChain->getImage(currentSwapChainImageIndex);
@@ -328,6 +333,8 @@ void Wolf::WolfEngine::frame(const std::span<ResourceNonOwner<CommandRecordBase>
 		recordContext.m_globalTimer = &m_globalTimer;
 		recordContext.m_graphicAPIManager = m_graphicAPIManager.get();
 		recordContext.m_invalidateFrame = &invalidateFrame;
+
+		m_instanceMeshRenderer->record(recordContext);
 
 		for (const ResourceNonOwner<CommandRecordBase>& pass : passes)
 		{
@@ -356,6 +363,9 @@ void Wolf::WolfEngine::frame(const std::span<ResourceNonOwner<CommandRecordBase>
 		submitContext.frameFence = m_swapChain->getFrameFence(currentFrame % g_configuration->getMaxCachedFrames());
 		submitContext.graphicAPIManager = m_graphicAPIManager.get();
 		submitContext.swapChainImageIndex = currentSwapChainImageIndex;
+
+		m_instanceMeshRenderer->submit(submitContext);
+		submitContext.instanceRendererBuffersAvailableSemaphore = m_instanceMeshRenderer->getSemaphore(submitContext.swapChainImageIndex);
 
 		for (const ResourceNonOwner<CommandRecordBase>& pass : passes)
 		{

@@ -79,6 +79,7 @@ namespace Wolf
 	public:
 		ResourceReference(T* ptr) : m_ptr(ptr) {}
 		ResourceReference(ResourceNonOwner<T> resource) : m_ptr(resource.template operator-><T>()) {}
+		ResourceReference(const ResourceReference<T>& other) : m_ptr(other.m_ptr) {}
 
 		template <typename U = T>
 		[[nodiscard]] U* operator->() const { return static_cast<U*>(m_ptr); }

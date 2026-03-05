@@ -1,0 +1,125 @@
+R"(
+#extension GL_EXT_nonuniform_qualifier : enable
+
+struct CullingInstanceInfo
+{
+	mat4 transform;
+	uint meshIdx;
+	uint materialIdx;
+	uint customData;
+	uint batchesMask;
+};
+layout(std430, binding = 0) restrict buffer CullingInstancesBufferLayout
+{
+    CullingInstanceInfo cullingInstancesInfo[];
+};
+
+struct MeshInfo
+{
+	vec4 boundingSphere;
+	uint vertexOffset;
+	uint indexOffset;
+	uint indexCount;
+};
+layout(std430, binding = 1) restrict buffer MeshesInfoBufferLayout
+{
+    MeshInfo meshesInfo[];
+};
+
+const uint MAX_BATCH_COUNT = 32;
+
+struct OutInstanceData
+{
+	mat4 transform;
+	uint materialIdx;
+	uint customData;
+};
+layout(std430, binding = 2) restrict buffer OutInstancesBufferLayout
+{
+    OutInstanceData outInstancesData[];
+} outInstancesDataBuffers[MAX_BATCH_COUNT];
+
+layout(std430, binding = 3) restrict buffer CountBufferLayout
+{
+    uint drawCount[MAX_BATCH_COUNT];
+};
+
+// TODO: this correspond to VkDrawIndexedIndirectCommand and should be handled in a multi-API way
+struct DrawCommand
+{
+	uint indexCount;
+    uint instanceCount;
+    uint firstIndex;
+    int vertexOffset;
+    uint firstInstance;
+};
+layout(std430, binding = 4) restrict buffer OutDrawCommandsLayout
+{
+   	DrawCommand outDrawCommands[];
+} outDrawCommandsBuffers[MAX_BATCH_COUNT];
+
+layout(binding = 5, std140) uniform readonly UniformBufferLayout
+{
+	uint instanceCount;
+} ub;
+
+
+bool isSphereVisible(in vec4 sphere, in vec4 planes[6])
+{
+    for (int i = 0; i < 6; i++)
+    {
+        float distance = dot(planes[i].xyz, sphere.xyz) + planes[i].w;
+        if (distance < -sphere.w)
+        {
+            return false;
+        }
+    }
+    return true;
+}
+
+layout (local_size_x = 256, local_size_y = 1, local_size_z = 1) in;
+void main()
+{
+	uint instanceIdx = gl_GlobalInvocationID.x;
+	if (instanceIdx >= ub.instanceCount)
+		return;
+	
+	CullingInstanceInfo cullingInstanceInfo = cullingInstancesInfo[instanceIdx];
+	MeshInfo meshInfo = meshesInfo[cullingInstanceInfo.meshIdx];
+
+	if (cullingInstanceInfo.transform[0][0] == 0.0) // is means that the instance has been deactivated
+	{
+		return;
+	}
+
+	vec4 boundingSphereCenter = cullingInstanceInfo.transform * vec4(meshInfo.boundingSphere.xyz, 1.0);
+    float boundingSphereRadius = meshInfo.boundingSphere.w;
+    float sx = dot(cullingInstanceInfo.transform[0].xyz, cullingInstanceInfo.transform[0].xyz);
+	float sy = dot(cullingInstanceInfo.transform[1].xyz, cullingInstanceInfo.transform[1].xyz);
+	float sz = dot(cullingInstanceInfo.transform[2].xyz, cullingInstanceInfo.transform[2].xyz);
+	float maxScale = sqrt(max(sx, max(sy, sz)));
+    boundingSphereRadius *= maxScale;
+    vec4 boundingSphere = vec4(vec3(boundingSphereCenter), boundingSphereRadius);
+
+	if (!isSphereVisible(boundingSphere, ubCamera.frustumPlanes))
+		return;
+
+	for (uint batchIdx = 0; batchIdx < MAX_BATCH_COUNT; batchIdx++)
+	{
+		if ((cullingInstanceInfo.batchesMask & (1u << batchIdx)) != 0u)
+		{
+			uint outCommandIdx = atomicAdd(drawCount[batchIdx], 1);
+			outInstancesDataBuffers[batchIdx].outInstancesData[outCommandIdx].transform = cullingInstanceInfo.transform;
+			outInstancesDataBuffers[batchIdx].outInstancesData[outCommandIdx].materialIdx = cullingInstanceInfo.materialIdx;
+			outInstancesDataBuffers[batchIdx].outInstancesData[outCommandIdx].customData = cullingInstanceInfo.customData;
+
+			outDrawCommandsBuffers[batchIdx].outDrawCommands[outCommandIdx].vertexOffset = int(meshInfo.vertexOffset);
+			outDrawCommandsBuffers[batchIdx].outDrawCommands[outCommandIdx].firstIndex = meshInfo.indexOffset;
+			outDrawCommandsBuffers[batchIdx].outDrawCommands[outCommandIdx].indexCount = meshInfo.indexCount;
+			outDrawCommandsBuffers[batchIdx].outDrawCommands[outCommandIdx].instanceCount = 1;
+			outDrawCommandsBuffers[batchIdx].outDrawCommands[outCommandIdx].firstInstance = 0;
+		}
+	}
+}
+
+)"

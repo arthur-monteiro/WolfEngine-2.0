@@ -1,7 +1,7 @@
 #include "Mesh.h"
 
 #include "CameraInterface.h"
-#include "RenderMeshList.h"
+#include "DefaultMeshRenderer.h"
 
 void Wolf::Mesh::addSubMesh(uint32_t indicesOffset, uint32_t indexCount, AABB aabb)
 {
@@ -9,6 +9,26 @@ void Wolf::Mesh::addSubMesh(uint32_t indicesOffset, uint32_t indexCount, AABB aa
 		Debug::sendError("Adding submesh which is not just after the previous one. This is required to have an efficient merge");
 
 	m_subMeshes.push_back(std::make_unique<SubMesh>(indicesOffset, indexCount, aabb));
+}
+
+Wolf::NullableResourceNonOwner<Wolf::Buffer> Wolf::Mesh::getVertexBuffer() const
+{
+	return m_bufferPoolInterface->getBuffer(m_vertexBufferPoolInstance);
+}
+
+uint32_t Wolf::Mesh::getVertexBufferOffset() const
+{
+	return m_vertexBufferPoolInstance.m_bufferOffset;
+}
+
+Wolf::NullableResourceNonOwner<Wolf::Buffer> Wolf::Mesh::getIndexBuffer() const
+{
+	return m_bufferPoolInterface->getBuffer(m_indexBufferPoolInstance);
+}
+
+uint32_t Wolf::Mesh::getIndexBufferOffset() const
+{
+	return m_indexBufferPoolInstance.m_bufferOffset;
 }
 
 void Wolf::Mesh::cullForCamera(uint32_t cameraIdx, const CameraInterface* camera, const glm::mat4& transform, bool isInstanced)
@@ -45,14 +65,14 @@ void Wolf::Mesh::cullForCamera(uint32_t cameraIdx, const CameraInterface* camera
 
 void Wolf::Mesh::draw(const CommandBuffer& commandBuffer, uint32_t cameraIdx, uint32_t instanceCount, uint32_t firstInstance, const NullableResourceNonOwner<Buffer>& overrideIndexBuffer) const
 {
-	commandBuffer.bindVertexBuffer(*m_vertexBuffer);
+	commandBuffer.bindVertexBuffer(*getVertexBuffer(), getVertexBufferOffset());
 	if (overrideIndexBuffer)
 	{
-		commandBuffer.bindIndexBuffer(*overrideIndexBuffer, IndexType::U32);
+		commandBuffer.bindIndexBuffer(*overrideIndexBuffer, getIndexBufferOffset(), IndexType::U32);
 	}
 	else
 	{
-		commandBuffer.bindIndexBuffer(*m_indexBuffer, IndexType::U32);
+		commandBuffer.bindIndexBuffer(*getIndexBuffer(), getIndexBufferOffset(), IndexType::U32);
 	}
 
 	//if(m_subMeshes.empty() || cameraIdx == RenderMeshList::NO_CAMERA_IDX)

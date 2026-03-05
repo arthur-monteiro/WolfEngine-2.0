@@ -2,7 +2,7 @@
 
 #include "Configuration.h"
 
-void Wolf::DebugMarker::insert(const ResourceReference<CommandBuffer>& commandBuffer, const ColorFloat& color, const std::string& name)
+void Wolf::DebugMarker::insert(const ResourceReference<const CommandBuffer>& commandBuffer, const ColorFloat& color, const std::string& name)
 {
 	if (g_configuration->getEnableGPUDebugMarkers())
 	{
@@ -10,7 +10,7 @@ void Wolf::DebugMarker::insert(const ResourceReference<CommandBuffer>& commandBu
 	}
 }
 
-void Wolf::DebugMarker::beginRegion(const ResourceReference<CommandBuffer>& commandBuffer, const ColorFloat& color, const std::string& name)
+void Wolf::DebugMarker::beginRegion(const ResourceReference<const CommandBuffer>& commandBuffer, const ColorFloat& color, const std::string& name)
 {
 	if (g_configuration->getEnableGPUDebugMarkers())
 	{
@@ -18,7 +18,7 @@ void Wolf::DebugMarker::beginRegion(const ResourceReference<CommandBuffer>& comm
 	}
 }
 
-void Wolf::DebugMarker::endRegion(const ResourceReference<CommandBuffer>& commandBuffer)
+void Wolf::DebugMarker::endRegion(const ResourceReference<const CommandBuffer>& commandBuffer)
 {
 	if (g_configuration->getEnableGPUDebugMarkers())
 	{

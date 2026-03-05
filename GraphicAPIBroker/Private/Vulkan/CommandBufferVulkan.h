@@ -15,6 +15,8 @@ namespace Wolf
 	class CommandBufferVulkan : public CommandBuffer
 	{
 	public:
+		static uint32_t getDrawIndexedIndirectCommandStructureSize();
+
 		CommandBufferVulkan(QueueType queueType, bool isTransient, bool preRecord = false);
 		~CommandBufferVulkan() override;
 
@@ -25,8 +27,8 @@ namespace Wolf
 		void beginRenderPass(const RenderPass& renderPass, const FrameBuffer& frameBuffer, const std::vector<ClearValue>& clearValues) const override;
 		void endRenderPass() const override;
 
-		void bindVertexBuffer(const Buffer& buffer, uint32_t bindingIdx = 0) const override;
-		void bindIndexBuffer(const Buffer& buffer, IndexType indexType) const override;
+		void bindVertexBuffer(const Buffer& buffer, uint32_t offset, uint32_t bindingIdx = 0) const override;
+		void bindIndexBuffer(const Buffer& buffer, uint32_t offset, IndexType indexType) const override;
 
 		void bindPipeline(const ResourceReference<const Pipeline>& pipeline) const override;
 
@@ -41,6 +43,8 @@ namespace Wolf
 
 		void draw(uint32_t vertexCount, uint32_t instanceCount, uint32_t firstVertex, uint32_t firstInstance) const override;
 		void drawIndexed(uint32_t indexCount, uint32_t instanceCount, uint32_t firstIndex, int32_t vertexOffset, uint32_t firstInstance) const override;
+		void drawIndexedIndirectCount(const Buffer& buffer, uint32_t bufferOffset, const Buffer& countBuffer, uint32_t countBufferOffset, uint32_t maxDrawCount) const override;
+		void drawIndirectCount(const Buffer& buffer, uint32_t bufferOffset, const Buffer& countBuffer, uint32_t countBufferOffset, uint32_t maxDrawCount) const override;
 		void dispatch(uint32_t groupCountX, uint32_t groupCountY, uint32_t groupCountZ) const override;
 #if !defined(__ANDROID__) or __ANDROID_MIN_SDK_VERSION__ > 30
 		void traceRays(const ResourceReference<const ShaderBindingTable>& shaderBindingTable, const Extent3D& extent) const override;

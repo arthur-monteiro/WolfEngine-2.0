@@ -19,6 +19,11 @@
 #include "SemaphoreVulkan.h"
 #include "Vulkan.h"
 
+uint32_t Wolf::CommandBufferVulkan::getDrawIndexedIndirectCommandStructureSize()
+{
+	return sizeof(VkDrawIndexedIndirectCommand);
+}
+
 Wolf::CommandBufferVulkan::CommandBufferVulkan(QueueType queueType, bool isTransient, bool preRecord)
 {
 	m_commandBuffers.resize((isTransient || preRecord) ? 1 : g_configuration->getMaxCachedFrames());
@@ -190,15 +195,15 @@ void Wolf::CommandBufferVulkan::endRenderPass() const
 	vkCmdEndRenderPass(getCommandBuffer());
 }
 
-void Wolf::CommandBufferVulkan::bindVertexBuffer(const Buffer& buffer, uint32_t bindingIdx) const
+void Wolf::CommandBufferVulkan::bindVertexBuffer(const Buffer& buffer, uint32_t offset, uint32_t bindingIdx) const
 {
 	const VkBuffer vkBuffer = static_cast<const BufferVulkan&>(buffer).getBuffer();
-	constexpr VkDeviceSize offsets[1] = { 0 };
+	VkDeviceSize offsets[1] = { offset };
 
 	vkCmdBindVertexBuffers(getCommandBuffer(), bindingIdx, 1, &vkBuffer, offsets);
 }
 
-void Wolf::CommandBufferVulkan::bindIndexBuffer(const Buffer& buffer, IndexType indexType) const
+void Wolf::CommandBufferVulkan::bindIndexBuffer(const Buffer& buffer, uint32_t offset, IndexType indexType) const
 {
 	VkIndexType vkIndexType = VK_INDEX_TYPE_MAX_ENUM;
 	switch (indexType) 
@@ -211,7 +216,7 @@ void Wolf::CommandBufferVulkan::bindIndexBuffer(const Buffer& buffer, IndexType 
 		break;
 	}
 
-	vkCmdBindIndexBuffer(getCommandBuffer(), static_cast<const BufferVulkan&>(buffer).getBuffer(), 0, vkIndexType);
+	vkCmdBindIndexBuffer(getCommandBuffer(), static_cast<const BufferVulkan&>(buffer).getBuffer(), offset, vkIndexType);
 }
 
 void Wolf::CommandBufferVulkan::bindPipeline(const ResourceReference<const Pipeline>& pipeline) const
@@ -303,6 +308,19 @@ void Wolf::CommandBufferVulkan::drawIndexed(uint32_t indexCount, uint32_t instan
                                             int32_t vertexOffset, uint32_t firstInstance) const
 {
 	vkCmdDrawIndexed(getCommandBuffer(), indexCount, instanceCount, firstIndex, vertexOffset, firstInstance);
+}
+
+void Wolf::CommandBufferVulkan::drawIndexedIndirectCount(const Buffer& buffer, uint32_t bufferOffset, const Buffer& countBuffer, uint32_t countBufferOffset, uint32_t maxDrawCount) const
+{
+	vkCmdDrawIndexedIndirectCount(getCommandBuffer(), static_cast<const BufferVulkan*>(&buffer)->getBuffer(), bufferOffset, static_cast<const BufferVulkan*>(&countBuffer)->getBuffer(), countBufferOffset, maxDrawCount,
+		getDrawIndexedIndirectCommandStructureSize());
+}
+
+void Wolf::CommandBufferVulkan::drawIndirectCount(const Buffer& buffer, uint32_t bufferOffset,const Buffer& countBuffer, uint32_t countBufferOffset, uint32_t maxDrawCount) const
+{
+	// TODO: stride should be sizeof(VkDrawIndirectCommand), not sizeof(VkDrawIndexedIndirectCommand)
+	vkCmdDrawIndirectCount(getCommandBuffer(), static_cast<const BufferVulkan*>(&buffer)->getBuffer(), bufferOffset, static_cast<const BufferVulkan*>(&countBuffer)->getBuffer(), countBufferOffset, maxDrawCount,
+		getDrawIndexedIndirectCommandStructureSize());
 }
 
 void Wolf::CommandBufferVulkan::dispatch(uint32_t groupCountX, uint32_t groupCountY, uint32_t groupCountZ) const

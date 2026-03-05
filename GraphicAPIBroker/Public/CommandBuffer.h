@@ -31,6 +31,7 @@ namespace Wolf
 	{
 	public:
 		static CommandBuffer* createCommandBuffer(QueueType queueType, bool isTransient, bool preRecord = false /* use when a command buffer is not recorded every frame (but still submitted) */);
+		static uint32_t getDrawIndexedIndirectCommandStructureSize();
 
 		virtual ~CommandBuffer() = default;
 
@@ -43,8 +44,8 @@ namespace Wolf
 		virtual void endRenderPass() const = 0;
 
 		// Binds
-		virtual void bindVertexBuffer(const Buffer& buffer, uint32_t bindingIdx = 0) const = 0;
-		virtual void bindIndexBuffer(const Buffer& buffer, IndexType indexType) const = 0;
+		virtual void bindVertexBuffer(const Buffer& buffer, uint32_t offset, uint32_t bindingIdx = 0) const = 0;
+		virtual void bindIndexBuffer(const Buffer& buffer, uint32_t offset, IndexType indexType) const = 0;
 
 		virtual void bindPipeline(const ResourceReference<const Pipeline>& pipeline) const = 0;
 
@@ -61,6 +62,8 @@ namespace Wolf
 
 		virtual void draw(uint32_t vertexCount, uint32_t instanceCount, uint32_t firstVertex, uint32_t firstInstance) const = 0;
 		virtual void drawIndexed(uint32_t indexCount, uint32_t instanceCount, uint32_t firstIndex, int32_t vertexOffset, uint32_t firstInstance) const = 0;
+		virtual void drawIndexedIndirectCount(const Buffer& buffer, uint32_t bufferOffset, const Buffer& countBuffer, uint32_t countBufferOffset, uint32_t maxDrawCount) const = 0;
+		virtual void drawIndirectCount(const Buffer& buffer, uint32_t bufferOffset, const Buffer& countBuffer, uint32_t countBufferOffset, uint32_t maxDrawCount) const = 0;
 		virtual void dispatch(uint32_t groupCountX, uint32_t groupCountY, uint32_t groupCountZ) const = 0;
 #if !defined(__ANDROID__) or __ANDROID_MIN_SDK_VERSION__ > 30
 		virtual void traceRays(const ResourceReference<const ShaderBindingTable>& shaderBindingTable, const Extent3D& extent) const = 0;

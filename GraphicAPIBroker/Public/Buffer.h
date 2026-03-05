@@ -10,12 +10,14 @@ namespace Wolf
 	class Buffer
 	{
 	public:
-		static Buffer* createBuffer(uint64_t size, uint32_t usageFlags, uint32_t propertyFlags);
+		using BufferUsageFlags = uint32_t; // TODO
+
+		static Buffer* createBuffer(uint64_t size, BufferUsageFlags usageFlags, uint32_t propertyFlags);
 
 		virtual ~Buffer() = default;
 
 		virtual void transferCPUMemory(const void* data, uint64_t srcSize, uint64_t srcOffset = 0) const = 0;
-		virtual void transferCPUMemoryWithStagingBuffer(const void* data, uint64_t srcSize, uint64_t srcOffset = 0, uint64_t dstOffset = 0) const = 0;
+		virtual void transferCPUMemoryWithStagingBuffer(const void* data, uint64_t srcSize, uint64_t srcOffset, uint64_t dstOffset) const = 0;
 
 		struct BufferCopy
 		{
@@ -39,7 +41,7 @@ namespace Wolf
 			PipelineStage stage;
 			AccessFlags accessFlags;
 		};
-		virtual void recordBarrier(const CommandBuffer* commandBuffer, const BufferAccess& accessBefore, const BufferAccess& accessAfter) const = 0;
+		virtual void recordBarrier(const CommandBuffer* commandBuffer, const BufferAccess& accessBefore, const BufferAccess& accessAfter, uint32_t offset, uint32_t size) const = 0;
 
 		[[nodiscard]] virtual void* map(uint64_t size = 0) const = 0;
 		virtual void unmap() const = 0;

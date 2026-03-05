@@ -95,7 +95,7 @@ void Wolf::BufferVulkan::recordFillBuffer(const CommandBuffer* commandBuffer, co
 	vkCmdFillBuffer(commandBufferVulkan->getCommandBuffer(), m_buffer, bufferFill.dstOffset, bufferFill.size, bufferFill.data);
 }
 
-void Wolf::BufferVulkan::recordBarrier(const CommandBuffer* commandBuffer, const BufferAccess& accessBefore, const BufferAccess& accessAfter) const
+void Wolf::BufferVulkan::recordBarrier(const CommandBuffer* commandBuffer, const BufferAccess& accessBefore, const BufferAccess& accessAfter, uint32_t offset, uint32_t size) const
 {
 	VkBufferMemoryBarrier2 bufferBarrier =
 	{
@@ -111,8 +111,8 @@ void Wolf::BufferVulkan::recordBarrier(const CommandBuffer* commandBuffer, const
 		.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
 		.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
 		.buffer        = m_buffer,
-		.offset        = 0,
-		.size          = VK_WHOLE_SIZE
+		.offset        = offset,
+		.size          = size
 	};
 
 	VkDependencyInfo dependencyInfo =

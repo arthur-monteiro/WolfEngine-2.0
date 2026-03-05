@@ -62,7 +62,7 @@ namespace Wolf
 #ifdef RESOURCE_DEBUG
 			const std::source_location& location = std::source_location::current()
 #endif
-		);
+		) const;
 
 		[[nodiscard]] bool isSame(T* resource) const { return m_resource.get() == resource; }
 
@@ -76,32 +76,32 @@ namespace Wolf
 
 		std::unique_ptr<T> m_resource;
 
-		std::mutex m_nonOwnerResourceMutex;
-		uint32_t m_nonOwnedResourceCount = 0;
+		mutable std::mutex m_nonOwnerResourceMutex;
+		mutable uint32_t m_nonOwnedResourceCount = 0;
 
 		void nonOwnerResourceDeleteCommon(
 #ifdef RESOURCE_DEBUG
 			const ResourceNonOwner<T>* instance
 #endif
-		);
+		) const;
 #ifdef RESOURCE_DEBUG
 		template <typename U = T>
-		void nonOwnerResourceDeleteTracked(void* instance);
+		void nonOwnerResourceDeleteTracked(void* instance) const;
 #endif
 
 		void addNonOwnerResourceCommon(
 #ifdef RESOURCE_DEBUG
 			ResourceNonOwner<T>* instance
 #endif
-		);
+		) const;
 #ifdef RESOURCE_DEBUG
 		template <typename U = T>
-		void addNonOwnerResourceTracked(void* instance);
+		void addNonOwnerResourceTracked(void* instance) const;
 #endif
 		void checksBeforeDelete() const;
 
 #ifdef RESOURCE_DEBUG
-		std::vector<ResourceNonOwner<T>*> m_nonOwnerResources;
+		mutable std::vector<ResourceNonOwner<T>*> m_nonOwnerResources;
 #endif
 	};
 
@@ -179,7 +179,7 @@ namespace Wolf
 #ifdef RESOURCE_DEBUG
 		const std::source_location& location
 #endif
-	)
+	) const
 	{
 		return ResourceNonOwner<const T>(m_resource.get(),
 #ifdef RESOURCE_DEBUG
@@ -201,7 +201,7 @@ namespace Wolf
 #ifdef RESOURCE_DEBUG
 		const ResourceNonOwner<T>* instance
 #endif
-	)
+	) const
 	{
 		m_nonOwnerResourceMutex.lock();
 
@@ -226,7 +226,7 @@ namespace Wolf
 #ifdef RESOURCE_DEBUG
 	template <typename T>
 	template <typename U>
-	void ResourceUniqueOwner<T>::nonOwnerResourceDeleteTracked(void* instance)
+	void ResourceUniqueOwner<T>::nonOwnerResourceDeleteTracked(void* instance) const
 	{
 		nonOwnerResourceDeleteCommon(reinterpret_cast<ResourceNonOwner<T>*>(instance));
 	}
@@ -237,7 +237,7 @@ namespace Wolf
 #ifdef RESOURCE_DEBUG
 		ResourceNonOwner<T>* instance
 #endif
-	)
+	) const
 	{
 		m_nonOwnerResourceMutex.lock();
 
@@ -252,7 +252,7 @@ namespace Wolf
 #ifdef RESOURCE_DEBUG
 	template <typename T>
 	template <typename U>
-	void ResourceUniqueOwner<T>::addNonOwnerResourceTracked(void* instance)
+	void ResourceUniqueOwner<T>::addNonOwnerResourceTracked(void* instance) const
 	{
 		addNonOwnerResourceCommon(reinterpret_cast<ResourceNonOwner<T>*>(instance));
 	}
@@ -274,8 +274,8 @@ namespace Wolf
 		ResourceUniqueOwner(T* ptr = nullptr) : m_ptr(ptr) {}
 
 		template <typename U = T>
-		ResourceNonOwner<U> createNonOwnerResource() { return ResourceNonOwner<U>(dynamic_cast<U*>(m_ptr.get())); }
-		ResourceNonOwner<const T> createConstNonOwnerResource() { return ResourceNonOwner<const T>(m_ptr.get()); }
+		ResourceNonOwner<U> createNonOwnerResource() const { return ResourceNonOwner<U>(dynamic_cast<U*>(m_ptr.get())); }
+		ResourceNonOwner<const T> createConstNonOwnerResource() const { return ResourceNonOwner<const T>(m_ptr.get()); }
 
 		void reset(T* resource) { m_ptr.reset(resource); }
 		T* release() { return m_ptr.release(); }

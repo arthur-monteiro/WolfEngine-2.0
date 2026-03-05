@@ -1,16 +1,12 @@
 #pragma once
 
-#include <array>
-#include <glm/glm.hpp>
 #include <memory>
 #include <utility>
 #include <vector>
 
 #include "CommandBuffer.h"
-#include "DescriptorSetBindInfo.h"
 #include "Mesh.h"
 #include "PipelineSet.h"
-#include "ResourceNonOwner.h"
 
 namespace Wolf
 {
@@ -25,10 +21,16 @@ namespace Wolf
 	class ShaderList;
 	class WolfEngine;
 
-	class RenderMeshList
+	struct AdditionalDescriptorSet
+	{
+		DescriptorSetBindInfo m_descriptorSetBindInfo;
+		uint32_t m_mask = 0;
+	};
+
+	class DefaultMeshRenderer
 	{
 	public:
-		RenderMeshList(ShaderList& shaderList) : m_shaderList(&shaderList) {}
+		DefaultMeshRenderer(ShaderList& shaderList) : m_shaderList(&shaderList) {}
 
 		void moveToNextFrame();
 		void clear();
@@ -43,16 +45,19 @@ namespace Wolf
 
 			MeshToRender(const ResourceNonOwner<MeshInterface>& mesh, const ResourceNonOwner<const PipelineSet>& pipeline) : m_mesh(mesh), m_pipelineSet(pipeline) {}
 		};
-		uint32_t registerMesh(const MeshToRender& mesh);
-		void addTransientMesh(const MeshToRender& mesh);
 
 		struct InstancedMesh
 		{
-			MeshToRender mesh;
+			MeshToRender m_mesh;
 
-			NullableResourceNonOwner<Buffer> instanceBuffer;
-			uint32_t instanceSize;
+			NullableResourceNonOwner<Buffer> m_instanceBuffer;
+			uint32_t m_instanceBufferOffset;
+			uint32_t m_instanceSize;
 		};
+
+		uint32_t registerMesh(const MeshToRender& mesh);
+		void addTransientMesh(const MeshToRender& mesh);
+
 		uint32_t registerInstancedMesh(const InstancedMesh& mesh, uint32_t maxInstanceCount, uint32_t instanceIdx);
 		void addInstance(uint32_t instancedMeshIdx, uint32_t instanceIdx);
 		void removeInstance(uint32_t instancedMeshIdx, uint32_t instanceIdx);
@@ -62,11 +67,6 @@ namespace Wolf
 		void removeIsolation();
 
 		static constexpr uint32_t NO_CAMERA_IDX = -1;
-		struct AdditionalDescriptorSet
-		{
-			DescriptorSetBindInfo descriptorSetBindInfo;
-			uint32_t mask = 0;
-		};
 		void draw(const RecordContext& context, const CommandBuffer& commandBuffer, RenderPass* renderPass, uint32_t pipelineIdx, uint32_t cameraIdx, const std::vector<AdditionalDescriptorSet>& descriptorSetsToBind,
 			const std::vector<PipelineSet::ShaderCodeToAddForStage>& shadersCodeToAdd) const;
 
@@ -83,19 +83,19 @@ namespace Wolf
 
 		struct InternalInstancedMesh
 		{
-			InstancedMesh instancedMesh;
+			InstancedMesh m_instancedMesh;
 
 			struct OffsetAndCount
 			{
-				uint32_t offset;
-				uint32_t count;
+				uint32_t m_offset;
+				uint32_t m_count;
 			};
-			std::vector<OffsetAndCount> offsetAndCounts; // offset in instance buffer and instance count
+			std::vector<OffsetAndCount> m_offsetAndCounts; // offset in instance buffer and instance count
 			void buildOffsetAndCounts();
 
 			std::vector<bool> activatedInstances;
 
-			InternalInstancedMesh(InstancedMesh instancedMesh) : instancedMesh(std::move(instancedMesh)) {}
+			InternalInstancedMesh(InstancedMesh instancedMesh) : m_instancedMesh(std::move(instancedMesh)) {}
 		};
 		std::vector<InternalInstancedMesh> m_instancedMeshes;
 		std::vector<InternalInstancedMesh> m_transientInstancedMeshesCurrentFrame;

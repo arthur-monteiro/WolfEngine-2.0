@@ -4,7 +4,7 @@
 #include <memory>
 #include <span>
 
-#include "GPUDataTransfersManager.h"
+#include "InstanceMeshRenderer.h"
 
 #ifdef __ANDROID__
 #include <android/native_window.h>
@@ -21,12 +21,14 @@
 #include "CameraList.h"
 #include "CommandRecordBase.h"
 #include "Configuration.h"
+#include "DefaultMeshBufferPool.h"
+#include "GPUDataTransfersManager.h"
 #include "InputHandler.h"
 #include "LightManager.h"
 #include "MaterialsGPUManager.h"
 #include "MultiThreadTaskManager.h"
 #include "PhysicsManager.h"
-#include "RenderMeshList.h"
+#include "DefaultMeshRenderer.h"
 #include "ResourceUniqueOwner.h"
 #include "RuntimeContext.h"
 #include "ShaderList.h"
@@ -97,13 +99,15 @@ namespace Wolf
         void setGameContexts(const std::vector<void*>& gameContexts) { m_gameContexts = gameContexts; }
 
         [[nodiscard]] CameraList& getCameraList() { return m_cameraList; }
-        [[nodiscard]] ResourceNonOwner<RenderMeshList> getRenderMeshList() { return m_renderMeshList.createNonOwnerResource(); }
+        [[nodiscard]] ResourceNonOwner<DefaultMeshRenderer> getDefaultMeshRenderer() { return m_defaultMeshRenderer.createNonOwnerResource(); }
+        [[nodiscard]] ResourceNonOwner<InstanceMeshRenderer> getInstanceMeshRenderer() { return m_instanceMeshRenderer.createNonOwnerResource(); }
         [[nodiscard]] ResourceUniqueOwner<LightManager>& getLightManager() { return m_lightManager; }
         [[nodiscard]] ResourceNonOwner<MaterialsGPUManager> getMaterialsManager() { return m_materialsManager.createNonOwnerResource(); }
         [[nodiscard]] const std::vector<std::string>& getSavedUICommands() const { return m_savedUICommands; }
         [[nodiscard]] const Timer& getGlobalTimer() const { return m_globalTimer; }
         [[nodiscard]] ResourceNonOwner<Physics::PhysicsManager> getPhysicsManager() { return m_physicsManager.createNonOwnerResource(); }
         [[nodiscard]] ResourceNonOwner<GPUDataTransfersManagerInterface> getGPUDataTransfersManager() { return m_pushDataToGPU; }
+        [[nodiscard]] ResourceNonOwner<DefaultMeshBufferPool> getDefaultMeshBufferPool() { return m_defaultMeshBufferPool.createNonOwnerResource(); }
 
     private:
         void fillInitializeContext(InitializationContext& context) const;
@@ -114,7 +118,6 @@ namespace Wolf
         }
         void resize(int width, int height);
 
-    private:
         std::unique_ptr<Configuration> m_configuration;
         std::unique_ptr<RuntimeContext> m_runtimeContext;
         std::unique_ptr<GraphicAPIManager> m_graphicAPIManager;
@@ -131,6 +134,7 @@ namespace Wolf
 		//std::unique_ptr<OVR> m_ovr;
 #endif
         ResourceUniqueOwner<Physics::PhysicsManager> m_physicsManager;
+        ResourceUniqueOwner<DefaultMeshBufferPool> m_defaultMeshBufferPool;
 
         // Timer
         Timer m_globalTimer;
@@ -144,7 +148,8 @@ namespace Wolf
         std::function<void(uint32_t, uint32_t)> m_resizeCallback;
 
         // Graphics
-        ResourceUniqueOwner<RenderMeshList> m_renderMeshList;
+        ResourceUniqueOwner<DefaultMeshRenderer> m_defaultMeshRenderer;
+        ResourceUniqueOwner<InstanceMeshRenderer> m_instanceMeshRenderer;
         ShaderList m_shaderList;
         std::array<std::unique_ptr<Image>, 5> m_defaultImages;
         ResourceUniqueOwner<MaterialsGPUManager> m_materialsManager;
