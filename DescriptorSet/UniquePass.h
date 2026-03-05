@@ -16,10 +16,13 @@
 #include <RenderPass.h>
 #include <Sampler.h>
 #include <ShaderParser.h>
+#include <WolfEngine.h>
 
 class UniquePass : public Wolf::CommandRecordBase
 {
 public:
+	UniquePass(Wolf::WolfEngine* wolfInstance) : m_wolfInstance(wolfInstance) {}
+
 	void initializeResources(const Wolf::InitializationContext& context) override;
 	void resize(const Wolf::InitializationContext& context) override;
 	void record(const Wolf::RecordContext& context) override;
@@ -31,7 +34,7 @@ private:
 	void createDepthImage(const Wolf::InitializationContext& context);
 	void createPipeline(uint32_t width, uint32_t height);
 
-private:
+	Wolf::WolfEngine* m_wolfInstance;
 	std::unique_ptr<Wolf::RenderPass> m_renderPass;
 	std::unique_ptr<Wolf::Image> m_depthImage;
 	std::vector<std::unique_ptr<Wolf::FrameBuffer>> m_frameBuffers;

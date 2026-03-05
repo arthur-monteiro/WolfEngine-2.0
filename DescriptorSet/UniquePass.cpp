@@ -6,13 +6,13 @@
 #include <stb_image_write.h>
 
 #include <Attachment.h>
+#include <DefaultMeshRenderer.h>
 #include <DescriptorSetGenerator.h>
 #include <DescriptorSetLayoutGenerator.h>
 #include <Image.h>
 #include <ImageFileLoader.h>
 #include <FrameBuffer.h>
 
-#include "RenderMeshList.h"
 #include "Vertex2DTextured.h"
 
 using namespace Wolf;
@@ -83,7 +83,7 @@ void UniquePass::initializeResources(const InitializationContext& context)
 		0, 1, 2
 	};
 
-	m_triangle.reset(new Mesh(vertices, indices));
+	m_triangle.reset(new Mesh(vertices, indices, m_wolfInstance->getDefaultMeshBufferPool().duplicateAs<BufferPoolInterface>()));
 }
 
 void UniquePass::resize(const InitializationContext& context)
@@ -127,7 +127,7 @@ void UniquePass::record(const RecordContext& context)
 
 	m_commandBuffer->bindDescriptorSet(m_descriptorSet.get(), 0, *m_pipeline);
 	
-	m_triangle->draw(*m_commandBuffer, RenderMeshList::NO_CAMERA_IDX);
+	m_triangle->draw(*m_commandBuffer, DefaultMeshRenderer::NO_CAMERA_IDX);
 
 	m_commandBuffer->endRenderPass();
 

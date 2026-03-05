@@ -55,10 +55,10 @@ void UniquePass::initializeResources(const InitializationContext& context)
 	};
 
 	m_vertexBuffer.reset(Buffer::createBuffer(sizeof(Vertex2D) * vertices.size(), VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT));
-	m_vertexBuffer->transferCPUMemoryWithStagingBuffer(vertices.data(), sizeof(Vertex2D) * vertices.size());
+	m_vertexBuffer->transferCPUMemoryWithStagingBuffer(vertices.data(), sizeof(Vertex2D) * vertices.size(), 0, 0);
 
 	m_indexBuffer.reset(Buffer::createBuffer(sizeof(uint16_t) * indices.size(), VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT));
-	m_indexBuffer->transferCPUMemoryWithStagingBuffer(indices.data(), sizeof(uint16_t) * indices.size());
+	m_indexBuffer->transferCPUMemoryWithStagingBuffer(indices.data(), sizeof(uint16_t) * indices.size(), 0, 0);
 }
 
 void UniquePass::resize(const InitializationContext& context)
@@ -94,8 +94,8 @@ void UniquePass::record(const RecordContext& context)
 
 	m_commandBuffer->bindPipeline(m_pipeline.get());
 
-	m_commandBuffer->bindVertexBuffer(*m_vertexBuffer);
-	m_commandBuffer->bindIndexBuffer(*m_indexBuffer, IndexType::U16);
+	m_commandBuffer->bindVertexBuffer(*m_vertexBuffer, 0);
+	m_commandBuffer->bindIndexBuffer(*m_indexBuffer, 0, IndexType::U16);
 
 	m_commandBuffer->drawIndexed(3, 1, 0, 0, 0);
 

@@ -42,7 +42,7 @@ int main(int argc, char* argv[])
 
 	Wolf::WolfEngine wolfInstance(wolfInstanceCreateInfo);
 
-	Wolf::ResourceUniqueOwner<UniquePass> pass(new UniquePass);
+	Wolf::ResourceUniqueOwner<UniquePass> pass(new UniquePass(&wolfInstance));
 	wolfInstance.initializePass(pass.createNonOwnerResource<Wolf::CommandRecordBase>());
 
 	if (doScreenshot)

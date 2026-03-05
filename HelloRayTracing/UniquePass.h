@@ -18,10 +18,13 @@
 #include <ShaderBindingTable.h>
 #include <ShaderParser.h>
 #include <TopLevelAccelerationStructure.h>
+#include <WolfEngine.h>
 
 class UniquePass : public Wolf::CommandRecordBase
 {
 public:
+	UniquePass(Wolf::WolfEngine* wolfInstance) : m_wolfInstance(wolfInstance) {}
+
 	void initializeResources(const Wolf::InitializationContext& context) override;
 	void resize(const Wolf::InitializationContext& context) override;
 	void record(const Wolf::RecordContext& context) override;
@@ -33,7 +36,7 @@ private:
 	void createPipeline();
 	void createDescriptorSets(const Wolf::InitializationContext& context);
 
-private:
+	Wolf::WolfEngine* m_wolfInstance;
 	std::unique_ptr<Wolf::Pipeline> m_pipeline;
 
 	Wolf::ResourceUniqueOwner<Wolf::Mesh> m_triangle;

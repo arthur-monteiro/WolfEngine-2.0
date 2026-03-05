@@ -6,6 +6,7 @@
 #include <stb_image_write.h>
 
 #include <Attachment.h>
+#include <DefaultMeshRenderer.h>
 #include <DescriptorSetGenerator.h>
 #include <DescriptorSetLayoutGenerator.h>
 #include <Image.h>
@@ -13,7 +14,6 @@
 #include <FrameBuffer.h>
 #include <ShadingRatePalette.h>
 
-#include "RenderMeshList.h"
 #include "Vertex2DTextured.h"
 
 using namespace Wolf;
@@ -117,7 +117,7 @@ void UniquePass::initializeResources(const InitializationContext& context)
 		2, 3, 1
 	};
 
-	m_rectangle.reset(new Mesh(vertices, indices));
+	m_rectangle.reset(new Mesh(vertices, indices, m_wolfInstance->getDefaultMeshBufferPool().duplicateAs<BufferPoolInterface>()));
 }
 
 void UniquePass::resize(const InitializationContext& context)
@@ -161,7 +161,7 @@ void UniquePass::record(const RecordContext& context)
 	combiners[1] = FragmentShadingRateCombinerOp::MAX;
 	m_commandBuffer->setFragmentShadingRate(combiners, fragmentExtent);
 
-	m_rectangle->draw(*m_commandBuffer, RenderMeshList::NO_CAMERA_IDX);
+	m_rectangle->draw(*m_commandBuffer, DefaultMeshRenderer::NO_CAMERA_IDX);
 
 	m_commandBuffer->endRenderPass();
 

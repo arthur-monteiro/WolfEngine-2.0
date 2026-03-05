@@ -46,7 +46,8 @@ void UniquePass::initializeResources(const InitializationContext& context)
 	};
 
 	const VkBufferUsageFlags rayTracingFlags = VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT | VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_BUILD_INPUT_READ_ONLY_BIT_KHR | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
-	m_triangle.reset(new Mesh(vertices, indices, {}, {}, rayTracingFlags, rayTracingFlags, Format::R32G32_SFLOAT));
+	m_triangle.reset(new Mesh(vertices, indices, m_wolfInstance->getDefaultMeshBufferPool().duplicateAs<BufferPoolInterface>(), {}, {}, rayTracingFlags,
+		rayTracingFlags));
 
 	BottomLevelAccelerationStructureCreateInfo blasCreateInfo;
 	blasCreateInfo.buildFlags = VK_BUILD_ACCELERATION_STRUCTURE_PREFER_FAST_TRACE_BIT_KHR;
@@ -56,7 +57,7 @@ void UniquePass::initializeResources(const InitializationContext& context)
 	geometryInfo.mesh.vertexBuffer = &*m_triangle->getVertexBuffer();
 	geometryInfo.mesh.vertexCount = m_triangle->getVertexCount();
 	geometryInfo.mesh.vertexSize = m_triangle->getVertexSize();
-	geometryInfo.mesh.vertexFormat = m_triangle->getVertexFormat();
+	geometryInfo.mesh.vertexFormat = Format::R32G32_SFLOAT;
 	geometryInfo.mesh.indexBuffer = &*m_triangle->getIndexBuffer();
 	geometryInfo.mesh.indexCount = m_triangle->getIndexCount();
 	blasCreateInfo.geometryInfos = geometries;
