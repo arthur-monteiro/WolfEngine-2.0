@@ -12,6 +12,12 @@
 
 void Wolf::copyCompressedFileToStorage(const std::string& filename, const std::string& folderInStorage, std::string& outFilename)
 {
+    if (std::filesystem::exists(filename))
+    {
+        outFilename = filename;
+        return;
+    }
+
     Wolf::Debug::sendInfo("Request uncompression for " + filename);
 
     std::ifstream appFile("/proc/self/cmdline");

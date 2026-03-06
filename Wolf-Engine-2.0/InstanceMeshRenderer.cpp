@@ -22,8 +22,20 @@ Wolf::InstanceMeshRenderer::InstanceMeshRenderer(ShaderList& shaderList, const R
     m_cullInstancesDescriptorSetLayoutGenerator.addUniformBuffer(ShaderStageFlagBits::COMPUTE, 5); // uniform buffer
     m_cullInstancesDescriptorSetLayout.reset(DescriptorSetLayout::createDescriptorSetLayout(m_cullInstancesDescriptorSetLayoutGenerator.getDescriptorLayouts()));
 
+#ifdef __ANDROID__
+    std::ifstream appFile("/proc/self/cmdline");
+    std::string processName;
+    std::getline(appFile, processName);
+
+    std::string appFolderName = "/data/data/" + processName.substr(0, processName.find('\0'));
+#endif
+
     {
+#ifdef __ANDROID__
+        std::string cacheFilename = appFolderName + "/" + "instanceMeshRendererCullInstancesComputeShaderCache.comp";
+#else
         std::string cacheFilename = "instanceMeshRendererCullInstancesComputeShaderCache.comp";
+#endif
         {
             std::ofstream outputFile(cacheFilename);
             outputFile <<
@@ -52,7 +64,12 @@ Wolf::InstanceMeshRenderer::InstanceMeshRenderer(ShaderList& shaderList, const R
     m_copyInstancesDescriptorSetLayout.reset(DescriptorSetLayout::createDescriptorSetLayout(m_copyInstancesDescriptorSetLayoutGenerator.getDescriptorLayouts()));
 
     {
+#ifdef __ANDROID__
+        std::string cacheFilename = appFolderName + "/" + "instanceMeshRendererCopyInstancesComputeShaderCache.comp";
+#else
         std::string cacheFilename = "instanceMeshRendererCopyInstancesComputeShaderCache.comp";
+#endif
+
         {
             std::ofstream outputFile(cacheFilename);
             outputFile <<

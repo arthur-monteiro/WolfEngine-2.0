@@ -282,13 +282,17 @@ void Wolf::ShaderParser::parseAndCompile()
     shaderc::CompileOptions options;
 
     shaderc_shader_kind shaderKind;
-    if(extensionFound == "Vert")
+    if (extensionFound == "Vert")
     {
         shaderKind = shaderc_vertex_shader;
     }
-    else if(extensionFound == "Frag")
+    else if (extensionFound == "Frag")
     {
         shaderKind = shaderc_fragment_shader;
+    }
+    else if (extensionFound == "Comp")
+    {
+        shaderKind = shaderc_compute_shader;
     }
     else
     {
