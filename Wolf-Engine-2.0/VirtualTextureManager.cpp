@@ -348,9 +348,6 @@ void Wolf::VirtualTextureManager::AtlasInfo::updateAvailabilities()
 				}
 			}
 		}
-
-		if (!m_allAvailabilities.empty() && m_nextAvailabilities[1].size() < 16)
-			__debugbreak();
 	}
 
 	m_entriesMutex.unlock();
