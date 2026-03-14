@@ -106,8 +106,10 @@ namespace Wolf
 			struct SubEntry
 			{
 				uint32_t m_LRU;
-				uint16_t m_sliceOffsetX;
-				uint16_t m_sliceOffsetY;
+				uint16_t m_sliceOffsetX = 0;
+				uint16_t m_sliceOffsetY = 0;
+
+				SubEntry(uint32_t lru = 0) : m_LRU(lru) {}
 			};
 			static_assert(sizeof(SubEntry) == 8);
 
