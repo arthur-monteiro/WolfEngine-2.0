@@ -34,6 +34,7 @@ namespace Wolf
 	{
 		std::span<GeometryInfo> geometryInfos;
 		uint32_t buildFlags = 0;
+		std::string name = "Unknown";
 	};
 
 	class BottomLevelAccelerationStructure

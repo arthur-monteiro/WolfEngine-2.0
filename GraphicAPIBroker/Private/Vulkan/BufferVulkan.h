@@ -4,16 +4,27 @@
 
 #include <vulkan/vulkan_core.h>
 
+#include <GPUMemoryAllocatorInterface.h>
+
 #include "../../Public/Buffer.h"
 
 namespace Wolf
 {
-	class BufferVulkan final : public Buffer
+	class BufferVulkan final : public Buffer, public GPUMemoryAllocatorInterface
 	{
 	public:
 		BufferVulkan(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties);
 		BufferVulkan(const BufferVulkan&) = delete;
 		~BufferVulkan() override;
+
+		[[nodiscard]] uint32_t getMemoryAllocatedSize() const override { return m_allocationSize; }
+		[[nodiscard]] uint32_t getMemoryRequestedSize() const override { return m_bufferSize; }
+		[[nodiscard]] Type getType() const override { return Type::BUFFER; }
+		void setName(const std::string& name) override;
+		[[nodiscard]] std::string getName() const override { return m_name; }
+		[[nodiscard]] bool isPoolOrAtlas() const override { return false; }
+		void registerUsageCallback(const std::function<float(void)>& callback) override { m_getUsageCallback = callback; }
+		[[nodiscard]] float getUsagePercentage() const override { return m_getUsageCallback ? m_getUsageCallback() * 100.0f : 100.0f; };
 
 		void transferCPUMemory(const void* data, uint64_t srcSize, uint64_t srcOffset = 0) const override;
 		void transferCPUMemoryWithStagingBuffer(const void* data, uint64_t srcSize, uint64_t srcOffset = 0, uint64_t dstOffset = 0) const override;
@@ -45,8 +56,12 @@ namespace Wolf
 		VkDeviceMemory m_bufferMemory = 0;
 #endif
 
-		VkDeviceSize m_bufferSize;
+		VkDeviceSize m_bufferSize = 0;
 		VkDeviceSize m_allocationSize = 0;
+
+		std::string m_name = "Undefined";
+		std::function<float(void)> m_getUsageCallback;
+		bool m_registeredToVRAMProfiler = false;
 	};
 }
 

@@ -41,15 +41,17 @@ Wolf::MaterialsGPUManager::MaterialsGPUManager(const std::vector<DescriptorSetGe
 		m_normalAtlasIdx = m_virtualTextureManager->createAtlas(16, 16, Format::BC5_UNORM_BLOCK);
 		m_combinedAtlasIdx = m_virtualTextureManager->createAtlas(16, 16, Format::BC3_UNORM_BLOCK);
 
-		m_virtualTextureSampler.reset(Sampler::createSampler(VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE, 1, VK_FILTER_LINEAR));
+		m_virtualTextureSampler.reset(Sampler::createSampler(VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE, 1, VK_FILTER_LINEAR, 4.0f));
 	}
 
 	m_materialsBuffer.reset(Buffer::createBuffer(MAX_MATERIAL_COUNT * sizeof(MaterialGPUInfo), VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT));
+	m_materialsBuffer->setName("Materials info (MaterialsGPUManager::m_materialsBuffer)");
 	constexpr MaterialGPUInfo initMaterialInfo{ { 0, 0, 0, 0 }, { 1.0f, 0.0f, 0.0f, 0.0}, 0 };
 	m_materialsBuffer->transferCPUMemoryWithStagingBuffer(&initMaterialInfo, sizeof(MaterialGPUInfo), 0, 0);
 	m_currentMaterialCount = 1;
 
 	m_textureSetsBuffer.reset(Buffer::createBuffer(MAX_TEXTURE_SET_COUNT * sizeof(TextureSetGPUInfo), VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT));
+	m_textureSetsBuffer->setName("Texture sets info (MaterialsGPUManager::m_textureSetsBuffer)");
 	const TextureSetGPUInfo initTextureSetInfo{ 0, 1, 2, 0, glm::vec4(1.0) };
 	m_textureSetsBuffer->transferCPUMemoryWithStagingBuffer(&initTextureSetInfo, sizeof(TextureSetGPUInfo), 0, 0);
 	m_currentTextureSetCount = 1;
@@ -57,6 +59,7 @@ Wolf::MaterialsGPUManager::MaterialsGPUManager(const std::vector<DescriptorSetGe
 	if (g_configuration->getUseVirtualTexture())
 	{
 		m_texturesInfoBuffer.reset(Buffer::createBuffer(MAX_TEXTURE_COUNT * sizeof(TextureGPUInfo), VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT));
+		m_texturesInfoBuffer->setName("Textures info (MaterialsGPUManager::m_texturesInfoBuffer)");
 	}
 
 	m_descriptorSetLayout.reset(new LazyInitSharedResource<DescriptorSetLayout, MaterialsGPUManager>([&descriptorSetLayoutGenerator](ResourceUniqueOwner<DescriptorSetLayout>& descriptorSetLayout)
@@ -182,7 +185,18 @@ void Wolf::MaterialsGPUManager::addNewMaterial(const MaterialInfo& material)
 	newMaterialInfo.shadingMode = static_cast<uint32_t>(material.shadingMode);
 }
 
-void Wolf::MaterialsGPUManager::updateBeforeFrame()
+void Wolf::MaterialsGPUManager::addJobs(const ResourceNonOwner<JobsManager>& jobsManager)
+{
+	jobsManager->addJobBeforeFrame([this]()
+	{
+		if (g_configuration->getUseVirtualTexture())
+		{
+			m_virtualTextureManager->updateBeforeFrame();
+		}
+	});
+}
+
+void Wolf::MaterialsGPUManager::updateBeforeFrame(const ResourceNonOwner<JobsManager>& jobsManager)
 {
 	PROFILE_FUNCTION
 
@@ -212,107 +226,20 @@ void Wolf::MaterialsGPUManager::updateBeforeFrame()
 
 	if (g_configuration->getUseVirtualTexture())
 	{
-		m_virtualTextureManager->updateBeforeFrame();
-
-		std::vector<VirtualTextureManager::FeedbackInfo> requestedSlices;
-		m_virtualTextureManager->getRequestedSlices(requestedSlices, 4);
-
-		for (const VirtualTextureManager::FeedbackInfo& requestedSlice : requestedSlices)
+		for (uint32_t streamingJobIdx = 0; streamingJobIdx < 4; ++streamingJobIdx)
 		{
-			uint16_t textureId = requestedSlice.m_textureId;
-			if (textureId <= 2)
+			std::vector<VirtualTextureManager::FeedbackInfo> requestedSlices;
+			m_virtualTextureManager->getRequestedSlices(requestedSlices, 4);
+			if (!requestedSlices.empty())
 			{
-				m_virtualTextureManager->rejectRequest(requestedSlice);
-				continue;
+				jobsManager->addStreamingJob([this, requestedSlices]() { processVirtualTextureRequestedSlices(requestedSlices); });
 			}
-
-			const std::string& sliceFolder = m_texturesCPUInfo[textureId].m_slicesFolder;
-			uint8_t sliceX = requestedSlice.m_sliceX;
-			uint8_t sliceY = requestedSlice.m_sliceY;
-			uint8_t mipLevel = requestedSlice.m_mipLevel;
-
-			// Virtual texture manager will create request for the mip above (for trilinear sampling), we may get out range mip level
-			if (mipLevel >= MipMapGenerator::computeMipCount({ m_texturesCPUInfo[textureId].m_width, m_texturesCPUInfo[textureId].m_width }))
+			else
 			{
-				m_virtualTextureManager->rejectRequest(requestedSlice);
-				continue;
+				break;
 			}
-
-			float pixelSizeInBytes = 0.0f;
-			if (m_texturesCPUInfo[textureId].m_textureType == TextureCPUInfo::TextureType::ALBEDO)
-			{
-				pixelSizeInBytes = 0.5f; // BC1
-			}
-			else if (m_texturesCPUInfo[textureId].m_textureType == TextureCPUInfo::TextureType::NORMAL)
-			{
-				pixelSizeInBytes = 1.0f; // BC5
-			}
-			else if (m_texturesCPUInfo[textureId].m_textureType == TextureCPUInfo::TextureType::COMBINED_ROUGHNESS_METALNESS_AO)
-			{
-				pixelSizeInBytes = 1.0f; // BC3
-			}
- 			else
- 			{
- 				m_virtualTextureManager->rejectRequest(requestedSlice);
- 				continue;
- 			}
-
-			std::string binFilename = sliceFolder + "mip" + std::to_string(mipLevel) + "_sliceX" + std::to_string(sliceX) + "_sliceY" + std::to_string(sliceY) + ".bin";
-			std::ifstream input(binFilename, std::ios::in | std::ios::binary);
-			if (!input.is_open())
-			{
-				Debug::sendError("Unable to open file");
-				m_virtualTextureManager->rejectRequest(requestedSlice);
-				continue;
-			}
-
-			uint64_t hash;
-			input.read(reinterpret_cast<char*>(&hash), sizeof(hash));
-			// TODO: check hash
-
-			uint32_t dataBytesCount;
-			input.read(reinterpret_cast<char*>(&dataBytesCount), sizeof(dataBytesCount));
-
-			Extent3D maxSliceExtent{ VirtualTextureManager::VIRTUAL_PAGE_SIZE, VirtualTextureManager::VIRTUAL_PAGE_SIZE, 1 };
-			Extent3D extentForMip = { m_texturesCPUInfo[textureId].m_width >> mipLevel, m_texturesCPUInfo[textureId].m_height >> mipLevel, 1 };
-			Extent3D sliceExtent{ std::min(extentForMip.width, maxSliceExtent.width) + 2 * VirtualTextureManager::BORDER_SIZE,
-				std::min(extentForMip.height, maxSliceExtent.height) + 2 * VirtualTextureManager::BORDER_SIZE, 1 };
-
-			if (static_cast<float>(sliceExtent.width) * static_cast<float>(sliceExtent.height) * pixelSizeInBytes != static_cast<float>(dataBytesCount))
-			{
-				Debug::sendError("Wrong slice size");
-			}
-
-			std::vector<uint8_t> data(dataBytesCount);
-			input.read(reinterpret_cast<char*>(data.data()), static_cast<std::streamsize>(data.size()));
-
-			input.close();
-
-			if (m_texturesCPUInfo[textureId].m_virtualTextureIndirectionOffset == VirtualTextureManager::INVALID_INDIRECTION_OFFSET)
-			{
-				uint32_t indirectionCount = computeSliceCount(m_texturesCPUInfo[textureId].m_width, m_texturesCPUInfo[textureId].m_height);
-				uint32_t virtualTextureIndirectionOffset = m_virtualTextureManager->createNewIndirection(indirectionCount);
-
-				m_texturesCPUInfo[textureId].m_virtualTextureIndirectionOffset = virtualTextureIndirectionOffset;
-				m_pushDataToGPUHandler->pushDataToGPUBuffer(&virtualTextureIndirectionOffset, sizeof(uint32_t), m_texturesInfoBuffer.createNonOwnerResource(), textureId * sizeof(TextureGPUInfo) + offsetof(TextureGPUInfo, virtualTextureIndirectionOffset));
-			}
-
-			uint8_t sliceCountX = m_texturesCPUInfo[textureId].m_height / VirtualTextureManager::VIRTUAL_PAGE_SIZE;
-			uint8_t sliceCountY = m_texturesCPUInfo[textureId].m_height / VirtualTextureManager::VIRTUAL_PAGE_SIZE;
-
-			uint32_t atlasIdx = -1;
-			if (m_texturesCPUInfo[textureId].m_textureType == TextureCPUInfo::TextureType::ALBEDO)
-				atlasIdx = m_albedoAtlasIdx;
-			else if (m_texturesCPUInfo[textureId].m_textureType == TextureCPUInfo::TextureType::NORMAL)
-				atlasIdx = m_normalAtlasIdx;
-			else if (m_texturesCPUInfo[textureId].m_textureType == TextureCPUInfo::TextureType::COMBINED_ROUGHNESS_METALNESS_AO)
-				atlasIdx = m_combinedAtlasIdx;
-
-			if (atlasIdx == -1)
-				Debug::sendCriticalError("Wrong atlas index");
-
-			m_virtualTextureManager->uploadData(atlasIdx, data, sliceExtent, sliceX, sliceY, mipLevel, sliceCountX, sliceCountY, m_texturesCPUInfo[textureId].m_virtualTextureIndirectionOffset, requestedSlice);
 		}
+
 	}
 }
 
@@ -555,15 +482,132 @@ uint32_t Wolf::MaterialsGPUManager::computeSliceCount(uint32_t textureWidth, uin
 	return sliceCount;
 }
 
+void Wolf::MaterialsGPUManager::processVirtualTextureRequestedSlices(const std::vector<VirtualTextureManager::FeedbackInfo>& requestedSlices, bool neverRemoveEntries)
+{
+	for (const VirtualTextureManager::FeedbackInfo& requestedSlice : requestedSlices)
+	{
+		uint16_t textureId = requestedSlice.m_textureId;
+		if (textureId <= 2)
+		{
+			m_virtualTextureManager->rejectRequest(requestedSlice);
+			continue;
+		}
+
+		const std::string& sliceFolder = m_texturesCPUInfo[textureId].m_slicesFolder;
+		uint8_t sliceX = requestedSlice.m_sliceX;
+		uint8_t sliceY = requestedSlice.m_sliceY;
+		uint8_t mipLevel = requestedSlice.m_mipLevel;
+
+		// Virtual texture manager will create request for the mip above (for trilinear sampling), we may get out range mip level
+		if (mipLevel >= MipMapGenerator::computeMipCount({ m_texturesCPUInfo[textureId].m_width, m_texturesCPUInfo[textureId].m_width }))
+		{
+			m_virtualTextureManager->rejectRequest(requestedSlice);
+			continue;
+		}
+
+		float pixelSizeInBytes = 0.0f;
+		if (m_texturesCPUInfo[textureId].m_textureType == TextureCPUInfo::TextureType::ALBEDO)
+		{
+			pixelSizeInBytes = 0.5f; // BC1
+		}
+		else if (m_texturesCPUInfo[textureId].m_textureType == TextureCPUInfo::TextureType::NORMAL)
+		{
+			pixelSizeInBytes = 1.0f; // BC5
+		}
+		else if (m_texturesCPUInfo[textureId].m_textureType == TextureCPUInfo::TextureType::COMBINED_ROUGHNESS_METALNESS_AO)
+		{
+			pixelSizeInBytes = 1.0f; // BC3
+		}
+ 		else
+ 		{
+ 			m_virtualTextureManager->rejectRequest(requestedSlice);
+ 			continue;
+ 		}
+
+		std::string binFilename = sliceFolder + "mip" + std::to_string(mipLevel) + "_sliceX" + std::to_string(sliceX) + "_sliceY" + std::to_string(sliceY) + ".bin";
+		std::ifstream input(binFilename, std::ios::in | std::ios::binary);
+		if (!input.is_open())
+		{
+			Debug::sendError("Unable to open file");
+			m_virtualTextureManager->rejectRequest(requestedSlice);
+			continue;
+		}
+
+		uint64_t hash;
+		input.read(reinterpret_cast<char*>(&hash), sizeof(hash));
+		// TODO: check hash
+
+		uint32_t dataBytesCount;
+		input.read(reinterpret_cast<char*>(&dataBytesCount), sizeof(dataBytesCount));
+
+		Extent3D maxSliceExtent{ VirtualTextureManager::VIRTUAL_PAGE_SIZE, VirtualTextureManager::VIRTUAL_PAGE_SIZE, 1 };
+		Extent3D extentForMip = { m_texturesCPUInfo[textureId].m_width >> mipLevel, m_texturesCPUInfo[textureId].m_height >> mipLevel, 1 };
+		Extent3D sliceExtent{ std::min(extentForMip.width, maxSliceExtent.width) + 2 * VirtualTextureManager::BORDER_SIZE,
+			std::min(extentForMip.height, maxSliceExtent.height) + 2 * VirtualTextureManager::BORDER_SIZE, 1 };
+
+		if (static_cast<float>(sliceExtent.width) * static_cast<float>(sliceExtent.height) * pixelSizeInBytes != static_cast<float>(dataBytesCount))
+		{
+			Debug::sendError("Wrong slice size");
+		}
+
+		std::vector<uint8_t> data(dataBytesCount);
+		input.read(reinterpret_cast<char*>(data.data()), static_cast<std::streamsize>(data.size()));
+
+		input.close();
+
+		if (m_texturesCPUInfo[textureId].m_virtualTextureIndirectionOffset == VirtualTextureManager::INVALID_INDIRECTION_OFFSET)
+		{
+			Debug::sendCriticalError("Indirections are not registered");
+		}
+
+		uint8_t sliceCountX = m_texturesCPUInfo[textureId].m_height / VirtualTextureManager::VIRTUAL_PAGE_SIZE;
+		uint8_t sliceCountY = m_texturesCPUInfo[textureId].m_height / VirtualTextureManager::VIRTUAL_PAGE_SIZE;
+
+		uint32_t atlasIdx = -1;
+		if (m_texturesCPUInfo[textureId].m_textureType == TextureCPUInfo::TextureType::ALBEDO)
+			atlasIdx = m_albedoAtlasIdx;
+		else if (m_texturesCPUInfo[textureId].m_textureType == TextureCPUInfo::TextureType::NORMAL)
+			atlasIdx = m_normalAtlasIdx;
+		else if (m_texturesCPUInfo[textureId].m_textureType == TextureCPUInfo::TextureType::COMBINED_ROUGHNESS_METALNESS_AO)
+			atlasIdx = m_combinedAtlasIdx;
+
+		if (atlasIdx == -1)
+			Debug::sendCriticalError("Wrong atlas index");
+
+		VirtualTextureManager::FeedbackInfo removedFeedbackInfo;
+		uint32_t entryId = m_virtualTextureManager->takeEntryId(atlasIdx, requestedSlice, sliceExtent, removedFeedbackInfo, neverRemoveEntries);
+		if (removedFeedbackInfo != static_cast<VirtualTextureManager::FeedbackInfo>(-1))
+		{
+			uint8_t removedSliceCountX = m_texturesCPUInfo[removedFeedbackInfo.m_textureId].m_height / VirtualTextureManager::VIRTUAL_PAGE_SIZE;
+			uint8_t removedSliceCountY = m_texturesCPUInfo[removedFeedbackInfo.m_textureId].m_height / VirtualTextureManager::VIRTUAL_PAGE_SIZE;
+
+			m_virtualTextureManager->removeIndirection(removedFeedbackInfo, removedSliceCountX, removedSliceCountY, m_texturesCPUInfo[removedFeedbackInfo.m_textureId].m_virtualTextureIndirectionOffset);
+		}
+
+		m_virtualTextureManager->uploadData(atlasIdx, data, sliceExtent, sliceX, sliceY, mipLevel, sliceCountX, sliceCountY, m_texturesCPUInfo[textureId].m_virtualTextureIndirectionOffset, requestedSlice, entryId);
+	}
+}
+
 void Wolf::MaterialsGPUManager::addSlicedImage(const std::string& folder, TextureCPUInfo::TextureType textureType)
 {
 	TextureGPUInfo& textureInfo = m_newTextureInfo.emplace_back();
 
 	textureInfo.width = std::stoi(ConfigurationHelper::readInfoFromFile(folder + "info.txt", "width"));
 	textureInfo.height = std::stoi(ConfigurationHelper::readInfoFromFile(folder + "info.txt", "height"));
-	textureInfo.virtualTextureIndirectionOffset = -1;
 
-	m_texturesCPUInfo.emplace_back(folder, textureType, textureInfo.width, textureInfo.height, textureInfo.virtualTextureIndirectionOffset);
+	TextureCPUInfo& textureCPUInfo = m_texturesCPUInfo.emplace_back(folder, textureType, textureInfo.width, textureInfo.height, textureInfo.virtualTextureIndirectionOffset);
+	uint32_t textureId = m_texturesCPUInfo.size() - 1;
+
+	uint32_t indirectionCount = computeSliceCount(textureCPUInfo.m_width, textureCPUInfo.m_height);
+	textureInfo.virtualTextureIndirectionOffset = m_virtualTextureManager->createNewIndirection(indirectionCount);
+	textureCPUInfo.m_virtualTextureIndirectionOffset = textureInfo.virtualTextureIndirectionOffset;
+
+	std::vector<VirtualTextureManager::FeedbackInfo> minimumSlices(1);
+	minimumSlices[0].m_textureId = textureId;
+	minimumSlices[0].m_mipLevel = MipMapGenerator::computeMipCount({ textureCPUInfo.m_width, textureCPUInfo.m_height }) - 1;
+	minimumSlices[0].m_sliceX = 0;
+	minimumSlices[0].m_sliceY = 0;
+	processVirtualTextureRequestedSlices(minimumSlices, true);
 }
 
 void Wolf::MaterialsGPUManager::bind(const CommandBuffer& commandBuffer, const Pipeline& pipeline, uint32_t descriptorSlot) const

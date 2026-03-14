@@ -48,30 +48,40 @@ namespace Wolf
 			void waitJobsCompleted();
 
 		private:
+			class JobsPool
+			{
+			public:
+				void addJob(const Job& job);
+				void moveToNextFrame();
+
+				bool getNextJob(Job& outJob);
+
+			private:
+				std::queue<Job> m_nextJobs;
+
+				std::mutex m_currentJobsMutex;
+				std::queue<Job> m_currentJobs;
+			};
+			ResourceUniqueOwner<JobsPool> m_jobsPool;
+
 			class PerThread
 			{
 			public:
-				PerThread();
+				PerThread(Thread* thread, const ResourceNonOwner<JobsPool>& jobsPool, const std::string& name);
 				~PerThread();
-				PerThread(Thread* thread, const std::string& name);
 
-				void addJob(const Job& job) { m_nextJobs.emplace(job); }
 				void execution(const std::string& name);
 
-				void executeJobs();
+				void notifyThreads() const;
 				void waitJobsCompleted();
 
 			private:
 				Thread* m_thread;
-
-				std::queue<Job> m_nextJobs;
-				std::queue<Job> m_currentJobs;
+				ResourceNonOwner<JobsPool> m_jobsPool;
 
 				bool m_stopThreadRequested = false;
 			};
 			DynamicStableArray<ResourceUniqueOwner<PerThread>, 2> m_threads;
-
-			uint32_t m_lastThreadToReceiveWork = 0;
 		};
 		static constexpr uint32_t MAX_THREAD_GROUP_COUNT = 4;
 		std::array<ThreadGroup, MAX_THREAD_GROUP_COUNT> m_threadGroups;

@@ -8,6 +8,7 @@
 
 #include "AccessFlagsVulkan.h"
 #include "CommandBufferVulkan.h"
+#include "CPUMemoryDebug.h"
 #include "FenceVulkan.h"
 #include "PipelineStagesVulkan.h"
 #include "SemaphoreVulkan.h"
@@ -17,8 +18,6 @@
 Wolf::BufferVulkan::BufferVulkan(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties)
 {
 	createBuffer(size, usage, properties);
-
-	m_bufferSize = size;
 }
 
 Wolf::BufferVulkan::~BufferVulkan()
@@ -26,13 +25,30 @@ Wolf::BufferVulkan::~BufferVulkan()
 	vkDestroyBuffer(g_vulkanInstance->getDevice(), m_buffer, nullptr);
 	vkFreeMemory(g_vulkanInstance->getDevice(), m_bufferMemory, nullptr);
 
-	GPUMemoryDebug::unregisterResource(GPUMemoryDebug::TYPE::BUFFER, 0, m_bufferSize, m_allocationSize);
+	if (m_registeredToVRAMProfiler)
+	{
+		GPUMemoryDebug::unregisterResource(this);
+	}
+	else
+	{
+		CPUMemoryDebug::unregisterResource(this);
+	}
+}
+
+void Wolf::BufferVulkan::setName(const std::string& name)
+{
+	m_name = name;
+
+	if (!m_registeredToVRAMProfiler)
+	{
+		CPUMemoryDebug::changeName(this, name);
+	}
 }
 
 void Wolf::BufferVulkan::transferCPUMemory(const void* data, uint64_t srcSize, uint64_t srcOffset) const
 {
 	void* pData = map(srcSize);
-	memcpy(pData, data, srcSize);
+	memcpy((void*)(static_cast<const char*>(pData) + srcOffset), data, srcSize);
 	unmap();
 }
 
@@ -189,7 +205,17 @@ void Wolf::BufferVulkan::createBuffer(VkDeviceSize size, VkBufferUsageFlags usag
 
 	vkBindBufferMemory(g_vulkanInstance->getDevice(), m_buffer, m_bufferMemory, 0);
 
-	GPUMemoryDebug::registerNewResource(GPUMemoryDebug::TYPE::BUFFER, 0, size, memRequirements.size);
+	m_bufferSize = size;
+
+	if ((properties & VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT) == 0)
+	{
+		m_registeredToVRAMProfiler = true;
+		GPUMemoryDebug::registerNewResource(this);
+	}
+	else
+	{
+		CPUMemoryDebug::registerNewResource(this, m_allocationSize, m_name);
+	}
 }
 
 #endif

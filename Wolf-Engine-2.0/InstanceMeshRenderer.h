@@ -135,7 +135,7 @@ namespace Wolf
             ResourceUniqueOwner<DescriptorSet> m_cullingDescriptorSet;
         };
         static constexpr uint32_t MAX_CAMERA_COUNT = 16;
-        std::array<PerCullingCamera, MAX_CAMERA_COUNT> m_cullingCamerasData;
+        std::array<ResourceUniqueOwner<PerCullingCamera>, MAX_CAMERA_COUNT> m_cullingCamerasData;
 
         // CPU caches
         struct MeshCacheData

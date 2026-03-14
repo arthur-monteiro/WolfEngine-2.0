@@ -501,8 +501,9 @@ void Wolf::UltraLight::UltraLightImplementation::createOutputAndRecordCopyComman
     createImageInfo.mipLevelCount = 1;
     createImageInfo.usage = ImageUsageFlagBits::SAMPLED | ImageUsageFlagBits::TRANSFER_DST | ImageUsageFlagBits::STORAGE;
     createImageInfo.imageTiling = VK_IMAGE_TILING_LINEAR;
-    createImageInfo.memoryProperties = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
+    createImageInfo.memoryProperty = ImageMemoryProperty::DEVICE;
     m_userInterfaceImage.reset(Image::createImage(createImageInfo));
+    m_userInterfaceImage->setName("UI device local memory (UltraLight::UltraLightImplementation::m_userInterfaceImage)");
 
     Image::TransitionLayoutInfo transitionLayoutInfo{};
     transitionLayoutInfo.dstLayout = finalLayout;

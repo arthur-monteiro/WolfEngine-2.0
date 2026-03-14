@@ -172,15 +172,14 @@ Wolf::WolfEngine::WolfEngine(const WolfInstanceCreateInfo& createInfo) : m_globa
 	initializePass(m_instanceMeshRenderer.createNonOwnerResource<CommandRecordBase>());
 	m_physicsManager.reset(new Physics::PhysicsManager);
 
-	m_multiThreadTaskManager.reset(new MultiThreadTaskManager);
-	m_beforeFrameAndRecordThreadGroupId = m_multiThreadTaskManager->createThreadGroup(createInfo.m_threadCountBeforeFrameAndRecord, "Before frame and record");
+	m_jobsManager.reset(new JobsManager(createInfo.m_threadCountBeforeFrameAndRecord));
 
 	if (m_configuration->getForcedTimerMsPerFrame() > 0)
 	{
 		m_globalTimer.forceFixedTimerEachUpdate(m_configuration->getForcedTimerMsPerFrame());
 	}
 
-	m_defaultMeshBufferPool.reset(new DefaultMeshBufferPool(268'435'456));
+	m_defaultMeshBufferPool.reset(new DefaultMeshBufferPool(createInfo.m_meshBufferPoolSizes));
 }
 
 Wolf::WolfEngine::~WolfEngine()
@@ -209,9 +208,8 @@ void Wolf::WolfEngine::updateBeforeFrame()
 {
 	PROFILE_FUNCTION
 
-	m_multiThreadTaskManager->executeJobsForThreadGroup(m_beforeFrameAndRecordThreadGroupId);
-	std::this_thread::sleep_for(std::chrono::microseconds(10)); // let some time to the threads to lock
-	m_multiThreadTaskManager->waitForThreadGroup(m_beforeFrameAndRecordThreadGroupId);
+	m_jobsManager->executeJobsBeforeFrame();
+	m_materialsManager->addJobs(m_jobsManager.createNonOwnerResource()); // adding after run to be executed first on next frames
 
 	{
 		PROFILE_SCOPED("Jobs after MT jobs")
@@ -222,7 +220,6 @@ void Wolf::WolfEngine::updateBeforeFrame()
 		}
 		m_jobsToExecuteAfterMTJobs.clear();
 	}
-
 
 	uint32_t currentFrame = g_runtimeContext->getCurrentCPUFrameNumber();
 
@@ -244,7 +241,7 @@ void Wolf::WolfEngine::updateBeforeFrame()
 
 	if (static_cast<bool>(m_materialsManager))
 	{
-		m_materialsManager->updateBeforeFrame();
+		m_materialsManager->updateBeforeFrame(m_jobsManager.createNonOwnerResource());
 	}
 
 	m_globalTimer.updateCachedDuration();
@@ -379,7 +376,10 @@ void Wolf::WolfEngine::frame(const std::span<ResourceNonOwner<CommandRecordBase>
 		}
 	}
 
-	m_swapChain->present(frameEndedSemaphore, currentSwapChainImageIndex);
+	{
+		PROFILE_SCOPED("Present")
+		m_swapChain->present(frameEndedSemaphore, currentSwapChainImageIndex);
+	}
 
 	if (currentFrame >= g_configuration->getMaxCachedFrames() - 1)
 	{
@@ -398,7 +398,7 @@ void Wolf::WolfEngine::addJobBeforeFrame(const MultiThreadTaskManager::Job& job,
 	}
 	else
 	{
-		m_multiThreadTaskManager->addJobToThreadGroup(m_beforeFrameAndRecordThreadGroupId, job);
+		m_jobsManager->addJobBeforeFrame(job);
 	}
 }
 

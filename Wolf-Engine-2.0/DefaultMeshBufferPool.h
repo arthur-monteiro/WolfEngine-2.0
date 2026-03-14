@@ -12,7 +12,13 @@ namespace Wolf
     class DefaultMeshBufferPool : public BufferPoolInterface
     {
     public:
-        DefaultMeshBufferPool(uint32_t m_minimumSizePerBuffer);
+        struct PoolSize
+        {
+            uint32_t m_minimumPoolSize;
+            uint32_t m_itemSize;
+            uint32_t m_bufferUsageFlags;
+        };
+        DefaultMeshBufferPool(const std::vector<PoolSize>& poolSizes);
         ~DefaultMeshBufferPool() override = default;
 
         [[nodiscard]] BufferPoolInstance allocate(uint32_t requestedSize, Buffer::BufferUsageFlags usageFlags, uint32_t itemSize) override;
@@ -23,7 +29,7 @@ namespace Wolf
     private:
         uint32_t createBufferIfNotExists(uint32_t minimumSize, Buffer::BufferUsageFlags usageFlags, uint32_t vertexSize);
 
-        uint32_t m_minimumSizePerBuffer = 0;
+        std::vector<PoolSize> m_poolSizes;
 
         class OwningBuffer
         {
@@ -36,6 +42,8 @@ namespace Wolf
             ResourceNonOwner<Buffer> getBuffer() { return m_buffer.createNonOwnerResource();}
 
         private:
+            float getUsage() const;
+
             ResourceUniqueOwner<Buffer> m_buffer;
             Buffer::BufferUsageFlags m_bufferUsageFlags;
             uint32_t m_vertexSize;

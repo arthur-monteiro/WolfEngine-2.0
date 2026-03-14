@@ -40,11 +40,12 @@ void Wolf::UltraLightSurface::Resize(uint32_t width, uint32_t height)
 	createImageInfo.mipLevelCount = 1;
 	createImageInfo.usage = ImageUsageFlagBits::TRANSFER_SRC;
 	createImageInfo.imageTiling = VK_IMAGE_TILING_LINEAR;
-	createImageInfo.memoryProperties = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
+	createImageInfo.memoryProperty = ImageMemoryProperty::HOST;
 
 	for (ResourceUniqueOwner<Image>& image : m_images)
 	{
 		image.reset(Image::createImage(createImageInfo));
+		image->setName("Ultralight output - host visible (UltraLightSurface::m_images[i])");
 		image->setImageLayout({ ImageLayout::TRANSFER_SRC_OPTIMAL, VK_ACCESS_TRANSFER_READ_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT });
 		image->getResourceLayout(m_imageResourceLayout);
 	}

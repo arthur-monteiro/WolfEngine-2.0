@@ -29,6 +29,7 @@ namespace Wolf
 		BC3_UNORM_BLOCK,
 		BC5_UNORM_BLOCK,
 
+		D16_UNORM,
 		D32_SFLOAT,
 		D32_SFLOAT_S8_UINT,
 		D24_UNORM_S8_UINT
@@ -58,6 +59,7 @@ namespace Wolf
 			case Format::BC1_RGBA_UNORM_BLOCK:
 			case Format::BC3_UNORM_BLOCK:
 			case Format::BC5_UNORM_BLOCK:
+			case Format::D16_UNORM:
 			case Format::D32_SFLOAT:
 			case Format::D32_SFLOAT_S8_UINT:
 			case Format::D24_UNORM_S8_UINT:

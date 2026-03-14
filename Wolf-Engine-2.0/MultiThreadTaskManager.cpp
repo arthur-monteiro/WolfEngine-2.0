@@ -55,10 +55,11 @@ void Wolf::MultiThreadTaskManager::ThreadGroup::PerThread::execution(const std::
 	for (;;)
 	{
 		std::unique_lock<std::mutex> lock(m_thread->mutex);
+		Job jobToExecute;
 		{
 			PROFILE_SCOPED("Thread execution wait")
 
-			m_thread->runCondition.wait(lock, [&] { return !m_nextJobs.empty() || m_stopThreadRequested; });
+			m_thread->runCondition.wait(lock, [&] { return m_jobsPool->getNextJob(jobToExecute) || m_stopThreadRequested; });
 		}
 
 		if (m_stopThreadRequested)
@@ -68,20 +69,14 @@ void Wolf::MultiThreadTaskManager::ThreadGroup::PerThread::execution(const std::
 
 		PROFILE_SCOPED("Thread jobs execution")
 
-		m_currentJobs.swap(m_nextJobs);
-		if (!m_nextJobs.empty())
-			Debug::sendError("There shouldn't be jobs left here");
-
-		while (!m_currentJobs.empty())
+		do
 		{
-			Job& job = m_currentJobs.front();
-			job();
-			m_currentJobs.pop();
-		}
+			jobToExecute();
+		} while (m_jobsPool->getNextJob(jobToExecute));
 	}
 }
 
-void Wolf::MultiThreadTaskManager::ThreadGroup::PerThread::executeJobs()
+void Wolf::MultiThreadTaskManager::ThreadGroup::PerThread::notifyThreads() const
 {
 	m_thread->runCondition.notify_all();
 }
@@ -94,27 +89,37 @@ void Wolf::MultiThreadTaskManager::ThreadGroup::PerThread::waitJobsCompleted()
 
 void Wolf::MultiThreadTaskManager::ThreadGroup::initialize(uint32_t threadCount, const std::string& name, const std::function<Thread*()>& requestThreadInPool)
 {
+	m_jobsPool.reset(new JobsPool);
+
 	for (uint32_t threadIdx = 0; threadIdx < threadCount; ++threadIdx)
 	{
-		m_threads.emplace_back(new PerThread(requestThreadInPool(), name + std::to_string(threadIdx)));
+		m_threads.emplace_back(new PerThread(requestThreadInPool(), m_jobsPool.createNonOwnerResource(), name + std::to_string(threadIdx)));
 	}
 }
 
 void Wolf::MultiThreadTaskManager::ThreadGroup::addJob(const Job& job)
 {
-	m_lastThreadToReceiveWork = (m_lastThreadToReceiveWork + 1) % m_threads.size();
-	uint32_t threadIdx = m_lastThreadToReceiveWork;
-
-	m_threads[threadIdx]->addJob(job);
+	m_jobsPool->addJob(job);
 }
 
 void Wolf::MultiThreadTaskManager::ThreadGroup::executeJobs()
 {
+	m_jobsPool->moveToNextFrame();
+
+	Job jobToExecute;
+	if (!m_jobsPool->getNextJob(jobToExecute))
+		return;
+
 	for (uint32_t threadIdx = 0; threadIdx < m_threads.size(); ++threadIdx)
 	{
 		ResourceUniqueOwner<PerThread>& thread = m_threads[threadIdx];
-		thread->executeJobs();
+		thread->notifyThreads();
 	}
+
+	do
+	{
+		jobToExecute();
+	} while (m_jobsPool->getNextJob(jobToExecute));
 }
 
 void Wolf::MultiThreadTaskManager::ThreadGroup::waitJobsCompleted()
@@ -126,9 +131,37 @@ void Wolf::MultiThreadTaskManager::ThreadGroup::waitJobsCompleted()
 	}
 }
 
-Wolf::MultiThreadTaskManager::ThreadGroup::PerThread::PerThread()
+void Wolf::MultiThreadTaskManager::ThreadGroup::JobsPool::addJob(const Job& job)
 {
-	m_thread = nullptr;
+	m_nextJobs.emplace(job);
+}
+
+void Wolf::MultiThreadTaskManager::ThreadGroup::JobsPool::moveToNextFrame()
+{
+	m_currentJobs.swap(m_nextJobs);
+}
+
+bool Wolf::MultiThreadTaskManager::ThreadGroup::JobsPool::getNextJob(Job& outJob)
+{
+	m_currentJobsMutex.lock();
+
+	if (m_currentJobs.empty())
+	{
+		m_currentJobsMutex.unlock();
+		return false;
+	}
+
+	outJob = m_currentJobs.front();
+	m_currentJobs.pop();
+
+	m_currentJobsMutex.unlock();
+
+	return true;
+}
+
+Wolf::MultiThreadTaskManager::ThreadGroup::PerThread::PerThread(Thread* thread, const ResourceNonOwner<JobsPool>& jobsPool, const std::string& name) : m_thread(thread), m_jobsPool(jobsPool)
+{
+	m_thread->thread = std::thread(&PerThread::execution, this, name);
 }
 
 Wolf::MultiThreadTaskManager::ThreadGroup::PerThread::~PerThread()
@@ -139,9 +172,4 @@ Wolf::MultiThreadTaskManager::ThreadGroup::PerThread::~PerThread()
 	}
 	m_thread->runCondition.notify_all();
 	m_thread->thread.join();
-}
-
-Wolf::MultiThreadTaskManager::ThreadGroup::PerThread::PerThread(Thread* thread, const std::string& name) : m_thread(thread)
-{
-	m_thread->thread = std::thread(&PerThread::execution, this, name);
 }

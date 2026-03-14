@@ -39,6 +39,12 @@ namespace Wolf
 	};
 	using ImageAspectFlags = uint32_t;
 
+	enum class ImageMemoryProperty : uint8_t
+	{
+		DEVICE,
+		HOST,
+	};
+
 	struct CreateImageInfo
 	{
 		Extent3D extent = { 0, 0, 0 };
@@ -49,7 +55,7 @@ namespace Wolf
 #define MAX_MIP_COUNT UINT32_MAX
 		uint32_t mipLevelCount = MAX_MIP_COUNT;
 		uint32_t arrayLayerCount = 1;
-		VkMemoryPropertyFlags memoryProperties = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
+		ImageMemoryProperty memoryProperty = ImageMemoryProperty::DEVICE;
 		VkImageTiling imageTiling = VK_IMAGE_TILING_OPTIMAL;
 	};
 
@@ -76,6 +82,7 @@ namespace Wolf
 				case Format::R16G16_SFLOAT:
 					return 4.0f;
 				case Format::R16_SFLOAT:
+				case Format::D16_UNORM:
 					return 2.0f;
 				case Format::BC3_UNORM_BLOCK:
 				case Format::BC3_SRGB_BLOCK:
@@ -94,6 +101,8 @@ namespace Wolf
 		static Image* createImage(const CreateImageInfo& createImageInfo);
 
 		virtual ~Image() = default;
+
+		virtual void setName(const std::string& name) = 0;
 
 		struct TransitionLayoutInfo
 		{

@@ -5,6 +5,7 @@
 #include <span>
 
 #include "InstanceMeshRenderer.h"
+#include "JobsManager.h"
 
 #ifdef __ANDROID__
 #include <android/native_window.h>
@@ -59,6 +60,8 @@ namespace Wolf
         std::function<void(uint32_t, uint32_t)> m_resizeCallback;
 
         uint32_t m_threadCountBeforeFrameAndRecord = 1;
+
+        std::vector<DefaultMeshBufferPool::PoolSize> m_meshBufferPoolSizes;
 
 #ifdef __ANDROID__
         android_app* m_androidApp;
@@ -163,8 +166,7 @@ namespace Wolf
         std::vector<std::string> m_savedUICommands;
 
         // Job executions
-        ResourceUniqueOwner<MultiThreadTaskManager> m_multiThreadTaskManager;
-        MultiThreadTaskManager::ThreadGroupId m_beforeFrameAndRecordThreadGroupId;
+        ResourceUniqueOwner<JobsManager> m_jobsManager;
         std::vector<MultiThreadTaskManager::Job> m_jobsToExecuteAfterMTJobs;
     };
 

@@ -7,6 +7,7 @@
 
 #include "CommandBufferVulkan.h"
 #include "BufferVulkan.h"
+#include "CPUMemoryDebug.h"
 #include "FenceVulkan.h"
 #include "FormatsVulkan.h"
 #include "ImageLayoutVulkan.h"
@@ -61,9 +62,9 @@ Wolf::ImageVulkan::ImageVulkan(const CreateImageInfo& createImageInfo)
 	VkMemoryAllocateInfo allocInfo = {};
 	allocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
 	allocInfo.allocationSize = memRequirements.size;
-	m_memoryProperties = createImageInfo.memoryProperties;
+	m_memoryProperties = wolfImageMemoryPropertyFlagsToVkMemoryPropertyFlags(createImageInfo.memoryProperty);
 	m_allocationSize = allocInfo.allocationSize;
-	allocInfo.memoryTypeIndex = findMemoryType(g_vulkanInstance->getPhysicalDevice(), memRequirements.memoryTypeBits, createImageInfo.memoryProperties);
+	allocInfo.memoryTypeIndex = findMemoryType(g_vulkanInstance->getPhysicalDevice(), memRequirements.memoryTypeBits, m_memoryProperties);
 
 	if (allocInfo.memoryTypeIndex == static_cast<uint32_t>(-1))
 		Debug::sendError("Error : no memory type found");
@@ -75,7 +76,7 @@ Wolf::ImageVulkan::ImageVulkan(const CreateImageInfo& createImageInfo)
 
 	setBPP();
 
-	uint64_t totalRequestedSize = static_cast<uint64_t>(static_cast<float>(m_extent.width) * static_cast<float>(m_extent.height) * static_cast<float>(m_extent.depth) * m_bpp);
+	m_totalRequestedSize = static_cast<uint64_t>(static_cast<float>(m_extent.width) * static_cast<float>(m_extent.height) * static_cast<float>(m_extent.depth) * m_bpp);
 	uint32_t currentWidth = m_extent.width;
 	uint32_t currentHeight = m_extent.height;
 	for (uint32_t mipLevel = 1; mipLevel < m_mipLevelCount; ++mipLevel)
@@ -83,9 +84,20 @@ Wolf::ImageVulkan::ImageVulkan(const CreateImageInfo& createImageInfo)
 		currentWidth /= 2;
 		currentHeight /= 2;
 
-		totalRequestedSize += static_cast<uint64_t>(static_cast<float>(currentWidth) * static_cast<float>(currentHeight) * static_cast<float>(m_extent.depth) * m_bpp);
+		m_totalRequestedSize += static_cast<uint64_t>(static_cast<float>(currentWidth) * static_cast<float>(currentHeight) * static_cast<float>(m_extent.depth) * m_bpp);
 	}
-	GPUMemoryDebug::registerNewResource(GPUMemoryDebug::TYPE::TEXTURE, 0, totalRequestedSize, memRequirements.size);
+
+	m_totalRequestedSize *= m_arrayLayerCount;
+
+	if (createImageInfo.memoryProperty == ImageMemoryProperty::DEVICE)
+	{
+		m_registeredToVRAMProfiler = true;
+		GPUMemoryDebug::registerNewResource(this);
+	}
+	else
+	{
+		CPUMemoryDebug::registerNewResource(this, m_allocationSize, m_name);
+	}
 }
 
 Wolf::ImageVulkan::ImageVulkan(VkImage image, Format format, ImageAspectFlags aspect, VkExtent2D extent)
@@ -115,7 +127,24 @@ Wolf::ImageVulkan::~ImageVulkan()
 	vkDestroyImage(g_vulkanInstance->getDevice(), m_image, nullptr);
 	vkFreeMemory(g_vulkanInstance->getDevice(), m_imageMemory, nullptr);
 
-	GPUMemoryDebug::unregisterResource(GPUMemoryDebug::TYPE::TEXTURE, 0, static_cast<uint64_t>(static_cast<float>(m_extent.width) * static_cast<float>(m_extent.height) * static_cast<float>(m_extent.depth) * m_bpp), m_allocationSize);
+	if (m_registeredToVRAMProfiler)
+	{
+		GPUMemoryDebug::unregisterResource(this);
+	}
+	else
+	{
+		CPUMemoryDebug::unregisterResource(this);
+	}
+}
+
+void Wolf::ImageVulkan::setName(const std::string& name)
+{
+	m_name = name;
+
+	if (!m_registeredToVRAMProfiler)
+	{
+		CPUMemoryDebug::changeName(this, name);
+	}
 }
 
 void Wolf::ImageVulkan::copyCPUBuffer(const unsigned char* pixels, const TransitionLayoutInfo& finalLayout, uint32_t mipLevel, uint32_t baseArrayLayer)
@@ -259,7 +288,7 @@ void Wolf::ImageVulkan::exportToBuffer(std::vector<uint8_t>& outBuffer) const
 	stagingCreateImageInfo.aspectFlags = m_aspectFlags;
 	stagingCreateImageInfo.sampleCountFlagBit = m_sampleCount;
 	stagingCreateImageInfo.usage = TRANSFER_DST;
-	stagingCreateImageInfo.memoryProperties = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
+	stagingCreateImageInfo.memoryProperty = ImageMemoryProperty::HOST;
 	stagingCreateImageInfo.imageTiling = VK_IMAGE_TILING_LINEAR;
 	stagingCreateImageInfo.mipLevelCount = 1;
 	ImageVulkan stagingImage(stagingCreateImageInfo);
@@ -435,6 +464,20 @@ VkImageAspectFlags Wolf::ImageVulkan::wolfImageAspectFlagsToVkImageAspectFlags(I
 #undef ADD_FLAG_IF_PRESENT
 
 	return vkImageAspectFlags;
+}
+
+VkMemoryPropertyFlags Wolf::ImageVulkan::wolfImageMemoryPropertyFlagsToVkMemoryPropertyFlags(ImageMemoryProperty imageMemoryProperty)
+{
+	switch (imageMemoryProperty)
+	{
+		case ImageMemoryProperty::DEVICE:
+			return VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
+		case ImageMemoryProperty::HOST:
+			return VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
+	}
+
+	Debug::sendCriticalError("Unhandled image memory propery");
+	return VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
 }
 
 Wolf::ImageView Wolf::ImageVulkan::getImageView(Format format)

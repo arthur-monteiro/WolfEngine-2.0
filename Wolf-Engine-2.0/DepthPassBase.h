@@ -27,6 +27,7 @@ namespace Wolf
 	protected:
 		virtual uint32_t getWidth() = 0;
 		virtual uint32_t getHeight() = 0;
+		virtual Format getFormat() = 0;
 
 		virtual void recordDraws(const RecordContext& context) = 0;
 		virtual const CommandBuffer& getCommandBuffer(const RecordContext& context) = 0;

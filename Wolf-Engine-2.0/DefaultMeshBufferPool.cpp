@@ -2,7 +2,7 @@
 
 #include "vulkan/vulkan_core.h" // TEMP for VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT
 
-Wolf::DefaultMeshBufferPool::DefaultMeshBufferPool(uint32_t minimumSizePerBuffer) : m_minimumSizePerBuffer(minimumSizePerBuffer)
+Wolf::DefaultMeshBufferPool::DefaultMeshBufferPool(const std::vector<PoolSize>& poolSizes) : m_poolSizes(poolSizes)
 {
 }
 
@@ -40,7 +40,16 @@ uint32_t Wolf::DefaultMeshBufferPool::createBufferIfNotExists(uint32_t minimumSi
         }
     }
 
-    uint32_t bufferSize = std::max(minimumSize, m_minimumSizePerBuffer);
+    PoolSize* poolSize = nullptr;
+    for (PoolSize& storedPoolSize : m_poolSizes)
+    {
+        if (storedPoolSize.m_itemSize == vertexSize && storedPoolSize.m_bufferUsageFlags == usageFlags)
+        {
+            poolSize = &storedPoolSize;
+        }
+    }
+
+    uint32_t bufferSize = std::max(minimumSize, poolSize ? poolSize->m_minimumPoolSize : 0);
 
     m_buffersMutex.lock();
     uint32_t index = m_buffers.size();
@@ -55,6 +64,8 @@ Wolf::DefaultMeshBufferPool::OwningBuffer::OwningBuffer(uint32_t bufferSize, Buf
     Debug::sendInfo("DefaultMeshBufferPool: Creating new buffer, usage flags is " + std::to_string(usageFlags) + ", vertex size is " + std::to_string(vertexSize) + " bytes");
 
     m_buffer.reset(Buffer::createBuffer(bufferSize, usageFlags, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT));
+    m_buffer->setName("Default mesh buffer pool usage " + std::to_string(usageFlags) + " vertex size " + std::to_string(vertexSize) + " (DefaultMeshBufferPool::OwningBuffer::m_buffer)");
+    m_buffer->registerUsageCallback([this]() { return getUsage(); });
     m_bufferUsageFlags = usageFlags;
     m_vertexSize = vertexSize;
 }
@@ -72,4 +83,9 @@ uint32_t Wolf::DefaultMeshBufferPool::OwningBuffer::allocate(uint32_t requestedS
     }
 
     return allocationOffset;
+}
+
+float Wolf::DefaultMeshBufferPool::OwningBuffer::getUsage() const
+{
+    return static_cast<float>(m_currentOffset) / static_cast<float>(m_buffer->getSize());
 }

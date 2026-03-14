@@ -50,6 +50,8 @@ namespace Wolf
 				return VK_FORMAT_BC5_UNORM_BLOCK;
 			case Format::D32_SFLOAT:
 				return VK_FORMAT_D32_SFLOAT;
+			case Format::D16_UNORM:
+				return VK_FORMAT_D16_UNORM;
 			case Format::D32_SFLOAT_S8_UINT:
 				return VK_FORMAT_D32_SFLOAT_S8_UINT;
 			case Format::D24_UNORM_S8_UINT:

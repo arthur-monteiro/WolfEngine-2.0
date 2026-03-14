@@ -1,6 +1,8 @@
 #pragma once
 
 #include <memory>
+
+#include "CPUMemoryDebug.h"
 #ifdef RESOURCE_DEBUG
 #include <source_location>
 #endif
@@ -271,14 +273,53 @@ namespace Wolf
 	class ResourceUniqueOwner
 	{
 	public:
-		ResourceUniqueOwner(T* ptr = nullptr) : m_ptr(ptr) {}
+		ResourceUniqueOwner(T* ptr = nullptr) : m_ptr(ptr)
+		{
+			if (ptr)
+			{
+				registerDebug();
+			}
+		}
+
+		ResourceUniqueOwner(ResourceUniqueOwner&& other) noexcept : m_ptr(std::move(other.m_ptr))
+		{
+			registerDebug();
+			other.unregisterDebug();
+		}
+
+		ResourceUniqueOwner& operator=(ResourceUniqueOwner&& other) noexcept
+		{
+			if (this != &other)
+			{
+				unregisterDebug();
+
+				m_ptr = std::move(other.m_ptr);
+
+				registerDebug();
+				other.unregisterDebug();
+			}
+			return *this;
+		}
+
+		ResourceUniqueOwner(const ResourceUniqueOwner&) = delete;
+		ResourceUniqueOwner& operator=(const ResourceUniqueOwner&) = delete;
+		~ResourceUniqueOwner() { unregisterDebug();	}
 
 		template <typename U = T>
 		ResourceNonOwner<U> createNonOwnerResource() const { return ResourceNonOwner<U>(dynamic_cast<U*>(m_ptr.get())); }
 		ResourceNonOwner<const T> createConstNonOwnerResource() const { return ResourceNonOwner<const T>(m_ptr.get()); }
 
-		void reset(T* resource) { m_ptr.reset(resource); }
-		T* release() { return m_ptr.release(); }
+		void reset(T* resource)
+		{
+			unregisterDebug();
+			m_ptr.reset(resource);
+			registerDebug();
+		}
+		T* release()
+		{
+			unregisterDebug();
+			return m_ptr.release();
+		}
 
 		void transferFrom(ResourceUniqueOwner<T>& src) { reset(src.release()); }
 
@@ -291,6 +332,28 @@ namespace Wolf
 
 	private:
 		std::unique_ptr<T> m_ptr;
+
+		bool m_isRegisteredToDebug = false;
+		void registerDebug()
+		{
+			if (!m_ptr)
+				return;
+
+			if (m_isRegisteredToDebug)
+			{
+				Debug::sendCriticalError("Resource has already been registered");
+			}
+			CPUMemoryDebug::registerNewResource(this, sizeof(T), "");
+			m_isRegisteredToDebug = true;
+		}
+		void unregisterDebug()
+		{
+			if (m_isRegisteredToDebug)
+			{
+				CPUMemoryDebug::unregisterResource(this);
+				m_isRegisteredToDebug = false;
+			}
+		}
 	};
 #endif
 }

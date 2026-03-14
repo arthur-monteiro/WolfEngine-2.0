@@ -7,11 +7,13 @@
 
 #include <vulkan/vulkan_core.h>
 
+#include <GPUMemoryAllocatorInterface.h>
+
 #include "../../Public/Image.h"
 
 namespace Wolf
 {
-	class ImageVulkan : public Image
+	class ImageVulkan : public Image, public GPUMemoryAllocatorInterface
 	{
 	public:
 		ImageVulkan(const CreateImageInfo& createImageInfo);
@@ -19,6 +21,13 @@ namespace Wolf
 		ImageVulkan(const ImageVulkan&) = delete;
 
 		~ImageVulkan() override;
+
+		[[nodiscard]] uint32_t getMemoryAllocatedSize() const override { return m_allocationSize; }
+		[[nodiscard]] uint32_t getMemoryRequestedSize() const override { return m_totalRequestedSize; }
+		[[nodiscard]] Type getType() const override { return Type::IMAGE; }
+		void setName(const std::string& name) override;
+		[[nodiscard]] std::string getName() const override { return m_name; }
+		[[nodiscard]] bool isPoolOrAtlas() const override { return false; }
 
 		void copyCPUBuffer(const unsigned char* pixels, const TransitionLayoutInfo& finalLayout, uint32_t mipLevel = 0, uint32_t baseArrayLayer = 0) override;
 		void copyGPUBuffer(const Buffer& bufferSrc, const BufferImageCopy& copyRegion, const TransitionLayoutInfo& finalLayout) override;
@@ -55,6 +64,7 @@ namespace Wolf
 		static VkBufferImageCopy wolfBufferImageCopyToVkBufferImageCopy(const BufferImageCopy& bufferImageCopy);
 		static VkImageAspectFlagBits wolfImageAspectFlagBitsToVkImageAspectFlagBits(ImageAspectFlagBits imageAspectFlagBits);
 		static VkImageAspectFlags wolfImageAspectFlagsToVkImageAspectFlags(ImageAspectFlags imageAspectFlags);
+		static VkMemoryPropertyFlags wolfImageMemoryPropertyFlagsToVkMemoryPropertyFlags(ImageMemoryProperty imageMemoryProperty);
 
 	private:
 		VkImage m_image;
@@ -72,8 +82,11 @@ namespace Wolf
 		SampleCountFlagBits m_sampleCount;
 		uint32_t m_arrayLayerCount;
 		ImageAspectFlags m_aspectFlags;
+		uint64_t m_totalRequestedSize = 0;
 		VkMemoryPropertyFlags m_memoryProperties = 0x0;
 
 		VkDeviceSize m_allocationSize = 0;
+		std::string m_name = "Undefined";
+		bool m_registeredToVRAMProfiler = false;
 	};
 }

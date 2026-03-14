@@ -45,7 +45,7 @@ void Wolf::DepthPassBase::record(const RecordContext& context)
 
 void Wolf::DepthPassBase::getAttachments(const InitializationContext& context, std::vector<Attachment>& attachments)
 {
-	Attachment depth({ getWidth(), getHeight() }, context.depthFormat, SAMPLE_COUNT_1, getFinalLayout(), AttachmentStoreOp::STORE,
+	Attachment depth({ getWidth(), getHeight() }, getFormat(), SAMPLE_COUNT_1, getFinalLayout(), AttachmentStoreOp::STORE,
 		Wolf::ImageUsageFlagBits::DEPTH_STENCIL_ATTACHMENT, m_depthImage->getDefaultImageView());
 	attachments = { depth };
 }
@@ -53,7 +53,7 @@ void Wolf::DepthPassBase::getAttachments(const InitializationContext& context, s
 void Wolf::DepthPassBase::createDepthImage(const InitializationContext& context)
 {
 	CreateImageInfo depthImageCreateInfo;
-	depthImageCreateInfo.format = context.depthFormat;
+	depthImageCreateInfo.format = getFormat();
 	depthImageCreateInfo.extent.width = getWidth();
 	depthImageCreateInfo.extent.height = getHeight();
 	depthImageCreateInfo.extent.depth = 1;

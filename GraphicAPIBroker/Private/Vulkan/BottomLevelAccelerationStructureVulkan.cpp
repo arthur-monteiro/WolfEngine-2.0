@@ -60,6 +60,7 @@ Wolf::BottomLevelAccelerationStructureVulkan::BottomLevelAccelerationStructureVu
 	m_structureBuffer.reset(new BufferVulkan(m_buildSizeInfo.accelerationStructureSize,
 	                                   VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_STORAGE_BIT_KHR |
 	                                   VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT));
+	m_structureBuffer->setName("Bottom level acceleration structure for " + createInfo.name + " (BottomLevelAccelerationStructureVulkan::m_structureBuffer)");
 
 	VkAccelerationStructureCreateInfoKHR accelerationStructureCreateInfo{
 		VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_CREATE_INFO_KHR
@@ -69,9 +70,8 @@ Wolf::BottomLevelAccelerationStructureVulkan::BottomLevelAccelerationStructureVu
 	accelerationStructureCreateInfo.size = m_buildSizeInfo.accelerationStructureSize;
 	accelerationStructureCreateInfo.buffer = m_structureBuffer->getBuffer();
 
-	if (vkCreateAccelerationStructureKHR(g_vulkanInstance->getDevice(), &accelerationStructureCreateInfo,
-	                                     nullptr, &m_accelerationStructure))
-		Debug::sendError("vkCreateAccelerationStructureNV failed");
+	if (vkCreateAccelerationStructureKHR(g_vulkanInstance->getDevice(), &accelerationStructureCreateInfo, nullptr, &m_accelerationStructure))
+		Debug::sendError("vkCreateAccelerationStructureKHR failed");
 
 	m_buildInfo.dstAccelerationStructure = m_accelerationStructure;
 

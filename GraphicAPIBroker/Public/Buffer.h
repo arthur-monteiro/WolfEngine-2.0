@@ -1,5 +1,8 @@
 #pragma once
 
+#include <functional>
+#include <string>
+
 #include "AccessFlags.h"
 #include "Enums.h"
 
@@ -15,6 +18,9 @@ namespace Wolf
 		static Buffer* createBuffer(uint64_t size, BufferUsageFlags usageFlags, uint32_t propertyFlags);
 
 		virtual ~Buffer() = default;
+
+		virtual void setName(const std::string& name) = 0;
+		virtual void registerUsageCallback(const std::function<float(void)>& callback) = 0;
 
 		virtual void transferCPUMemory(const void* data, uint64_t srcSize, uint64_t srcOffset = 0) const = 0;
 		virtual void transferCPUMemoryWithStagingBuffer(const void* data, uint64_t srcSize, uint64_t srcOffset, uint64_t dstOffset) const = 0;

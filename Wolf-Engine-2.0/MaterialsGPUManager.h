@@ -11,6 +11,7 @@
 #include "DescriptorSetGenerator.h"
 #include "LazyInitSharedResource.h"
 #include "GPUDataTransfersManager.h"
+#include "JobsManager.h"
 #include "ResourceUniqueOwner.h"
 #include "VirtualTextureManager.h"
 
@@ -68,7 +69,8 @@ namespace Wolf
 			ShadingMode shadingMode = ShadingMode::GGX;
 		};
 		void addNewMaterial(const MaterialInfo& material);
-		void updateBeforeFrame();
+		void addJobs(const ResourceNonOwner<JobsManager>& jobsManager);
+		void updateBeforeFrame(const ResourceNonOwner<JobsManager>& jobsManager);
 		void resize(Extent2D newExtent);
 
 		void lockTextureSets();
@@ -112,6 +114,7 @@ namespace Wolf
 		uint32_t addImagesToBindless(const std::vector<DescriptorSetGenerator::ImageDescription>& images);
 		void updateImageInBindless(const DescriptorSetGenerator::ImageDescription& image, uint32_t bindlessOffset) const;
 		static uint32_t computeSliceCount(uint32_t textureWidth, uint32_t textureHeight);
+		void processVirtualTextureRequestedSlices(const std::vector<VirtualTextureManager::FeedbackInfo>& requestedSlices, bool neverRemoveEntries = false);
 
 		ResourceNonOwner<GPUDataTransfersManagerInterface> m_pushDataToGPUHandler;
 
