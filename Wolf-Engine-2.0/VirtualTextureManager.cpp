@@ -377,7 +377,7 @@ uint32_t Wolf::VirtualTextureManager::AtlasInfo::getNextEntry(const FeedbackInfo
 	_BitScanReverse(&index, pixelCountPerSideNoBorder);
 	uint32_t log2Size = static_cast<uint32_t>(index);
 #else
-	uint32_t log2Size = 31 - __builtin_clz(size);
+	uint32_t log2Size = 31 - __builtin_clz(pixelCountPerSideNoBorder);
 #endif
 
 	// 256 is mip 0 (log2(256) = 8)
