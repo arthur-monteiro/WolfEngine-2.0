@@ -56,6 +56,7 @@ static void HandleCmd(struct android_app *app, int32_t cmd) {
             wolfInstanceCreateInfo.m_configFilename = "";
             wolfInstanceCreateInfo.m_debugCallback = debugCallback;
             wolfInstanceCreateInfo.m_androidWindow = engine->app->window;
+            wolfInstanceCreateInfo.m_androidApp = engine->app;
             wolfInstanceCreateInfo.m_assetManager = app->activity->assetManager;
 
             Wolf::WolfEngine* vulkanBackend = new Wolf::WolfEngine(wolfInstanceCreateInfo);
