@@ -4,10 +4,13 @@
 
 namespace Wolf
 {
+	class AABB;
+
 	class BoundingSphere
 	{
 	public:
 		BoundingSphere(const glm::vec3& center = glm::vec3(0.0f), float radius = 0.1f);
+		BoundingSphere(const AABB& aabb);
 
 		BoundingSphere operator* (const glm::mat4& transform) const
 		{

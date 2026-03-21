@@ -3,6 +3,24 @@
 #include "CameraInterface.h"
 #include "DefaultMeshRenderer.h"
 
+Wolf::Mesh::Mesh(const ResourceNonOwner<BufferPoolInterface>& bufferPoolInterface, const BufferPoolInterface::BufferPoolInstance& vertexBufferPoolInstance, uint32_t vertexCount, uint32_t vertexSize,
+	const std::vector<uint32_t>& indices, AABB aabb, BoundingSphere boundingSphere, VkBufferUsageFlags additionalIndexBufferUsages) : m_bufferPoolInterface(bufferPoolInterface)
+{
+	m_vertexBufferPoolInstance = vertexBufferPoolInstance;
+
+	m_indexBufferPoolInstance = m_bufferPoolInterface->allocate(sizeof(uint32_t) * indices.size(), VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT |
+		additionalIndexBufferUsages, sizeof(uint32_t));
+	m_bufferPoolInterface->getBuffer(m_indexBufferPoolInstance)->transferCPUMemoryWithStagingBuffer(indices.data(), sizeof(uint32_t) * indices.size(), 0,
+		m_indexBufferPoolInstance.m_bufferOffset);
+
+	m_vertexCount = vertexCount;
+	m_vertexSize = vertexSize;
+	m_indexCount = static_cast<uint32_t>(indices.size());
+
+	m_AABB = aabb;
+	m_boundingSphere = boundingSphere;
+}
+
 void Wolf::Mesh::addSubMesh(uint32_t indicesOffset, uint32_t indexCount, AABB aabb)
 {
 	if (!m_subMeshes.empty() && m_subMeshes.back()->getIndicesOffset() + m_subMeshes.back()->getIndexCount() != indicesOffset)

@@ -26,6 +26,8 @@ namespace Wolf
 		template <typename T>
 		Mesh(const std::vector<T>& vertices, const std::vector<uint32_t>& indices, const ResourceNonOwner<BufferPoolInterface>& bufferPoolInterface, AABB aabb = {}, BoundingSphere boundingSphere = {},
 			VkBufferUsageFlags additionalVertexBufferUsages = 0, VkBufferUsageFlags additionalIndexBufferUsages = 0);
+		Mesh(const ResourceNonOwner<BufferPoolInterface>& bufferPoolInterface, const BufferPoolInterface::BufferPoolInstance& vertexBufferPoolInstance, uint32_t vertexCount, uint32_t vertexSize,
+			const std::vector<uint32_t>& indices, AABB aabb = {}, BoundingSphere boundingSphere = {}, VkBufferUsageFlags additionalIndexBufferUsages = 0);
 		Mesh(const Mesh&) = delete;
 
 		void addSubMesh(uint32_t indicesOffset, uint32_t indexCount, AABB aabb = {});

@@ -1,5 +1,6 @@
 #pragma once
-#include "Debug.h"
+
+#include <Debug.h>
 
 namespace Wolf
 {
