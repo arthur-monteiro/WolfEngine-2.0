@@ -1,6 +1,6 @@
 # Wolf-Engine 2.0
 
-A modular, high-performance C++ engine framework designed for Vulkan-based rendering. Wolf-Engine focuses on a clean separation between low-level hardware abstraction and high-level engine systems to ensure extensibility and multi-platform performance.
+A high-performance C++ engine framework designed for Vulkan-based rendering.
 
 **Supported platforms:** Windows, Linux (NixOS), Android \
 **Graphics API:** Vulkan (architected for multi-API support)
@@ -21,6 +21,7 @@ The main engine framework that orchestrates high-level logic and resource flow:
 * **Task scheduler:** A multi-threaded job system for parallelizing engine updates.
 * **UI system:** Integrated **UltraLight** support for HTML/CSS/JS-based user interfaces.
 * **Input and windowing:** Cross-platform abstraction for user input and window management.
+* **Features:** GPU driven rendering with instances culling, texture virtualization for efficient streaming, VRAM tracker and reports
 
 ### 3. Common
 A foundational utility library containing shared helpers, resource tracking, and logging systems used across the entire stack.
@@ -31,7 +32,7 @@ A foundational utility library containing shared helpers, resource tracking, and
 
 ### Prerequisites
 - **Vulkan SDK:** 1.4.321.1 or higher.
-- **Compiler:** C++17/20 compliant compiler (MSVC, Clang, or GCC).
+- **Compiler:** C++23 compliant compiler.
 
 ### Build instructions
 1. Clone the project:

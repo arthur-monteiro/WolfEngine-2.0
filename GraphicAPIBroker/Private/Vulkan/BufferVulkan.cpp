@@ -200,8 +200,8 @@ void Wolf::BufferVulkan::createBuffer(VkDeviceSize size, VkBufferUsageFlags usag
 	allocInfo.pNext = &allocFlagsInfo;
 #endif
 
-	if (vkAllocateMemory(g_vulkanInstance->getDevice(), &allocInfo, nullptr, &m_bufferMemory) != VK_SUCCESS)
-		Debug::sendError("Error : memory allocation");
+	if (VkResult result = vkAllocateMemory(g_vulkanInstance->getDevice(), &allocInfo, nullptr, &m_bufferMemory); result != VK_SUCCESS)
+		Debug::sendError("Memory allocation : " + std::to_string(result));
 
 	vkBindBufferMemory(g_vulkanInstance->getDevice(), m_buffer, m_bufferMemory, 0);
 
