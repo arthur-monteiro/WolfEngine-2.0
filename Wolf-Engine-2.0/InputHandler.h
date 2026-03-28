@@ -60,6 +60,7 @@ namespace Wolf
 		const std::vector<int>& getCharactersPressedThisFrame(const void* instancePtr = nullptr) const;
 
 		bool mouseButtonPressedThisFrame(int button, const void* instancePtr = nullptr) const;
+        bool mouseButtonMaintained(int button, const void* instancePtr = nullptr) const;
 		bool mouseButtonReleasedThisFrame(int button, const void* instancePtr = nullptr) const;
 
 		void getMousePosition(float& outX, float& outY) const;

@@ -51,6 +51,7 @@ namespace Wolf
         ImageLayout m_uiFinalLayout = ImageLayout::SHADER_READ_ONLY_OPTIMAL;
 #ifndef __ANDROID__
         std::function<void(ultralight::JSObject& jsObject)> m_bindUltralightCallbacks;
+        bool m_borderless = false;
 #endif
 
         bool m_useOVR = false;
@@ -80,7 +81,13 @@ namespace Wolf
 
         void initializePass(const ResourceNonOwner<CommandRecordBase>& pass) const;
 
+#ifndef __ANDROID__
+        void closeWindow() const;
+        void minifyWindow() const;
+        void getWindowPos(uint32_t& outX, uint32_t& outY);
+        void setWindowPos(uint32_t posX, uint32_t posY);
         bool windowShouldClose() const;
+#endif
         void updateBeforeFrame();
         uint32_t acquireNextSwapChainImage();
         void frame(const std::span<ResourceNonOwner<CommandRecordBase>>& passes, Semaphore* frameEndedSemaphore, uint32_t currentSwapChainImageIndex);

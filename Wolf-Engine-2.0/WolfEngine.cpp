@@ -66,7 +66,7 @@ Wolf::WolfEngine::WolfEngine(const WolfInstanceCreateInfo& createInfo) : m_globa
 	}
 
 #ifndef __ANDROID__
-	m_window.reset(new Window(createInfo.m_applicationName, m_configuration->getWindowWidth(), m_configuration->getWindowHeight(), this, windowResizeCallback));
+	m_window.reset(new Window(createInfo.m_applicationName, m_configuration->getWindowWidth(), m_configuration->getWindowHeight(), createInfo.m_borderless, this, windowResizeCallback));
 #endif
 
 #ifndef __ANDROID__
@@ -195,14 +195,32 @@ void Wolf::WolfEngine::initializePass(const ResourceNonOwner<CommandRecordBase>&
 	pass->initializeResources(context);
 }
 
+#ifndef __ANDROID__
+void Wolf::WolfEngine::closeWindow() const
+{
+	m_window->close();
+}
+
+void Wolf::WolfEngine::minifyWindow() const
+{
+	m_window->minify();
+}
+
+void Wolf::WolfEngine::getWindowPos(uint32_t& outX, uint32_t& outY)
+{
+	m_window->getWindowPos(outX, outY);
+}
+
+void Wolf::WolfEngine::setWindowPos(uint32_t posX, uint32_t posY)
+{
+	m_window->setWindowPos(posX, posY);
+}
+
 bool Wolf::WolfEngine::windowShouldClose() const
 {
-#ifndef __ANDROID__
 	return m_window->windowShouldClose();
-#else
-	return false;
-#endif
 }
+#endif
 
 void Wolf::WolfEngine::updateBeforeFrame()
 {

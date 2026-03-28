@@ -13,11 +13,15 @@ namespace Wolf
 	class Window
 	{
 	public:
-		Window(const std::string& appName, uint32_t width, uint32_t height, void* systemManagerInstance, std::function<void(void*, int, int)> resizeCallback);
+		Window(const std::string& appName, uint32_t width, uint32_t height, bool borderless, void* systemManagerInstance, std::function<void(void*, int, int)> resizeCallback);
 
 		static void pollEvents();
 		bool windowShouldClose() const;
 		bool windowVisible() const;
+		void close() { m_closeRequested = true;}
+		void minify();
+		void getWindowPos(uint32_t& outX, uint32_t& outY) const;
+		void setWindowPos(uint32_t posX, uint32_t posY) const;
 
 		enum class CursorType { POINTER, HAND, IBEAM, HRESIZE, VRESIZE, Count };
 		void setCursorType(CursorType cursorType) const;
@@ -34,8 +38,8 @@ namespace Wolf
 		}
 		inline void callResizeCallback(int width, int height) const { m_resizeCallback(m_systemManagerInstance, width, height); }
 
-	private:
 		GLFWwindow* m_window;
+		bool m_closeRequested = false;
 
 		std::array<GLFWcursor*, 5> m_cursors;
 		static_assert(std::tuple_size<decltype(m_cursors)>{} == static_cast<uint32_t>(CursorType::Count));

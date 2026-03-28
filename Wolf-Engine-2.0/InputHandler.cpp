@@ -261,6 +261,11 @@ bool Wolf::InputHandler::mouseButtonPressedThisFrame(int button, const void* ins
 	return std::ranges::find(m_data.m_mouseButtonsCache.inputPressedThisFrame, button) != m_data.m_mouseButtonsCache.inputPressedThisFrame.end();
 }
 
+bool Wolf::InputHandler::mouseButtonMaintained(int button, const void* instancePtr) const
+{
+	return std::ranges::find(m_data.m_mouseButtonsCache.inputMaintained, button) != m_data.m_mouseButtonsCache.inputMaintained.end();
+}
+
 bool Wolf::InputHandler::mouseButtonReleasedThisFrame(int button, const void* instancePtr) const
 {
 	if (instancePtr)
