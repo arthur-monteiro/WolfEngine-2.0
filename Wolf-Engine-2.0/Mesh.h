@@ -1,20 +1,14 @@
 #pragma once
 
-#include <map>
-#include <memory>
-
 #include <Debug.h>
-#include <ResourceUniqueOwner.h>
 
 #include <Buffer.h>
 #include <CommandBuffer.h>
-#include <Formats.h>
 
 #include "AABB.h"
 #include "BoundingSphere.h"
 #include "BufferPoolInterface.h"
 #include "MeshInterface.h"
-#include "SubMesh.h"
 
 namespace Wolf
 {
@@ -30,8 +24,6 @@ namespace Wolf
 			const std::vector<uint32_t>& indices, AABB aabb = {}, BoundingSphere boundingSphere = {}, VkBufferUsageFlags additionalIndexBufferUsages = 0);
 		Mesh(const Mesh&) = delete;
 
-		void addSubMesh(uint32_t indicesOffset, uint32_t indexCount, AABB aabb = {});
-
 		[[nodiscard]] uint32_t getVertexCount() const { return m_vertexCount; }
 		[[nodiscard]] uint32_t getVertexSize() const override { return m_vertexSize; }
 		[[nodiscard]] uint32_t getIndexSize() const override { return sizeof(uint32_t); };
@@ -44,9 +36,7 @@ namespace Wolf
 		[[nodiscard]] const AABB& getAABB() const { return m_AABB; }
 		[[nodiscard]] const BoundingSphere& getBoundingSphere() const override { return m_boundingSphere; }
 
-		void cullForCamera(uint32_t cameraIdx, const CameraInterface* camera, const glm::mat4& transform, bool isInstanced);
-		void draw(const CommandBuffer& commandBuffer, uint32_t cameraIdx, uint32_t instanceCount = 1, uint32_t firstInstance = 0,
-			const NullableResourceNonOwner<Buffer>& overrideIndexBuffer = NullableResourceNonOwner<Buffer>()) const override;
+		void draw(const CommandBuffer& commandBuffer, uint32_t cameraIdx, uint32_t instanceCount = 1, uint32_t firstInstance = 0) const override;
 
 		bool hasVertexBuffer() const override;
 
@@ -61,15 +51,6 @@ namespace Wolf
 
 		AABB m_AABB;
 		BoundingSphere m_boundingSphere;
-
-		std::vector<std::unique_ptr<SubMesh>> m_subMeshes;
-
-		struct SubMeshToDrawInfo
-		{
-			uint32_t indicesOffset;
-			uint32_t indexCount;
-		};
-		std::map<uint32_t, std::vector<std::unique_ptr<SubMeshToDrawInfo>>> m_subMeshesToDrawByCamera;
 	};
 
 	template<typename T>

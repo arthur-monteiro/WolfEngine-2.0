@@ -4,7 +4,7 @@ Wolf::NoVertexMesh::NoVertexMesh(uint32_t primitiveCount) : m_primitiveCount(pri
 {
 }
 
-void Wolf::NoVertexMesh::draw(const CommandBuffer& commandBuffer, uint32_t cameraIdx, uint32_t instanceCount, uint32_t firstInstance, const NullableResourceNonOwner<Buffer>& overrideIndexBuffer) const
+void Wolf::NoVertexMesh::draw(const CommandBuffer& commandBuffer, uint32_t cameraIdx, uint32_t instanceCount, uint32_t firstInstance) const
 {
     commandBuffer.draw(m_primitiveCount, instanceCount, 0, firstInstance);
 }

@@ -13,8 +13,7 @@ namespace Wolf
     public:
         NoVertexMesh(uint32_t primitiveCount);
 
-        void draw(const CommandBuffer& commandBuffer, uint32_t cameraIdx, uint32_t instanceCount = 1, uint32_t firstInstance = 0,
-            const NullableResourceNonOwner<Buffer>& overrideIndexBuffer = NullableResourceNonOwner<Buffer>()) const override;
+        void draw(const CommandBuffer& commandBuffer, uint32_t cameraIdx, uint32_t instanceCount = 1, uint32_t firstInstance = 0) const override;
 
         [[nodiscard]] bool hasVertexBuffer() const override;
         [[nodiscard]] NullableResourceNonOwner<Buffer> getVertexBuffer() const override;

@@ -41,8 +41,6 @@ namespace Wolf
 			ResourceNonOwner<const PipelineSet> m_pipelineSet;
 			std::array<std::vector<DescriptorSetBindInfo>, PipelineSet::MAX_PIPELINE_COUNT> m_perPipelineDescriptorSets;
 
-			NullableResourceNonOwner<Buffer> m_overrideIndexBuffer;
-
 			MeshToRender(const ResourceNonOwner<MeshInterface>& mesh, const ResourceNonOwner<const PipelineSet>& pipeline) : m_mesh(mesh), m_pipelineSet(pipeline) {}
 		};
 
