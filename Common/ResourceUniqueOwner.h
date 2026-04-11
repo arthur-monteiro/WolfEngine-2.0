@@ -59,7 +59,7 @@ namespace Wolf
 #ifdef RESOURCE_DEBUG
 			const std::source_location& location = std::source_location::current()
 #endif
-		);
+		) const;
 		ResourceNonOwner<const T> createConstNonOwnerResource(
 #ifdef RESOURCE_DEBUG
 			const std::source_location& location = std::source_location::current()
@@ -152,7 +152,7 @@ namespace Wolf
 #ifdef RESOURCE_DEBUG
 		const std::source_location& location
 #endif
-	)
+	) const
 	{
 		if (U* resourceAsNewType = dynamic_cast<U*>(m_resource.get()))
 		{
