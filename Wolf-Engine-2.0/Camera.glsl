@@ -54,7 +54,7 @@ vec2 getCameraJitter()
 
 float linearizeDepth(float d)
 {
-    return ubCamera.near * ubCamera.far / (ubCamera.far - d * (ubCamera.far - ubCamera.near));
+    return ubCamera.near * ubCamera.far / (d * (ubCamera.far - ubCamera.near) + ubCamera.near);
 }
 
 mat4 getPreviousViewMatrix()

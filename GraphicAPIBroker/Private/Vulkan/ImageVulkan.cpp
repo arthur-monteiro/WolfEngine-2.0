@@ -550,7 +550,7 @@ void Wolf::ImageVulkan::transitionImageLayout(const CommandBuffer& commandBuffer
 	barrier.srcAccessMask = m_accessFlags;
 	barrier.dstAccessMask = transitionLayoutInfo.dstAccessMask;
 
-	vkCmdPipelineBarrier(static_cast<const CommandBufferVulkan*>(&commandBuffer)->getCommandBuffer(), m_pipelineStageFlags, transitionLayoutInfo.dstPipelineStageFlags, 0,	0, nullptr, 0, nullptr,	1, &barrier);
+	vkCmdPipelineBarrier(static_cast<const CommandBufferVulkan*>(&commandBuffer)->getCommandBuffer(), m_pipelineStageFlags, transitionLayoutInfo.dstPipelineStageFlags, 0, 0, nullptr, 0, nullptr,	1, &barrier);
 
 	m_accessFlags = transitionLayoutInfo.dstAccessMask;
 	for (uint32_t layer = transitionLayoutInfo.baseArrayLayer; layer < transitionLayoutInfo.baseArrayLayer + transitionLayoutInfo.layerCount; layer++)

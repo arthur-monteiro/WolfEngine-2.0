@@ -92,15 +92,13 @@ void Wolf::FirstPersonCamera::update(const CameraUpdateContext& context)
 		float rotX, rotY;
 		context.m_inputHandler->getJoystickSpeedForGamepad(0, 1, rotX, rotY);
 
-		// Sensitivity factor for rotation speed (degrees/radians per second)
 		const float rotationSensitivity = 100.0f;
-		if (std::abs(rotX) > 0.1f || std::abs(rotY) > 0.1f) // Basic deadzone check
+		if (std::abs(rotX) > 0.1f || std::abs(rotY) > 0.1f)
 		{
 			updateOrientation(rotX * rotationSensitivity * secondOffset,
 							  rotY * rotationSensitivity * secondOffset);
 		}
 
-		// 3. Handle Movement (Left Stick - usually index 0)
 		float moveX, moveY;
 		context.m_inputHandler->getJoystickSpeedForGamepad(0, 0, moveX, moveY);
 
@@ -114,14 +112,13 @@ void Wolf::FirstPersonCamera::update(const CameraUpdateContext& context)
 			m_position = m_position - m_lateralDirection * (moveX * secondOffset * m_speed);
 		}
 
-		// 4. Finalize Target
 		m_target = m_position + m_orientation;
 	}
 
 	m_previousViewMatrix = m_viewMatrix;
 	m_viewMatrix = glm::lookAt(m_position, m_target, m_verticalAxis);
 
-	m_projectionMatrix = glm::perspective(m_radFOV, m_aspect, m_near, m_far);
+	m_projectionMatrix = glm::perspective(m_radFOV, m_aspect, m_far, m_near);
 	m_projectionMatrix[1][1] *= -1;
 
     if (context.m_screenRotationInDegrees != 0.0f)

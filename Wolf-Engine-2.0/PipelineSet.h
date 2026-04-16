@@ -74,7 +74,7 @@ namespace Wolf
 			// Depth testing
 			bool enableDepthTesting = true;
 			bool enableDepthWrite = true;
-			CompareOp depthCompareOp = CompareOp::LESS_OR_EQUAL;
+			CompareOp depthCompareOp = CompareOp::GREATER_OR_EQUAL;
 
 			// Tessellation
 			uint32_t patchControlPoint = 0;

@@ -88,6 +88,7 @@ namespace Wolf
 				case Format::BC3_SRGB_BLOCK:
 				case Format::BC5_UNORM_BLOCK:
 				case Format::R8_UINT:
+				case Format::R8_UNORM:
 					return 1.0f;
 				case Format::BC1_RGBA_UNORM_BLOCK:
 				case Format::BC1_RGB_SRGB_BLOCK:

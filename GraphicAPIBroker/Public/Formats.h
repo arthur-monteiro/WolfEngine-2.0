@@ -9,6 +9,7 @@ namespace Wolf
 		UNDEFINED,
 
 		R8_UINT,
+		R8_UNORM,
 		R32_UINT,
 		R8G8B8A8_UNORM,
 		R8G8B8A8_SRGB,
@@ -47,6 +48,7 @@ namespace Wolf
 
 			case Format::UNDEFINED:
 			case Format::R8_UINT:
+			case Format::R8_UNORM:
 			case Format::R32_UINT:
 			case Format::R8G8B8A8_UNORM:
 			case Format::B8G8R8A8_UNORM:

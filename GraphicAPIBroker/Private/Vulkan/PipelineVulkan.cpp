@@ -136,7 +136,7 @@ Wolf::PipelineVulkan::PipelineVulkan(const RenderingPipelineCreateInfo& renderin
 	rasterizer.lineWidth = 1.0f;
 	rasterizer.cullMode = wolfCullModeFlagsToVkCullModeFlags(renderingPipelineCreateInfo.cullModeFlags);
 	rasterizer.frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE;
-	rasterizer.depthBiasEnable = renderingPipelineCreateInfo.depthBiasConstantFactor > 0.0f || renderingPipelineCreateInfo.depthBiasSlopeFactor > 0.0f;
+	rasterizer.depthBiasEnable = renderingPipelineCreateInfo.depthBiasConstantFactor != 0.0f || renderingPipelineCreateInfo.depthBiasSlopeFactor != 0.0f;
 	rasterizer.depthBiasConstantFactor = renderingPipelineCreateInfo.depthBiasConstantFactor;
 	rasterizer.depthBiasSlopeFactor = renderingPipelineCreateInfo.depthBiasSlopeFactor;
 
