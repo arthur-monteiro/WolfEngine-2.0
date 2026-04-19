@@ -34,11 +34,16 @@ namespace Wolf
 
         struct MeshToRender
         {
-            ResourceNonOwner<MeshInterface> m_mesh;
+            struct LOD
+            {
+                NullableResourceNonOwner<MeshInterface> m_mesh;
+                float m_maxDistance;
+            };
+            std::vector<LOD> m_lods;
             ResourceNonOwner<const PipelineSet> m_pipelineSet;
             std::array<std::vector<DescriptorSetBindInfo>, PipelineSet::MAX_PIPELINE_COUNT> m_perPipelineDescriptorSets;
 
-            MeshToRender(const ResourceNonOwner<MeshInterface>& mesh, const ResourceNonOwner<const PipelineSet>& pipeline) : m_mesh(mesh), m_pipelineSet(pipeline) {}
+            MeshToRender(const ResourceNonOwner<const PipelineSet>& pipeline) : m_pipelineSet(pipeline) {}
         };
 
         [[nodiscard]] uint32_t registerMesh(const MeshToRender& mesh);
@@ -58,6 +63,8 @@ namespace Wolf
         static constexpr uint32_t NO_CAMERA_IDX = -1;
         void draw(const RecordContext& context, const CommandBuffer& commandBuffer, RenderPass* renderPass, uint32_t pipelineIdx, uint32_t cameraIdx, const std::vector<AdditionalDescriptorSet>& additionalDescriptorSetsToBind,
             const std::vector<PipelineSet::ShaderCodeToAddForStage>& shadersCodeToAdd) const;
+
+        static float computeLODDistance(float radius, uint32_t indexCount, float quality);
 
     private:
         static constexpr uint32_t MAX_INSTANCE_COUNT = 16'184;
@@ -88,13 +95,19 @@ namespace Wolf
         ResourceUniqueOwner<UniformBuffer> m_copyInstancesUniformBuffer;
         uint32_t m_overrideCullingInstancesCount = 0;
 
-        struct MeshInfo
+        struct LODInfo
         {
-            glm::vec4 m_boundingSphere;
             uint32_t m_vertexOffset;
             uint32_t m_indexOffset;
             uint32_t m_indexCount;
-            uint32_t padding;
+            float m_maxDistance;
+        };
+        static constexpr uint32_t MAX_LOD_COUNT = 16;
+
+        struct MeshInfo
+        {
+            glm::vec4 m_boundingSphere;
+            LODInfo m_lods[MAX_LOD_COUNT];
         };
         ResourceUniqueOwner<Buffer> m_meshesInfoBuffer;
         uint32_t m_currentMeshCount = 0;
@@ -110,7 +123,7 @@ namespace Wolf
             glm::mat4 m_transform;
             uint32_t m_materialIdx;
             uint32_t m_customData;
-            uint32_t pad0;
+            uint32_t m_lod;
             uint32_t pad1;
         };
 
@@ -197,22 +210,6 @@ namespace Wolf
             std::vector<DescriptorSetBindInfo> m_descriptorSetsToBindForDraw;
             NullableResourceNonOwner<Buffer> m_vertexBuffer;
             NullableResourceNonOwner<Buffer> m_indexBuffer;
-
-            // CPU data
-            struct InternalInstancedMesh
-            {
-                MeshToRender m_mesh;
-
-                struct InstanceData
-                {
-                    glm::mat4 m_transform;
-                    uint32_t m_materialIdx;
-                    uint32_t m_customData;
-                };
-                std::vector<InstanceData> m_instancesData;
-
-                InternalInstancedMesh(MeshToRender mesh) : m_mesh(std::move(mesh)) {}
-            };
 
             struct PerCameraData
             {

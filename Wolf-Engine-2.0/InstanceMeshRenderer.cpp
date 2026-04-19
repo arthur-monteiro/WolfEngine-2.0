@@ -268,6 +268,12 @@ void Wolf::InstanceMeshRenderer::submit(const SubmitContext& context)
 
 uint32_t Wolf::InstanceMeshRenderer::registerMesh(const MeshToRender& mesh)
 {
+    if (mesh.m_lods.empty() || mesh.m_lods.size() > MAX_LOD_COUNT)
+    {
+        Debug::sendError("Wrong LOD count, mesh will be ignored");
+        return -1;
+    }
+
     m_mutex.lock();
 
     uint32_t meshIdx = m_currentMeshCount + m_meshesToAdd.size();
@@ -277,18 +283,33 @@ uint32_t Wolf::InstanceMeshRenderer::registerMesh(const MeshToRender& mesh)
     }
 
     MeshInfo& meshInfo = m_meshesToAdd.emplace_back();
-    meshInfo.m_indexCount = mesh.m_mesh->getIndexCount();
-    meshInfo.m_vertexOffset = mesh.m_mesh->getVertexBufferOffset() / std::max(mesh.m_mesh->getVertexSize(), 1u);
-    meshInfo.m_indexOffset = mesh.m_mesh->getIndexBufferOffset() / std::max(mesh.m_mesh->getIndexSize(), 1u);
-    meshInfo.m_boundingSphere = glm::vec4(mesh.m_mesh->getBoundingSphere().getCenter(), mesh.m_mesh->getBoundingSphere().getRadius());
+
+    uint64_t bufferSetHash = 0;
+    for (uint32_t lod = 0; lod < mesh.m_lods.size(); lod++)
+    {
+        meshInfo.m_lods[lod].m_indexCount = mesh.m_lods[lod].m_mesh->getIndexCount();
+        meshInfo.m_lods[lod].m_vertexOffset = mesh.m_lods[lod].m_mesh->getVertexBufferOffset() / std::max(mesh.m_lods[lod].m_mesh->getVertexSize(), 1u);
+        meshInfo.m_lods[lod].m_indexOffset = mesh.m_lods[lod].m_mesh->getIndexBufferOffset() / std::max(mesh.m_lods[lod].m_mesh->getIndexSize(), 1u);
+        meshInfo.m_lods[lod].m_maxDistance = mesh.m_lods[lod].m_maxDistance;
+
+        if (lod == 0)
+        {
+            bufferSetHash = computeHash(mesh.m_lods[lod].m_mesh);
+        }
+        else if (bufferSetHash != computeHash(mesh.m_lods[lod].m_mesh))
+        {
+            Debug::sendCriticalError("All LODs must share the same buffers");
+        }
+    }
+    meshInfo.m_boundingSphere = glm::vec4(mesh.m_lods[0].m_mesh->getBoundingSphere().getCenter(), mesh.m_lods[0].m_mesh->getBoundingSphere().getRadius());
 
     MeshCacheData& meshCacheData = m_meshesCacheData.emplace_back();
-    meshCacheData.m_bufferSetHash = computeHash(mesh.m_mesh);
-    meshCacheData.m_vertexBuffer = mesh.m_mesh->getVertexBuffer();
-    meshCacheData.m_indexBuffer = mesh.m_mesh->getIndexBuffer();
+    meshCacheData.m_bufferSetHash = bufferSetHash;
+    meshCacheData.m_vertexBuffer = mesh.m_lods[0].m_mesh->getVertexBuffer();
+    meshCacheData.m_indexBuffer = mesh.m_lods[0].m_mesh->getIndexBuffer();
     if (meshIdx != m_meshesCacheData.size() - 1)
     {
-        Debug::sendCriticalError("Missmatch bewteen GPU scene description and CPU cache data");
+        Debug::sendCriticalError("Missmatch between GPU scene description and CPU cache data");
     }
 
     m_mutex.unlock();
@@ -546,6 +567,19 @@ void Wolf::InstanceMeshRenderer::draw(const RecordContext& context, const Comman
             }
         }
     }
+}
+
+float Wolf::InstanceMeshRenderer::computeLODDistance(float radius, uint32_t indexCount, float quality)
+{
+    const float k = 0.001f;
+
+    if (indexCount == 0)
+    {
+        Debug::sendCriticalError("Index count should not be 0");
+    }
+
+    float distance = (quality * radius) / (k * glm::sqrt(static_cast<float>(indexCount)));
+    return distance + radius;
 }
 
 uint64_t Wolf::InstanceMeshRenderer::computeHash(const ResourceNonOwner<MeshInterface>& meshInterface)

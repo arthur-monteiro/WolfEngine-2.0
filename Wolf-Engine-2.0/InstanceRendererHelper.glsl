@@ -5,6 +5,7 @@ struct InstanceInfo
     mat4 transform;
     uint materialIdx;
     uint customData;
+    uint lod;
 };
 
 layout (std430, binding = 0, set = @DESCRIPTOR_SLOT) restrict buffer InstanceBufferLayout
@@ -25,6 +26,11 @@ uint getMaterialIdx()
 uint getCustomData()
 {
 	return instancesInfo[gl_DrawID].customData;
+}
+
+uint getLOD()
+{
+    return instancesInfo[gl_DrawID].lod;
 }
 
 )"

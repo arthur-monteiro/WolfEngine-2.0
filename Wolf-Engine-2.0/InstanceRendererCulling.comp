@@ -14,12 +14,19 @@ layout(std430, binding = 0) restrict buffer CullingInstancesBufferLayout
     CullingInstanceInfo cullingInstancesInfo[];
 };
 
-struct MeshInfo
+struct LODInfo
 {
-	vec4 boundingSphere;
 	uint vertexOffset;
 	uint indexOffset;
 	uint indexCount;
+	float maxDistance;
+};
+const uint MAX_LOD_COUNT = 16;
+
+struct MeshInfo
+{
+	vec4 boundingSphere;
+	LODInfo lods[MAX_LOD_COUNT];
 };
 layout(std430, binding = 1) restrict buffer MeshesInfoBufferLayout
 {
@@ -33,6 +40,7 @@ struct OutInstanceData
 	mat4 transform;
 	uint materialIdx;
 	uint customData;
+	uint lod;
 };
 layout(std430, binding = 2) restrict buffer OutInstancesBufferLayout
 {
@@ -77,6 +85,12 @@ bool isSphereVisible(in vec4 sphere, in vec4 planes[6])
     return true;
 }
 
+float compteSphereDistance(vec3 p, vec4 sphere)
+{
+    float d = distance(p, sphere.xyz);
+    return d - sphere.w;
+}
+
 layout (local_size_x = 256, local_size_y = 1, local_size_z = 1) in;
 void main()
 {
@@ -104,6 +118,23 @@ void main()
 	if (!isSphereVisible(boundingSphere, ubCamera.frustumPlanes))
 		return;
 
+	float distanceWithCamera = compteSphereDistance(getCameraPos(), boundingSphere);
+	uint lod = 0;
+	for (; lod < MAX_LOD_COUNT; lod++)
+	{
+		if (meshInfo.lods[0].maxDistance < 0.0)
+		{
+			lod = MAX_LOD_COUNT;
+		}
+		else if (distanceWithCamera < meshInfo.lods[lod].maxDistance)
+		{
+			break;
+		}
+	}
+
+	if (lod >= MAX_LOD_COUNT)
+		return;
+
 	for (uint batchIdx = 0; batchIdx < MAX_BATCH_COUNT; batchIdx++)
 	{
 		if ((cullingInstanceInfo.batchesMask & (1u << batchIdx)) != 0u)
@@ -112,10 +143,11 @@ void main()
 			outInstancesDataBuffers[batchIdx].outInstancesData[outCommandIdx].transform = cullingInstanceInfo.transform;
 			outInstancesDataBuffers[batchIdx].outInstancesData[outCommandIdx].materialIdx = cullingInstanceInfo.materialIdx;
 			outInstancesDataBuffers[batchIdx].outInstancesData[outCommandIdx].customData = cullingInstanceInfo.customData;
+			outInstancesDataBuffers[batchIdx].outInstancesData[outCommandIdx].lod = lod;
 
-			outDrawCommandsBuffers[batchIdx].outDrawCommands[outCommandIdx].vertexOffset = int(meshInfo.vertexOffset);
-			outDrawCommandsBuffers[batchIdx].outDrawCommands[outCommandIdx].firstIndex = meshInfo.indexOffset;
-			outDrawCommandsBuffers[batchIdx].outDrawCommands[outCommandIdx].indexCount = meshInfo.indexCount;
+			outDrawCommandsBuffers[batchIdx].outDrawCommands[outCommandIdx].vertexOffset = int(meshInfo.lods[lod].vertexOffset);
+			outDrawCommandsBuffers[batchIdx].outDrawCommands[outCommandIdx].firstIndex = meshInfo.lods[lod].indexOffset;
+			outDrawCommandsBuffers[batchIdx].outDrawCommands[outCommandIdx].indexCount = meshInfo.lods[lod].indexCount;
 			outDrawCommandsBuffers[batchIdx].outDrawCommands[outCommandIdx].instanceCount = 1;
 			outDrawCommandsBuffers[batchIdx].outDrawCommands[outCommandIdx].firstInstance = 0;
 		}
