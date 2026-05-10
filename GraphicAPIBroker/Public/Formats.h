@@ -37,6 +37,44 @@ namespace Wolf
 		D24_UNORM_S8_UINT
 	};
 
+	inline std::string formatToString(Format format)
+	{
+		switch (format)
+		{
+			case Format::UNDEFINED:             return "UNDEFINED";
+
+			case Format::R8_UINT:               return "R8_UINT";
+			case Format::R8_UNORM:              return "R8_UNORM";
+			case Format::R32_UINT:              return "R32_UINT";
+			case Format::R8G8B8A8_UNORM:        return "R8G8B8A8_UNORM";
+			case Format::R8G8B8A8_SRGB:         return "R8G8B8A8_SRGB";
+			case Format::B8G8R8A8_UNORM:        return "B8G8R8A8_UNORM";
+
+			case Format::R16_SFLOAT:            return "R16_SFLOAT";
+			case Format::R16G16_SFLOAT:         return "R16G16_SFLOAT";
+			case Format::R16G16B16_SFLOAT:      return "R16G16B16_SFLOAT";
+			case Format::R16G16B16A16_SFLOAT:   return "R16G16B16A16_SFLOAT";
+			case Format::R32_SFLOAT:            return "R32_SFLOAT";
+			case Format::R32G32_SFLOAT:         return "R32G32_SFLOAT";
+			case Format::R32G32B32_SFLOAT:      return "R32G32B32_SFLOAT";
+			case Format::R32G32B32A32_SFLOAT:   return "R32G32B32A32_SFLOAT";
+			case Format::R32G32B32A32_SINT:     return "R32G32B32A32_SINT";
+
+			case Format::BC1_RGB_SRGB_BLOCK:    return "BC1_RGB_SRGB_BLOCK";
+			case Format::BC1_RGBA_UNORM_BLOCK:  return "BC1_RGBA_UNORM_BLOCK";
+			case Format::BC3_SRGB_BLOCK:        return "BC3_SRGB_BLOCK";
+			case Format::BC3_UNORM_BLOCK:       return "BC3_UNORM_BLOCK";
+			case Format::BC5_UNORM_BLOCK:       return "BC5_UNORM_BLOCK";
+
+			case Format::D16_UNORM:             return "D16_UNORM";
+			case Format::D32_SFLOAT:            return "D32_SFLOAT";
+			case Format::D32_SFLOAT_S8_UINT:    return "D32_SFLOAT_S8_UINT";
+			case Format::D24_UNORM_S8_UINT:     return "D24_UNORM_S8_UINT";
+
+			default:                            return "UNKNOWN_FORMAT";
+		}
+	}
+
 	inline bool isSRGBFormat(Format format)
 	{
 		switch (format)

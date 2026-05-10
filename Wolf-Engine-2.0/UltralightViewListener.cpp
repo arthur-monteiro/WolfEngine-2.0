@@ -40,24 +40,27 @@ void UltralightViewListener::OnChangeCursor(ultralight::View* caller, ultralight
         Window::CursorType windowCursorType = Window::CursorType::POINTER;
         switch (cursor)
         {
-        case ultralight::kCursor_Pointer:
-            windowCursorType = Window::CursorType::POINTER;
-            break;
-        case ultralight::kCursor_Hand:
-            windowCursorType = Window::CursorType::HAND;
-            break;
-        case ultralight::kCursor_IBeam:
-            windowCursorType = Window::CursorType::IBEAM;
-            break;
-        case ultralight::kCursor_ColumnResize:
-            windowCursorType = Window::CursorType::HRESIZE;
-            break;
-        case ultralight::kCursor_RowResize:
-            windowCursorType = Window::CursorType::VRESIZE;
-            break;
-        default:
-	        Debug::sendError("Unhandled cursor type");
-            break;
+            case ultralight::kCursor_Pointer:
+                windowCursorType = Window::CursorType::POINTER;
+                break;
+            case ultralight::kCursor_Hand:
+                windowCursorType = Window::CursorType::HAND;
+                break;
+            case ultralight::kCursor_IBeam:
+                windowCursorType = Window::CursorType::IBEAM;
+                break;
+            case ultralight::kCursor_ColumnResize:
+                windowCursorType = Window::CursorType::HRESIZE;
+                break;
+            case ultralight::kCursor_RowResize:
+                windowCursorType = Window::CursorType::VRESIZE;
+                break;
+            case ultralight::kCursor_NotAllowed:
+                windowCursorType = Window::CursorType::NOT_ALLOWED;
+                break;
+            default:
+	            Debug::sendError("Unhandled cursor type");
+                break;
         }
 
         m_inputHandler->setCursorType(windowCursorType);

@@ -124,8 +124,12 @@ Wolf::ImageVulkan::~ImageVulkan()
 
 	if (m_imageMemory == VK_NULL_HANDLE)
 		return;
+
 	vkDestroyImage(g_vulkanInstance->getDevice(), m_image, nullptr);
 	vkFreeMemory(g_vulkanInstance->getDevice(), m_imageMemory, nullptr);
+
+	m_image = VK_NULL_HANDLE;
+	m_imageMemory = VK_NULL_HANDLE;
 
 	if (m_registeredToVRAMProfiler)
 	{

@@ -110,7 +110,7 @@ Wolf::MaterialsGPUManager::MaterialsGPUManager(const std::vector<DescriptorSetGe
 
 void Wolf::MaterialsGPUManager::addNewTextureSet(const TextureSetInfo& textureSetInfo)
 {
-	if (textureSetInfo.images.size() != TEXTURE_COUNT_PER_MATERIAL)
+	if (textureSetInfo.images.size() != TEXTURE_COUNT_PER_TEXTURE_SET)
 	{
 		Debug::sendCriticalError("Texture set doesn't have the right number of images");
 	}
@@ -159,6 +159,8 @@ void Wolf::MaterialsGPUManager::addNewTextureSet(const TextureSetInfo& textureSe
 			newTextureSetInfo.normalIdx = currentBindlessOffset++;
 		if (textureSetInfo.images[2])
 			newTextureSetInfo.roughnessMetalnessAOIdx = currentBindlessOffset++;
+
+		newTextureSetInfo.scale = textureSetInfo.scale;
 	}
 
 #ifdef MATERIAL_DEBUG

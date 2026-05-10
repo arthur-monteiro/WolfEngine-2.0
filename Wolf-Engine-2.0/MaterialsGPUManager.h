@@ -22,22 +22,22 @@ namespace Wolf
 	class MaterialsGPUManager
 	{
 	public:
-		static constexpr uint32_t TEXTURE_COUNT_PER_MATERIAL = 3;
+		static constexpr uint32_t TEXTURE_COUNT_PER_TEXTURE_SET = 3;
 
 		MaterialsGPUManager(const std::vector<DescriptorSetGenerator::ImageDescription>& firstImages, const ResourceNonOwner<GPUDataTransfersManagerInterface>& pushDataToGPU);
 
 		struct TextureSetInfo
 		{
 			// TODO: temp, editor should use its own struct
-			std::array<uint32_t, TEXTURE_COUNT_PER_MATERIAL> imageAssetIds;
+			std::array<uint32_t, TEXTURE_COUNT_PER_TEXTURE_SET> imageAssetIds;
 
-			std::array<NullableResourceNonOwner<Image>, TEXTURE_COUNT_PER_MATERIAL> images;
-			std::array<std::string, TEXTURE_COUNT_PER_MATERIAL> slicesFolders;
+			std::array<NullableResourceNonOwner<Image>, TEXTURE_COUNT_PER_TEXTURE_SET> images;
+			std::array<std::string, TEXTURE_COUNT_PER_TEXTURE_SET> slicesFolders;
 
 			enum class SamplingMode { TEXTURE_COORDS = 0, TRIPLANAR = 1 };
 			SamplingMode samplingMode = SamplingMode::TEXTURE_COORDS;
 
-			glm::vec3 triplanarScale = glm::vec3(1.0f);
+			glm::vec3 scale = glm::vec3(1.0f);
 
 #ifdef MATERIAL_DEBUG
 			std::string name;
@@ -174,7 +174,7 @@ namespace Wolf
 		uint32_t m_currentTextureSetCount = 0;
 
 		// Texture layout (used for virtual texture)
-		static constexpr uint32_t MAX_TEXTURE_COUNT = MAX_TEXTURE_SET_COUNT * TEXTURE_COUNT_PER_MATERIAL;
+		static constexpr uint32_t MAX_TEXTURE_COUNT = MAX_TEXTURE_SET_COUNT * TEXTURE_COUNT_PER_TEXTURE_SET;
 		struct TextureGPUInfo
 		{
 			uint32_t width;

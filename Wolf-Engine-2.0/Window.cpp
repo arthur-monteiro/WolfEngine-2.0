@@ -28,6 +28,7 @@ Wolf::Window::Window(const std::string& appName, uint32_t width, uint32_t height
 	m_cursors[2] = glfwCreateStandardCursor(GLFW_IBEAM_CURSOR);
 	m_cursors[3] = glfwCreateStandardCursor(GLFW_HRESIZE_CURSOR);
 	m_cursors[4] = glfwCreateStandardCursor(GLFW_VRESIZE_CURSOR);
+	m_cursors[5] = glfwCreateStandardCursor(GLFW_NOT_ALLOWED_CURSOR);
 }
 
 void Wolf::Window::pollEvents()

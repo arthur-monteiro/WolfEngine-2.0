@@ -23,7 +23,7 @@ namespace Wolf
 		void getWindowPos(uint32_t& outX, uint32_t& outY) const;
 		void setWindowPos(uint32_t posX, uint32_t posY) const;
 
-		enum class CursorType { POINTER, HAND, IBEAM, HRESIZE, VRESIZE, Count };
+		enum class CursorType { POINTER, HAND, IBEAM, HRESIZE, VRESIZE, NOT_ALLOWED, Count };
 		void setCursorType(CursorType cursorType) const;
 
 		[[nodiscard]] GLFWwindow* getWindow() const { return m_window; }
@@ -41,7 +41,7 @@ namespace Wolf
 		GLFWwindow* m_window;
 		bool m_closeRequested = false;
 
-		std::array<GLFWcursor*, 5> m_cursors;
+		std::array<GLFWcursor*, 6> m_cursors;
 		static_assert(std::tuple_size<decltype(m_cursors)>{} == static_cast<uint32_t>(CursorType::Count));
 
 		void* m_systemManagerInstance = nullptr;
