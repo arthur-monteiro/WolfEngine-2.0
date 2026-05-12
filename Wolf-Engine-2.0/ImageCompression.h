@@ -154,6 +154,13 @@ namespace Wolf
             static float mergeFloats(float c00, float c01, float c10, float c11);
         };
 
+        struct RGBA16F
+        {
+            uint16_t r, g, b, a;
+            RGBA16F(uint16_t r, uint16_t g, uint16_t b, uint16_t a) : r(r), g(g), b(b), a(a) {}
+            RGBA16F() : RGBA16F(0.0, 0.0, 0.0, 0.0) {}
+        };
+
         struct RG32F
         {
             float r, g;

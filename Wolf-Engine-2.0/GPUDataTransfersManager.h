@@ -25,11 +25,11 @@ namespace Wolf
 			const ResourceNonOwner<Image> m_outputImage;
 			const Image::TransitionLayoutInfo m_finalLayout;
 			uint32_t m_mipLevel;
-			glm::ivec2 m_copySize;
-			glm::ivec2 m_imageOffset;
+			glm::ivec3 m_copySize;
+			glm::ivec3 m_imageOffset;
 
 			PushDataToGPUImageInfo(const unsigned char* pixels, const ResourceNonOwner<Image>& outputImage, const Image::TransitionLayoutInfo& finalLayout, uint32_t mipLevel = 0,
-			const glm::ivec2& copySize = glm::vec2(0, 0), const glm::ivec2& imageOffset = glm::vec2(0, 0)) :
+			const glm::ivec3& copySize = glm::vec3(0, 0, 0), const glm::ivec3& imageOffset = glm::vec3(0, 0, 0)) :
 				m_pixels{ pixels }, m_outputImage(outputImage), m_finalLayout(finalLayout), m_mipLevel(mipLevel), m_copySize(copySize), m_imageOffset(imageOffset)
 			{}
 		};

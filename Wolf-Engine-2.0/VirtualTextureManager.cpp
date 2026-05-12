@@ -97,10 +97,11 @@ void Wolf::VirtualTextureManager::uploadData(AtlasIndex atlasIndex, const std::v
 	uint32_t entryIdx = entryId & 0xFFFF;
 	uint32_t subEntryOffsetX = (entryId >> 16) & 0xFF;
 	uint32_t subEntryOffsetY = (entryId >> 24) & 0xFF;
-	glm::ivec2 atlasOffset = { (entryIdx % atlasInfo.getPageCountY()) * PAGE_SIZE_WITH_BORDERS, (entryIdx / atlasInfo.getPageCountX()) * PAGE_SIZE_WITH_BORDERS };
+	glm::ivec3 atlasOffset = { (entryIdx % atlasInfo.getPageCountY()) * PAGE_SIZE_WITH_BORDERS, (entryIdx / atlasInfo.getPageCountX()) * PAGE_SIZE_WITH_BORDERS, 0 };
 	atlasOffset.x += subEntryOffsetX;
 	atlasOffset.y += subEntryOffsetY;
-	GPUDataTransfersManagerInterface::PushDataToGPUImageInfo pushDataToGpuImageInfo(data.data(), m_atlases[atlasIndex]->getImage(), Image::SampledInFragmentShader(), 0, { sliceExtent.width, sliceExtent.height }, atlasOffset);
+	GPUDataTransfersManagerInterface::PushDataToGPUImageInfo pushDataToGpuImageInfo(data.data(), m_atlases[atlasIndex]->getImage(), Image::SampledInFragmentShader(), 0,
+		{ sliceExtent.width, sliceExtent.height, 0 }, atlasOffset);
 	m_pushDataToGPUHandler->pushDataToGPUImage(pushDataToGpuImageInfo);
 
 	uint32_t indirectionId = computeVirtualTextureIndirectionId(sliceX, sliceY, sliceCountX, sliceCountY, mipLevel);
