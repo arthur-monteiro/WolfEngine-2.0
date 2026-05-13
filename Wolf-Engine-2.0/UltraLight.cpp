@@ -432,6 +432,15 @@ void Wolf::UltraLight::UltraLightImplementation::update(const ResourceNonOwner<I
 
         m_view->FireKeyEvent(keyEvent);
     }
+    if (inputHandler->keyPressedThisFrame(GLFW_KEY_F5, this))
+    {
+        KeyEvent keyEvent;
+        keyEvent.type = KeyEvent::kType_KeyDown;
+        keyEvent.virtual_key_code = KeyCodes::GK_F5;
+        keyEvent.is_system_key = false;
+
+        m_view->FireKeyEvent(keyEvent);
+    }
 
     float scrollX, scrollY;
     inputHandler->getScroll(scrollX, scrollY);
