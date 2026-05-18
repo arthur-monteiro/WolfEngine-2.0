@@ -37,7 +37,11 @@ namespace Wolf
             struct LOD
             {
                 NullableResourceNonOwner<MeshInterface> m_mesh;
-                float m_maxDistance;
+                float m_maxDistance = 0.0f;
+
+                LOD(const ResourceNonOwner<MeshInterface>& mesh, float maxDistance) : m_mesh(mesh), m_maxDistance(maxDistance) {}
+                LOD(const ResourceNonOwner<MeshInterface>& mesh) : m_mesh(mesh) {}
+                LOD() = default;
             };
             std::vector<LOD> m_lods;
             ResourceNonOwner<const PipelineSet> m_pipelineSet;

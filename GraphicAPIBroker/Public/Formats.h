@@ -4,7 +4,7 @@
 
 namespace Wolf
 {
-	enum class Format
+	enum class Format : uint32_t
 	{
 		UNDEFINED,
 

@@ -67,7 +67,7 @@ Wolf::ImageVulkan::ImageVulkan(const CreateImageInfo& createImageInfo)
 	allocInfo.memoryTypeIndex = findMemoryType(g_vulkanInstance->getPhysicalDevice(), memRequirements.memoryTypeBits, m_memoryProperties);
 
 	if (allocInfo.memoryTypeIndex == static_cast<uint32_t>(-1))
-		Debug::sendError("Error : no memory type found");
+		Debug::sendError("No memory type found");
 
 	if (vkAllocateMemory(g_vulkanInstance->getDevice(), &allocInfo, nullptr, &m_imageMemory) != VK_SUCCESS)
 		Debug::sendError("Failed to allocate image memory");
@@ -157,7 +157,7 @@ void Wolf::ImageVulkan::copyCPUBuffer(const unsigned char* pixels, const Transit
 	const VkDeviceSize imageSize = static_cast<VkDeviceSize>(static_cast<float>(extent.width) * static_cast<float>(extent.height) * static_cast<float>(extent.depth) * m_bpp);
 
 	const BufferVulkan stagingBuffer(imageSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
-	
+
 	void* mappedData;
 	vkMapMemory(g_vulkanInstance->getDevice(), stagingBuffer.getBufferMemory(), 0, imageSize, 0, &mappedData);
 	std::memcpy(mappedData, pixels, imageSize);

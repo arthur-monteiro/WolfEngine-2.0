@@ -53,8 +53,8 @@ namespace Wolf
 			glm::vec2 jitter;
 			glm::vec2 projectionParams;
 
-			glm::f32  near;
-			glm::f32  far;
+			float near;
+			float far;
 			glm::uint frameIndex;
 			glm::uint extentWidth;
 

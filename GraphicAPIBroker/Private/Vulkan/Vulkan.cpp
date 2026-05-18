@@ -408,81 +408,78 @@ void Wolf::Vulkan::createDevice()
 		queueCreateInfos.push_back(queueCreateInfo);
 	}
 
-	VkPhysicalDeviceVulkan11Features features11{};
-	features11.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_1_FEATURES;
+    VkPhysicalDeviceVulkan11Features features11{ VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_1_FEATURES };
+    VkPhysicalDeviceVulkan12Features features12{ VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_2_FEATURES };
+    VkPhysicalDeviceVulkan13Features features13{ VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_3_FEATURES };
 
-	VkPhysicalDeviceVulkan12Features features12{};
-	features12.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_2_FEATURES;
-	features12.bufferDeviceAddress = VK_TRUE;
-	features12.timelineSemaphore = VK_TRUE;
-	features12.pNext = &features11;
+    VkPhysicalDeviceRayTracingPipelineFeaturesKHR rayTracingPipelineFeatures{ VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_PIPELINE_FEATURES_KHR };
+    VkPhysicalDeviceAccelerationStructureFeaturesKHR accelerationStructureFeature{ VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ACCELERATION_STRUCTURE_FEATURES_KHR };
+    VkPhysicalDeviceFragmentShadingRateFeaturesKHR variableShadingRateFeatures{ VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FRAGMENT_SHADING_RATE_FEATURES_KHR };
 
-	VkPhysicalDeviceVulkan13Features features13{};
-	features13.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_3_FEATURES;
-	features13.synchronization2 = VK_TRUE;
-	features13.pNext = &features12;
+    void* currentNext = &features11;
 
-	VkPhysicalDeviceRayTracingPipelineFeaturesKHR rayTracingPipelineFeatures{};
-	rayTracingPipelineFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_PIPELINE_FEATURES_KHR;
-	rayTracingPipelineFeatures.rayTracingPipeline = true;
-	rayTracingPipelineFeatures.pNext = &features13;
+#ifndef __ANDROID__
+    features12.bufferDeviceAddress = VK_TRUE;
+#else
+    features12.bufferDeviceAddress = VK_FALSE;
+#endif
+    features12.bufferDeviceAddressCaptureReplay = VK_TRUE;
+    features12.timelineSemaphore = VK_TRUE;
+    features12.pNext = currentNext;
+    currentNext = &features12;
 
-	VkPhysicalDeviceAccelerationStructureFeaturesKHR accelerationStructureFeature{};
-	accelerationStructureFeature.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ACCELERATION_STRUCTURE_FEATURES_KHR;
-	accelerationStructureFeature.accelerationStructure = true;
-	accelerationStructureFeature.pNext = &rayTracingPipelineFeatures;
+    features13.synchronization2 = VK_TRUE;
+    features13.pNext = currentNext;
+    currentNext = &features13;
 
-	VkPhysicalDeviceFragmentShadingRateFeaturesKHR variableShadingRateFeatures{};
-	variableShadingRateFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FRAGMENT_SHADING_RATE_FEATURES_KHR;
-	variableShadingRateFeatures.pipelineFragmentShadingRate = true;
-	variableShadingRateFeatures.attachmentFragmentShadingRate = true;
-	variableShadingRateFeatures.pNext = &accelerationStructureFeature;
-
-	VkPhysicalDeviceFeatures2 supportedFeatures = {};
-	supportedFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
-	if (m_availableFeatures.variableShadingRate)
-	{
-		supportedFeatures.pNext = &variableShadingRateFeatures;
-	}
-	else if (m_availableFeatures.rayTracing)
-	{
-		supportedFeatures.pNext = &accelerationStructureFeature;
-	}
-    else
+    if (m_availableFeatures.rayTracing)
     {
-        supportedFeatures.pNext = &features13;
+        rayTracingPipelineFeatures.rayTracingPipeline = VK_TRUE;
+        rayTracingPipelineFeatures.pNext = currentNext;
+        currentNext = &rayTracingPipelineFeatures;
+
+        accelerationStructureFeature.accelerationStructure = VK_TRUE;
+        accelerationStructureFeature.pNext = currentNext;
+        currentNext = &accelerationStructureFeature;
     }
 
-	supportedFeatures.features.shaderStorageImageMultisample = VK_TRUE;
-	vkGetPhysicalDeviceFeatures2(m_physicalDevice, &supportedFeatures);
+    if (m_availableFeatures.variableShadingRate)
+    {
+        variableShadingRateFeatures.pipelineFragmentShadingRate = VK_TRUE;
+        variableShadingRateFeatures.attachmentFragmentShadingRate = VK_TRUE;
+        variableShadingRateFeatures.pNext = currentNext;
+        currentNext = &variableShadingRateFeatures;
+    }
 
-	if (features12.bufferDeviceAddress == VK_FALSE)
-	{
-		Debug::sendWarning("bufferDeviceAddress not supported");
-	}
-	if (features12.timelineSemaphore == VK_FALSE)
-	{
-		Debug::sendWarning("timelineSemaphore not supported");
-	}
+    VkPhysicalDeviceFeatures2 supportedFeatures = { VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2 };
+    supportedFeatures.pNext = currentNext;
+    supportedFeatures.features.shaderStorageImageMultisample = VK_TRUE;
+    supportedFeatures.features.samplerAnisotropy = VK_TRUE;
 
-	VkDeviceCreateInfo createInfo = {};
-	createInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
+    vkGetPhysicalDeviceFeatures2(m_physicalDevice, &supportedFeatures);
 
-	createInfo.queueCreateInfoCount = static_cast<uint32_t>(queueCreateInfos.size());
-	createInfo.pQueueCreateInfos = queueCreateInfos.data();
+    if (features12.bufferDeviceAddress == VK_FALSE)
+    {
+        Debug::sendWarning("bufferDeviceAddress not supported");
+    }
+    if (features12.timelineSemaphore == VK_FALSE)
+    {
+        Debug::sendWarning("timelineSemaphore not supported");
+    }
 
-	createInfo.pEnabledFeatures = nullptr; // &(supportedFeatures.features);
-	createInfo.pNext = &supportedFeatures;
+    VkDeviceCreateInfo createInfo = {};
+    createInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
+    createInfo.queueCreateInfoCount = static_cast<uint32_t>(queueCreateInfos.size());
+    createInfo.pQueueCreateInfos = queueCreateInfos.data();
 
-	createInfo.enabledExtensionCount = static_cast<uint32_t>(m_deviceExtensions.size());
-	createInfo.ppEnabledExtensionNames = m_deviceExtensions.data();
+    createInfo.pNext = currentNext;
+    createInfo.pEnabledFeatures = &(supportedFeatures.features);
 
-//#ifndef NDEBUG
-	createInfo.enabledLayerCount = static_cast<uint32_t>(m_validationLayers.size());
-	createInfo.ppEnabledLayerNames = m_validationLayers.data();
-//#else
-//	createInfo.enabledLayerCount = 0;
-//#endif
+    createInfo.enabledExtensionCount = static_cast<uint32_t>(m_deviceExtensions.size());
+    createInfo.ppEnabledExtensionNames = m_deviceExtensions.data();
+
+    createInfo.enabledLayerCount = static_cast<uint32_t>(m_validationLayers.size());
+    createInfo.ppEnabledLayerNames = m_validationLayers.data();
 
     VkResult result = vkCreateDevice(m_physicalDevice, &createInfo, nullptr, &m_device);
     if (result != VK_SUCCESS)
