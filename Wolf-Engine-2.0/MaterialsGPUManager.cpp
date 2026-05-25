@@ -46,7 +46,7 @@ Wolf::MaterialsGPUManager::MaterialsGPUManager(const std::vector<DescriptorSetGe
 
 	m_materialsBuffer.reset(Buffer::createBuffer(MAX_MATERIAL_COUNT * sizeof(MaterialGPUInfo), VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT));
 	m_materialsBuffer->setName("Materials info (MaterialsGPUManager::m_materialsBuffer)");
-	constexpr MaterialGPUInfo initMaterialInfo{ { 0, 0, 0, 0 }, { 1.0f, 0.0f, 0.0f, 0.0}, 0 };
+	const MaterialGPUInfo initMaterialInfo{ { 0, 0, 0, 0 }, { 1.0f, 0.0f, 0.0f, 0.0f }, { 1.0f, 1.0f, 1.0f }, 0 };
 	m_materialsBuffer->transferCPUMemoryWithStagingBuffer(&initMaterialInfo, sizeof(MaterialGPUInfo), 0, 0);
 	m_currentMaterialCount = 1;
 
@@ -181,10 +181,11 @@ void Wolf::MaterialsGPUManager::addNewMaterial(const MaterialInfo& material)
 
 	for (uint32_t i = 0; i < MaterialInfo::MAX_TEXTURE_SET_PER_MATERIAL; ++i)
 	{
-		newMaterialInfo.textureSetIndices[i] = material.textureSetInfos[i].textureSetIdx;
-		newMaterialInfo.strengths[i] = material.textureSetInfos[i].strength;
+		newMaterialInfo.m_textureSetIndices[i] = material.m_textureSetsInfo[i].m_textureSetIdx;
+		newMaterialInfo.m_strengths[i] = material.m_textureSetsInfo[i].m_strength;
 	}
-	newMaterialInfo.shadingMode = static_cast<uint32_t>(material.shadingMode);
+	newMaterialInfo.m_shadingMode = static_cast<uint32_t>(material.m_shadingMode);
+	newMaterialInfo.m_color = material.m_color;
 }
 
 void Wolf::MaterialsGPUManager::addJobs(const ResourceNonOwner<JobsManager>& jobsManager)
@@ -283,19 +284,24 @@ void Wolf::MaterialsGPUManager::unlockMaterials()
 #ifdef MATERIAL_DEBUG
 void Wolf::MaterialsGPUManager::changeMaterialShadingModeBeforeFrame(uint32_t materialIdx, uint32_t newShadingMode)
 {
-	m_pushDataToGPUHandler->pushDataToGPUBuffer(&newShadingMode, sizeof(uint32_t), m_materialsBuffer.createNonOwnerResource(), materialIdx * sizeof(MaterialGPUInfo) + offsetof(MaterialGPUInfo, shadingMode));
+	m_pushDataToGPUHandler->pushDataToGPUBuffer(&newShadingMode, sizeof(uint32_t), m_materialsBuffer.createNonOwnerResource(), materialIdx * sizeof(MaterialGPUInfo) + offsetof(MaterialGPUInfo, m_shadingMode));
+}
+
+void Wolf::MaterialsGPUManager::changeMaterialColorBeforeFrame(uint32_t materialIdx, glm::vec3 newColor)
+{
+	m_pushDataToGPUHandler->pushDataToGPUBuffer(&newColor, sizeof(glm::vec3), m_materialsBuffer.createNonOwnerResource(), materialIdx * sizeof(MaterialGPUInfo) + offsetof(MaterialGPUInfo, m_color));
 }
 
 void Wolf::MaterialsGPUManager::changeTextureSetIdxBeforeFrame(uint32_t materialIdx,uint32_t indexOfTextureSetInMaterial, uint32_t newTextureSetIdx)
 {
 	m_pushDataToGPUHandler->pushDataToGPUBuffer(&newTextureSetIdx, sizeof(uint32_t), m_materialsBuffer.createNonOwnerResource(),
-		materialIdx * sizeof(MaterialGPUInfo) + offsetof(MaterialGPUInfo, textureSetIndices) + indexOfTextureSetInMaterial * sizeof(uint32_t));
+		materialIdx * sizeof(MaterialGPUInfo) + offsetof(MaterialGPUInfo, m_textureSetIndices) + indexOfTextureSetInMaterial * sizeof(uint32_t));
 }
 
 void Wolf::MaterialsGPUManager::changeStrengthBeforeFrame(uint32_t materialIdx, uint32_t indexOfTextureSetInMaterial, float newStrength)
 {
 	m_pushDataToGPUHandler->pushDataToGPUBuffer(&newStrength, sizeof(float), m_materialsBuffer.createNonOwnerResource(),
-		materialIdx * sizeof(MaterialGPUInfo) + offsetof(MaterialGPUInfo, strengths) + indexOfTextureSetInMaterial * sizeof(float));
+		materialIdx * sizeof(MaterialGPUInfo) + offsetof(MaterialGPUInfo, m_strengths) + indexOfTextureSetInMaterial * sizeof(float));
 }
 
 void Wolf::MaterialsGPUManager::changeExistingTextureSetBeforeFrame(TextureSetCacheInfo& textureSetCacheInfo, const TextureSetInfo& textureSetInfo)
@@ -424,6 +430,9 @@ void Wolf::MaterialsGPUManager::changeScaleBeforeFrame(uint32_t textureSetIdx, g
 uint32_t Wolf::MaterialsGPUManager::addImagesToBindless(const std::vector<DescriptorSetGenerator::ImageDescription>& images)
 {
 	const uint32_t previousCounter = m_currentBindlessCount;
+
+	if (m_currentBindlessCount >= MAX_IMAGES)
+		Debug::sendCriticalError("Max image count reached");
 
 	DescriptorSetUpdateInfo descriptorSetUpdateInfo;
 	descriptorSetUpdateInfo.descriptorImages.resize(images.size());

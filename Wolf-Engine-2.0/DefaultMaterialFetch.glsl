@@ -23,6 +23,7 @@ struct InputMaterialInfo
 {
     uint textureSetIndices[TEXTURE_SET_COUNT_PER_MATERIAL];
     float textureSetStrengths[TEXTURE_SET_COUNT_PER_MATERIAL];
+    vec3 color;
     uint shadingMode;
 };
 layout(std430, binding = 3, set = @BINDLESS_DESCRIPTOR_SLOT) readonly restrict buffer MaterialBufferLayout
@@ -42,6 +43,7 @@ struct MaterialInfo
     vec4 sixWaysLightmap0;
     vec4 sixWaysLightmap1;
 
+    vec3 materialColor;
     uint shadingMode;
 };
 
@@ -122,6 +124,7 @@ MaterialInfo defaultFetchMaterial(in const vec2 texCoords, in const uint materia
     MaterialInfo materialInfo;
     clearMaterialInfo(materialInfo);
     materialInfo.shadingMode = materialsInfo[materialIdx].shadingMode;
+    materialInfo.materialColor = materialsInfo[materialIdx].color;
 
     float totalStrengths = 0.0f;
     for (uint i = 0; i < TEXTURE_SET_COUNT_PER_MATERIAL; ++i)

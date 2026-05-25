@@ -127,7 +127,6 @@ Wolf::RenderPassVulkan::RenderPassVulkan(const std::vector<Attachment>& attachme
 #else
 	const std::vector<VkSubpassDependency> dependencies(0);
 #endif
-	
 
 #ifdef WOLF_VULKAN_1_2
 	VkRenderPassCreateInfo2 renderPassInfo = {};

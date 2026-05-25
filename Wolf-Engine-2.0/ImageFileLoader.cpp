@@ -13,6 +13,9 @@
 
 Wolf::ImageFileLoader::ImageFileLoader(const std::string& fullFilePath, bool loadFloat)
 {
+	if (fullFilePath.empty())
+		return;
+
 	std::string fileExtension = fullFilePath.substr(fullFilePath.find_last_of(".") + 1);
     std::string filename = fullFilePath;
 

@@ -53,10 +53,10 @@ namespace Wolf
 
 			struct PerTextureSetInMaterialInfo
 			{
-				uint32_t textureSetIdx = 0;
-				float strength = 1.0f;
+				uint32_t m_textureSetIdx = 0;
+				float m_strength = 1.0f;
 			};
-			std::array<PerTextureSetInMaterialInfo, MAX_TEXTURE_SET_PER_MATERIAL> textureSetInfos;
+			std::array<PerTextureSetInMaterialInfo, MAX_TEXTURE_SET_PER_MATERIAL> m_textureSetsInfo;
 
 			static std::vector<std::string> SHADING_MODE_STRING_LIST;
 			enum class ShadingMode : uint32_t
@@ -66,7 +66,9 @@ namespace Wolf
 				SixWaysLighting = 2,
 				AlphaOnly = 3
 			};
-			ShadingMode shadingMode = ShadingMode::GGX;
+			ShadingMode m_shadingMode = ShadingMode::GGX;
+
+			glm::vec3 m_color = glm::vec3(1.0f);
 		};
 		void addNewMaterial(const MaterialInfo& material);
 		void addJobs(const ResourceNonOwner<JobsManager>& jobsManager);
@@ -88,6 +90,7 @@ namespace Wolf
 
 #ifdef MATERIAL_DEBUG
 		void changeMaterialShadingModeBeforeFrame(uint32_t materialIdx, uint32_t newShadingMode);
+		void changeMaterialColorBeforeFrame(uint32_t materialIdx, glm::vec3 newColor);
 		void changeTextureSetIdxBeforeFrame(uint32_t materialIdx, uint32_t indexOfTextureSetInMaterial, uint32_t newTextureSetIdx);
 		void changeStrengthBeforeFrame(uint32_t materialIdx, uint32_t indexOfTextureSetInMaterial, float newStrength);
 
@@ -144,7 +147,7 @@ namespace Wolf
 		void addSlicedImage(const std::string& folder, TextureCPUInfo::TextureType textureType);
 
 		// Bindless resources
-		static constexpr uint32_t MAX_IMAGES = 1000;
+		static constexpr uint32_t MAX_IMAGES = 4096;
 		static constexpr uint32_t BINDING_SLOT = 0;
 
 		uint32_t m_currentBindlessCount = 0;
@@ -153,10 +156,12 @@ namespace Wolf
 		static constexpr uint32_t MAX_MATERIAL_COUNT = 4096;
 		struct MaterialGPUInfo
 		{
-			std::array<uint32_t, MaterialInfo::MAX_TEXTURE_SET_PER_MATERIAL> textureSetIndices;
-			std::array<float, MaterialInfo::MAX_TEXTURE_SET_PER_MATERIAL> strengths;
-			uint32_t shadingMode = 0;
+			std::array<uint32_t, MaterialInfo::MAX_TEXTURE_SET_PER_MATERIAL> m_textureSetIndices;
+			std::array<float, MaterialInfo::MAX_TEXTURE_SET_PER_MATERIAL> m_strengths;
+			glm::vec3 m_color = glm::vec3(1.0f);
+			uint32_t m_shadingMode = 0;
 		};
+		static_assert(sizeof(MaterialInfo) == sizeof(uint32_t) * MaterialInfo::MAX_TEXTURE_SET_PER_MATERIAL + sizeof(float) * MaterialInfo::MAX_TEXTURE_SET_PER_MATERIAL + sizeof(glm::vec3) + sizeof(uint32_t));
 		uint32_t m_currentMaterialCount = 0;
 
 		// Texture set layout
