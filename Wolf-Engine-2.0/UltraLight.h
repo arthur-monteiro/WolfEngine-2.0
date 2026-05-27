@@ -3,13 +3,13 @@
 #ifndef __ANDROID__
 
 #include <condition_variable>
+#include <filesystem>
 #include <mutex>
 #include <thread>
 
 #include <AppCore/App.h>
 #include <AppCore/JSHelpers.h>
 #include <AppCore/Platform.h>
-#include <filesystem>
 #include <Ultralight/Ultralight.h>
 #include <Ultralight/platform/Logger.h>
 

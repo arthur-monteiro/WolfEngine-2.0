@@ -32,6 +32,7 @@ namespace Wolf
 			virtual const std::vector<float>& getPropertyFloatArray(const std::string& propertyName) = 0;
 			virtual const std::string& getPropertyString(const std::string& propertyName) = 0;
 			virtual const std::string& getPropertyString(uint32_t propertyIdx) = 0;
+			virtual const std::vector<std::string>& getPropertyStringArray(const std::string& propertyName) = 0;
 			virtual bool getPropertyBool(const std::string& propertyName) = 0;
 			virtual JSONObjectInterface* getPropertyObject(const std::string& propertyName) = 0;
 			virtual JSONObjectInterface* getArrayObjectItem(const std::string& propertyName, uint32_t idx) = 0;
@@ -62,6 +63,11 @@ namespace Wolf
 				return true;
 			}
 
+			bool isCRLFReadAsLF() const
+			{
+				return !m_lines.empty() && m_lines[0][m_lines[0].size() - 1] == '\r';
+			}
+
 		private:
 			std::vector<std::wstring> m_lines;
 			mutable uint32_t m_currentLine = 0;
@@ -83,6 +89,7 @@ namespace Wolf
 			JSONObject* objectValue = nullptr;
 			std::vector<JSONObject*> objectArrayValue;
 			std::vector<float> floatArrayValue;
+			std::vector<std::string> stringArrayValue;
 
 			JSONPropertyValue() : type(JSONPropertyType::Unknown) {};
 		};
@@ -98,6 +105,7 @@ namespace Wolf
 			const std::vector<float>& getPropertyFloatArray(const std::string& propertyName) override;
 			const std::string& getPropertyString(const std::string& propertyName) override;
 			const std::string& getPropertyString(uint32_t propertyIdx) override;
+			const std::vector<std::string>& getPropertyStringArray(const std::string& propertyName) override;
 			bool getPropertyBool(const std::string& propertyName) override;
 			JSONObjectInterface* getPropertyObject(const std::string& propertyName) override;
 			JSONObjectInterface* getArrayObjectItem(const std::string& propertyName, uint32_t idx) override;

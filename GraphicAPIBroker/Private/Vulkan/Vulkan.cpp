@@ -190,10 +190,10 @@ void Wolf::Vulkan::createInstance()
 	createInfo.enabledExtensionCount = static_cast<uint32_t>(extensions.size());
 	createInfo.ppEnabledExtensionNames = extensions.data();
 
-	VkDebugUtilsMessengerCreateInfoEXT debugCreateInfo{};
 	createInfo.enabledLayerCount = static_cast<uint32_t>(m_validationLayers.size());
 	createInfo.ppEnabledLayerNames = m_validationLayers.data();
 
+	VkDebugUtilsMessengerCreateInfoEXT debugCreateInfo{};
 	populateDebugMessengerCreateInfo(debugCreateInfo);
 	createInfo.pNext = &debugCreateInfo;
 

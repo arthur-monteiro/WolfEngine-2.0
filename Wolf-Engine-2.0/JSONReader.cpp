@@ -37,6 +37,11 @@ Wolf::JSONReader::JSONReader(const FileReadInfo& fileReadInfo)
 		lines.addLine(line);
 	}
 
+	if (lines.isCRLFReadAsLF())
+	{
+		Debug::sendCriticalError("CRLF is not supported");
+	}
+
 	readFromLines(lines);
 }
 
@@ -409,7 +414,7 @@ void Wolf::JSONReader::readFromLines(const Lines& lines)
 				{
 					std::wstring propertyValue = line.substr(0, propertyStringEnding);
 
-					currentPropertyStack.top()->stringValue = ws2s(propertyValue);
+					currentPropertyStack.top()->stringArrayValue.push_back(ws2s(propertyValue));
 
 					line = line.substr(propertyStringEnding + 1);
 					currentLookingFor = LookingFor::Comma;
@@ -463,6 +468,11 @@ const std::string& Wolf::JSONReader::JSONObject::getPropertyString(uint32_t prop
 	auto it = properties.begin();
 	std::advance(it, propertyIdx);
 	return it->first;
+}
+
+const std::vector<std::string>& Wolf::JSONReader::JSONObject::getPropertyStringArray(const std::string& propertyName)
+{
+	return properties[propertyName]->stringArrayValue;
 }
 
 bool Wolf::JSONReader::JSONObject::getPropertyBool(const std::string& propertyName)

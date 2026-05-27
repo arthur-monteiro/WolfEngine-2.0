@@ -13,6 +13,7 @@ namespace Wolf
 	public:
 	    static void registerNewResource(const void* allocatorPtr, uint32_t size, const std::string& name)
 	    {
+	    	return;
 	    	ms_resourcesMutex.lock();
 
             ms_resources.push_back({ allocatorPtr, size, name });
@@ -23,6 +24,7 @@ namespace Wolf
 
 		static void changeName(const void* allocatorPtr, const std::string& name)
 	    {
+	    	return;
 	    	for (uint32_t allocatorIdx = 0; allocatorIdx < ms_resources.size(); ++allocatorIdx)
 	    	{
 	    		if (ms_resources[allocatorIdx].m_allocatorPtr == allocatorPtr)
@@ -37,6 +39,7 @@ namespace Wolf
 
 	    static void unregisterResource(const void* allocatorPtr)
 	    {
+	    	return;
 	    	ms_resourcesMutex.lock();
 
 	    	uint32_t allocatorIdx = 0;
