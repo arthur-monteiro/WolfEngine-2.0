@@ -39,7 +39,7 @@ Wolf::JSONReader::JSONReader(const FileReadInfo& fileReadInfo)
 
 	if (lines.isCRLFReadAsLF())
 	{
-		Debug::sendCriticalError("CRLF is not supported");
+		Debug::sendError("CRLF is not supported");
 	}
 
 	readFromLines(lines);
