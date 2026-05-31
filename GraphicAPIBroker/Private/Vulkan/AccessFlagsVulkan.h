@@ -20,6 +20,12 @@ namespace Wolf
 		case AccessFlagBits::SHADER_WRITE:
 			accessFlagBits2 = VK_ACCESS_2_SHADER_WRITE_BIT;
 			break;
+		case AccessFlagBits::TRANSFER_READ:
+			accessFlagBits2 = VK_ACCESS_2_TRANSFER_READ_BIT;
+			break;
+		case AccessFlagBits::TRANSFER_WRITE:
+			accessFlagBits2 = VK_ACCESS_2_TRANSFER_WRITE_BIT;
+			break;
 		default:
 			Debug::sendCriticalError("Unhandled access flag");
 		}
