@@ -17,7 +17,7 @@ using namespace Wolf;
 
 void UniquePass::initializeResources(const InitializationContext& context)
 {
-	m_commandBuffer.reset(CommandBuffer::createCommandBuffer(QueueType::RAY_TRACING, false /* isTransient */));
+	m_commandBuffer.reset(CommandBuffer::createCommandBuffer(QueueType::RAY_TRACING, false, "Unique pass"));
 	createSemaphores(context, VK_PIPELINE_STAGE_RAY_TRACING_SHADER_BIT_KHR, true);
 
 	m_rayGenShaderParser.reset(new ShaderParser("Shaders/shader.rgen"));
@@ -72,7 +72,7 @@ void UniquePass::initializeResources(const InitializationContext& context)
 	std::vector blasInstances = { blasInstance };
 	m_tlas.reset(TopLevelAccelerationStructure::createTopLevelAccelerationStructure(blasInstances.size()));
 
-	Wolf::ResourceUniqueOwner<Wolf::CommandBuffer> commandBuffer(Wolf::CommandBuffer::createCommandBuffer(Wolf::QueueType::COMPUTE, true));
+	Wolf::ResourceUniqueOwner<Wolf::CommandBuffer> commandBuffer(Wolf::CommandBuffer::createCommandBuffer(Wolf::QueueType::COMPUTE, true, "TLAS build"));
 	commandBuffer->beginCommandBuffer();
 
 	m_tlas->build(&*commandBuffer, blasInstances);

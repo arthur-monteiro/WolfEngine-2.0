@@ -49,7 +49,7 @@ private:
 	std::unique_ptr<Wolf::Mesh> m_triangle;
 
 	/* Resources*/
-	std::chrono::steady_clock::time_point m_startTimePoint = std::chrono::high_resolution_clock::now();
+	std::chrono::system_clock::time_point m_startTimePoint = std::chrono::high_resolution_clock::now();
 	std::unique_ptr<Wolf::Buffer> m_uniformBuffer;
 	std::unique_ptr<Wolf::Image> m_texture;
 	std::unique_ptr<Wolf::Sampler> m_sampler;

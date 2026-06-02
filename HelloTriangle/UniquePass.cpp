@@ -25,7 +25,7 @@ void UniquePass::initializeResources(const InitializationContext& context)
 
 	m_renderPass.reset(RenderPass::createRenderPass({ depth, color }));
 
-	m_commandBuffer.reset(CommandBuffer::createCommandBuffer(QueueType::GRAPHIC, false /* isTransient */));
+	m_commandBuffer.reset(CommandBuffer::createCommandBuffer(QueueType::GRAPHIC, false, "Unique pass"));
 	
 	m_frameBuffers.resize(context.swapChainImageCount);
 	for (uint32_t i = 0; i < context.swapChainImageCount; ++i)

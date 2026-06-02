@@ -14,7 +14,7 @@ using namespace Wolf;
 
 void UniquePass::initializeResources(const InitializationContext& context)
 {
-	m_commandBuffer.reset(CommandBuffer::createCommandBuffer(QueueType::COMPUTE, false /* isTransient */));
+	m_commandBuffer.reset(CommandBuffer::createCommandBuffer(QueueType::COMPUTE, false, "Unique pass"));
 	createSemaphores(context, VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT, true);
 
 	m_computeShaderParser.reset(new ShaderParser("Shaders/shader.comp"));

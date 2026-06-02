@@ -1,14 +1,12 @@
 #include "UniquePass.h"
 
 #include <filesystem>
-#include <fstream>
 
 #include <Attachment.h>
 #include <Image.h>
 #include <FrameBuffer.h>
 #include <Sampler.h>
 
-#include "RenderMeshList.h"
 #include "Vertex2D.h"
 #include "Vertex2DTextured.h"
 
@@ -24,7 +22,7 @@ void UniquePass::initializeResources(const InitializationContext& context)
 
 	m_renderPass.reset(RenderPass::createRenderPass({ depth, color }));
 
-	m_commandBuffer.reset(CommandBuffer::createCommandBuffer(QueueType::GRAPHIC, false /* isTransient */));
+	m_commandBuffer.reset(CommandBuffer::createCommandBuffer(QueueType::GRAPHIC, false, "Unique pass"));
 
 	m_frameBuffers.resize(context.swapChainImageCount);
 	for (uint32_t i = 0; i < context.swapChainImageCount; ++i)
