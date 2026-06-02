@@ -11,7 +11,9 @@
 #include <mutex>
 #include <vector>
 
+#ifndef __ANDROID__
 #include <TracyVulkan.hpp>
+#endif
 
 #ifdef __ANDROID__
 #include <android/native_window.h>
@@ -57,7 +59,9 @@ namespace Wolf
 		[[nodiscard]] VkDescriptorPool getDescriptorPool() const { return m_descriptorPool->getDescriptorPool(); }
 		[[nodiscard]] const VkPhysicalDeviceRayTracingPipelinePropertiesKHR& getRayTracingProperties() const { return m_raytracingProperties; }
 		[[nodiscard]] const VkPhysicalDeviceFragmentShadingRatePropertiesKHR& getVRSProperties() const { return m_shadingRateProperties; }
+#ifndef __ANDROID__
 		[[nodiscard]] tracy::VkCtx* getTracyContext() const;
+#endif
 
 		[[nodiscard]] bool isRayTracingAvailable() const override { return m_availableFeatures.rayTracing; }
 		[[nodiscard]] Format getDepthFormat() const override;
@@ -134,7 +138,9 @@ namespace Wolf
 
 		/* Debug */
 		ResourceUniqueOwner<SemaphoreTracker> m_semaphoreTracker;
+#ifndef __ANDROID__
 		std::vector<tracy::VkCtx*> m_tracyVkCtxs;
+#endif
 	};
 
 	extern const Vulkan* g_vulkanInstance;

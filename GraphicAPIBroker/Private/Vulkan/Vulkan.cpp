@@ -132,12 +132,14 @@ Wolf::Vulkan::Vulkan(GLFWwindow* glfwWindowPtr, bool useOVR)
 
 	m_semaphoreTracker.reset(new SemaphoreTracker);
 
+#ifndef __ANDROID__
 	CommandBufferVulkan tracyCommandBuffer(QueueType::GRAPHIC, false, "Tracy");
 	m_tracyVkCtxs.resize(g_configuration->getMaxCachedFrames());
 	for (tracy::VkCtx*& tracyVkCtx : m_tracyVkCtxs)
 	{
 		tracyVkCtx = tracy::CreateVkContext(m_physicalDevice, m_device, m_graphicsQueue, tracyCommandBuffer.getCommandBuffer(), nullptr, nullptr);
 	}
+#endif
 }
 
 void Wolf::Vulkan::waitIdle() const
@@ -147,7 +149,9 @@ void Wolf::Vulkan::waitIdle() const
 
 void Wolf::Vulkan::collectProfiling()
 {
+#ifndef __ANDROID__
 	TracyVkCollect(getTracyContext(), nullptr);
+#endif
 }
 
 std::vector<const char*> getRequiredExtensions()
@@ -180,10 +184,12 @@ std::vector<const char*> getRequiredExtensions()
 	return extensions;
 }
 
+#ifndef __ANDROID__
 tracy::VkCtx* Wolf::Vulkan::getTracyContext() const
 {
 	return m_tracyVkCtxs[g_runtimeContext->getCurrentCPUFrameNumber() % g_configuration->getMaxCachedFrames()];
 }
+#endif
 
 Wolf::Format Wolf::Vulkan::getDepthFormat() const
 {

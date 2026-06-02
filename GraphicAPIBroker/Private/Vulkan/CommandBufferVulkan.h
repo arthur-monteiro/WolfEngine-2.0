@@ -63,8 +63,10 @@ namespace Wolf
 		bool m_isPreRecorded;
 
 		std::string m_name;
+#ifndef __ANDROID__
 		tracy::SourceLocationData m_srcLocation;
 		alignas(tracy::VkCtxScope) char m_tracyZoneStorage[sizeof(tracy::VkCtxScope)];
+#endif
 	};
 }
 

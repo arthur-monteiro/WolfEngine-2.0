@@ -73,6 +73,7 @@ void Wolf::CommandBufferVulkan::beginCommandBuffer() const
 
 	vkBeginCommandBuffer(getCommandBuffer(), &beginInfo);
 
+#ifndef __ANDROID__
 	tracy::SourceLocationData* srcLocation = const_cast<tracy::SourceLocationData*>(&m_srcLocation);
 	srcLocation->name = m_name.c_str();
 	srcLocation->function = "beginCommandBuffer";
@@ -81,12 +82,15 @@ void Wolf::CommandBufferVulkan::beginCommandBuffer() const
 	srcLocation->color = 0;
 
 	::new (const_cast<char*>(m_tracyZoneStorage)) tracy::VkCtxScope(g_vulkanInstance->getTracyContext(), srcLocation, getCommandBuffer(), true);
+#endif
 }
 
 void Wolf::CommandBufferVulkan::endCommandBuffer() const
 {
+#ifndef __ANDROID__
 	tracy::VkCtxScope* zone = (tracy::VkCtxScope*)m_tracyZoneStorage;
 	zone->~VkCtxScope();
+#endif
 
 	if (vkEndCommandBuffer(getCommandBuffer()) != VK_SUCCESS)
 		Debug::sendCriticalError("End command buffer failed");
