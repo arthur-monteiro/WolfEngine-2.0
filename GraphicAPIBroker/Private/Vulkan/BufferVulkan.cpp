@@ -77,7 +77,7 @@ void Wolf::BufferVulkan::transferGPUMemoryImmediate(const Buffer& bufferSrc, con
 
 	const BufferVulkan* srcAsBufferVulkan = static_cast<const BufferVulkan*>(&bufferSrc);
 
-	const CommandBufferVulkan commandBuffer(QueueType::TRANSFER, true);
+	const CommandBufferVulkan commandBuffer(QueueType::TRANSFER, true, "Transfer CPU memory immediate");
 	commandBuffer.beginCommandBuffer();
 
 	vkCmdCopyBuffer(commandBuffer.getCommandBuffer(), srcAsBufferVulkan->getBuffer(), m_buffer, 1, &vkCopyRegion);

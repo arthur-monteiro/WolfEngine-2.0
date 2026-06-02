@@ -24,7 +24,7 @@ uint32_t Wolf::CommandBufferVulkan::getDrawIndexedIndirectCommandStructureSize()
 	return sizeof(VkDrawIndexedIndirectCommand);
 }
 
-Wolf::CommandBufferVulkan::CommandBufferVulkan(QueueType queueType, bool isTransient, bool preRecord)
+Wolf::CommandBufferVulkan::CommandBufferVulkan(QueueType queueType, bool isTransient, const std::string& name, bool preRecord) : m_name(name)
 {
 	m_commandBuffers.resize((isTransient || preRecord) ? 1 : g_configuration->getMaxCachedFrames());
 
@@ -72,10 +72,22 @@ void Wolf::CommandBufferVulkan::beginCommandBuffer() const
 	beginInfo.flags = m_isPreRecorded ? VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT : VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
 
 	vkBeginCommandBuffer(getCommandBuffer(), &beginInfo);
+
+	tracy::SourceLocationData* srcLocation = const_cast<tracy::SourceLocationData*>(&m_srcLocation);
+	srcLocation->name = m_name.c_str();
+	srcLocation->function = "beginCommandBuffer";
+	srcLocation->file = __FILE__;
+	srcLocation->line = __LINE__;
+	srcLocation->color = 0;
+
+	::new (const_cast<char*>(m_tracyZoneStorage)) tracy::VkCtxScope(g_vulkanInstance->getTracyContext(), srcLocation, getCommandBuffer(), true);
 }
 
 void Wolf::CommandBufferVulkan::endCommandBuffer() const
 {
+	tracy::VkCtxScope* zone = (tracy::VkCtxScope*)m_tracyZoneStorage;
+	zone->~VkCtxScope();
+
 	if (vkEndCommandBuffer(getCommandBuffer()) != VK_SUCCESS)
 		Debug::sendCriticalError("End command buffer failed");
 }

@@ -33,6 +33,8 @@ void Wolf::JobsManager::executeJobsBeforeFrame()
 
 Wolf::JobsManager::AddedJobStatus Wolf::JobsManager::addStreamingJob(const MultiThreadTaskManager::Job& job)
 {
+    PROFILE_FUNCTION
+
     m_streamingMutex.lock();
     bool needNotify = m_streamingJobs.empty();
     m_streamingJobs.emplace(job);

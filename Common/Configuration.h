@@ -25,6 +25,7 @@ namespace Wolf
 		[[nodiscard]] bool getUICommands() const { return m_saveUICommands; }
 		[[nodiscard]] bool getEnableGPUDebugMarkers() const { return m_enableGPUDebugMarkers; }
 		[[nodiscard]] bool getUseVirtualTexture() const { return m_useVirtualTexture; }
+		[[nodiscard]] bool getUseMeshStreaming() const { return m_useMeshStreaming; }
 		[[nodiscard]] uint64_t getForcedTimerMsPerFrame() const { return m_forcedTimerMsPerFrame; }
 
 		enum class ColorSpace { SDR, ESDR10, HDR16 };
@@ -43,6 +44,7 @@ namespace Wolf
 		bool m_saveUICommands = false;
 		bool m_enableGPUDebugMarkers = false;
 		bool m_useVirtualTexture = false;
+		bool m_useMeshStreaming = false;
 		uint64_t m_forcedTimerMsPerFrame = 0;
 		ColorSpace m_colorSpace = ColorSpace::SDR;
 

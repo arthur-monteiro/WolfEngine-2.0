@@ -495,6 +495,8 @@ uint32_t Wolf::MaterialsGPUManager::computeSliceCount(uint32_t textureWidth, uin
 
 void Wolf::MaterialsGPUManager::processVirtualTextureRequestedSlices(const std::vector<VirtualTextureManager::FeedbackInfo>& requestedSlices, bool neverRemoveEntries)
 {
+	PROFILE_FUNCTION
+
 	for (const VirtualTextureManager::FeedbackInfo& requestedSlice : requestedSlices)
 	{
 		uint16_t textureId = requestedSlice.m_textureId;

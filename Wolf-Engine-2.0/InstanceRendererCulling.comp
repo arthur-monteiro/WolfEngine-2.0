@@ -72,6 +72,21 @@ layout(binding = 5, std140) uniform readonly UniformBufferLayout
 } ub;
 
 
+#ifdef MESH_STREAMING
+const uint MAX_FEEDBACK_COUNT = 32;
+
+struct Feedback
+{
+    uint meshIdx;
+    uint lod;
+};
+
+layout(std430, binding = 6) restrict buffer OutStreamingFeedbacksLayout
+{
+   	Feedback outFeedbacks[MAX_FEEDBACK_COUNT];
+} outStreamingFeedbacksBuffer;
+#endif
+
 bool isSphereVisible(in vec4 sphere, in vec4 planes[6])
 {
     for (int i = 0; i < 6; i++)

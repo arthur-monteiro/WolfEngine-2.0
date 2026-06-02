@@ -1,12 +1,11 @@
 #pragma once
-#include <mutex>
 
 #ifdef WOLF_VULKAN
 
-#include <cstdint>
 #include <vector>
 
 #include <vulkan/vulkan_core.h>
+#include <TracyVulkan.hpp>
 
 #include "../../Public/CommandBuffer.h"
 
@@ -17,7 +16,7 @@ namespace Wolf
 	public:
 		static uint32_t getDrawIndexedIndirectCommandStructureSize();
 
-		CommandBufferVulkan(QueueType queueType, bool isTransient, bool preRecord = false);
+		CommandBufferVulkan(QueueType queueType, bool isTransient, const std::string& name, bool preRecord = false);
 		~CommandBufferVulkan() override;
 
 		void beginCommandBuffer() const override;
@@ -62,6 +61,10 @@ namespace Wolf
 		QueueType m_queueType;
 		bool m_isTransient;
 		bool m_isPreRecorded;
+
+		std::string m_name;
+		tracy::SourceLocationData m_srcLocation;
+		alignas(tracy::VkCtxScope) char m_tracyZoneStorage[sizeof(tracy::VkCtxScope)];
 	};
 }
 

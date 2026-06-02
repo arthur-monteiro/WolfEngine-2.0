@@ -269,6 +269,8 @@ void Wolf::WolfEngine::updateBeforeFrame()
 
 uint32_t Wolf::WolfEngine::acquireNextSwapChainImage()
 {
+	PROFILE_FUNCTION
+
 	if (m_previousFrameHasBeenReset)
 	{
 		return m_lastAcquiredSwapChainImageIndex;
@@ -279,6 +281,8 @@ uint32_t Wolf::WolfEngine::acquireNextSwapChainImage()
 	const uint32_t currentSwapChainImageIndex = m_swapChain->acquireNextImage(currentFrame);
 	if (currentSwapChainImageIndex == SwapChain::NO_IMAGE_IDX)
 	{
+		PROFILE_SCOPED("Sleep")
+
 		std::this_thread::sleep_for(std::chrono::milliseconds(7)); // window is probably not visible, let the PC sleep a bit
 
 		waitIdle();
@@ -405,6 +409,8 @@ void Wolf::WolfEngine::frame(const std::span<ResourceNonOwner<CommandRecordBase>
 		m_swapChain->synchroniseCPUFromGPU(currentFrame + g_configuration->getMaxCachedFrames() - 1); // don't update UBs while a frame is being rendered
 	}
 
+	m_graphicAPIManager->collectProfiling();
+
 	g_runtimeContext->incrementCPUFrameNumber();
 }
 
@@ -422,6 +428,8 @@ void Wolf::WolfEngine::addJobBeforeFrame(const MultiThreadTaskManager::Job& job,
 
 void Wolf::WolfEngine::waitIdle() const
 {
+	PROFILE_FUNCTION
+
 	m_graphicAPIManager->waitIdle();
 }
 

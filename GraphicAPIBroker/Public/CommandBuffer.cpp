@@ -4,10 +4,10 @@
 #include "../Private/Vulkan/CommandBufferVulkan.h"
 #endif
 
-Wolf::CommandBuffer* Wolf::CommandBuffer::createCommandBuffer(QueueType queueType, bool isTransient, bool preRecord)
+Wolf::CommandBuffer* Wolf::CommandBuffer::createCommandBuffer(QueueType queueType, bool isTransient, const std::string& name, bool preRecord)
 {
 #ifdef WOLF_VULKAN
-	return new CommandBufferVulkan(queueType, isTransient, preRecord);
+	return new CommandBufferVulkan(queueType, isTransient, name, preRecord);
 #else
 	return nullptr;
 #endif

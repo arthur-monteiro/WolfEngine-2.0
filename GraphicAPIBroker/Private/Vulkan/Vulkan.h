@@ -11,6 +11,8 @@
 #include <mutex>
 #include <vector>
 
+#include <TracyVulkan.hpp>
+
 #ifdef __ANDROID__
 #include <android/native_window.h>
 #endif
@@ -25,6 +27,8 @@
 
 namespace Wolf
 {
+	class CommandBufferVulkan;
+
 	class Vulkan : public GraphicAPIManager
 	{
 	public:
@@ -36,6 +40,7 @@ namespace Wolf
 		~Vulkan() override = default;
 
 		void waitIdle() const override;
+		void collectProfiling() override;
 
 		// Getters
 		[[nodiscard]] VkDevice getDevice() const { return m_device; }
@@ -52,6 +57,7 @@ namespace Wolf
 		[[nodiscard]] VkDescriptorPool getDescriptorPool() const { return m_descriptorPool->getDescriptorPool(); }
 		[[nodiscard]] const VkPhysicalDeviceRayTracingPipelinePropertiesKHR& getRayTracingProperties() const { return m_raytracingProperties; }
 		[[nodiscard]] const VkPhysicalDeviceFragmentShadingRatePropertiesKHR& getVRSProperties() const { return m_shadingRateProperties; }
+		[[nodiscard]] tracy::VkCtx* getTracyContext() const;
 
 		[[nodiscard]] bool isRayTracingAvailable() const override { return m_availableFeatures.rayTracing; }
 		[[nodiscard]] Format getDepthFormat() const override;
@@ -128,6 +134,7 @@ namespace Wolf
 
 		/* Debug */
 		ResourceUniqueOwner<SemaphoreTracker> m_semaphoreTracker;
+		std::vector<tracy::VkCtx*> m_tracyVkCtxs;
 	};
 
 	extern const Vulkan* g_vulkanInstance;

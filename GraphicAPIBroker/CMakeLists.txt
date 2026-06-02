@@ -12,6 +12,8 @@ target_compile_definitions(GraphicAPIBroker PUBLIC GLM_FORCE_DEPTH_ZERO_TO_ONE)
 target_compile_definitions(GraphicAPIBroker PUBLIC GLM_FORCE_RADIANS)
 target_compile_definitions(GraphicAPIBroker PUBLIC GLM_ENABLE_EXPERIMENTAL)
 target_compile_definitions(GraphicAPIBroker PUBLIC WOLF_VULKAN)
+target_compile_definitions(GraphicAPIBroker PUBLIC TRACY_ENABLE)
+target_compile_definitions(GraphicAPIBroker PUBLIC TRACY_ON_DEMAND)
 
 if(ANDROID)
     set(ABI_DIR "/${ANDROID_ABI}")

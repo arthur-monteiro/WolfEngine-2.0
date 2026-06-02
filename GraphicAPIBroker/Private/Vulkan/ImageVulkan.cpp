@@ -181,7 +181,7 @@ void Wolf::ImageVulkan::copyCPUBuffer(const unsigned char* pixels, const Transit
 
 void Wolf::ImageVulkan::copyGPUBuffer(const Buffer& bufferSrc, const BufferImageCopy& copyRegion, const TransitionLayoutInfo& finalLayout)
 {
-	const CommandBufferVulkan commandBuffer(QueueType::TRANSFER, true);
+	const CommandBufferVulkan commandBuffer(QueueType::TRANSFER, true, "Copy GPU buffer");
 	commandBuffer.beginCommandBuffer();
 
 	transitionImageLayout(commandBuffer, { ImageLayout::TRANSFER_DST_OPTIMAL, VK_ACCESS_TRANSFER_WRITE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, copyRegion.imageSubresource.mipLevel,
@@ -215,7 +215,7 @@ void Wolf::ImageVulkan::recordCopyGPUBuffer(const CommandBuffer& commandBuffer, 
 
 void Wolf::ImageVulkan::copyGPUImage(const Image& imageSrc, const VkImageCopy& imageCopy)
 {
-	const CommandBufferVulkan commandBuffer(QueueType::TRANSFER, true);
+	const CommandBufferVulkan commandBuffer(QueueType::TRANSFER, true, "Copy GPU image");
 	commandBuffer.beginCommandBuffer();
 
 	transitionImageLayout(commandBuffer, { ImageLayout::TRANSFER_DST_OPTIMAL, VK_ACCESS_TRANSFER_WRITE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, imageCopy.dstSubresource.mipLevel, 1 });
@@ -325,7 +325,7 @@ void Wolf::ImageVulkan::exportToBuffer(std::vector<uint8_t>& outBuffer) const
 
 void Wolf::ImageVulkan::setImageLayout(const TransitionLayoutInfo& transitionLayoutInfo)
 {
-	const CommandBufferVulkan commandBuffer(QueueType::GRAPHIC, true);
+	const CommandBufferVulkan commandBuffer(QueueType::GRAPHIC, true, "Set image layout");
 	commandBuffer.beginCommandBuffer();
 
 	transitionImageLayout(commandBuffer, transitionLayoutInfo);

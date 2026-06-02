@@ -30,7 +30,7 @@ namespace Wolf
 	class CommandBuffer
 	{
 	public:
-		static CommandBuffer* createCommandBuffer(QueueType queueType, bool isTransient, bool preRecord = false /* use when a command buffer is not recorded every frame (but still submitted) */);
+		static CommandBuffer* createCommandBuffer(QueueType queueType, bool isTransient, const std::string& name, bool preRecord = false /* use when a command buffer is not recorded every frame (but still submitted) */);
 		static uint32_t getDrawIndexedIndirectCommandStructureSize();
 
 		virtual ~CommandBuffer() = default;

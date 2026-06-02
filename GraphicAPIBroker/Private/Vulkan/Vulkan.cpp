@@ -2,6 +2,8 @@
 
 #include <set>
 
+#include "CommandBufferVulkan.h"
+
 #ifdef __ANDROID__
 #ifndef VK_USE_PLATFORM_ANDROID_KHR
 #define VK_USE_PLATFORM_ANDROID_KHR
@@ -11,6 +13,7 @@
 
 #include "Configuration.h"
 #include "Debug.h"
+#include "RuntimeContext.h"
 #include "ShadingRateSymbols.h"
 #include "SwapChainSupportDetails.h"
 #include "VulkanHelper.h"
@@ -128,11 +131,23 @@ Wolf::Vulkan::Vulkan(GLFWwindow* glfwWindowPtr, bool useOVR)
 	m_depthFormat = findDepthFormat(m_physicalDevice);
 
 	m_semaphoreTracker.reset(new SemaphoreTracker);
+
+	CommandBufferVulkan tracyCommandBuffer(QueueType::GRAPHIC, false, "Tracy");
+	m_tracyVkCtxs.resize(g_configuration->getMaxCachedFrames());
+	for (tracy::VkCtx*& tracyVkCtx : m_tracyVkCtxs)
+	{
+		tracyVkCtx = tracy::CreateVkContext(m_physicalDevice, m_device, m_graphicsQueue, tracyCommandBuffer.getCommandBuffer(), nullptr, nullptr);
+	}
 }
 
 void Wolf::Vulkan::waitIdle() const
 {
 	vkDeviceWaitIdle(m_device);
+}
+
+void Wolf::Vulkan::collectProfiling()
+{
+	TracyVkCollect(getTracyContext(), nullptr);
 }
 
 std::vector<const char*> getRequiredExtensions()
@@ -163,6 +178,11 @@ std::vector<const char*> getRequiredExtensions()
 //#endif
 
 	return extensions;
+}
+
+tracy::VkCtx* Wolf::Vulkan::getTracyContext() const
+{
+	return m_tracyVkCtxs[g_runtimeContext->getCurrentCPUFrameNumber() % g_configuration->getMaxCachedFrames()];
 }
 
 Wolf::Format Wolf::Vulkan::getDepthFormat() const

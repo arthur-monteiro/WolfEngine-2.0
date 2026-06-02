@@ -1,4 +1,5 @@
 #include "InstanceMeshRenderer.h"
+#include "InstanceMeshRenderer.h"
 
 #include <fstream>
 #include <xxh64.hpp>
@@ -6,6 +7,7 @@
 #include "BoundingSphere.h"
 #include "CameraList.h"
 #include "CommandRecordBase.h"
+#include "Configuration.h"
 #include "DebugMarker.h"
 #include "DescriptorSetGenerator.h"
 #include "GraphicCameraInterface.h"
@@ -20,6 +22,10 @@ Wolf::InstanceMeshRenderer::InstanceMeshRenderer(ShaderList& shaderList, const R
     m_cullInstancesDescriptorSetLayoutGenerator.addStorageBuffer(ShaderStageFlagBits::COMPUTE, 3); // drawCounts
     m_cullInstancesDescriptorSetLayoutGenerator.addStorageBuffers(ShaderStageFlagBits::COMPUTE, 4, MAX_BATCH_COUNT); // outDrawCommands
     m_cullInstancesDescriptorSetLayoutGenerator.addUniformBuffer(ShaderStageFlagBits::COMPUTE, 5); // uniform buffer
+    if (g_configuration->getUseMeshStreaming())
+    {
+        m_cullInstancesDescriptorSetLayoutGenerator.addStorageBuffer(ShaderStageFlagBits::COMPUTE, 6); // feedbacks buffer
+    }
     m_cullInstancesDescriptorSetLayout.reset(DescriptorSetLayout::createDescriptorSetLayout(m_cullInstancesDescriptorSetLayoutGenerator.getDescriptorLayouts()));
 
 #ifdef __ANDROID__
@@ -38,6 +44,12 @@ Wolf::InstanceMeshRenderer::InstanceMeshRenderer(ShaderList& shaderList, const R
 #endif
         {
             std::ofstream outputFile(cacheFilename);
+
+            if (g_configuration->getUseMeshStreaming())
+            {
+                outputFile << "#define MESH_STREAMING\n";
+            }
+
             outputFile <<
                 #include "InstanceRendererCulling.comp"
                 ;
@@ -115,6 +127,14 @@ Wolf::InstanceMeshRenderer::InstanceMeshRenderer(ShaderList& shaderList, const R
         m_copyDescriptorSet.reset(DescriptorSet::createDescriptorSet(*m_copyInstancesDescriptorSetLayout));
         m_copyDescriptorSet->update(descriptorSetGenerator.getDescriptorSetCreateInfo());
     }
+
+    if (g_configuration->getUseMeshStreaming())
+    {
+        m_feedbackBuffer.reset(Buffer::createBuffer(MAX_FEEDBACK_COUNT * sizeof(FeedbackLayout), VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT));
+        m_feedbackBuffer->setName("Feedbacks (InstanceMeshRenderer::m_feedbackBuffer)");
+
+        m_feedbackReadableBuffer.reset(new ReadableBuffer(MAX_FEEDBACK_COUNT * sizeof(FeedbackLayout), VK_BUFFER_USAGE_STORAGE_BUFFER_BIT));
+    }
 }
 
 void Wolf::InstanceMeshRenderer::moveToNextFrame()
@@ -168,6 +188,11 @@ void Wolf::InstanceMeshRenderer::moveToNextFrame()
         uint32_t overrideCount = m_overrideCullingInstancesCount;
         m_copyInstancesUniformBuffer->transferCPUMemory(&overrideCount, sizeof(overrideCount));
     }
+
+    if (g_configuration->getUseMeshStreaming())
+    {
+        m_gpuDataTransfersManager->requestGPUBufferReadbackRecord(m_feedbackBuffer.createNonOwnerResource(), 0, m_feedbackReadableBuffer.createNonOwnerResource(), m_feedbackBuffer->getSize());
+    }
 }
 
 void Wolf::InstanceMeshRenderer::clear()
@@ -189,7 +214,7 @@ void Wolf::InstanceMeshRenderer::clear()
 
 void Wolf::InstanceMeshRenderer::initializeResources(const InitializationContext& context)
 {
-    m_commandBuffer.reset(CommandBuffer::createCommandBuffer(QueueType::COMPUTE, false));
+    m_commandBuffer.reset(CommandBuffer::createCommandBuffer(QueueType::COMPUTE, false, "Instance mesh renderer culling"));
     createSemaphores(context, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, false);
 }
 
@@ -407,6 +432,11 @@ void Wolf::InstanceMeshRenderer::activateCameraForThisFrame(uint32_t cameraIdx, 
             }
             descriptorSetGenerator.setBuffers(4, drawCommandsBuffers);
             descriptorSetGenerator.setUniformBuffer(5, *m_cullingUniformsBuffer);
+
+            if (g_configuration->getUseMeshStreaming())
+            {
+                descriptorSetGenerator.setBuffer(6, *m_feedbackBuffer);
+            }
 
             perCullingCamera->m_cullingDescriptorSet.reset(DescriptorSet::createDescriptorSet(*m_cullInstancesDescriptorSetLayout));
             perCullingCamera->m_cullingDescriptorSet->update(descriptorSetGenerator.getDescriptorSetCreateInfo());

@@ -75,7 +75,7 @@ Wolf::BottomLevelAccelerationStructureVulkan::BottomLevelAccelerationStructureVu
 
 	m_buildInfo.dstAccelerationStructure = m_accelerationStructure;
 
-	CommandBufferVulkan commandBuffer(QueueType::COMPUTE, true);
+	CommandBufferVulkan commandBuffer(QueueType::COMPUTE, true, "BLAS building");
 	commandBuffer.beginCommandBuffer();
 
 	build(commandBuffer);

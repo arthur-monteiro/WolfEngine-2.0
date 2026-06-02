@@ -84,6 +84,8 @@ uint32_t Wolf::VirtualTextureManager::takeEntryId(AtlasIndex atlasIndex, const F
 void Wolf::VirtualTextureManager::uploadData(AtlasIndex atlasIndex, const std::vector<uint8_t>& data, const Extent3D& sliceExtent, uint8_t sliceX, uint8_t sliceY, uint8_t mipLevel, uint8_t sliceCountX, uint8_t sliceCountY,
                                              uint32_t indirectionOffset, const FeedbackInfo& feedbackInfo, uint32_t entryId)
 {
+	PROFILE_FUNCTION
+
 	if (entryId == AtlasInfo::INVALID_ENTRY)
 	{
 		Debug::sendCriticalError("Invalid entry");
@@ -101,7 +103,7 @@ void Wolf::VirtualTextureManager::uploadData(AtlasIndex atlasIndex, const std::v
 	atlasOffset.x += subEntryOffsetX;
 	atlasOffset.y += subEntryOffsetY;
 	GPUDataTransfersManagerInterface::PushDataToGPUImageInfo pushDataToGpuImageInfo(data.data(), m_atlases[atlasIndex]->getImage(), Image::SampledInFragmentShader(), 0,
-		{ sliceExtent.width, sliceExtent.height, 0 }, atlasOffset);
+		{ sliceExtent.width, sliceExtent.height, 1 }, atlasOffset);
 	m_pushDataToGPUHandler->pushDataToGPUImage(pushDataToGpuImageInfo);
 
 	uint32_t indirectionId = computeVirtualTextureIndirectionId(sliceX, sliceY, sliceCountX, sliceCountY, mipLevel);

@@ -34,6 +34,7 @@ namespace Wolf
 		virtual ~GraphicAPIManager() = default;
 
 		virtual void waitIdle() const = 0;
+		virtual void collectProfiling() = 0;
 
 		virtual bool isRayTracingAvailable() const = 0;
 		virtual Format getDepthFormat() const = 0;

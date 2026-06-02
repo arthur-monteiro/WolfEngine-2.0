@@ -74,6 +74,7 @@ namespace Wolf
         static constexpr uint32_t MAX_INSTANCE_COUNT = 16'184;
         static constexpr uint32_t MAX_MESH_COUNT = 1024;
         static constexpr uint32_t MAX_BATCH_COUNT = 32;
+        static constexpr uint32_t MAX_FEEDBACK_COUNT = 32;
 
         static uint64_t computeHash(const ResourceNonOwner<MeshInterface>& meshInterface);
         struct MeshCacheData;
@@ -153,6 +154,14 @@ namespace Wolf
         };
         static constexpr uint32_t MAX_CAMERA_COUNT = 16;
         std::array<ResourceUniqueOwner<PerCullingCamera>, MAX_CAMERA_COUNT> m_cullingCamerasData;
+
+        struct FeedbackLayout
+        {
+            uint32_t m_meshIdx;
+            uint32_t m_lod;
+        };
+        ResourceUniqueOwner<Buffer> m_feedbackBuffer;
+        ResourceUniqueOwner<ReadableBuffer> m_feedbackReadableBuffer;
 
         // CPU caches
         struct MeshCacheData
