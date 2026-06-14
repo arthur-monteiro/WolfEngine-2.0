@@ -8,6 +8,7 @@
 #include "AABB.h"
 #include "BoundingSphere.h"
 #include "BufferPoolInterface.h"
+#include "GPUDataTransfersManager.h"
 #include "MeshInterface.h"
 
 namespace Wolf
@@ -18,7 +19,8 @@ namespace Wolf
 	{
 	public:
 		template <typename T>
-		Mesh(const std::vector<T>& vertices, const std::vector<uint32_t>& indices, const ResourceNonOwner<BufferPoolInterface>& bufferPoolInterface, AABB aabb = {}, BoundingSphere boundingSphere = {},
+		Mesh(const std::vector<T>& vertices, const std::vector<uint32_t>& indices, const ResourceNonOwner<BufferPoolInterface>& bufferPoolInterface,
+			const ResourceNonOwner<GPUDataTransfersManagerInterface>& gpuDataTransfersManager, AABB aabb = {}, BoundingSphere boundingSphere = {},
 			VkBufferUsageFlags additionalVertexBufferUsages = 0, VkBufferUsageFlags additionalIndexBufferUsages = 0);
 		Mesh(const ResourceNonOwner<BufferPoolInterface>& bufferPoolInterface, const BufferPoolInterface::BufferPoolInstance& vertexBufferPoolInstance, uint32_t vertexCount, uint32_t vertexSize,
 			const std::vector<uint32_t>& indices, AABB aabb = {}, BoundingSphere boundingSphere = {}, VkBufferUsageFlags additionalIndexBufferUsages = 0);
@@ -54,14 +56,15 @@ namespace Wolf
 	};
 
 	template<typename T>
-	Mesh::Mesh(const std::vector<T>& vertices, const std::vector<uint32_t>& indices, const ResourceNonOwner<BufferPoolInterface>& bufferPoolInterface, AABB aabb, BoundingSphere boundingSphere,
+	Mesh::Mesh(const std::vector<T>& vertices, const std::vector<uint32_t>& indices, const ResourceNonOwner<BufferPoolInterface>& bufferPoolInterface,
+		const ResourceNonOwner<GPUDataTransfersManagerInterface>& gpuDataTransfersManager, AABB aabb, BoundingSphere boundingSphere,
 		VkBufferUsageFlags additionalVertexBufferUsages, VkBufferUsageFlags additionalIndexBufferUsages) : m_bufferPoolInterface(bufferPoolInterface)
 	{
 		m_vertexBufferPoolInstance = m_bufferPoolInterface->allocate(sizeof(T) * vertices.size(), VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | additionalVertexBufferUsages, sizeof(T));
-		getVertexBuffer()->transferCPUMemoryWithStagingBuffer(static_cast<const void*>(vertices.data()), sizeof(T) * vertices.size(), 0, getVertexBufferOffset());
+		gpuDataTransfersManager->pushDataToGPUBuffer(static_cast<const void*>(vertices.data()), sizeof(T) * vertices.size(), getVertexBuffer(), getVertexBufferOffset());
 
 		m_indexBufferPoolInstance = m_bufferPoolInterface->allocate(sizeof(uint32_t) * indices.size(), VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT | additionalIndexBufferUsages, sizeof(uint32_t));
-		getIndexBuffer()->transferCPUMemoryWithStagingBuffer(indices.data(), sizeof(uint32_t) * indices.size(), 0, getIndexBufferOffset());
+		gpuDataTransfersManager->pushDataToGPUBuffer(indices.data(), sizeof(uint32_t) * indices.size(), getIndexBuffer(), getIndexBufferOffset());
 
 		m_vertexCount = static_cast<uint32_t>(vertices.size());
 		m_vertexSize = sizeof(T);

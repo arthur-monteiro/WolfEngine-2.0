@@ -19,14 +19,17 @@ struct LODInfo
 	uint vertexOffset;
 	uint indexOffset;
 	uint indexCount;
+	uint clusterOffset;
+
+    uint clusterCount;
 	float maxDistance;
 };
-const uint MAX_LOD_COUNT = 16;
+const uint MAX_LOD_COUNT = 20;
 
 struct MeshInfo
 {
-	vec4 boundingSphere;
 	LODInfo lods[MAX_LOD_COUNT];
+	vec4 boundingSphere;
 };
 layout(std430, binding = 1) restrict buffer MeshesInfoBufferLayout
 {
@@ -71,7 +74,6 @@ layout(binding = 5, std140) uniform readonly UniformBufferLayout
 	uint instanceCount;
 } ub;
 
-
 #ifdef MESH_STREAMING
 const uint MAX_FEEDBACK_COUNT = 32;
 
@@ -83,6 +85,7 @@ struct Feedback
 
 layout(std430, binding = 6) restrict buffer OutStreamingFeedbacksLayout
 {
+   	uint outFeedbackCount;
    	Feedback outFeedbacks[MAX_FEEDBACK_COUNT];
 } outStreamingFeedbacksBuffer;
 #endif
@@ -149,6 +152,44 @@ void main()
 
 	if (lod >= MAX_LOD_COUNT)
 		return;
+
+#ifdef MESH_STREAMING
+    uint requestedLOD = lod;
+
+    bool hasFoundValidData = false;
+    bool needToAddFeedback = false;
+    while (lod < MAX_LOD_COUNT)
+    {
+        if (meshInfo.lods[lod].vertexOffset != -1)
+            hasFoundValidData = true;
+
+        if (!hasFoundValidData)
+        {
+            needToAddFeedback = true;
+            lod++;
+        }
+        else
+        {
+            break;
+        }
+    }
+
+    if (needToAddFeedback)
+    {
+        uint feedbackCount = atomicAdd(outStreamingFeedbacksBuffer.outFeedbackCount, 1);
+        if (feedbackCount < MAX_FEEDBACK_COUNT)
+        {
+            outStreamingFeedbacksBuffer.outFeedbacks[feedbackCount].meshIdx = cullingInstanceInfo.meshIdx;
+            outStreamingFeedbacksBuffer.outFeedbacks[feedbackCount].lod = requestedLOD;
+        }
+    }
+
+    if (!hasFoundValidData)
+    {
+        return;
+    }
+
+#endif
 
 	for (uint batchIdx = 0; batchIdx < MAX_BATCH_COUNT; batchIdx++)
 	{

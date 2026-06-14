@@ -71,7 +71,8 @@ Wolf::Vulkan::Vulkan(GLFWwindow* glfwWindowPtr, bool useOVR)
 	setupDebugMessenger();
 #ifndef __ANDROID__
 
-	if (glfwCreateWindowSurface(m_instance, glfwWindowPtr, nullptr, &m_surface) != VK_SUCCESS)
+	VkResult res = glfwCreateWindowSurface(m_instance, glfwWindowPtr, nullptr, &m_surface);
+	if (res != VK_SUCCESS)
 	{
 		Debug::sendCriticalError("Error : window surface creation");
 	}
@@ -165,6 +166,13 @@ std::vector<const char*> getRequiredExtensions()
 
 	for (unsigned int i = 0; i < glfwExtensionCount; i++)
 		extensions.push_back(glfwExtensions[i]);
+
+	if (!glfwExtensions)
+	{
+		extensions.push_back("VK_KHR_surface");
+		extensions.push_back("VK_KHR_xcb_surface");
+	}
+
 #else
 	extensions.push_back("VK_KHR_surface");
 	extensions.push_back("VK_KHR_android_surface");

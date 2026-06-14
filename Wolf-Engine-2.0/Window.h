@@ -28,6 +28,10 @@ namespace Wolf
 
 		[[nodiscard]] GLFWwindow* getWindow() const { return m_window; }
 
+#ifdef __linux__
+		bool isX11() const { return m_platform == Platform::X11; }
+#endif
+
 	private:
 		static void onWindowResized(GLFWwindow* window, int width, int height)
 		{
@@ -46,6 +50,10 @@ namespace Wolf
 
 		void* m_systemManagerInstance = nullptr;
 		std::function<void(void*, int, int)> m_resizeCallback;
+
+#ifdef __linux__
+		enum class Platform { WAYLAND, X11  } m_platform;
+#endif
 	};
 }
 

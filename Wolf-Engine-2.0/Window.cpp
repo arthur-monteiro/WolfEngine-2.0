@@ -4,6 +4,9 @@
 
 #include <utility>
 
+#include "Configuration.h"
+#include "Debug.h"
+
 Wolf::Window::Window(const std::string& appName, uint32_t width, uint32_t height, bool borderless, void* systemManagerInstance, std::function<void(void*, int, int)> resizeCallback)
 {
 	glfwInit();
@@ -13,6 +16,24 @@ Wolf::Window::Window(const std::string& appName, uint32_t width, uint32_t height
 	{
 		glfwWindowHint(GLFW_DECORATED, GLFW_FALSE);
 	}
+
+#ifdef __linux__
+	int platform = glfwGetPlatform();
+	if (platform == GLFW_PLATFORM_WAYLAND)
+	{
+		m_platform = Platform::WAYLAND;
+
+		if (g_configuration->getUseRenderDoc())
+		{
+			Debug::sendCriticalError("X11 must be enabled to use renderdoc");
+		}
+	}
+	else if (platform == GLFW_PLATFORM_X11)
+	{
+		m_platform = Platform::X11;
+		glfwInitHint(GLFW_PLATFORM, GLFW_PLATFORM_X11);
+	}
+#endif
 
 	m_window = glfwCreateWindow(static_cast<int>(width), static_cast<int>(height), appName.c_str(), nullptr, nullptr);
 

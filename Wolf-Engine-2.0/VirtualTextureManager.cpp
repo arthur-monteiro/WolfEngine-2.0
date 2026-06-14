@@ -313,7 +313,7 @@ void Wolf::VirtualTextureManager::AtlasInfo::updateAvailabilities()
 			for (uint32_t subEntryIdx = 0; subEntryIdx < entry.m_subEntries.size(); subEntryIdx++)
 			{
 				SubEntry& subEntry = entry.m_subEntries[subEntryIdx];
-				if (subEntry.m_LRU < frameIdx) // don't add entries marked to stay forever (or at least until a specific frame idx)
+				if (subEntry.m_LRU < frameIdx || frameIdx == 0) // don't add entries marked to stay forever (or at least until a specific frame idx)
 				{
 					m_allAvailabilities.push_back({ { computeEntryId(entryIdx, subEntryIdx), subEntryIdx }, subEntry.m_LRU, entry.m_sliceMipLevels, true });
 				}

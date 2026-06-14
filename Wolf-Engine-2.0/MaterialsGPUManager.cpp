@@ -117,6 +117,8 @@ void Wolf::MaterialsGPUManager::addNewTextureSet(const TextureSetInfo& textureSe
 
 	TextureSetGPUInfo& newTextureSetInfo = m_newTextureSetsInfo.emplace_back();
 
+	newTextureSetInfo.samplingMode = static_cast<uint32_t>(textureSetInfo.samplingMode);
+
 	if (g_configuration->getUseVirtualTexture())
 	{
 		if (!textureSetInfo.slicesFolders[0].empty())

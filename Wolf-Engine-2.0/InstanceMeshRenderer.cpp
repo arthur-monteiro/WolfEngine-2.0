@@ -1,5 +1,6 @@
 #include "InstanceMeshRenderer.h"
 #include "InstanceMeshRenderer.h"
+#include "InstanceMeshRenderer.h"
 
 #include <fstream>
 #include <xxh64.hpp>
@@ -113,6 +114,12 @@ Wolf::InstanceMeshRenderer::InstanceMeshRenderer(ShaderList& shaderList, const R
     m_meshesInfoBuffer->setName("Meshes info (InstanceMeshRenderer::m_meshesInfoBuffer)");
     m_cullingUniformsBuffer.reset(new UniformBuffer(sizeof(CullingUniformData)));
 
+    if (g_configuration->getUseClusterCulling())
+    {
+        m_clustersInfoBuffer.reset(Buffer::createBuffer(MAX_CLUSTER_COUNT * sizeof(ClusterInfo), VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT));
+        m_clustersInfoBuffer->setName("Clusters info (InstanceMeshRenderer::m_clustersInfoBuffer)");
+    }
+
     m_copyInstancesUniformBuffer.reset(new UniformBuffer(sizeof(uint32_t)));
 
     m_overrideCullingInstancesBuffer.reset(Buffer::createBuffer(MAX_INSTANCE_COUNT * sizeof(CullingInstanceInfo), VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
@@ -130,10 +137,10 @@ Wolf::InstanceMeshRenderer::InstanceMeshRenderer(ShaderList& shaderList, const R
 
     if (g_configuration->getUseMeshStreaming())
     {
-        m_feedbackBuffer.reset(Buffer::createBuffer(MAX_FEEDBACK_COUNT * sizeof(FeedbackLayout), VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT));
+        m_feedbackBuffer.reset(Buffer::createBuffer(MAX_FEEDBACK_COUNT * sizeof(Feedback) + sizeof(uint32_t), VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT));
         m_feedbackBuffer->setName("Feedbacks (InstanceMeshRenderer::m_feedbackBuffer)");
 
-        m_feedbackReadableBuffer.reset(new ReadableBuffer(MAX_FEEDBACK_COUNT * sizeof(FeedbackLayout), VK_BUFFER_USAGE_STORAGE_BUFFER_BIT));
+        m_feedbackReadableBuffer.reset(new ReadableBuffer(m_feedbackBuffer->getSize(), VK_BUFFER_USAGE_STORAGE_BUFFER_BIT));
     }
 }
 
@@ -191,6 +198,8 @@ void Wolf::InstanceMeshRenderer::moveToNextFrame()
 
     if (g_configuration->getUseMeshStreaming())
     {
+        readFeedbackBuffer();
+
         m_gpuDataTransfersManager->requestGPUBufferReadbackRecord(m_feedbackBuffer.createNonOwnerResource(), 0, m_feedbackReadableBuffer.createNonOwnerResource(), m_feedbackBuffer->getSize());
     }
 }
@@ -228,6 +237,35 @@ void Wolf::InstanceMeshRenderer::record(const RecordContext& context)
     m_commandBuffer->beginCommandBuffer();
 
     DebugMarker::beginRegion(m_commandBuffer.get(), DebugMarker::renderPassDebugColor, "Instance mesh renderer culling pass");
+
+    if (g_configuration->getUseMeshStreaming())
+    {
+        {
+            Wolf::Buffer::BufferAccess accessBefore{};
+            accessBefore.accessFlags = Wolf::TRANSFER_READ;
+            accessBefore.stage = Wolf::PipelineStage::TRANSFER;
+
+            Wolf::Buffer::BufferAccess accessAfter{};
+            accessAfter.accessFlags = Wolf::TRANSFER_WRITE;
+            accessAfter.stage = Wolf::PipelineStage::TRANSFER;
+
+            m_feedbackBuffer->recordBarrier(&*m_commandBuffer, accessBefore, accessAfter, 0, m_feedbackBuffer->getSize());
+        }
+
+        m_commandBuffer->fillBuffer(*m_feedbackBuffer, 0, m_feedbackBuffer->getSize(), 0);
+
+        {
+            Wolf::Buffer::BufferAccess accessBefore{};
+            accessBefore.accessFlags = Wolf::TRANSFER_WRITE;
+            accessBefore.stage = Wolf::PipelineStage::TRANSFER;
+
+            Wolf::Buffer::BufferAccess accessAfter{};
+            accessAfter.accessFlags = Wolf::SHADER_READ | Wolf::SHADER_WRITE;
+            accessAfter.stage = Wolf::PipelineStage::COMPUTE_SHADER;
+
+            m_feedbackBuffer->recordBarrier(&*m_commandBuffer, accessBefore, accessAfter, 0, m_feedbackBuffer->getSize());
+        }
+    }
 
     if (!m_overrideCullingInstancesCount)
     {
@@ -309,29 +347,65 @@ uint32_t Wolf::InstanceMeshRenderer::registerMesh(const MeshToRender& mesh)
 
     MeshInfo& meshInfo = m_meshesToAdd.emplace_back();
 
+    m_uniqueTriangleRegisteredCount += mesh.m_lods[0].m_indexCount / 3;
+
     uint64_t bufferSetHash = 0;
+    uint32_t validLOD = -1;
     for (uint32_t lod = 0; lod < mesh.m_lods.size(); lod++)
     {
-        meshInfo.m_lods[lod].m_indexCount = mesh.m_lods[lod].m_mesh->getIndexCount();
-        meshInfo.m_lods[lod].m_vertexOffset = mesh.m_lods[lod].m_mesh->getVertexBufferOffset() / std::max(mesh.m_lods[lod].m_mesh->getVertexSize(), 1u);
-        meshInfo.m_lods[lod].m_indexOffset = mesh.m_lods[lod].m_mesh->getIndexBufferOffset() / std::max(mesh.m_lods[lod].m_mesh->getIndexSize(), 1u);
-        meshInfo.m_lods[lod].m_maxDistance = mesh.m_lods[lod].m_maxDistance;
+        const NullableResourceNonOwner<MeshInterface>& lodMesh = mesh.m_lods[lod].m_mesh;
 
-        if (lod == 0)
+        if (lodMesh)
         {
-            bufferSetHash = computeHash(mesh.m_lods[lod].m_mesh);
+            if (validLOD == -1)
+            {
+                validLOD = lod;
+            }
+
+            meshInfo.m_lods[lod].m_indexCount = lodMesh->getIndexCount();
+            meshInfo.m_lods[lod].m_vertexOffset = lodMesh->getVertexBufferOffset() / std::max(lodMesh->getVertexSize(), 1u);
+            meshInfo.m_lods[lod].m_indexOffset = lodMesh->getIndexBufferOffset() / std::max(lodMesh->getIndexSize(), 1u);
+            meshInfo.m_lods[lod].m_maxDistance = mesh.m_lods[lod].m_maxDistance;
+
+            if (g_configuration->getUseClusterCulling())
+            {
+                uint32_t clusterOffset = registerClusters(mesh.m_lods[lod].m_clusters);
+                meshInfo.m_lods[lod].m_clusterOffset = clusterOffset;
+                meshInfo.m_lods[lod].m_clusterCount = static_cast<uint32_t>(mesh.m_lods[lod].m_clusters.size());
+            }
+            else
+            {
+                meshInfo.m_lods[lod].m_clusterOffset = 0;
+                meshInfo.m_lods[lod].m_clusterCount = 0;
+            }
+
+            if (lod == 0 || bufferSetHash == 0)
+            {
+                bufferSetHash = computeHash(lodMesh);
+            }
+            else if (bufferSetHash != computeHash(lodMesh))
+            {
+                Debug::sendCriticalError("All LODs must share the same buffers");
+            }
         }
-        else if (bufferSetHash != computeHash(mesh.m_lods[lod].m_mesh))
+        else
         {
-            Debug::sendCriticalError("All LODs must share the same buffers");
+            meshInfo.m_lods[lod].m_vertexOffset = static_cast<uint32_t>(-1);
+            meshInfo.m_lods[lod].m_maxDistance = mesh.m_lods[lod].m_maxDistance;
         }
     }
-    meshInfo.m_boundingSphere = glm::vec4(mesh.m_lods[0].m_mesh->getBoundingSphere().getCenter(), mesh.m_lods[0].m_mesh->getBoundingSphere().getRadius());
+    meshInfo.m_boundingSphere = glm::vec4(mesh.m_boundingSphere.getCenter(), mesh.m_boundingSphere.getRadius());
+
+    if (validLOD == -1)
+    {
+        Debug::sendCriticalError("No valid LOD found");
+    }
 
     MeshCacheData& meshCacheData = m_meshesCacheData.emplace_back();
     meshCacheData.m_bufferSetHash = bufferSetHash;
-    meshCacheData.m_vertexBuffer = mesh.m_lods[0].m_mesh->getVertexBuffer();
-    meshCacheData.m_indexBuffer = mesh.m_lods[0].m_mesh->getIndexBuffer();
+    meshCacheData.m_vertexBuffer = mesh.m_lods[validLOD].m_mesh->getVertexBuffer();
+    meshCacheData.m_indexBuffer = mesh.m_lods[validLOD].m_mesh->getIndexBuffer();
+    meshCacheData.m_indexCount = mesh.m_lods[0].m_indexCount;
     if (meshIdx != m_meshesCacheData.size() - 1)
     {
         Debug::sendCriticalError("Missmatch between GPU scene description and CPU cache data");
@@ -341,10 +415,43 @@ uint32_t Wolf::InstanceMeshRenderer::registerMesh(const MeshToRender& mesh)
     return meshIdx;
 }
 
+void Wolf::InstanceMeshRenderer::registerLODData(uint32_t meshIdx, uint32_t lodIdx, const MeshToRender::LOD& lod)
+{
+    const MeshCacheData& meshCacheData = m_meshesCacheData[meshIdx];
+    uint64_t bufferSetHash = computeHash(lod.m_mesh);
+    if (meshCacheData.m_bufferSetHash != bufferSetHash)
+    {
+        Debug::sendCriticalError("Missmatch between buffer set hashes");
+    }
+
+    LODInfo lodInfo{};
+    lodInfo.m_indexCount = lod.m_mesh->getIndexCount();
+    lodInfo.m_vertexOffset = lod.m_mesh->getVertexBufferOffset() / std::max(lod.m_mesh->getVertexSize(), 1u);
+    lodInfo.m_indexOffset = lod.m_mesh->getIndexBufferOffset() / std::max(lod.m_mesh->getIndexSize(), 1u);
+    //lodInfo.m_maxDistance = lod.m_maxDistance;
+
+    if (g_configuration->getUseClusterCulling())
+    {
+        uint32_t clusterOffset = registerClusters(lod.m_clusters);
+        lodInfo.m_clusterOffset = clusterOffset;
+        lodInfo.m_clusterCount = static_cast<uint32_t>(lod.m_clusters.size());
+    }
+    else
+    {
+        lodInfo.m_clusterOffset = 0;
+        lodInfo.m_clusterCount = 0;
+    }
+
+    m_gpuDataTransfersManager->pushDataToGPUBuffer(&lodInfo, sizeof(LODInfo) - sizeof(float) /* don't push distance */, m_meshesInfoBuffer.createNonOwnerResource(),
+        meshIdx * sizeof(MeshInfo) + offsetof(MeshInfo, m_lods) + lodIdx * sizeof(LODInfo));
+}
+
 uint32_t Wolf::InstanceMeshRenderer::addInstance(uint32_t meshIdx, const glm::mat4& transform, uint32_t materialIdx, uint32_t customData, const ResourceNonOwner<const PipelineSet>& pipelineSet,
-    const std::array<std::vector<DescriptorSetBindInfo>, PipelineSet::MAX_PIPELINE_COUNT>& perPipelineDescriptorSets)
+                                                 const std::array<std::vector<DescriptorSetBindInfo>, PipelineSet::MAX_PIPELINE_COUNT>& perPipelineDescriptorSets)
 {
     m_mutex.lock();
+
+    m_totalTriangleRegisteredCount += m_meshesCacheData[meshIdx].m_indexCount / 3;
 
     uint32_t instanceIdx = m_currentInstanceCount + m_instancesToAdd.size();
     if (instanceIdx >= MAX_INSTANCE_COUNT)
@@ -612,6 +719,13 @@ float Wolf::InstanceMeshRenderer::computeLODDistance(float radius, uint32_t inde
     return distance + radius;
 }
 
+void Wolf::InstanceMeshRenderer::swapFeedbacks(std::vector<Feedback>& outFeedbacks)
+{
+    m_lastFrameFeedbacksMutex.lock();
+    outFeedbacks = m_lastFrameFeedbacks;
+    m_lastFrameFeedbacksMutex.unlock();
+}
+
 uint64_t Wolf::InstanceMeshRenderer::computeHash(const ResourceNonOwner<MeshInterface>& meshInterface)
 {
     std::array<const void*, 2> buffers = { meshInterface->getVertexBuffer() ? &*meshInterface->getVertexBuffer() : nullptr, meshInterface->getIndexBuffer() ? &*meshInterface->getIndexBuffer() : nullptr };
@@ -654,9 +768,55 @@ uint32_t Wolf::InstanceMeshRenderer::createMissingBatchesAndComputeBatchMask(con
     return batchMask;
 }
 
+void Wolf::InstanceMeshRenderer::readFeedbackBuffer()
+{
+    PROFILE_FUNCTION
+
+    const uint32_t bufferIdx = g_runtimeContext->getCurrentCPUFrameNumber() % g_configuration->getMaxCachedFrames();
+
+    const uint32_t* feedbackData = static_cast<const uint32_t*>(m_feedbackReadableBuffer->getBuffer(bufferIdx).map());
+    uint32_t feedbackCount = std::min(*feedbackData, MAX_FEEDBACK_COUNT);
+
+    const Feedback* feedbacks = reinterpret_cast<const Feedback*>(feedbackData + 1);
+
+    m_lastFrameFeedbacksMutex.lock();
+    m_lastFrameFeedbacks.resize(feedbackCount);
+    if (feedbackCount > 0)
+    {
+        memcpy(m_lastFrameFeedbacks.data(), feedbacks, feedbackCount * sizeof(Feedback));
+    }
+    m_lastFrameFeedbacksMutex.unlock();
+
+    m_feedbackReadableBuffer->getBuffer(bufferIdx).unmap();
+}
+
+uint32_t Wolf::InstanceMeshRenderer::registerClusters(const std::vector<MeshToRender::LOD::Cluster>& clusters)
+{
+    if (!g_configuration->getUseClusterCulling())
+    {
+        Debug::sendCriticalError("This function should not be called if cluster culling is not enabled");
+    }
+
+    uint32_t clusterOffset = m_currentClusterCount.fetch_add(static_cast<uint32_t>(clusters.size()));
+
+    std::vector<ClusterInfo> clustersInfo(clusters.size());
+    for (uint32_t clusterIdx = 0; clusterIdx < clusters.size(); clusterIdx++)
+    {
+        const MeshToRender::LOD::Cluster& inputCluster = clusters[clusterIdx];
+        clustersInfo[clusterIdx].m_boundingSphere =  glm::vec4(inputCluster.m_boundingSphere.getCenter(), inputCluster.m_boundingSphere.getRadius());
+        clustersInfo[clusterIdx].m_indexOffset = inputCluster.m_indexOffset;
+        clustersInfo[clusterIdx].m_indexCount = inputCluster.m_indexCount;
+        clustersInfo[clusterIdx].m_vertexOffset = inputCluster.m_vertexCount;
+    }
+    m_gpuDataTransfersManager->pushDataToGPUBuffer(clustersInfo.data(), clustersInfo.size() * sizeof(ClusterInfo), m_clustersInfoBuffer.createNonOwnerResource(),
+        clusterOffset * sizeof(ClusterInfo));
+
+    return clusterOffset;
+}
+
 Wolf::InstanceMeshRenderer::PerBatchData::PerBatchData(const MeshCacheData& meshCacheData, uint32_t pipelineIdx, const std::vector<DescriptorSetBindInfo>& descriptorSetsToBindForDraw,
-    const ResourceNonOwner<const PipelineSet>& pipelineSet,
-    uint32_t maxInstanceCount, uint32_t maxMeshCount, const DescriptorSetLayoutGenerator& cullInstancesDescriptorSetLayoutGenerator, const ResourceNonOwner<DescriptorSetLayout>& cullingDescriptorSetLayout)
+    const ResourceNonOwner<const PipelineSet>& pipelineSet, uint32_t maxInstanceCount, uint32_t maxMeshCount, const DescriptorSetLayoutGenerator& cullInstancesDescriptorSetLayoutGenerator,
+    const ResourceNonOwner<DescriptorSetLayout>& cullingDescriptorSetLayout)
 : m_maxInstanceCount(maxInstanceCount), m_pipelineIdx(pipelineIdx), m_cullingDescriptorSetLayout(cullingDescriptorSetLayout), m_renderingPipelineSet(pipelineSet)
 {
     m_bufferSetHash = meshCacheData.m_bufferSetHash;

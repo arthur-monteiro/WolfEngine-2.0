@@ -47,6 +47,13 @@ Wolf::WolfEngine::WolfEngine(const WolfInstanceCreateInfo& createInfo) : m_globa
 #endif
 	g_configuration = m_configuration.get();
 
+#ifdef __linux__
+	if (g_configuration->getForceX11())
+	{
+		setenv("XDG_SESSION_TYPE", "x11", 1);
+	}
+#endif
+
 	m_runtimeContext.reset(new RuntimeContext());
 	g_runtimeContext = m_runtimeContext.get();
 
@@ -55,10 +62,10 @@ Wolf::WolfEngine::WolfEngine(const WolfInstanceCreateInfo& createInfo) : m_globa
 #ifdef _WIN32
 		LoadLibraryW(L"renderdoc.dll");
 #elif __linux__
-		void* handle = dlopen("librenderdoc.so", RTLD_NOW | RTLD_LOCAL);
+		void* handle = dlopen("./librenderdoc.so", RTLD_NOW | RTLD_LOCAL);
 		if (!handle)
 		{
-			Debug::sendError("Can't open renderdoc so");
+			Debug::sendError("Can't open renderdoc so: " + std::string(dlerror()));
 		}
 #else
 		Debug::sendError("Can't open renderdoc dll");
@@ -91,11 +98,19 @@ Wolf::WolfEngine::WolfEngine(const WolfInstanceCreateInfo& createInfo) : m_globa
 	switch (m_configuration->getColorSpace())
 	{
 		case Configuration::ColorSpace::SDR:
+		{
 			swapChainCreateInfo.colorSpace = SwapChain::SwapChainCreateInfo::ColorSpace::S_RGB;
 			swapChainCreateInfo.format = Format::R8G8B8A8_UNORM;
+#ifdef __linux
+			if (m_window->isX11())
+			{
+				swapChainCreateInfo.format = Format::B8G8R8A8_UNORM;
+			}
+#endif
 			break;
+		}
 		case Configuration::ColorSpace::ESDR10:
-			Debug::sendError("ESDR10 is not currently supported");
+			Debug::sendCriticalError("ESDR10 is not currently supported");
 			swapChainCreateInfo.colorSpace = SwapChain::SwapChainCreateInfo::ColorSpace::S_RGB;
 			swapChainCreateInfo.format = Format::R8G8B8A8_UNORM;
 			break;
@@ -424,6 +439,11 @@ void Wolf::WolfEngine::addJobBeforeFrame(const MultiThreadTaskManager::Job& job,
 	{
 		m_jobsManager->addJobBeforeFrame(job);
 	}
+}
+
+void Wolf::WolfEngine::addStreamingJob(const MultiThreadTaskManager::Job& job) const
+{
+	m_jobsManager->addStreamingJob(job);
 }
 
 void Wolf::WolfEngine::waitIdle() const

@@ -1,5 +1,6 @@
 #pragma once
 
+#include <atomic>
 #include <glm/glm.hpp>
 
 #include "CommandRecordBase.h"
@@ -39,11 +40,27 @@ namespace Wolf
                 NullableResourceNonOwner<MeshInterface> m_mesh;
                 float m_maxDistance = 0.0f;
 
-                LOD(const ResourceNonOwner<MeshInterface>& mesh, float maxDistance) : m_mesh(mesh), m_maxDistance(maxDistance) {}
+                struct Cluster
+                {
+                    uint32_t m_indexOffset;
+                    uint32_t m_indexCount;
+                    uint32_t m_vertexOffset;
+                    uint32_t m_vertexCount;
+                    BoundingSphere m_boundingSphere;
+                };
+                static_assert(std::is_trivially_copyable_v<Cluster>); // needed for editor mesh formatter caches
+                static_assert(std::is_standard_layout_v<BoundingSphere>);
+                std::vector<Cluster> m_clusters;
+
+                uint32_t m_indexCount = 0; // for the stats
+
+                LOD(const ResourceNonOwner<MeshInterface>& mesh, float maxDistance, uint32_t indexCount, const std::vector<Cluster>& clusterRanges)
+                    : m_mesh(mesh), m_maxDistance(maxDistance), m_indexCount(indexCount), m_clusters(clusterRanges) {}
                 LOD(const ResourceNonOwner<MeshInterface>& mesh) : m_mesh(mesh) {}
                 LOD() = default;
             };
             std::vector<LOD> m_lods;
+            BoundingSphere m_boundingSphere;
             ResourceNonOwner<const PipelineSet> m_pipelineSet;
             std::array<std::vector<DescriptorSetBindInfo>, PipelineSet::MAX_PIPELINE_COUNT> m_perPipelineDescriptorSets;
 
@@ -51,6 +68,7 @@ namespace Wolf
         };
 
         [[nodiscard]] uint32_t registerMesh(const MeshToRender& mesh);
+        void registerLODData(uint32_t meshIdx, uint32_t lodIdx, const MeshToRender::LOD& lod);
         [[nodiscard]] uint32_t addInstance(uint32_t meshIdx, const glm::mat4& transform, uint32_t materialIdx, uint32_t customData, const ResourceNonOwner<const PipelineSet>& pipelineSet,
             const std::array<std::vector<DescriptorSetBindInfo>, PipelineSet::MAX_PIPELINE_COUNT>& perPipelineDescriptorSets);
         void removeInstance(uint32_t instanceIdx);
@@ -70,9 +88,19 @@ namespace Wolf
 
         static float computeLODDistance(float radius, uint32_t indexCount, float quality);
 
+        struct Feedback
+        {
+            uint32_t m_meshIdx;
+            uint32_t m_lod;
+        };
+        void swapFeedbacks(std::vector<Feedback>& outFeedbacks);
+
+        uint32_t getUniqueTriangleRegisteredCount() const { return m_uniqueTriangleRegisteredCount; }
+        uint32_t getTotalTriangleRegisteredCount() const { return m_totalTriangleRegisteredCount; }
+
     private:
-        static constexpr uint32_t MAX_INSTANCE_COUNT = 16'184;
-        static constexpr uint32_t MAX_MESH_COUNT = 1024;
+        static constexpr uint32_t MAX_INSTANCE_COUNT = 32'768;
+        static constexpr uint32_t MAX_MESH_COUNT = 4096;
         static constexpr uint32_t MAX_BATCH_COUNT = 32;
         static constexpr uint32_t MAX_FEEDBACK_COUNT = 32;
 
@@ -80,6 +108,8 @@ namespace Wolf
         struct MeshCacheData;
         uint32_t createMissingBatchesAndComputeBatchMask(const ResourceNonOwner<const PipelineSet>& pipelineSet, const MeshCacheData& meshCacheData,
             const std::array<std::vector<DescriptorSetBindInfo>, PipelineSet::MAX_PIPELINE_COUNT>& perPipelineDescriptorSets);
+        void readFeedbackBuffer();
+        uint32_t registerClusters(const std::vector<MeshToRender::LOD::Cluster>& clusters);
 
         ShaderList* m_shaderList;
         ResourceNonOwner<GPUDataTransfersManagerInterface> m_gpuDataTransfersManager;
@@ -105,17 +135,35 @@ namespace Wolf
             uint32_t m_vertexOffset;
             uint32_t m_indexOffset;
             uint32_t m_indexCount;
-            float m_maxDistance;
+            uint32_t m_clusterOffset;
+
+            uint32_t m_clusterCount;
+            float m_maxDistance; // distance must be last
         };
-        static constexpr uint32_t MAX_LOD_COUNT = 16;
+        static constexpr uint32_t MAX_LOD_COUNT = 20;
 
         struct MeshInfo
         {
-            glm::vec4 m_boundingSphere;
             LODInfo m_lods[MAX_LOD_COUNT];
+            glm::vec4 m_boundingSphere;
         };
         ResourceUniqueOwner<Buffer> m_meshesInfoBuffer;
         uint32_t m_currentMeshCount = 0;
+
+        struct ClusterInfo
+        {
+            glm::vec4 m_boundingSphere;
+
+            uint32_t m_indexOffset;
+            uint32_t m_indexCount;
+            uint32_t m_vertexOffset;
+            uint32_t m_vertexCount;
+        };
+        // a separate buffer containing all the clusters
+        // LODs contain an offset in that buffer, all the clusters for the same LOD are contiguous
+        ResourceUniqueOwner<Buffer> m_clustersInfoBuffer;
+        static constexpr uint32_t MAX_CLUSTER_COUNT = 4'194'304;
+        std::atomic<uint32_t> m_currentClusterCount = 0;
 
         struct CullingUniformData
         {
@@ -155,20 +203,19 @@ namespace Wolf
         static constexpr uint32_t MAX_CAMERA_COUNT = 16;
         std::array<ResourceUniqueOwner<PerCullingCamera>, MAX_CAMERA_COUNT> m_cullingCamerasData;
 
-        struct FeedbackLayout
-        {
-            uint32_t m_meshIdx;
-            uint32_t m_lod;
-        };
         ResourceUniqueOwner<Buffer> m_feedbackBuffer;
         ResourceUniqueOwner<ReadableBuffer> m_feedbackReadableBuffer;
+        std::vector<Feedback> m_lastFrameFeedbacks;
+        std::mutex m_lastFrameFeedbacksMutex;
 
         // CPU caches
         struct MeshCacheData
         {
-            uint32_t m_bufferSetHash;
+            uint64_t m_bufferSetHash;
             NullableResourceNonOwner<Buffer> m_vertexBuffer;
             NullableResourceNonOwner<Buffer> m_indexBuffer;
+
+            uint32_t m_indexCount;
         };
         std::vector<MeshCacheData> m_meshesCacheData;
 
@@ -237,5 +284,9 @@ namespace Wolf
         DynamicResourceUniqueOwnerArray<PerBatchData, 16> m_batchesData;
 
         std::mutex m_mutex;
+
+        // Stats
+        uint32_t m_uniqueTriangleRegisteredCount = 0; // LOD 0 triangles registered
+        uint32_t m_totalTriangleRegisteredCount = 0; // multiplied by instance count
     };
 }

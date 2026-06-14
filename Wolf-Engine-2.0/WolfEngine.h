@@ -93,6 +93,7 @@ namespace Wolf
         void frame(const std::span<ResourceNonOwner<CommandRecordBase>>& passes, Semaphore* frameEndedSemaphore, uint32_t currentSwapChainImageIndex);
 
         void addJobBeforeFrame(const MultiThreadTaskManager::Job& job, bool runAfterAllJobs = false);
+        void addStreamingJob(const MultiThreadTaskManager::Job& job) const;
 
         void waitIdle() const;
 
