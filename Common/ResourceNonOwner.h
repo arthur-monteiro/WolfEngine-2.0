@@ -228,6 +228,7 @@ namespace Wolf
 			}
 			return m_resource.operator->();
 		}
+		[[nodiscard]] bool operator==(const NullableResourceNonOwner& other) const { return m_resource == other.m_resource; }
 
 		void release()
 		{
