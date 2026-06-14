@@ -197,6 +197,12 @@ namespace Wolf
 		{
 		}
 
+		template <typename U = T>
+		NullableResourceNonOwner<U> duplicateAs() const
+		{
+			return m_resource.template duplicateAs<U>();
+		}
+
 		[[nodiscard]] operator bool() const { return static_cast<bool>(m_resource); }
 		[[nodiscard]] const T& operator*() const noexcept requires(!std::is_void_v<T>)
 		{
