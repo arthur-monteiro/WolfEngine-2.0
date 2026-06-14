@@ -83,7 +83,8 @@ void UniquePass::initializeResources(const InitializationContext& context)
 		0, 1, 2
 	};
 
-	m_triangle.reset(new Mesh(vertices, indices, m_wolfInstance->getDefaultMeshBufferPool().duplicateAs<BufferPoolInterface>()));
+	m_triangle.reset(new Mesh(vertices, indices, m_wolfInstance->getDefaultMeshBufferPool().duplicateAs<BufferPoolInterface>(),
+		m_wolfInstance->getGPUDataTransfersManager()));
 }
 
 void UniquePass::resize(const InitializationContext& context)
