@@ -101,7 +101,7 @@ Wolf::WolfEngine::WolfEngine(const WolfInstanceCreateInfo& createInfo) : m_globa
 		{
 			swapChainCreateInfo.colorSpace = SwapChain::SwapChainCreateInfo::ColorSpace::S_RGB;
 			swapChainCreateInfo.format = Format::R8G8B8A8_UNORM;
-#ifdef __linux
+#if defined(__linux__) && !defined(__ANDROID__)
 			if (m_window->isX11())
 			{
 				swapChainCreateInfo.format = Format::B8G8R8A8_UNORM;
