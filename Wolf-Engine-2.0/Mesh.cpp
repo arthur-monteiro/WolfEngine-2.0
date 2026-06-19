@@ -21,6 +21,12 @@ Wolf::Mesh::Mesh(const ResourceNonOwner<BufferPoolInterface>& bufferPoolInterfac
 	m_boundingSphere = boundingSphere;
 }
 
+Wolf::Mesh::~Mesh()
+{
+	m_bufferPoolInterface->deallocate(m_indexBufferPoolInstance);
+	m_bufferPoolInterface->deallocate(m_vertexBufferPoolInstance);
+}
+
 Wolf::NullableResourceNonOwner<Wolf::Buffer> Wolf::Mesh::getVertexBuffer() const
 {
 	return m_bufferPoolInterface->getBuffer(m_vertexBufferPoolInstance);

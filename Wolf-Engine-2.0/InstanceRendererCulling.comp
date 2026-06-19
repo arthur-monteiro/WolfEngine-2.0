@@ -72,22 +72,30 @@ layout(std430, binding = 4) restrict buffer OutDrawCommandsLayout
 layout(binding = 5, std140) uniform readonly UniformBufferLayout
 {
 	uint instanceCount;
+	uint frameIdx;
 } ub;
 
 #ifdef MESH_STREAMING
 const uint MAX_FEEDBACK_COUNT = 32;
-
 struct Feedback
 {
     uint meshIdx;
     uint lod;
 };
-
 layout(std430, binding = 6) restrict buffer OutStreamingFeedbacksLayout
 {
    	uint outFeedbackCount;
    	Feedback outFeedbacks[MAX_FEEDBACK_COUNT];
 } outStreamingFeedbacksBuffer;
+
+struct LatestFrameIdxPerLOD
+{
+    uint frameIdx[MAX_LOD_COUNT];
+};
+layout(std430, binding = 7) restrict buffer OutStreamingLatestFrameIdxLayout
+{
+   	LatestFrameIdxPerLOD latestFrameIdxPerLODs[];
+} outStreamingLatestFrameIdx;
 #endif
 
 bool isSphereVisible(in vec4 sphere, in vec4 planes[6])
@@ -144,7 +152,7 @@ void main()
 		{
 			lod = MAX_LOD_COUNT;
 		}
-		else if (distanceWithCamera < meshInfo.lods[lod].maxDistance)
+		else if (distanceWithCamera < (meshInfo.lods[lod].maxDistance * maxScale))
 		{
 			break;
 		}
@@ -183,6 +191,8 @@ void main()
             outStreamingFeedbacksBuffer.outFeedbacks[feedbackCount].lod = requestedLOD;
         }
     }
+
+    outStreamingLatestFrameIdx.latestFrameIdxPerLODs[cullingInstanceInfo.meshIdx].frameIdx[requestedLOD] = ub.frameIdx;
 
     if (!hasFoundValidData)
     {

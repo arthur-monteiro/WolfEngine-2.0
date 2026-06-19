@@ -19,6 +19,7 @@ namespace Wolf
         virtual NullableResourceNonOwner<Buffer> getVertexBuffer() const = 0;
         virtual uint32_t getVertexBufferOffset() const = 0;
         virtual uint32_t getVertexSize() const = 0;
+        virtual uint32_t getVertexCount() const = 0;
         virtual NullableResourceNonOwner<Buffer> getIndexBuffer() const = 0;
         virtual uint32_t getIndexBufferOffset() const = 0;
         virtual uint32_t getIndexSize() const = 0;

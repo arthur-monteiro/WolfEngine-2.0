@@ -26,7 +26,9 @@ namespace Wolf
 			const std::vector<uint32_t>& indices, AABB aabb = {}, BoundingSphere boundingSphere = {}, VkBufferUsageFlags additionalIndexBufferUsages = 0);
 		Mesh(const Mesh&) = delete;
 
-		[[nodiscard]] uint32_t getVertexCount() const { return m_vertexCount; }
+		~Mesh() override;
+
+		[[nodiscard]] uint32_t getVertexCount() const override { return m_vertexCount; }
 		[[nodiscard]] uint32_t getVertexSize() const override { return m_vertexSize; }
 		[[nodiscard]] uint32_t getIndexSize() const override { return sizeof(uint32_t); };
 

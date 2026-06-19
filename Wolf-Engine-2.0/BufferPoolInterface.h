@@ -11,6 +11,8 @@ namespace Wolf
     public:
         virtual ~BufferPoolInterface() = default;
 
+        virtual bool hasEnoughSpace(uint32_t requestedSize, Buffer::BufferUsageFlags usageFlags, uint32_t itemSize) = 0;
+
         struct BufferPoolInstance
         {
             uint32_t m_bufferIdx;

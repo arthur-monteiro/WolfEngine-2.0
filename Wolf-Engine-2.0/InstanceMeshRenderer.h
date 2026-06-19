@@ -12,7 +12,6 @@
 #include "MeshInterface.h"
 #include "PipelineSet.h"
 #include "ResourceUniqueOwner.h"
-#include "ShaderList.h"
 #include "UniformBuffer.h"
 
 namespace Wolf
@@ -69,6 +68,7 @@ namespace Wolf
 
         [[nodiscard]] uint32_t registerMesh(const MeshToRender& mesh);
         void registerLODData(uint32_t meshIdx, uint32_t lodIdx, const MeshToRender::LOD& lod);
+        void unregisterLODData(uint32_t meshIdx, uint32_t lodIdx) const;
         [[nodiscard]] uint32_t addInstance(uint32_t meshIdx, const glm::mat4& transform, uint32_t materialIdx, uint32_t customData, const ResourceNonOwner<const PipelineSet>& pipelineSet,
             const std::array<std::vector<DescriptorSetBindInfo>, PipelineSet::MAX_PIPELINE_COUNT>& perPipelineDescriptorSets);
         void removeInstance(uint32_t instanceIdx);
@@ -94,6 +94,7 @@ namespace Wolf
             uint32_t m_lod;
         };
         void swapFeedbacks(std::vector<Feedback>& outFeedbacks);
+        uint32_t getLastUsedFrameIdx(uint32_t meshIdx, uint32_t lodIdx) const;
 
         uint32_t getUniqueTriangleRegisteredCount() const { return m_uniqueTriangleRegisteredCount; }
         uint32_t getTotalTriangleRegisteredCount() const { return m_totalTriangleRegisteredCount; }
@@ -109,6 +110,7 @@ namespace Wolf
         uint32_t createMissingBatchesAndComputeBatchMask(const ResourceNonOwner<const PipelineSet>& pipelineSet, const MeshCacheData& meshCacheData,
             const std::array<std::vector<DescriptorSetBindInfo>, PipelineSet::MAX_PIPELINE_COUNT>& perPipelineDescriptorSets);
         void readFeedbackBuffer();
+        void readLastFrameIndicesBuffer();
         uint32_t registerClusters(const std::vector<MeshToRender::LOD::Cluster>& clusters);
 
         ShaderList* m_shaderList;
@@ -168,6 +170,7 @@ namespace Wolf
         struct CullingUniformData
         {
             uint32_t m_instanceCount;
+            uint32_t m_frameIdx;
         };
         ResourceUniqueOwner<UniformBuffer> m_cullingUniformsBuffer;
 
@@ -207,6 +210,14 @@ namespace Wolf
         ResourceUniqueOwner<ReadableBuffer> m_feedbackReadableBuffer;
         std::vector<Feedback> m_lastFrameFeedbacks;
         std::mutex m_lastFrameFeedbacksMutex;
+
+        struct LastFrameIndexUsageMeshInfo
+        {
+            uint32_t m_frameIdx[MAX_LOD_COUNT];
+        };
+        ResourceUniqueOwner<Buffer> m_latestFrameIdxUsedPerLODBuffer;
+        ResourceUniqueOwner<ReadableBuffer> m_latestFrameIdxUsedPerLODReadableBuffer;
+        std::vector<LastFrameIndexUsageMeshInfo> m_lastFrameIndexUsageMeshInfos;
 
         // CPU caches
         struct MeshCacheData

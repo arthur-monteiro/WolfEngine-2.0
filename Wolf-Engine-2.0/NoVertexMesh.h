@@ -19,6 +19,7 @@ namespace Wolf
         [[nodiscard]] NullableResourceNonOwner<Buffer> getVertexBuffer() const override;
         [[nodiscard]] uint32_t getVertexBufferOffset() const override { return 0; }
         [[nodiscard]] uint32_t getVertexSize() const override { return 0; }
+        [[nodiscard]] uint32_t getVertexCount() const override { return 0; }
         [[nodiscard]] NullableResourceNonOwner<Buffer> getIndexBuffer() const override;
         [[nodiscard]] uint32_t getIndexBufferOffset() const override { return 0; }
         [[nodiscard]] uint32_t getIndexSize() const override { return 0; }

@@ -1,6 +1,4 @@
 #include "InstanceMeshRenderer.h"
-#include "InstanceMeshRenderer.h"
-#include "InstanceMeshRenderer.h"
 
 #include <fstream>
 #include <xxh64.hpp>
@@ -26,6 +24,7 @@ Wolf::InstanceMeshRenderer::InstanceMeshRenderer(ShaderList& shaderList, const R
     if (g_configuration->getUseMeshStreaming())
     {
         m_cullInstancesDescriptorSetLayoutGenerator.addStorageBuffer(ShaderStageFlagBits::COMPUTE, 6); // feedbacks buffer
+        m_cullInstancesDescriptorSetLayoutGenerator.addStorageBuffer(ShaderStageFlagBits::COMPUTE, 7); // latest frame idx
     }
     m_cullInstancesDescriptorSetLayout.reset(DescriptorSetLayout::createDescriptorSetLayout(m_cullInstancesDescriptorSetLayoutGenerator.getDescriptorLayouts()));
 
@@ -137,10 +136,17 @@ Wolf::InstanceMeshRenderer::InstanceMeshRenderer(ShaderList& shaderList, const R
 
     if (g_configuration->getUseMeshStreaming())
     {
-        m_feedbackBuffer.reset(Buffer::createBuffer(MAX_FEEDBACK_COUNT * sizeof(Feedback) + sizeof(uint32_t), VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT));
+        m_feedbackBuffer.reset(Buffer::createBuffer(MAX_FEEDBACK_COUNT * sizeof(Feedback) + sizeof(uint32_t), VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
+            VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT));
         m_feedbackBuffer->setName("Feedbacks (InstanceMeshRenderer::m_feedbackBuffer)");
-
         m_feedbackReadableBuffer.reset(new ReadableBuffer(m_feedbackBuffer->getSize(), VK_BUFFER_USAGE_STORAGE_BUFFER_BIT));
+
+        m_latestFrameIdxUsedPerLODBuffer.reset(Buffer::createBuffer(MAX_MESH_COUNT * sizeof(LastFrameIndexUsageMeshInfo), VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT
+            | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT));
+        m_latestFrameIdxUsedPerLODBuffer->setName("Latest frame idx used per LOD (InstanceMeshRenderer::m_latestFrameIdxUsedPerLODBuffer)");
+        m_latestFrameIdxUsedPerLODReadableBuffer.reset(new ReadableBuffer(m_latestFrameIdxUsedPerLODBuffer->getSize(), 0));
+
+        m_lastFrameIndexUsageMeshInfos.resize(MAX_MESH_COUNT);
     }
 }
 
@@ -188,6 +194,7 @@ void Wolf::InstanceMeshRenderer::moveToNextFrame()
     {
         CullingUniformData cullingUniformData{};
         cullingUniformData.m_instanceCount = m_currentInstanceCount;
+        cullingUniformData.m_frameIdx = g_runtimeContext->getCurrentCPUFrameNumber();
         m_cullingUniformsBuffer->transferCPUMemory(&cullingUniformData, sizeof(CullingUniformData));
     }
     else
@@ -199,8 +206,11 @@ void Wolf::InstanceMeshRenderer::moveToNextFrame()
     if (g_configuration->getUseMeshStreaming())
     {
         readFeedbackBuffer();
+        readLastFrameIndicesBuffer();
 
         m_gpuDataTransfersManager->requestGPUBufferReadbackRecord(m_feedbackBuffer.createNonOwnerResource(), 0, m_feedbackReadableBuffer.createNonOwnerResource(), m_feedbackBuffer->getSize());
+        m_gpuDataTransfersManager->requestGPUBufferReadbackRecord(m_latestFrameIdxUsedPerLODBuffer.createNonOwnerResource(), 0, m_latestFrameIdxUsedPerLODReadableBuffer.createNonOwnerResource(),
+            m_latestFrameIdxUsedPerLODBuffer->getSize());
     }
 }
 
@@ -446,6 +456,14 @@ void Wolf::InstanceMeshRenderer::registerLODData(uint32_t meshIdx, uint32_t lodI
         meshIdx * sizeof(MeshInfo) + offsetof(MeshInfo, m_lods) + lodIdx * sizeof(LODInfo));
 }
 
+void Wolf::InstanceMeshRenderer::unregisterLODData(uint32_t meshIdx, uint32_t lodIdx) const
+{
+    uint32_t vertexOffset = static_cast<uint32_t>(-1);
+
+    m_gpuDataTransfersManager->pushDataToGPUBuffer(&vertexOffset, sizeof(uint32_t), m_meshesInfoBuffer.createNonOwnerResource(),
+        meshIdx * sizeof(MeshInfo) + offsetof(MeshInfo, m_lods) + lodIdx * sizeof(LODInfo) + offsetof(LODInfo, m_vertexOffset));
+}
+
 uint32_t Wolf::InstanceMeshRenderer::addInstance(uint32_t meshIdx, const glm::mat4& transform, uint32_t materialIdx, uint32_t customData, const ResourceNonOwner<const PipelineSet>& pipelineSet,
                                                  const std::array<std::vector<DescriptorSetBindInfo>, PipelineSet::MAX_PIPELINE_COUNT>& perPipelineDescriptorSets)
 {
@@ -543,6 +561,7 @@ void Wolf::InstanceMeshRenderer::activateCameraForThisFrame(uint32_t cameraIdx, 
             if (g_configuration->getUseMeshStreaming())
             {
                 descriptorSetGenerator.setBuffer(6, *m_feedbackBuffer);
+                descriptorSetGenerator.setBuffer(7, *m_latestFrameIdxUsedPerLODBuffer);
             }
 
             perCullingCamera->m_cullingDescriptorSet.reset(DescriptorSet::createDescriptorSet(*m_cullInstancesDescriptorSetLayout));
@@ -726,6 +745,11 @@ void Wolf::InstanceMeshRenderer::swapFeedbacks(std::vector<Feedback>& outFeedbac
     m_lastFrameFeedbacksMutex.unlock();
 }
 
+uint32_t Wolf::InstanceMeshRenderer::getLastUsedFrameIdx(uint32_t meshIdx, uint32_t lodIdx) const
+{
+    return m_lastFrameIndexUsageMeshInfos[meshIdx].m_frameIdx[lodIdx];
+}
+
 uint64_t Wolf::InstanceMeshRenderer::computeHash(const ResourceNonOwner<MeshInterface>& meshInterface)
 {
     std::array<const void*, 2> buffers = { meshInterface->getVertexBuffer() ? &*meshInterface->getVertexBuffer() : nullptr, meshInterface->getIndexBuffer() ? &*meshInterface->getIndexBuffer() : nullptr };
@@ -788,6 +812,17 @@ void Wolf::InstanceMeshRenderer::readFeedbackBuffer()
     m_lastFrameFeedbacksMutex.unlock();
 
     m_feedbackReadableBuffer->getBuffer(bufferIdx).unmap();
+}
+
+void Wolf::InstanceMeshRenderer::readLastFrameIndicesBuffer()
+{
+    PROFILE_FUNCTION
+
+    const uint32_t bufferIdx = g_runtimeContext->getCurrentCPUFrameNumber() % g_configuration->getMaxCachedFrames();
+
+    const uint32_t* data = static_cast<const uint32_t*>(m_latestFrameIdxUsedPerLODReadableBuffer->getBuffer(bufferIdx).map());
+    memcpy(m_lastFrameIndexUsageMeshInfos.data(), data, m_currentMeshCount * sizeof(LastFrameIndexUsageMeshInfo));
+    m_latestFrameIdxUsedPerLODReadableBuffer->getBuffer(bufferIdx).unmap();
 }
 
 uint32_t Wolf::InstanceMeshRenderer::registerClusters(const std::vector<MeshToRender::LOD::Cluster>& clusters)
