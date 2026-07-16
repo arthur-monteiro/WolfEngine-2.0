@@ -44,9 +44,8 @@ namespace Wolf
 		void waitIdle() const override;
 		void collectProfiling() override;
 
-        void createAndroidSurface(::ANativeWindow* window) override;
-
 #ifdef __ANDROID__
+		void createAndroidSurface(::ANativeWindow* window) override;
         bool isDeviceLost() override;
 #endif
 

@@ -148,19 +148,6 @@ void Wolf::Vulkan::collectProfiling()
 #endif
 }
 
-void Wolf::Vulkan::createAndroidSurface(::ANativeWindow *window)
-{
-    const VkAndroidSurfaceCreateInfoKHR create_info
-    {
-        .sType = VK_STRUCTURE_TYPE_ANDROID_SURFACE_CREATE_INFO_KHR,
-        .pNext = nullptr,
-        .flags = 0,
-        .window = window
-    };
-
-    vkCreateAndroidSurfaceKHR(m_instance, &create_info, nullptr /* pAllocator */, &m_surface);
-}
-
 std::vector<const char*> getRequiredExtensions()
 {
 	std::vector<const char*> extensions;
@@ -625,5 +612,18 @@ bool Wolf::Vulkan::isDeviceLost()
 {
     VkResult res = vkDeviceWaitIdle(m_device);
     return res == VK_ERROR_DEVICE_LOST;
+}
+
+void Wolf::Vulkan::createAndroidSurface(::ANativeWindow *window)
+{
+    const VkAndroidSurfaceCreateInfoKHR create_info
+    {
+        .sType = VK_STRUCTURE_TYPE_ANDROID_SURFACE_CREATE_INFO_KHR,
+        .pNext = nullptr,
+        .flags = 0,
+        .window = window
+    };
+
+    vkCreateAndroidSurfaceKHR(m_instance, &create_info, nullptr /* pAllocator */, &m_surface);
 }
 #endif

@@ -41,8 +41,7 @@ namespace Wolf
 
 #ifdef __ANDROID__
         virtual bool isDeviceLost() = 0;
+		virtual void createAndroidSurface(::ANativeWindow* window) = 0;
 #endif
-
-        virtual void createAndroidSurface(::ANativeWindow* window) = 0;
 	};
 }
