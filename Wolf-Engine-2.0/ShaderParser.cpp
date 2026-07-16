@@ -46,9 +46,19 @@ Wolf::ShaderParser::ShaderParser(const std::string& filename, const std::vector<
                                  const MaterialFetchProcedure& materialFetchProcedure, const ShaderCodeToAdd& shaderCodeToAdd)
 {
     m_filename = filename;
-#ifndef __ANDROID__
-    m_filenamesWithLastModifiedTime.insert({ filename, std::filesystem::last_write_time(filename) });
+#ifdef __ANDROID__
+    const std::string appFolderName = "shader_cache";
+    std::string inputFilename = m_filename;
+    copyCompressedFileToStorage(inputFilename, appFolderName, m_filename);
+    m_androidExternalShaderPath = g_configuration->getAndroidExternalPath() + "/" + inputFilename;
+
+    std::error_code ec;
+    auto time = std::filesystem::last_write_time(m_androidExternalShaderPath, ec);
+    m_filenamesWithLastModifiedTime.insert({m_androidExternalShaderPath, !ec ? std::optional{std::filesystem::last_write_time(m_androidExternalShaderPath, ec)} : std::nullopt });
+#else
+    m_filenamesWithLastModifiedTime.insert({ m_filename, std::filesystem::last_write_time(m_filename) });
 #endif
+
     m_conditionBlocksToInclude = conditionBlocksToInclude;
 
     m_cameraDescriptorSlot = cameraDescriptorSlot;
@@ -64,10 +74,6 @@ Wolf::ShaderParser::ShaderParser(const std::string& filename, const std::vector<
 
 bool Wolf::ShaderParser::compileIfFileHasBeenModified(const std::vector<std::string>& conditionBlocksToInclude)
 {
-#ifdef __ANDROID__
-    return false;
-#endif
-
     bool needToRecompile = false;
     if(conditionBlocksToInclude != m_conditionBlocksToInclude)
     {
@@ -75,10 +81,19 @@ bool Wolf::ShaderParser::compileIfFileHasBeenModified(const std::vector<std::str
         m_conditionBlocksToInclude = conditionBlocksToInclude;
     }
 
-    for(std::map<std::string, std::filesystem::file_time_type>::value_type& file : m_filenamesWithLastModifiedTime)
+    for(std::map<std::string, std::optional<std::filesystem::file_time_type>>::value_type& file : m_filenamesWithLastModifiedTime)
     {
+#ifndef __ANDROID__
 	    if(std::filesystem::file_time_type time = std::filesystem::last_write_time(file.first); file.second != time)
+#else
+        std::error_code ec;
+        auto time = std::filesystem::last_write_time(m_androidExternalShaderPath, ec);
+        if(!ec && file.second != time)
+#endif
 	    {
+#ifdef __ANDROID__
+            std::filesystem::copy(m_androidExternalShaderPath, m_filename, std::filesystem::copy_options::overwrite_existing);
+#endif
             needToRecompile = true;
             file.second = time;
 	    }
@@ -104,12 +119,6 @@ bool Wolf::ShaderParser::isSame(const std::string& filename, const std::vector<s
 
 void Wolf::ShaderParser::parseAndCompile()
 {
-#ifdef __ANDROID__
-    const std::string appFolderName = "shader_cache";
-    std::string inputFilename = m_filename;
-    copyCompressedFileToStorage(inputFilename, appFolderName, m_filename);
-#endif
-
     std::ifstream inFile(m_filename);
 
     std::vector<std::string> extensions = { ".vert", ".frag", ".comp", ".rgen", ".rmiss", ".rchit", ".tesc", ".tese", ".geom" };

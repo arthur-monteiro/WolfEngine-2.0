@@ -31,12 +31,18 @@ namespace Wolf
 			(ANativeWindow* window)
 #endif
 		;
-		virtual ~GraphicAPIManager() = default;
+		virtual ~GraphicAPIManager();
 
 		virtual void waitIdle() const = 0;
 		virtual void collectProfiling() = 0;
 
-		virtual bool isRayTracingAvailable() const = 0;
+        virtual bool isRayTracingAvailable() const = 0;
 		virtual Format getDepthFormat() const = 0;
+
+#ifdef __ANDROID__
+        virtual bool isDeviceLost() = 0;
+#endif
+
+        virtual void createAndroidSurface(::ANativeWindow* window) = 0;
 	};
 }

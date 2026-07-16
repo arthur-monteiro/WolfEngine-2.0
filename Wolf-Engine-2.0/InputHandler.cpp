@@ -53,9 +53,17 @@ Wolf::InputHandler::InputHandler(const ResourceNonOwner<const Window>& window) :
 	glfwSetJoystickCallback(joystickCallback);
 }
 #else
+void onAndroidTextInput(void* context, const GameTextInputState* state)
+{
+    const char* text = state->text_UTF8;
+    inputHandlerInstance->inputHandlerCharCallback(text);
+}
+
 Wolf::InputHandler::InputHandler(struct android_app* androidApp)
 : m_androidApp(androidApp), m_internalAndroidJoystickData { InternalAndroidJoystickData(glm::vec2(0.0f, 0.25f), glm::vec2(0.5f, 1.0f)), InternalAndroidJoystickData(glm::vec2(0.5f, 0.25f),  glm::vec2(1.0f, 1.0f)) }
 {
+    inputHandlerInstance = this;
+
     m_data.m_gamepadCaches[0].isActive = true; // activate the first gamepad
 
     android_app_set_motion_event_filter(m_androidApp, [](const GameActivityMotionEvent* event)
@@ -68,6 +76,9 @@ Wolf::InputHandler::InputHandler(struct android_app* androidApp)
         }
         return false;
     });
+
+    m_androidGameTextInput = GameActivity_getTextInput(androidApp->activity);
+    GameTextInput_setEventCallback(m_androidGameTextInput, onAndroidTextInput, nullptr);
 }
 #endif
 
@@ -135,6 +146,9 @@ void Wolf::InputHandler::moveToNextFrame()
         gamepadCache.joystickEvent[joystickIdx].offsetX = internalAndroidJoystickData.getOffsetX();
         gamepadCache.joystickEvent[joystickIdx].offsetY = internalAndroidJoystickData.getOffsetY();
     }
+
+    m_data.m_mousePosX = static_cast<float>(m_internalAndroidMouseData.m_posX);
+    m_data.m_mousePosY = static_cast<float>(m_internalAndroidMouseData.m_posY);
 #else
     double currentMousePosX, currentMousePosY;
 	glfwGetCursorPos(m_window->getWindow(), &currentMousePosX, &currentMousePosY);
@@ -245,33 +259,9 @@ bool Wolf::InputHandler::keyReleasedThisFrame(int key, const void* instancePtr) 
 	return std::ranges::find(m_data.m_keysCache.inputReleasedThisFrame, key) != m_data.m_keysCache.inputReleasedThisFrame.end();
 }
 
-const std::vector<int>& Wolf::InputHandler::getCharactersPressedThisFrame(const void* instancePtr) const
-{
-	if (instancePtr)
-		return m_dataCache.at(instancePtr).first.m_charCache.inputPressedThisFrame;
-
-	return m_data.m_charCache.inputPressedThisFrame;
-}
-
-bool Wolf::InputHandler::mouseButtonPressedThisFrame(int button, const void* instancePtr) const
-{
-	if (instancePtr)
-		return std::ranges::find(m_dataCache.at(instancePtr).first.m_mouseButtonsCache.inputPressedThisFrame, button) != m_dataCache.at(instancePtr).first.m_mouseButtonsCache.inputPressedThisFrame.end();
-
-	return std::ranges::find(m_data.m_mouseButtonsCache.inputPressedThisFrame, button) != m_data.m_mouseButtonsCache.inputPressedThisFrame.end();
-}
-
 bool Wolf::InputHandler::mouseButtonMaintained(int button, const void* instancePtr) const
 {
 	return std::ranges::find(m_data.m_mouseButtonsCache.inputMaintained, button) != m_data.m_mouseButtonsCache.inputMaintained.end();
-}
-
-bool Wolf::InputHandler::mouseButtonReleasedThisFrame(int button, const void* instancePtr) const
-{
-	if (instancePtr)
-		return std::ranges::find(m_dataCache.at(instancePtr).first.m_mouseButtonsCache.inputReleasedThisFrame, button) != m_dataCache.at(instancePtr).first.m_mouseButtonsCache.inputReleasedThisFrame.end();
-
-	return std::ranges::find(m_data.m_mouseButtonsCache.inputReleasedThisFrame, button) != m_data.m_mouseButtonsCache.inputReleasedThisFrame.end();
 }
 
 void Wolf::InputHandler::inputHandlerKeyCallback(GLFWwindow* window, int key, int scancode, int action, int mods)
@@ -343,19 +333,50 @@ void Wolf::InputHandler::setCursorType(Window::CursorType cursorType) const
 	m_window->setCursorType(cursorType);
 }
 
-void Wolf::InputHandler::getMousePosition(float& outX, float& outY) const
-{
-	outX = m_data.m_mousePosX;
-	outY = m_data.m_mousePosY;
-}
-
 void Wolf::InputHandler::getScroll(float& outX, float& outY) const
 {
 	outX = m_data.m_scrollCache.scrollEventsThisFrame.offsetX;
 	outY = m_data.m_scrollCache.scrollEventsThisFrame.offsetY;
 }
-
 #endif
+
+const std::vector<int>& Wolf::InputHandler::getCharactersPressedThisFrame(const void* instancePtr) const
+{
+    if (instancePtr)
+        return m_dataCache.at(instancePtr).first.m_charCache.inputPressedThisFrame;
+
+    return m_data.m_charCache.inputPressedThisFrame;
+}
+
+void Wolf::InputHandler::getMousePosition(float& outX, float& outY) const
+{
+    outX = m_data.m_mousePosX;
+    outY = m_data.m_mousePosY;
+}
+
+bool Wolf::InputHandler::mouseButtonPressedThisFrame(int button, const void* instancePtr) const
+{
+    if (instancePtr)
+    {
+        const std::vector<int>& vec = m_dataCache.at(instancePtr).first.m_mouseButtonsCache.inputPressedThisFrame;
+        return std::any_of(vec.begin(), vec.end(), [button](int b) { return b == button; });
+    }
+
+    const std::vector<int>& vec = m_data.m_mouseButtonsCache.inputPressedThisFrame;
+    return std::any_of(vec.begin(), vec.end(), [button](int b) { return b == button; });
+}
+
+bool Wolf::InputHandler::mouseButtonReleasedThisFrame(int button, const void* instancePtr) const
+{
+    if (instancePtr)
+    {
+        const auto& cache = m_dataCache.at(instancePtr).first.m_mouseButtonsCache.inputReleasedThisFrame;
+        return std::any_of(cache.begin(), cache.end(), [button](int b) { return b == button; });
+    }
+
+    const auto& cache = m_data.m_mouseButtonsCache.inputReleasedThisFrame;
+    return std::any_of(cache.begin(), cache.end(), [button](int b) { return b == button; });
+}
 
 void Wolf::InputHandler::getJoystickSpeedForGamepad(uint8_t gamepadIdx, uint8_t joystickIdx, float& outX, float& outY, const void* instancePtr) const
 {
@@ -437,6 +458,9 @@ void Wolf::InputHandler::handleAndroidInputs()
                 int32_t windowWidth = ANativeWindow_getWidth(m_androidApp->window);
                 int32_t windowHeight = ANativeWindow_getHeight(m_androidApp->window);
 
+                m_internalAndroidMouseData.m_posX = event->pointers[actionIdx].rawX;
+                m_internalAndroidMouseData.m_posY = event->pointers[actionIdx].rawY;
+
                 if (action == AMOTION_EVENT_ACTION_DOWN || action == AMOTION_EVENT_ACTION_POINTER_DOWN)
                 {
                     int32_t id = event->pointers[actionIdx].id;
@@ -446,6 +470,9 @@ void Wolf::InputHandler::handleAndroidInputs()
                     {
                         joystick.tryActivate(id, pos);
                     }
+
+                    m_internalAndroidMouseData.m_isClicked = true;
+                    m_data.m_mouseButtonsCache.inputPressedForNextFrame.push_back(0 /* GLFW_MOUSE_BUTTON_1 / left click */);
                 }
                 else if (action == AMOTION_EVENT_ACTION_MOVE)
                 {
@@ -464,6 +491,8 @@ void Wolf::InputHandler::handleAndroidInputs()
                             joystick.tryMove(id, pos);
                         }
                     }
+
+                    m_internalAndroidMouseData.m_isClicked = true;
                 }
                 else if (action == AMOTION_EVENT_ACTION_UP || action == AMOTION_EVENT_ACTION_CANCEL || action == AMOTION_EVENT_ACTION_POINTER_UP)
                 {
@@ -473,6 +502,9 @@ void Wolf::InputHandler::handleAndroidInputs()
                     {
                         joystick.tryDeactivate(id);
                     }
+
+                    m_internalAndroidMouseData.m_isClicked = false;
+                    m_data.m_mouseButtonsCache.inputReleasedThisFrame.push_back(0 /* GLFW_MOUSE_BUTTON_1 / left click */);
                 }
             }
 
@@ -513,6 +545,29 @@ const glm::vec2 &Wolf::InputHandler::getJoystickCenterForVirtualGamepad(uint8_t 
 uint32_t Wolf::InputHandler::getLastActiveFrameIdxForVirtualGamepad(uint8_t joystickIdx) const
 {
     return m_internalAndroidJoystickData[joystickIdx].getLastActiveFrameIndex();
+}
+
+void Wolf::InputHandler::inputHandlerCharCallback(const char* textEntered)
+{
+    std::string textStr = textEntered;
+    std::string newText = textStr.substr(m_data.m_currentTextEntered.size());
+
+    m_data.m_currentTextEntered = textStr;
+    for (char character : newText)
+    {
+        m_data.m_charCache.inputPressedForNextFrame.push_back(character);
+    }
+}
+
+void Wolf::InputHandler::showAndroidNumericKeyboard()
+{
+    GameActivity_setImeEditorInfo(m_androidApp->activity, TYPE_CLASS_NUMBER, IME_ACTION_NONE, IME_NULL);
+    GameActivity_showSoftInput(m_androidApp->activity, GAMEACTIVITY_SHOW_SOFT_INPUT_IMPLICIT);
+}
+
+void Wolf::InputHandler::hideAndroidNumericKeyboard()
+{
+    GameActivity_hideSoftInput(m_androidApp->activity, GAMEACTIVITY_HIDE_SOFT_INPUT_IMPLICIT_ONLY);
 }
 
 Wolf::InputHandler::InternalAndroidJoystickData::InternalAndroidJoystickData(const glm::vec2 &minActivationPos, const glm::vec2 &maxActivationPos)

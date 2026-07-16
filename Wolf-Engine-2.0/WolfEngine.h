@@ -87,6 +87,9 @@ namespace Wolf
         void getWindowPos(uint32_t& outX, uint32_t& outY);
         void setWindowPos(uint32_t posX, uint32_t posY);
         bool windowShouldClose() const;
+#else
+        void recreateSwapchainAndroid(::ANativeWindow* androidWindow);
+        bool isDeviceLost();
 #endif
         void updateBeforeFrame();
         uint32_t acquireNextSwapChainImage();

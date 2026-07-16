@@ -30,7 +30,7 @@ android {
 }
 
 dependencies {
-    implementation "androidx.games:games-activity:2.0.2"
+    implementation "androidx.games:games-activity:4.4.2"
 }
 
 tasks.register("copyStaticLibs") {

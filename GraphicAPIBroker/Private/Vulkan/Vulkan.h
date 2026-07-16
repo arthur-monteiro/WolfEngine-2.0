@@ -44,6 +44,12 @@ namespace Wolf
 		void waitIdle() const override;
 		void collectProfiling() override;
 
+        void createAndroidSurface(::ANativeWindow* window) override;
+
+#ifdef __ANDROID__
+        bool isDeviceLost() override;
+#endif
+
 		// Getters
 		[[nodiscard]] VkDevice getDevice() const { return m_device; }
 		[[nodiscard]] VkPhysicalDevice getPhysicalDevice() const { return m_physicalDevice; }

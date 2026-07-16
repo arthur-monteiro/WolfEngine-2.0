@@ -15,9 +15,9 @@ namespace Wolf
 		TopLevelAccelerationStructureVulkan(uint32_t instanceCount);
 		TopLevelAccelerationStructureVulkan(const TopLevelAccelerationStructureVulkan&) = delete;
 
-		void build(const CommandBuffer* commandBuffer, std::span<BLASInstance> blasInstances);
-		void recordBuildBarriers(const CommandBuffer* commandBuffer);
-		uint32_t getInstanceCount() const override { return m_instanceCount; }
+		void build(const CommandBuffer* commandBuffer, std::span<BLASInstance> blasInstances) override;
+		void recordBuildBarriers(const CommandBuffer* commandBuffer) override;
+		[[nodiscard]] uint32_t getInstanceCount() const override { return m_instanceCount; }
 
 		~TopLevelAccelerationStructureVulkan() override;
 

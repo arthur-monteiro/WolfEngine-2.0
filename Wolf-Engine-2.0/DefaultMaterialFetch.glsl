@@ -78,11 +78,11 @@ void addToMaterialInfoFromTexCoords(in const vec2 texCoords, in const InputTextu
 
 void addToMaterialInfoTriplanr(in const InputTextureSetInfo textureSetInfo, in float strength, in const mat3 matrixTBN, in const vec3 worldPos, inout MaterialInfo materialInfo)
 {
-    vec3 normal = abs(vec3(matrixTBN[0][2], matrixTBN[1][2], matrixTBN[2][2]));
+    vec3 refNormal = abs(vec3(matrixTBN[0][2], matrixTBN[1][2], matrixTBN[2][2]));
 
     // normalized total value to 1.0
-    float b = (normal.x + normal.y + normal.z);
-    normal /= b;
+    float b = (refNormal.x + refNormal.y + refNormal.z);
+    refNormal /= b;
 
     vec3 usedWorldPos = worldPos * textureSetInfo.scale;
 
@@ -97,7 +97,7 @@ void addToMaterialInfoTriplanr(in const InputTextureSetInfo textureSetInfo, in f
     clearMaterialInfo(zAxis);
     addToMaterialInfoFromTexCoords(MOD_TEX_COORDS(usedWorldPos.xy), textureSetInfo, 1.0f, matrixTBN, zAxis);
 
-#define LERP_INFO(name) (xAxis.name * normal.x + yAxis.name * normal.y + zAxis.name * normal.z)
+#define LERP_INFO(name) (xAxis.name * refNormal.x + yAxis.name * refNormal.y + zAxis.name * refNormal.z)
     materialInfo.albedo += LERP_INFO(albedo) * strength;
     materialInfo.normal += LERP_INFO(normal) * strength;
     materialInfo.roughness += LERP_INFO(roughness) * strength;

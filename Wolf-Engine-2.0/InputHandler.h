@@ -57,16 +57,14 @@ namespace Wolf
 		bool keyPressedThisFrameOrMaintained(int key, const void* instancePtr = nullptr) const;
 		bool keyReleasedThisFrame(int key, const void* instancePtr = nullptr) const;
 
-		const std::vector<int>& getCharactersPressedThisFrame(const void* instancePtr = nullptr) const;
-
-		bool mouseButtonPressedThisFrame(int button, const void* instancePtr = nullptr) const;
         bool mouseButtonMaintained(int button, const void* instancePtr = nullptr) const;
-		bool mouseButtonReleasedThisFrame(int button, const void* instancePtr = nullptr) const;
-
-		void getMousePosition(float& outX, float& outY) const;
 
 		void getScroll(float& outX, float& outY) const;
 #endif
+        const std::vector<int>& getCharactersPressedThisFrame(const void* instancePtr = nullptr) const;
+        void getMousePosition(float& outX, float& outY) const;
+        bool mouseButtonPressedThisFrame(int button, const void* instancePtr = nullptr) const;
+        bool mouseButtonReleasedThisFrame(int button, const void* instancePtr = nullptr) const;
 
         void getJoystickSpeedForGamepad(uint8_t gamepadIdx, uint8_t joystickIdx, float& outX, float& outY, const void* instancePtr = nullptr) const;
         float getTriggerValueForGamepad(uint8_t gamepadIdx, uint8_t triggerIdx, const void* instancePtr = nullptr);
@@ -74,6 +72,9 @@ namespace Wolf
         bool isGamepadButtonPressed(uint8_t gamepadIdx, uint8_t buttonIdx, const void* instancePtr = nullptr);
 
 #ifdef __ANDROID__
+        void showAndroidNumericKeyboard();
+        void hideAndroidNumericKeyboard();
+
         const glm::vec2& getJoystickPosForVirtualGamepad(uint8_t joystickIdx) const;
         const glm::vec2& getJoystickCenterForVirtualGamepad(uint8_t joystickIdx) const;
         uint32_t getLastActiveFrameIdxForVirtualGamepad(uint8_t joystickIdx) const;
@@ -89,6 +90,8 @@ namespace Wolf
 
 		// Actions
 		void setCursorType(Window::CursorType cursorType) const;
+#else
+        void inputHandlerCharCallback(const char* textEntered);
 #endif
 
     private:
@@ -215,6 +218,9 @@ namespace Wolf
         {
             InputCache m_keysCache;
             InputCache m_charCache;
+#ifdef __ANDROID__
+            std::string m_currentTextEntered;
+#endif
             InputCache m_mouseButtonsCache;
             ScrollCache m_scrollCache;
 
@@ -253,6 +259,7 @@ namespace Wolf
         void handleAndroidInputs();
 
         android_app* m_androidApp;
+        GameTextInput* m_androidGameTextInput;
 
         class InternalAndroidJoystickData
         {
@@ -285,6 +292,14 @@ namespace Wolf
             uint32_t m_lastActiveFrameIndex = -1;
         };
         InternalAndroidJoystickData m_internalAndroidJoystickData[GAMEPAD_JOYSTICK_COUNT];
+
+        struct InternalAndroidMouseData
+        {
+            uint32_t m_posX;
+            uint32_t m_posY;
+            bool m_isClicked = false;
+        };
+        InternalAndroidMouseData m_internalAndroidMouseData;
 #endif
     };
 }

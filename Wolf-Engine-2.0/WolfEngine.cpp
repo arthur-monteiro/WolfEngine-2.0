@@ -43,7 +43,7 @@ Wolf::WolfEngine::WolfEngine(const WolfInstanceCreateInfo& createInfo) : m_globa
 #ifndef __ANDROID__
 	m_configuration.reset(new Configuration(createInfo.m_configFilename));
 #else
-    m_configuration.reset(new Configuration(createInfo.m_configFilename, createInfo.m_assetManager));
+    m_configuration.reset(new Configuration(createInfo.m_configFilename, createInfo.m_assetManager, createInfo.m_androidApp));
 #endif
 	g_configuration = m_configuration.get();
 
@@ -503,3 +503,19 @@ void Wolf::WolfEngine::resize(int width, int height)
 	m_swapChain->resetAllFences();
 	g_runtimeContext->reset();
 }
+
+#ifdef __ANDROID__
+void Wolf::WolfEngine::recreateSwapchainAndroid(::ANativeWindow* androidWindow)
+{
+    waitIdle();
+    m_graphicAPIManager->createAndroidSurface(androidWindow);
+    m_swapChain->recreate({ m_swapChain->getImage(0)->getExtent().width, m_swapChain->getImage(0)->getExtent().height });
+
+    m_resizeIsNeeded = true;
+}
+
+bool Wolf::WolfEngine::isDeviceLost()
+{
+    return m_graphicAPIManager->isDeviceLost();
+}
+#endif

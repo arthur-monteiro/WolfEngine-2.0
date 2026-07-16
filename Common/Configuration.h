@@ -2,6 +2,7 @@
 
 #ifdef __ANDROID__
 #include <android/asset_manager.h>
+#include <game-activity/native_app_glue/android_native_app_glue.h>
 #endif
 #include <cstdint>
 #include <string>
@@ -14,8 +15,9 @@ namespace Wolf
 #ifndef __ANDROID__
 		Configuration(const std::string& filePath);
 #else
-		Configuration(const std::string& filePath, AAssetManager* androidAssetManager);
+		Configuration(const std::string& filePath, AAssetManager* androidAssetManager, android_app* androidApp);
 #endif
+        ~Configuration();
 
 		[[nodiscard]] uint32_t getWindowWidth() const { return m_windowWidth; }
 		[[nodiscard]] uint32_t getWindowHeight() const { return m_windowHeight; }
@@ -37,6 +39,7 @@ namespace Wolf
 
 #ifdef __ANDROID__
 		AAssetManager* getAndroidAssetManager() const { return m_androidAssetManager; }
+		const std::string& getAndroidExternalPath() const { return m_androidExternalPath; }
 #endif
 
 	private:
@@ -59,6 +62,7 @@ namespace Wolf
 
 #ifdef __ANDROID__
 		AAssetManager* m_androidAssetManager;
+		std::string m_androidExternalPath;
 #endif
 	};
 

@@ -44,7 +44,10 @@ namespace Wolf
 
 	private:
 		std::string m_filename;
-		std::map<std::string, std::filesystem::file_time_type> m_filenamesWithLastModifiedTime;
+		std::map<std::string, std::optional<std::filesystem::file_time_type>> m_filenamesWithLastModifiedTime;
+#ifdef __ANDROID__
+        std::string m_androidExternalShaderPath;
+#endif
 		std::vector<std::string> m_conditionBlocksToInclude;
 
 		uint32_t m_cameraDescriptorSlot;

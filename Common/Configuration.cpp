@@ -10,11 +10,15 @@ const Wolf::Configuration* Wolf::g_configuration = nullptr;
 #ifndef __ANDROID__
 Wolf::Configuration::Configuration(const std::string& filePath)
 #else
-Wolf::Configuration::Configuration(const std::string& filePath, AAssetManager* androidAssetManager) : m_androidAssetManager(androidAssetManager)
+Wolf::Configuration::Configuration(const std::string& filePath, AAssetManager* androidAssetManager, android_app* androidApp) : m_androidAssetManager(androidAssetManager)
 #endif
 {
 	if (g_configuration)
 		Debug::sendCriticalError("Can't instantiate Configuration twice");
+
+#ifdef __ANDROID__
+    m_androidExternalPath = androidApp->activity->externalDataPath;
+#endif
 
 	if (filePath.empty())
 		return;
@@ -70,4 +74,9 @@ Wolf::Configuration::Configuration(const std::string& filePath, AAssetManager* a
 	}
 
 	configFile.close();
+}
+
+Wolf::Configuration::~Configuration()
+{
+    g_configuration = nullptr;
 }

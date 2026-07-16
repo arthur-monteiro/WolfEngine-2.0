@@ -30,10 +30,12 @@ Wolf::Vulkan::Vulkan(::ANativeWindow* window)
 Wolf::Vulkan::Vulkan(GLFWwindow* glfwWindowPtr, bool useOVR)
 #endif
 {
+#ifndef __ANDROID__
 	if (g_vulkanInstance)
 	{
 		Debug::sendCriticalError("Can't instanciate Vulkan twice");
 	}
+#endif
 	g_vulkanInstance = this;
 
 #ifndef __ANDROID__
@@ -70,22 +72,13 @@ Wolf::Vulkan::Vulkan(GLFWwindow* glfwWindowPtr, bool useOVR)
 
 	setupDebugMessenger();
 #ifndef __ANDROID__
-
 	VkResult res = glfwCreateWindowSurface(m_instance, glfwWindowPtr, nullptr, &m_surface);
 	if (res != VK_SUCCESS)
 	{
 		Debug::sendCriticalError("Error : window surface creation");
 	}
 #else
-	const VkAndroidSurfaceCreateInfoKHR create_info
-	{
-			.sType = VK_STRUCTURE_TYPE_ANDROID_SURFACE_CREATE_INFO_KHR,
-			.pNext = nullptr,
-			.flags = 0,
-			.window = window
-	};
-
-	vkCreateAndroidSurfaceKHR(m_instance, &create_info, nullptr /* pAllocator */, &m_surface);
+    createAndroidSurface(window);
 #endif
 
     m_raytracingDeviceExtensions = { VK_KHR_ACCELERATION_STRUCTURE_EXTENSION_NAME, VK_KHR_RAY_TRACING_PIPELINE_EXTENSION_NAME, VK_KHR_DEFERRED_HOST_OPERATIONS_EXTENSION_NAME,
@@ -153,6 +146,19 @@ void Wolf::Vulkan::collectProfiling()
 #ifndef __ANDROID__
 	TracyVkCollect(getTracyContext(), nullptr);
 #endif
+}
+
+void Wolf::Vulkan::createAndroidSurface(::ANativeWindow *window)
+{
+    const VkAndroidSurfaceCreateInfoKHR create_info
+    {
+        .sType = VK_STRUCTURE_TYPE_ANDROID_SURFACE_CREATE_INFO_KHR,
+        .pNext = nullptr,
+        .flags = 0,
+        .window = window
+    };
+
+    vkCreateAndroidSurfaceKHR(m_instance, &create_info, nullptr /* pAllocator */, &m_surface);
 }
 
 std::vector<const char*> getRequiredExtensions()
@@ -613,3 +619,11 @@ void Wolf::Vulkan::retrievePhysicalDeviceShadingRateProperties()
 	vkGetPhysicalDeviceProperties2(m_physicalDevice, &props);
 #endif
 }
+
+#ifdef __ANDROID__
+bool Wolf::Vulkan::isDeviceLost()
+{
+    VkResult res = vkDeviceWaitIdle(m_device);
+    return res == VK_ERROR_DEVICE_LOST;
+}
+#endif

@@ -231,7 +231,7 @@ uint32_t Wolf::SwapChainVulkan::acquireNextImage(uint32_t currentFrame) const
 	const VkResult result = vkAcquireNextImageKHR(g_vulkanInstance->getDevice(), m_swapChain, std::numeric_limits<uint64_t>::max(), 
 		static_cast<const SemaphoreVulkan*>(m_imageAvailableSemaphores[currentFrame % m_imageAvailableSemaphores.size()].get())->getSemaphore(), VK_NULL_HANDLE, &imageIndex);
 
-	if (result == VK_ERROR_OUT_OF_DATE_KHR)
+	if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_ERROR_SURFACE_LOST_KHR)
 	{
 		return NO_IMAGE_IDX;
 	}

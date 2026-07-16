@@ -21,3 +21,5 @@ Wolf::GraphicAPIManager* Wolf::GraphicAPIManager::instanciateGraphicAPIManager
 	return nullptr;
 #endif
 }
+
+Wolf::GraphicAPIManager::~GraphicAPIManager() = default;
