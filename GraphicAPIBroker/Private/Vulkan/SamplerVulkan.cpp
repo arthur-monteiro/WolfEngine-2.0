@@ -28,7 +28,7 @@ Wolf::SamplerVulkan::SamplerVulkan(VkSamplerAddressMode addressMode, float mipLe
 		samplerInfo.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
 		samplerInfo.mipLodBias = mipLodBias;
 		samplerInfo.minLod = minLod;
-		samplerInfo.maxLod = mipLevels;
+		samplerInfo.maxLod = mipLevels - 1.0f;
 	}
 	else
 	{

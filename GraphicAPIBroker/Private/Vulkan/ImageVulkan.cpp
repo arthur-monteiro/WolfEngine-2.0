@@ -339,12 +339,15 @@ void Wolf::ImageVulkan::setImageLayout(const TransitionLayoutInfo& transitionLay
 	fence.waitForFence();
 }
 
-uint32_t computeImageViewHash(VkFormat format)
+uint32_t computeImageViewHash(VkFormat format, uint32_t baseMipLevel, uint32_t mipLevelCount)
 {
-	return (uint32_t)format;
+	uint32_t hash = static_cast<uint32_t>(format);
+	hash ^= (baseMipLevel + 0x9e3779b9 + (hash << 6) + (hash >> 2));
+	hash ^= (mipLevelCount + 0x9e3779b9 + (hash << 6) + (hash >> 2));
+	return hash;
 }
 
-void Wolf::ImageVulkan::createImageView(VkFormat format)
+void Wolf::ImageVulkan::createImageView(VkFormat format, uint32_t baseMipLevel, uint32_t mipLevelCount)
 {
 	VkImageViewCreateInfo viewInfo = {};
 	viewInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
@@ -352,8 +355,8 @@ void Wolf::ImageVulkan::createImageView(VkFormat format)
 	viewInfo.viewType = m_arrayLayerCount == 6 ? VK_IMAGE_VIEW_TYPE_CUBE : (m_extent.depth != 1 ? VK_IMAGE_VIEW_TYPE_3D : VK_IMAGE_VIEW_TYPE_2D);
 	viewInfo.format = format;
 	viewInfo.subresourceRange.aspectMask = wolfImageAspectFlagsToVkImageAspectFlags(m_aspectFlags);
-	viewInfo.subresourceRange.baseMipLevel = 0;
-	viewInfo.subresourceRange.levelCount = m_mipLevelCount;
+	viewInfo.subresourceRange.baseMipLevel = baseMipLevel;
+	viewInfo.subresourceRange.levelCount = mipLevelCount;
 	viewInfo.subresourceRange.baseArrayLayer = 0;
 	viewInfo.subresourceRange.layerCount = m_arrayLayerCount;
 
@@ -361,7 +364,7 @@ void Wolf::ImageVulkan::createImageView(VkFormat format)
 	if (vkCreateImageView(g_vulkanInstance->getDevice(), &viewInfo, nullptr, &imageView) != VK_SUCCESS)
 		Debug::sendError("Error : create image view");
 
-	const uint32_t hash = computeImageViewHash(m_vkImageFormat);
+	const uint32_t hash = computeImageViewHash(m_vkImageFormat, baseMipLevel, mipLevelCount);
 	m_imageViews[hash] = imageView;
 }
 
@@ -484,12 +487,12 @@ VkMemoryPropertyFlags Wolf::ImageVulkan::wolfImageMemoryPropertyFlagsToVkMemoryP
 	return VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
 }
 
-Wolf::ImageView Wolf::ImageVulkan::getImageView(Format format)
+Wolf::ImageView Wolf::ImageVulkan::getImageView(Format format, uint32_t baseMipLevel, uint32_t mipLevelCount)
 {
-	const uint32_t hash = computeImageViewHash(wolfFormatToVkFormat(format));
+	const uint32_t hash = computeImageViewHash(wolfFormatToVkFormat(format), baseMipLevel, mipLevelCount);
 	if (m_imageViews.find(hash) == m_imageViews.end())
 	{
-		createImageView(wolfFormatToVkFormat(format));
+		createImageView(wolfFormatToVkFormat(format), baseMipLevel, mipLevelCount);
 	}
 
 	return m_imageViews[hash];
@@ -497,7 +500,7 @@ Wolf::ImageView Wolf::ImageVulkan::getImageView(Format format)
 
 Wolf::ImageView Wolf::ImageVulkan::getDefaultImageView()
 {
-	return getImageView(m_imageFormat);
+	return getImageView(m_imageFormat, 0, m_mipLevelCount);
 }
 
 void Wolf::ImageVulkan::transitionImageLayout(const CommandBuffer& commandBuffer, const TransitionLayoutInfo& transitionLayoutInfo)

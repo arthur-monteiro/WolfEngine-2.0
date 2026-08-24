@@ -262,7 +262,8 @@ Wolf::PipelineVulkan::PipelineVulkan(const RenderingPipelineCreateInfo& renderin
 		vkDestroyShaderModule(g_vulkanInstance->getDevice(), shaderModule, nullptr);
 }
 
-Wolf::PipelineVulkan::PipelineVulkan(const ShaderCreateInfo& computeShaderInfo, std::span<ResourceReference<const DescriptorSetLayout>> descriptorSetLayouts)
+Wolf::PipelineVulkan::PipelineVulkan(const ShaderCreateInfo& computeShaderInfo, std::span<ResourceReference<const DescriptorSetLayout>> descriptorSetLayouts,
+	std::span<PushConstantsRange> pushConstantsRanges)
 {
 	m_type = Type::COMPUTE;
 
@@ -273,7 +274,19 @@ Wolf::PipelineVulkan::PipelineVulkan(const ShaderCreateInfo& computeShaderInfo, 
 	for (uint32_t i = 0; i < pipelineLayoutInfo.setLayoutCount; ++i)
 		vkDescriptorSetLayouts[i] = descriptorSetLayouts[i].operator-><const DescriptorSetLayoutVulkan>()->getDescriptorSetLayout();
 	pipelineLayoutInfo.pSetLayouts = vkDescriptorSetLayouts.data();
-	pipelineLayoutInfo.pushConstantRangeCount = 0;
+
+	pipelineLayoutInfo.pushConstantRangeCount = pushConstantsRanges.size();
+	std::vector<VkPushConstantRange> vkPushConstantRanges(pipelineLayoutInfo.pushConstantRangeCount);
+	if (pipelineLayoutInfo.pushConstantRangeCount > 0)
+	{
+		for (uint32_t i = 0; i < pipelineLayoutInfo.pushConstantRangeCount; ++i)
+		{
+			vkPushConstantRanges[i].offset = pushConstantsRanges[i].m_offset;
+			vkPushConstantRanges[i].size = pushConstantsRanges[i].m_size;
+			vkPushConstantRanges[i].stageFlags = VK_SHADER_STAGE_COMPUTE_BIT;
+		}
+		pipelineLayoutInfo.pPushConstantRanges = vkPushConstantRanges.data();
+	}
 
 	if (vkCreatePipelineLayout(g_vulkanInstance->getDevice(), &pipelineLayoutInfo, nullptr, &m_pipelineLayout) != VK_SUCCESS)
 		Debug::sendCriticalError("Failed to create pipeline layout");

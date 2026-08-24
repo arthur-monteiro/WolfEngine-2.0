@@ -1,4 +1,3 @@
-R"(
 #extension GL_EXT_nonuniform_qualifier : enable
 
 struct CullingInstanceInfo
@@ -30,6 +29,9 @@ struct MeshInfo
 {
 	LODInfo lods[MAX_LOD_COUNT];
 	vec4 boundingSphere;
+
+	vec4 aabbMin;
+	vec4 aabbMax;
 };
 layout(std430, binding = 1) restrict buffer MeshesInfoBufferLayout
 {
@@ -75,6 +77,8 @@ layout(binding = 5, std140) uniform readonly UniformBufferLayout
 	uint frameIdx;
 } ub;
 
+layout(binding = 6) uniform sampler2D HZBSampler;
+
 #ifdef MESH_STREAMING
 const uint MAX_FEEDBACK_COUNT = 32;
 struct Feedback
@@ -82,7 +86,7 @@ struct Feedback
     uint meshIdx;
     uint lod;
 };
-layout(std430, binding = 6) restrict buffer OutStreamingFeedbacksLayout
+layout(std430, binding = 7) restrict buffer OutStreamingFeedbacksLayout
 {
    	uint outFeedbackCount;
    	Feedback outFeedbacks[MAX_FEEDBACK_COUNT];
@@ -92,11 +96,28 @@ struct LatestFrameIdxPerLOD
 {
     uint frameIdx[MAX_LOD_COUNT];
 };
-layout(std430, binding = 7) restrict buffer OutStreamingLatestFrameIdxLayout
+layout(std430, binding = 8) restrict buffer OutStreamingLatestFrameIdxLayout
 {
    	LatestFrameIdxPerLOD latestFrameIdxPerLODs[];
 } outStreamingLatestFrameIdx;
 #endif
+
+layout(std430, binding =
+#ifdef MESH_STREAMING
+    9
+#else
+    7
+#endif
+) restrict buffer OutDebugData
+{
+   	uint instanceCount;
+   	uint primitiveCount;
+} outDebugData;
+
+layout(push_constant) uniform PushConstants
+{
+	uint cameraBatchMask;
+} pc;
 
 bool isSphereVisible(in vec4 sphere, in vec4 planes[6])
 {
@@ -115,6 +136,89 @@ float compteSphereDistance(vec3 p, vec4 sphere)
 {
     float d = distance(p, sphere.xyz);
     return d - sphere.w;
+}
+
+bool isSphereVisibleHZB(in vec3 aabbMin, in vec3 aabbMax, in mat4 viewProjMatrix)
+{
+	vec4 corners[8];
+	corners[0] = viewProjMatrix * vec4(aabbMin.x, aabbMin.y, aabbMin.z, 1.0);
+	corners[1] = viewProjMatrix * vec4(aabbMax.x, aabbMin.y, aabbMin.z, 1.0);
+	corners[2] = viewProjMatrix * vec4(aabbMin.x, aabbMax.y, aabbMin.z, 1.0);
+	corners[3] = viewProjMatrix * vec4(aabbMax.x, aabbMax.y, aabbMin.z, 1.0);
+	corners[4] = viewProjMatrix * vec4(aabbMin.x, aabbMin.y, aabbMax.z, 1.0);
+	corners[5] = viewProjMatrix * vec4(aabbMax.x, aabbMin.y, aabbMax.z, 1.0);
+	corners[6] = viewProjMatrix * vec4(aabbMin.x, aabbMax.y, aabbMax.z, 1.0);
+	corners[7] = viewProjMatrix * vec4(aabbMax.x, aabbMax.y, aabbMax.z, 1.0);
+
+	vec3 minNDC = vec3(1e5);
+	vec3 maxNDC = vec3(-1e5);
+
+	for (int i = 0; i < 8; ++i)
+	{
+		// Objects crossing or behind near plane
+		if (corners[i].w <= 0.001)
+			return true;
+
+		vec3 ndc = corners[i].xyz / corners[i].w;
+		minNDC = min(minNDC, ndc);
+		maxNDC = max(maxNDC, ndc);
+	}
+
+	vec4 vp = getViewport();
+	vec2 fullDepthSize = vec2(textureSize(HZBSampler, 0)) * 2.0; // first mip of HZB is second mip of depth
+
+	vec2 localUVMin = clamp(minNDC.xy * 0.5 + 0.5, 0.0, 1.0);
+	vec2 localUVMax = clamp(maxNDC.xy * 0.5 + 0.5, 0.0, 1.0);
+
+	vec2 globalUVMin = (vp.xy + localUVMin * vp.zw) / fullDepthSize;
+	vec2 globalUVMax = (vp.xy + localUVMax * vp.zw) / fullDepthSize;
+
+	float nearestDepth = maxNDC.z + 0.0001;
+
+	vec2 hzbBaseSize = vec2(textureSize(HZBSampler, 0));
+	vec2 sizeInHZBTexels = (globalUVMax - globalUVMin) * hzbBaseSize;
+
+	float maxDimension = max(max(sizeInHZBTexels.x, sizeInHZBTexels.y), 0.0001);
+	float mip = max(0.0, ceil(log2(maxDimension))) - 1;
+	float maxMipIndex = floor(log2(max(hzbBaseSize.x, hzbBaseSize.y))) - 2; // -2 to follow MipMapGenerator::computeMipCount
+	mip = min(mip, maxMipIndex);
+
+	vec2 mipSize = vec2(textureSize(HZBSampler, int(mip)));
+	vec2 texelMin = floor(globalUVMin * mipSize);
+	vec2 texelMax = floor(globalUVMax * mipSize);
+
+	vec2 sampleUV1 = (texelMin + vec2(0.5, 0.5)) / mipSize;
+	vec2 sampleUV2 = (vec2(texelMax.x, texelMin.y) + vec2(0.5, 0.5)) / mipSize;
+	vec2 sampleUV3 = (vec2(texelMin.x, texelMax.y) + vec2(0.5, 0.5)) / mipSize;
+	vec2 sampleUV4 = (texelMax + vec2(0.5, 0.5)) / mipSize;
+
+	float d1 = textureLod(HZBSampler, sampleUV1, mip).r;
+	float d2 = textureLod(HZBSampler, sampleUV2, mip).r;
+	float d3 = textureLod(HZBSampler, sampleUV3, mip).r;
+	float d4 = textureLod(HZBSampler, sampleUV4, mip).r;
+
+	float hzbDepth = min(min(d1, d2), min(d3, d4));
+
+	return nearestDepth >= hzbDepth;
+}
+
+void transformWorldAABB(in vec3 localMin, in vec3 localMax, in mat4 worldMatrix, out vec3 worldMin, out vec3 worldMax)
+{
+	vec3 center = (localMin + localMax) * 0.5;
+	vec3 extent = (localMax - localMin) * 0.5;
+
+	vec3 worldCenter = (worldMatrix * vec4(center, 1.0)).xyz;
+
+	mat3 absWorld = mat3(
+		abs(worldMatrix[0].xyz),
+		abs(worldMatrix[1].xyz),
+		abs(worldMatrix[2].xyz)
+	);
+
+	vec3 worldExtent = absWorld * extent;
+
+	worldMin = worldCenter - worldExtent;
+	worldMax = worldCenter + worldExtent;
 }
 
 layout (local_size_x = 256, local_size_y = 1, local_size_z = 1) in;
@@ -142,6 +246,13 @@ void main()
     vec4 boundingSphere = vec4(vec3(boundingSphereCenter), boundingSphereRadius);
 
 	if (!isSphereVisible(boundingSphere, ubCamera.frustumPlanes))
+		return;
+
+	vec3 aabbMin;
+	vec3 aabbMax;
+	transformWorldAABB(meshInfo.aabbMin.xyz, meshInfo.aabbMax.xyz, cullingInstanceInfo.transform, aabbMin, aabbMax);
+	mat4 viewProj = getProjectionMatrix() * getViewMatrix();
+	if (!isSphereVisibleHZB(aabbMin, aabbMax, viewProj))
 		return;
 
 	float distanceWithCamera = compteSphereDistance(getCameraPos(), boundingSphere);
@@ -203,7 +314,8 @@ void main()
 
 	for (uint batchIdx = 0; batchIdx < MAX_BATCH_COUNT; batchIdx++)
 	{
-		if ((cullingInstanceInfo.batchesMask & (1u << batchIdx)) != 0u)
+		if ((cullingInstanceInfo.batchesMask & (1u << batchIdx)) != 0u &&
+			(pc.cameraBatchMask & (1u << batchIdx)) != 0)
 		{
 			uint outCommandIdx = atomicAdd(drawCount[batchIdx], 1);
 			outInstancesDataBuffers[batchIdx].outInstancesData[outCommandIdx].transform = cullingInstanceInfo.transform;
@@ -216,8 +328,9 @@ void main()
 			outDrawCommandsBuffers[batchIdx].outDrawCommands[outCommandIdx].indexCount = meshInfo.lods[lod].indexCount;
 			outDrawCommandsBuffers[batchIdx].outDrawCommands[outCommandIdx].instanceCount = 1;
 			outDrawCommandsBuffers[batchIdx].outDrawCommands[outCommandIdx].firstInstance = 0;
+
+            atomicAdd(outDebugData.instanceCount, 1);
+            atomicAdd(outDebugData.primitiveCount, meshInfo.lods[lod].indexCount);
 		}
 	}
 }
-
-)"

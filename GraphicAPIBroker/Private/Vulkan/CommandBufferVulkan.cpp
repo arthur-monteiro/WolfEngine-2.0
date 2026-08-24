@@ -186,12 +186,19 @@ void Wolf::CommandBufferVulkan::submit(const std::vector<const Semaphore*>& wait
 
 void Wolf::CommandBufferVulkan::beginRenderPass(const RenderPass& renderPass, const FrameBuffer& frameBuffer, const std::vector<ClearValue>& clearValues) const
 {
+	beginRenderPassViewport(renderPass, frameBuffer, clearValues, { 0.0f, 0.0f, static_cast<float>(renderPass.getExtent().width),
+		static_cast<float>(renderPass.getExtent().height), 0.0f, 1.0f });
+}
+
+void Wolf::CommandBufferVulkan::beginRenderPassViewport(const RenderPass& renderPass, const FrameBuffer& frameBuffer,
+	const std::vector<ClearValue>& clearValues, const Viewport& viewport) const
+{
 	VkRenderPassBeginInfo renderPassInfo = {};
 	renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
 	renderPassInfo.renderPass = static_cast<const RenderPassVulkan*>(&renderPass)->getRenderPass();
 	renderPassInfo.framebuffer = static_cast<const FrameBufferVulkan*>(&frameBuffer)->getFrameBuffer();
-	renderPassInfo.renderArea.offset = { 0, 0 };
-	renderPassInfo.renderArea.extent = { renderPass.getExtent().width, renderPass.getExtent().height };
+	renderPassInfo.renderArea.offset = { static_cast<int32_t>(viewport.x), static_cast<int32_t>(viewport.y) };
+	renderPassInfo.renderArea.extent = { static_cast<uint32_t>(viewport.width), static_cast<uint32_t>(viewport.height) };
 
 	std::vector<VkClearValue> vkClearValues(clearValues.size());
 	for (uint32_t i = 0; i < vkClearValues.size(); ++i)
@@ -246,6 +253,11 @@ void Wolf::CommandBufferVulkan::bindDescriptorSet(const ResourceReference<const 
 		&descriptorSet.operator-><const DescriptorSetVulkan>()->getDescriptorSet(), 0, nullptr);
 }
 
+void Wolf::CommandBufferVulkan::pushConstants(const ResourceReference<const Pipeline>& pipeline, ShaderStageFlags accessibility, uint32_t dstOffset, uint32_t dstSize, const void* data) const
+{
+	vkCmdPushConstants(getCommandBuffer(), pipeline.operator-><const PipelineVulkan>()->getPipelineLayout(), accessibility, dstOffset, dstSize, data);
+}
+
 VkFragmentShadingRateCombinerOpKHR fragmentShadingRateCombinerOpToVkType(Wolf::FragmentShadingRateCombinerOp in)
 {
 	switch (in) 
@@ -286,6 +298,27 @@ void Wolf::CommandBufferVulkan::clearColorImage(const Image& image, ImageLayout 
 {
 	const VkClearColorValue color = { clearColor.components[0], clearColor.components[1], clearColor.components[2], clearColor.components[3] };
 	vkCmdClearColorImage(getCommandBuffer(), static_cast<const ImageVulkan*>(&image)->getImage(), wolfImageLayoutToVulkanImageLayout(imageLayout), &color, 1, &range);
+}
+
+void Wolf::CommandBufferVulkan::clearDepthStencilImage(const Image& image, ImageLayout imageLayout, float clearValue, const VkImageSubresourceRange& range) const
+{
+	const VkClearDepthStencilValue value = { clearValue };
+	vkCmdClearDepthStencilImage(getCommandBuffer(), static_cast<const ImageVulkan*>(&image)->getImage(), wolfImageLayoutToVulkanImageLayout(imageLayout), &value, 1, &range);
+}
+
+void Wolf::CommandBufferVulkan::clearDepthAttachment(float clearValue, const Viewport& viewport) const
+{
+	VkClearAttachment clearAttachment = {};
+	clearAttachment.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT;
+	clearAttachment.clearValue.depthStencil = { clearValue };
+
+	VkClearRect clearRect = {};
+	clearRect.rect.offset = { static_cast<int32_t>(viewport.x), static_cast<int32_t>(viewport.y) };
+	clearRect.rect.extent = { static_cast<uint32_t>(viewport.width), static_cast<uint32_t>(viewport.height) };
+	clearRect.baseArrayLayer = 0;
+	clearRect.layerCount = 1;
+
+	vkCmdClearAttachments(getCommandBuffer(), 1, &clearAttachment, 1, &clearRect);
 }
 
 void Wolf::CommandBufferVulkan::fillBuffer(const Buffer& buffer, uint64_t dstOffset, uint64_t size, uint32_t data) const

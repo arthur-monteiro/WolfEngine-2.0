@@ -38,6 +38,12 @@ namespace Wolf
 		ShaderStageFlagBits stage;
 	};
 
+	struct PushConstantsRange
+	{
+		uint32_t m_offset;
+		uint32_t m_size;
+	};
+
 	struct RenderingPipelineCreateInfo
 	{
 		const RenderPass* renderPass;
@@ -96,7 +102,8 @@ namespace Wolf
 	{
 	public:
 		static Pipeline* createRenderingPipeline(const RenderingPipelineCreateInfo& renderingPipelineCreateInfo);
-		static Pipeline* createComputePipeline(const ShaderCreateInfo& computeShaderInfo, std::span<ResourceReference<const DescriptorSetLayout>> descriptorSetLayouts);
+		static Pipeline* createComputePipeline(const ShaderCreateInfo& computeShaderInfo, std::span<ResourceReference<const DescriptorSetLayout>> descriptorSetLayouts,
+			std::span<PushConstantsRange> pushConstantsRanges = {});
 		static Pipeline* createRayTracingPipeline(const RayTracingPipelineCreateInfo& rayTracingPipelineCreateInfo, std::span<ResourceReference<const DescriptorSetLayout>> descriptorSetLayouts);
 		virtual ~Pipeline() = default;
 	};

@@ -13,6 +13,7 @@
 #include "Fence.h"
 #include "ImageLayout.h"
 #include "ResourceReference.h"
+#include "ShaderStages.h"
 #include "Structs.h"
 
 namespace Wolf
@@ -41,6 +42,7 @@ namespace Wolf
 		virtual void submit(const std::vector<const Semaphore*>& waitSemaphores, const std::vector<const Semaphore*>& signalSemaphores, const ResourceReference<const Fence>& fence) const = 0;
 
 		virtual void beginRenderPass(const RenderPass& renderPass, const FrameBuffer& frameBuffer, const std::vector<ClearValue>& clearValues) const = 0;
+		virtual void beginRenderPassViewport(const RenderPass& renderPass, const FrameBuffer& frameBuffer, const std::vector<ClearValue>& clearValues, const Viewport& viewport) const = 0;
 		virtual void endRenderPass() const = 0;
 
 		// Binds
@@ -51,12 +53,16 @@ namespace Wolf
 
 		virtual void bindDescriptorSet(const ResourceReference<const DescriptorSet>& descriptorSet, uint32_t slot, const Pipeline& pipeline) const = 0;
 
+		virtual void pushConstants(const ResourceReference<const Pipeline>& pipeline, ShaderStageFlags accessibility, uint32_t dstOffset, uint32_t dstSize, const void* data) const = 0;
+
 		// Params
 		virtual void setFragmentShadingRate(FragmentShadingRateCombinerOp fragmentShadingRateCombinerOps[2], const Extent2D& fragmentExtent) const = 0;
 		virtual void setViewport(const Viewport& viewport) const = 0;
 
 		// Commands
 		virtual void clearColorImage(const Image& image, ImageLayout imageLayout, ColorFloat clearColor, const VkImageSubresourceRange& range) const = 0;
+		virtual void clearDepthStencilImage(const Image& image, ImageLayout imageLayout, float clearValue, const VkImageSubresourceRange& range) const = 0;
+		virtual void clearDepthAttachment(float clearValue, const Viewport& viewport) const = 0;
 		virtual void fillBuffer(const Buffer& buffer, uint64_t  dstOffset, uint64_t size, uint32_t data) const = 0;
 		virtual void imageCopy(const Image& imageSrc, ImageLayout srcImageLayout, const Image& imageDst, ImageLayout dstImageLayout, const ImageCopyInfo& imageCopyInfo) const = 0;
 

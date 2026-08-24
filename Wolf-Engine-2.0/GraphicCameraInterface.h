@@ -8,6 +8,7 @@
 
 #include "DescriptorSetLayoutGenerator.h"
 #include "LazyInitSharedResource.h"
+#include "Structs.h"
 
 namespace Wolf
 {
@@ -24,9 +25,12 @@ namespace Wolf
 		[[nodiscard]] virtual const glm::mat4& getProjectionMatrix() const = 0;
 		[[nodiscard]] virtual float getNear() const = 0;
 		[[nodiscard]] virtual float getFar() const = 0;
+		[[nodiscard]] virtual Viewport getViewport() const { return m_viewport; }
 
 		static ResourceUniqueOwner<DescriptorSetLayout>& getDescriptorSetLayout();
 		virtual const DescriptorSet* getDescriptorSet() const { return m_descriptorSet.get(); }
+
+		void setViewport(const Viewport& viewport) { m_viewport = viewport; }
 
 	protected:
 		GraphicCameraInterface();
@@ -37,6 +41,8 @@ namespace Wolf
 	private:
 		static ResourceUniqueOwner<DescriptorSetLayoutGenerator> s_descriptorSetLayoutGenerator;
 		static ResourceUniqueOwner<DescriptorSetLayout> s_descriptorSetLayout;
+
+		Viewport m_viewport = Viewport(0, 0, 0, 0, 0, 1);
 
 		struct UniformBufferData
 		{
@@ -59,6 +65,8 @@ namespace Wolf
 			glm::uint extentWidth;
 
 			glm::vec4 frustumPlanes[6]; // left, right, bottom, top, near, far
+
+			glm::vec4 viewport;
 		};
 
 		std::unique_ptr<DescriptorSet> m_descriptorSet;

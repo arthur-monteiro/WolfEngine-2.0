@@ -3,6 +3,8 @@
 #include <atomic>
 #include <glm/glm.hpp>
 
+#include <Sampler.h>
+
 #include "CommandRecordBase.h"
 #include "DefaultMeshRenderer.h"
 #include "DescriptorSetLayoutGenerator.h"
@@ -60,6 +62,7 @@ namespace Wolf
             };
             std::vector<LOD> m_lods;
             BoundingSphere m_boundingSphere;
+            AABB m_AABB;
             ResourceNonOwner<const PipelineSet> m_pipelineSet;
             std::array<std::vector<DescriptorSetBindInfo>, PipelineSet::MAX_PIPELINE_COUNT> m_perPipelineDescriptorSets;
 
@@ -80,6 +83,7 @@ namespace Wolf
         void overrideCullingInstances(const std::vector<OverrideInstance>& instances);
         void stopOverridingCullingInstances();
 
+        void registerCameraInfo(uint32_t cameraIdx, const ResourceNonOwner<Image>& hzbImage);
         void activateCameraForThisFrame(uint32_t cameraIdx, uint32_t pipelineIdx);
 
         static constexpr uint32_t NO_CAMERA_IDX = -1;
@@ -98,6 +102,8 @@ namespace Wolf
 
         uint32_t getUniqueTriangleRegisteredCount() const { return m_uniqueTriangleRegisteredCount; }
         uint32_t getTotalTriangleRegisteredCount() const { return m_totalTriangleRegisteredCount; }
+        uint32_t getInstanceRenderedCount() const { return m_instanceRenderedCount; }
+        uint32_t getTriangleRenderedCount() const { return m_triangleRenderedCount; }
 
     private:
         static constexpr uint32_t MAX_INSTANCE_COUNT = 32'768;
@@ -148,6 +154,8 @@ namespace Wolf
         {
             LODInfo m_lods[MAX_LOD_COUNT];
             glm::vec4 m_boundingSphere;
+            glm::vec4 m_aabbMin;
+            glm::vec4 m_aabbMax;
         };
         ResourceUniqueOwner<Buffer> m_meshesInfoBuffer;
         uint32_t m_currentMeshCount = 0;
@@ -202,7 +210,16 @@ namespace Wolf
             std::array<ResourceUniqueOwner<Buffer>, MAX_BATCH_COUNT> m_instancesDataBuffers; // 1 buffer per batch
             std::array<ResourceUniqueOwner<DescriptorSet>, MAX_BATCH_COUNT> m_instancesDataDescriptorSets; // 1 buffer per batch
             ResourceUniqueOwner<DescriptorSet> m_cullingDescriptorSet;
+
+            ResourceNonOwner<Image> m_hzbImage;
+            ResourceUniqueOwner<Sampler> m_HZBSampler;
+
+            PerCullingCamera(const ResourceNonOwner<Image>& hzbImage) : m_hzbImage(hzbImage)
+            {
+                m_HZBSampler.reset(Sampler::createSampler(VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_BORDER, m_hzbImage->getMipLevelCount(), VK_FILTER_NEAREST));
+            }
         };
+        void initPerCullingCamera(ResourceUniqueOwner<PerCullingCamera>& perCullingCamera, const ResourceNonOwner<Image>& hzbImage, uint32_t cameraIdx);
         static constexpr uint32_t MAX_CAMERA_COUNT = 16;
         std::array<ResourceUniqueOwner<PerCullingCamera>, MAX_CAMERA_COUNT> m_cullingCamerasData;
 
@@ -218,6 +235,16 @@ namespace Wolf
         ResourceUniqueOwner<Buffer> m_latestFrameIdxUsedPerLODBuffer;
         ResourceUniqueOwner<ReadableBuffer> m_latestFrameIdxUsedPerLODReadableBuffer;
         std::vector<LastFrameIndexUsageMeshInfo> m_lastFrameIndexUsageMeshInfos;
+
+        ResourceUniqueOwner<Image> m_defaultHZB;
+
+        struct ReadbackDebugData
+        {
+            uint32_t m_instanceCount;
+            uint32_t m_primitiveCount;
+        };
+        ResourceUniqueOwner<Buffer> m_readbackDebugDataBuffer;
+        ResourceUniqueOwner<ReadableBuffer> m_readbackDebugDataReadableBuffer;
 
         // CPU caches
         struct MeshCacheData
@@ -294,10 +321,17 @@ namespace Wolf
         };
         DynamicResourceUniqueOwnerArray<PerBatchData, 16> m_batchesData;
 
+        struct PushConstants
+        {
+            uint32_t m_cameraBatchMask;
+        };
+
         std::mutex m_mutex;
 
         // Stats
         uint32_t m_uniqueTriangleRegisteredCount = 0; // LOD 0 triangles registered
         uint32_t m_totalTriangleRegisteredCount = 0; // multiplied by instance count
+        uint32_t m_instanceRenderedCount = 0; // total instances rendered - including all batches and all cameras
+        uint32_t m_triangleRenderedCount = 0; // total triangles rendered - including all batches and all cameras
     };
 }

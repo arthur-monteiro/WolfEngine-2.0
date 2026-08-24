@@ -14,10 +14,10 @@ Wolf::Pipeline* Wolf::Pipeline::createRenderingPipeline(const RenderingPipelineC
 }
 
 Wolf::Pipeline* Wolf::Pipeline::createComputePipeline(const ShaderCreateInfo& computeShaderInfo,
-	std::span<ResourceReference<const DescriptorSetLayout>> descriptorSetLayouts)
+	std::span<ResourceReference<const DescriptorSetLayout>> descriptorSetLayouts, std::span<PushConstantsRange> pushConstantsRanges)
 {
 #ifdef WOLF_VULKAN
-	return new PipelineVulkan(computeShaderInfo, descriptorSetLayouts);
+	return new PipelineVulkan(computeShaderInfo, descriptorSetLayouts, pushConstantsRanges);
 #else
 	return nullptr;
 #endif

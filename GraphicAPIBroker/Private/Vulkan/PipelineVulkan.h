@@ -13,7 +13,8 @@ namespace Wolf
 		// Rasterization
 		PipelineVulkan(const RenderingPipelineCreateInfo& renderingPipelineCreateInfo);
 		// Compute
-		PipelineVulkan(const ShaderCreateInfo& computeShaderInfo, std::span<ResourceReference<const DescriptorSetLayout>> descriptorSetLayouts);
+		PipelineVulkan(const ShaderCreateInfo& computeShaderInfo, std::span<ResourceReference<const DescriptorSetLayout>> descriptorSetLayouts,
+			std::span<PushConstantsRange> pushConstantsRanges);
 		// Ray tracing
 		PipelineVulkan(const RayTracingPipelineCreateInfo& rayTracingPipelineCreateInfo, std::span<ResourceReference<const DescriptorSetLayout>> descriptorSetLayouts);
 		~PipelineVulkan() override;

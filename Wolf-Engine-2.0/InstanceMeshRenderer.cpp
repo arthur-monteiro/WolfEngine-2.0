@@ -1,4 +1,5 @@
 #include "InstanceMeshRenderer.h"
+#include "InstanceMeshRenderer.h"
 
 #include <fstream>
 #include <xxh64.hpp>
@@ -21,11 +22,13 @@ Wolf::InstanceMeshRenderer::InstanceMeshRenderer(ShaderList& shaderList, const R
     m_cullInstancesDescriptorSetLayoutGenerator.addStorageBuffer(ShaderStageFlagBits::COMPUTE, 3); // drawCounts
     m_cullInstancesDescriptorSetLayoutGenerator.addStorageBuffers(ShaderStageFlagBits::COMPUTE, 4, MAX_BATCH_COUNT); // outDrawCommands
     m_cullInstancesDescriptorSetLayoutGenerator.addUniformBuffer(ShaderStageFlagBits::COMPUTE, 5); // uniform buffer
+    m_cullInstancesDescriptorSetLayoutGenerator.addCombinedImageSampler(ShaderStageFlagBits::COMPUTE, 6); // HZB
     if (g_configuration->getUseMeshStreaming())
     {
-        m_cullInstancesDescriptorSetLayoutGenerator.addStorageBuffer(ShaderStageFlagBits::COMPUTE, 6); // feedbacks buffer
-        m_cullInstancesDescriptorSetLayoutGenerator.addStorageBuffer(ShaderStageFlagBits::COMPUTE, 7); // latest frame idx
+        m_cullInstancesDescriptorSetLayoutGenerator.addStorageBuffer(ShaderStageFlagBits::COMPUTE, 7); // feedbacks buffer
+        m_cullInstancesDescriptorSetLayoutGenerator.addStorageBuffer(ShaderStageFlagBits::COMPUTE, 8); // latest frame idx
     }
+    m_cullInstancesDescriptorSetLayoutGenerator.addStorageBuffer(ShaderStageFlagBits::COMPUTE, g_configuration->getUseMeshStreaming() ? 9 : 7); // debug buffer
     m_cullInstancesDescriptorSetLayout.reset(DescriptorSetLayout::createDescriptorSetLayout(m_cullInstancesDescriptorSetLayoutGenerator.getDescriptorLayouts()));
 
 #ifdef __ANDROID__
@@ -50,9 +53,11 @@ Wolf::InstanceMeshRenderer::InstanceMeshRenderer(ShaderList& shaderList, const R
                 outputFile << "#define MESH_STREAMING\n";
             }
 
-            outputFile <<
-                #include "InstanceRendererCulling.comp"
-                ;
+            std::string instanceRendererCullingShaderCode = {
+#embed "InstanceRendererCulling.comp"
+            };
+
+            outputFile << instanceRendererCullingShaderCode;
             outputFile.close();
         }
 
@@ -64,7 +69,11 @@ Wolf::InstanceMeshRenderer::InstanceMeshRenderer(ShaderList& shaderList, const R
 
         std::vector<ResourceReference<const DescriptorSetLayout>> descriptorSetLayouts = { m_cullInstancesDescriptorSetLayout.createConstNonOwnerResource(),
             GraphicCameraInterface::getDescriptorSetLayout().createConstNonOwnerResource() };
-        m_cullInstancesPipeline.reset(Pipeline::createComputePipeline(computeShaderInfo, descriptorSetLayouts));
+
+        std::vector<Wolf::PushConstantsRange> pushConstantsRanges(1);
+        pushConstantsRanges[0] = { .m_offset = 0, .m_size = sizeof(PushConstants) };
+
+        m_cullInstancesPipeline.reset(Pipeline::createComputePipeline(computeShaderInfo, descriptorSetLayouts, pushConstantsRanges));
 
         std::remove(cacheFilename.c_str());
         std::remove("instanceMeshRendererCullInstancesComputeShaderCacheParsed.comp");
@@ -148,6 +157,17 @@ Wolf::InstanceMeshRenderer::InstanceMeshRenderer(ShaderList& shaderList, const R
 
         m_lastFrameIndexUsageMeshInfos.resize(MAX_MESH_COUNT);
     }
+
+    CreateImageInfo createImageInfo{};
+    createImageInfo.extent = Extent3D(1, 1, 1);
+    createImageInfo.mipLevelCount = 1;
+    createImageInfo.format = Format::R32_SFLOAT;
+    m_defaultHZB.reset(Image::createImage(createImageInfo));
+
+    m_readbackDebugDataBuffer.reset(Buffer::createBuffer(sizeof(ReadbackDebugData), VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT
+            | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT));
+    m_readbackDebugDataBuffer->setName("Debug data buffer (InstanceMeshRenderer::m_readbackDebugDataBuffer)");
+    m_readbackDebugDataReadableBuffer.reset(new ReadableBuffer(m_readbackDebugDataBuffer->getSize(), 0));
 }
 
 void Wolf::InstanceMeshRenderer::moveToNextFrame()
@@ -212,6 +232,16 @@ void Wolf::InstanceMeshRenderer::moveToNextFrame()
         m_gpuDataTransfersManager->requestGPUBufferReadbackRecord(m_latestFrameIdxUsedPerLODBuffer.createNonOwnerResource(), 0, m_latestFrameIdxUsedPerLODReadableBuffer.createNonOwnerResource(),
             m_latestFrameIdxUsedPerLODBuffer->getSize());
     }
+
+    const uint32_t bufferIdx = g_runtimeContext->getCurrentCPUFrameNumber() % g_configuration->getMaxCachedFrames();
+    const ReadbackDebugData* debugData = static_cast<const ReadbackDebugData*>(m_readbackDebugDataReadableBuffer->getBuffer(bufferIdx).map());
+    m_instanceRenderedCount = debugData->m_instanceCount;
+    m_triangleRenderedCount = debugData->m_primitiveCount / 3;
+
+    m_gpuDataTransfersManager->requestGPUBufferReadbackRecord(m_readbackDebugDataBuffer.createNonOwnerResource(), 0, m_readbackDebugDataReadableBuffer.createNonOwnerResource(),
+        m_readbackDebugDataBuffer->getSize());
+
+    m_readbackDebugDataReadableBuffer->getBuffer(bufferIdx).unmap();
 }
 
 void Wolf::InstanceMeshRenderer::clear()
@@ -286,6 +316,8 @@ void Wolf::InstanceMeshRenderer::record(const RecordContext& context)
         m_commandBuffer->bindPipeline(m_copyInstancesPipeline.createConstNonOwnerResource());
     }
 
+    m_commandBuffer->fillBuffer(*m_readbackDebugDataBuffer, 0, sizeof(ReadbackDebugData), 0);
+
     for (const ActiveCamera& activeCamera : m_activeCamerasThisFrame)
     {
         if (!m_overrideCullingInstancesCount)
@@ -302,6 +334,10 @@ void Wolf::InstanceMeshRenderer::record(const RecordContext& context)
 
             m_commandBuffer->bindDescriptorSet(m_cullingCamerasData[activeCamera.m_cameraIdx]->m_cullingDescriptorSet.createConstNonOwnerResource(), 0, *m_cullInstancesPipeline);
             m_commandBuffer->bindDescriptorSet(context.m_cameraList->getCamera(activeCamera.m_cameraIdx)->getDescriptorSet(), 1, *m_cullInstancesPipeline);
+
+            PushConstants pcData{};
+            pcData.m_cameraBatchMask = activeCamera.m_batchesMask;
+            m_commandBuffer->pushConstants(m_cullInstancesPipeline.createConstNonOwnerResource(), ShaderStageFlagBits::COMPUTE, 0, sizeof(PushConstants), &pcData);
 
             constexpr Extent3D dispatchGroups = { 256, 1, 1 };
             const uint32_t groupSizeX = m_currentInstanceCount % dispatchGroups.width != 0 ? m_currentInstanceCount / dispatchGroups.width + 1 : m_currentInstanceCount / dispatchGroups.width;
@@ -405,6 +441,8 @@ uint32_t Wolf::InstanceMeshRenderer::registerMesh(const MeshToRender& mesh)
         }
     }
     meshInfo.m_boundingSphere = glm::vec4(mesh.m_boundingSphere.getCenter(), mesh.m_boundingSphere.getRadius());
+    meshInfo.m_aabbMin = glm::vec4(mesh.m_AABB.getMin(), 1.0f);
+    meshInfo.m_aabbMax = glm::vec4(mesh.m_AABB.getMax(), 1.0f);
 
     if (validLOD == -1)
     {
@@ -519,68 +557,28 @@ void Wolf::InstanceMeshRenderer::stopOverridingCullingInstances()
     m_overrideCullingInstancesCount = 0;
 }
 
+void Wolf::InstanceMeshRenderer::registerCameraInfo(uint32_t cameraIdx, const ResourceNonOwner<Image>& hzbImage)
+{
+    ResourceUniqueOwner<PerCullingCamera>& perCullingCamera = m_cullingCamerasData[cameraIdx];
+
+    if (!perCullingCamera)
+    {
+        initPerCullingCamera(perCullingCamera, hzbImage, cameraIdx);
+    }
+    else
+    {
+        perCullingCamera->m_hzbImage = hzbImage;
+    }
+}
+
 void Wolf::InstanceMeshRenderer::activateCameraForThisFrame(uint32_t cameraIdx, uint32_t pipelineIdx)
 {
     m_mutex.lock();
 
     ResourceUniqueOwner<PerCullingCamera>& perCullingCamera = m_cullingCamerasData[cameraIdx];
-
     if (!perCullingCamera)
     {
-        perCullingCamera.reset(new PerCullingCamera());
-
-        perCullingCamera->m_drawCommandsCountsBuffer.reset(Buffer::createBuffer(MAX_BATCH_COUNT * sizeof(uint32_t), VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT));
-        perCullingCamera->m_drawCommandsCountsBuffer->setName("Draw command counts for camera " + std::to_string(cameraIdx) + " (InstanceMeshRenderer::PerCullingCamera::m_drawCommandsCountsBuffer)");
-
-        {
-            DescriptorSetGenerator descriptorSetGenerator(m_cullInstancesDescriptorSetLayoutGenerator.getDescriptorLayouts());
-            descriptorSetGenerator.setBuffer(0, *m_cullingInstancesBuffer);
-            descriptorSetGenerator.setBuffer(1, *m_meshesInfoBuffer);
-
-            std::vector<ResourceNonOwner<Buffer>> instanceDataBuffers;
-            for (uint32_t i = 0; i < MAX_BATCH_COUNT; i++) // TODO: not all cameras will use all batches, this should be initialized lazily
-            {
-                perCullingCamera->m_instancesDataBuffers[i].reset(Buffer::createBuffer(MAX_INSTANCE_COUNT * sizeof(InstanceDataLayout), VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT));
-                perCullingCamera->m_instancesDataBuffers[i]->setName("Instances for camera " + std::to_string(cameraIdx) + " and batch " + std::to_string(i) + " (InstanceMeshRenderer::PerCullingCamera::m_instancesDataBuffers[" + std::to_string(i) + "])");
-                instanceDataBuffers.push_back(perCullingCamera->m_instancesDataBuffers[i].createNonOwnerResource());
-            }
-            descriptorSetGenerator.setBuffers(2, instanceDataBuffers);
-
-            descriptorSetGenerator.setBuffer(3, *perCullingCamera->m_drawCommandsCountsBuffer);
-            std::vector<ResourceNonOwner<Buffer>> drawCommandsBuffers;
-            for (uint32_t i = 0; i < MAX_BATCH_COUNT; i++) // TODO: not all cameras will use all batches, this should be initialized lazily
-            {
-                perCullingCamera->m_drawCommandsBuffers[i].reset(Buffer::createBuffer(MAX_INSTANCE_COUNT * CommandBuffer::getDrawIndexedIndirectCommandStructureSize(),
-                    VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT));
-                perCullingCamera->m_drawCommandsBuffers[i]->setName("Draw commands for camera " + std::to_string(cameraIdx) + " and batch " + std::to_string(i) + " (InstanceMeshRenderer::PerCullingCamera::m_drawCommandsBuffers[" + std::to_string(i) + "])");
-                drawCommandsBuffers.push_back(perCullingCamera->m_drawCommandsBuffers[i].createNonOwnerResource());
-            }
-            descriptorSetGenerator.setBuffers(4, drawCommandsBuffers);
-            descriptorSetGenerator.setUniformBuffer(5, *m_cullingUniformsBuffer);
-
-            if (g_configuration->getUseMeshStreaming())
-            {
-                descriptorSetGenerator.setBuffer(6, *m_feedbackBuffer);
-                descriptorSetGenerator.setBuffer(7, *m_latestFrameIdxUsedPerLODBuffer);
-            }
-
-            perCullingCamera->m_cullingDescriptorSet.reset(DescriptorSet::createDescriptorSet(*m_cullInstancesDescriptorSetLayout));
-            perCullingCamera->m_cullingDescriptorSet->update(descriptorSetGenerator.getDescriptorSetCreateInfo());
-        }
-
-        {
-            DescriptorSetLayoutGenerator descriptorSetLayoutGenerator;
-            descriptorSetLayoutGenerator.addStorageBuffer(ShaderStageFlagBits::VERTEX, 0);
-            m_instancesDataDescriptorSetLayout.reset(DescriptorSetLayout::createDescriptorSetLayout(descriptorSetLayoutGenerator.getDescriptorLayouts()));
-
-            for (uint32_t batchIdx = 0; batchIdx < MAX_BATCH_COUNT; batchIdx++)
-            {
-                DescriptorSetGenerator descriptorSetGenerator(descriptorSetLayoutGenerator.getDescriptorLayouts());
-                descriptorSetGenerator.setBuffer(0, *perCullingCamera->m_instancesDataBuffers[batchIdx]);
-                perCullingCamera->m_instancesDataDescriptorSets[batchIdx].reset(DescriptorSet::createDescriptorSet(*m_instancesDataDescriptorSetLayout));
-                perCullingCamera->m_instancesDataDescriptorSets[batchIdx]->update(descriptorSetGenerator.getDescriptorSetCreateInfo());
-            }
-        }
+        initPerCullingCamera(perCullingCamera, m_defaultHZB.createNonOwnerResource(), cameraIdx);
     }
 
     uint32_t batchesMask = 0;
@@ -849,9 +847,71 @@ uint32_t Wolf::InstanceMeshRenderer::registerClusters(const std::vector<MeshToRe
     return clusterOffset;
 }
 
+void Wolf::InstanceMeshRenderer::initPerCullingCamera(ResourceUniqueOwner<PerCullingCamera>& perCullingCamera, const ResourceNonOwner<Image>& hzbImage, uint32_t cameraIdx)
+{
+    perCullingCamera.reset(new PerCullingCamera(hzbImage));
+
+    perCullingCamera->m_drawCommandsCountsBuffer.reset(Buffer::createBuffer(MAX_BATCH_COUNT * sizeof(uint32_t), VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT));
+    perCullingCamera->m_drawCommandsCountsBuffer->setName("Draw command counts for camera " + std::to_string(cameraIdx) + " (InstanceMeshRenderer::PerCullingCamera::m_drawCommandsCountsBuffer)");
+
+    {
+        DescriptorSetGenerator descriptorSetGenerator(m_cullInstancesDescriptorSetLayoutGenerator.getDescriptorLayouts());
+        descriptorSetGenerator.setBuffer(0, *m_cullingInstancesBuffer);
+        descriptorSetGenerator.setBuffer(1, *m_meshesInfoBuffer);
+
+        std::vector<ResourceNonOwner<Buffer>> instanceDataBuffers;
+        for (uint32_t i = 0; i < MAX_BATCH_COUNT; i++) // TODO: not all cameras will use all batches, this should be initialized lazily
+        {
+            perCullingCamera->m_instancesDataBuffers[i].reset(Buffer::createBuffer(MAX_INSTANCE_COUNT * sizeof(InstanceDataLayout), VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT));
+            perCullingCamera->m_instancesDataBuffers[i]->setName("Instances for camera " + std::to_string(cameraIdx) + " and batch " + std::to_string(i) + " (InstanceMeshRenderer::PerCullingCamera::m_instancesDataBuffers[" + std::to_string(i) + "])");
+            instanceDataBuffers.push_back(perCullingCamera->m_instancesDataBuffers[i].createNonOwnerResource());
+        }
+        descriptorSetGenerator.setBuffers(2, instanceDataBuffers);
+
+        descriptorSetGenerator.setBuffer(3, *perCullingCamera->m_drawCommandsCountsBuffer);
+        std::vector<ResourceNonOwner<Buffer>> drawCommandsBuffers;
+        for (uint32_t i = 0; i < MAX_BATCH_COUNT; i++) // TODO: not all cameras will use all batches, this should be initialized lazily
+        {
+            perCullingCamera->m_drawCommandsBuffers[i].reset(Buffer::createBuffer(MAX_INSTANCE_COUNT * CommandBuffer::getDrawIndexedIndirectCommandStructureSize(),
+                VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT));
+            perCullingCamera->m_drawCommandsBuffers[i]->setName("Draw commands for camera " + std::to_string(cameraIdx) + " and batch " + std::to_string(i) + " (InstanceMeshRenderer::PerCullingCamera::m_drawCommandsBuffers[" + std::to_string(i) + "])");
+            drawCommandsBuffers.push_back(perCullingCamera->m_drawCommandsBuffers[i].createNonOwnerResource());
+        }
+        descriptorSetGenerator.setBuffers(4, drawCommandsBuffers);
+        descriptorSetGenerator.setUniformBuffer(5, *m_cullingUniformsBuffer);
+
+        descriptorSetGenerator.setCombinedImageSampler(6, ImageLayout::GENERAL, perCullingCamera->m_hzbImage->getDefaultImageView(), *perCullingCamera->m_HZBSampler);
+
+        if (g_configuration->getUseMeshStreaming())
+        {
+            descriptorSetGenerator.setBuffer(7, *m_feedbackBuffer);
+            descriptorSetGenerator.setBuffer(8, *m_latestFrameIdxUsedPerLODBuffer);
+        }
+
+        descriptorSetGenerator.setBuffer(g_configuration->getUseMeshStreaming() ? 9 : 7, *m_readbackDebugDataBuffer);
+
+        perCullingCamera->m_cullingDescriptorSet.reset(DescriptorSet::createDescriptorSet(*m_cullInstancesDescriptorSetLayout));
+        perCullingCamera->m_cullingDescriptorSet->update(descriptorSetGenerator.getDescriptorSetCreateInfo());
+    }
+
+    {
+        DescriptorSetLayoutGenerator descriptorSetLayoutGenerator;
+        descriptorSetLayoutGenerator.addStorageBuffer(ShaderStageFlagBits::VERTEX, 0);
+        m_instancesDataDescriptorSetLayout.reset(DescriptorSetLayout::createDescriptorSetLayout(descriptorSetLayoutGenerator.getDescriptorLayouts()));
+
+        for (uint32_t batchIdx = 0; batchIdx < MAX_BATCH_COUNT; batchIdx++)
+        {
+            DescriptorSetGenerator descriptorSetGenerator(descriptorSetLayoutGenerator.getDescriptorLayouts());
+            descriptorSetGenerator.setBuffer(0, *perCullingCamera->m_instancesDataBuffers[batchIdx]);
+            perCullingCamera->m_instancesDataDescriptorSets[batchIdx].reset(DescriptorSet::createDescriptorSet(*m_instancesDataDescriptorSetLayout));
+            perCullingCamera->m_instancesDataDescriptorSets[batchIdx]->update(descriptorSetGenerator.getDescriptorSetCreateInfo());
+        }
+    }
+}
+
 Wolf::InstanceMeshRenderer::PerBatchData::PerBatchData(const MeshCacheData& meshCacheData, uint32_t pipelineIdx, const std::vector<DescriptorSetBindInfo>& descriptorSetsToBindForDraw,
-    const ResourceNonOwner<const PipelineSet>& pipelineSet, uint32_t maxInstanceCount, uint32_t maxMeshCount, const DescriptorSetLayoutGenerator& cullInstancesDescriptorSetLayoutGenerator,
-    const ResourceNonOwner<DescriptorSetLayout>& cullingDescriptorSetLayout)
+                                                       const ResourceNonOwner<const PipelineSet>& pipelineSet, uint32_t maxInstanceCount, uint32_t maxMeshCount, const DescriptorSetLayoutGenerator& cullInstancesDescriptorSetLayoutGenerator,
+                                                       const ResourceNonOwner<DescriptorSetLayout>& cullingDescriptorSetLayout)
 : m_maxInstanceCount(maxInstanceCount), m_pipelineIdx(pipelineIdx), m_cullingDescriptorSetLayout(cullingDescriptorSetLayout), m_renderingPipelineSet(pipelineSet)
 {
     m_bufferSetHash = meshCacheData.m_bufferSetHash;

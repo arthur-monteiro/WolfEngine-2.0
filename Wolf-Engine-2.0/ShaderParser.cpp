@@ -348,9 +348,9 @@ void Wolf::ShaderParser::addCameraCode(std::ofstream& outFileGLSL) const
     if (m_cameraDescriptorSlot == static_cast<uint32_t>(-1))
         return;
 
-    std::string cameraCode = 
-		#include "Camera.glsl"
-    ;
+    std::string cameraCode = {
+#embed "Camera.glsl"
+    };
 
     const std::string& descriptorSlotToken = "@CAMERA_DESCRIPTOR_SLOT";
     if (const size_t descriptorSlotTokenPos = cameraCode.find(descriptorSlotToken); descriptorSlotTokenPos != std::string::npos)

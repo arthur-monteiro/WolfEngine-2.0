@@ -50,13 +50,13 @@ namespace Wolf
 		[[nodiscard]] SampleCountFlagBits getSampleCount() const override { return m_sampleCount; }
 		[[nodiscard]] Extent3D getExtent() const override { return { m_extent.width, m_extent.height, m_extent.depth }; }
 		[[nodiscard]] uint32_t getMipLevelCount() const override { return m_mipLevelCount; }
-		ImageView getImageView(Format format) override;
+		ImageView getImageView(Format format, uint32_t baseMipLevel, uint32_t mipLevelCount) override;
 		ImageView getDefaultImageView() override;
 
 		[[nodiscard]] VkImageLayout getImageLayout(uint32_t mipLevel = 0, uint32_t layer = 0) const { return m_imageLayouts[layer][mipLevel]; }
 
 	private:
-		void createImageView(VkFormat format);
+		void createImageView(VkFormat format, uint32_t baseMipLevel, uint32_t mipLevelCount);
 		void setBPP();
 		void resetAllLayouts();
 		static VkImageUsageFlagBits wolfImageUsageFlagBitsToVkImageUsageFlagBits(ImageUsageFlagBits imageUsageFlagBits);

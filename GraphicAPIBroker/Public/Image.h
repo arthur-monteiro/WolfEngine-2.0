@@ -149,7 +149,7 @@ namespace Wolf
 
 		float getBPP() const { return m_bpp; }
 
-		virtual ImageView getImageView(Format format) = 0;
+		virtual ImageView getImageView(Format format, uint32_t baseMipLevel, uint32_t mipLevelCount) = 0;
 		virtual ImageView getDefaultImageView() = 0;
 
 		[[nodiscard]] virtual Format getFormat() const = 0;

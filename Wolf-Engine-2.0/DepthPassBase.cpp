@@ -1,6 +1,5 @@
 #include "DepthPassBase.h"
 
-#include "Debug.h"
 #include "FrameBuffer.h"
 #include "Image.h"
 #include "Timer.h"
@@ -36,7 +35,17 @@ void Wolf::DepthPassBase::record(const RecordContext& context)
 
 	std::vector<ClearValue> clearValues(1);
 	clearValues[0] = {{{0.0f}}};
-	commandBuffer.beginRenderPass(*m_renderPass, *m_frameBuffer, clearValues);
+
+	const Viewport& viewport = getViewport();
+	if (viewport.x > 0.0f)
+	{
+		commandBuffer.beginRenderPass(*m_renderPass, *m_frameBuffer, clearValues);
+		commandBuffer.clearDepthAttachment(0.0f, viewport);
+	}
+	else
+	{
+		commandBuffer.beginRenderPass(*m_renderPass, *m_frameBuffer, clearValues);
+	}
 
 	recordDraws(context);
 
@@ -47,6 +56,11 @@ void Wolf::DepthPassBase::getAttachments(const InitializationContext& context, s
 {
 	Attachment depth({ getWidth(), getHeight() }, getFormat(), SAMPLE_COUNT_1, getFinalLayout(), AttachmentStoreOp::STORE,
 		Wolf::ImageUsageFlagBits::DEPTH_STENCIL_ATTACHMENT, m_depthImage->getDefaultImageView());
+	depth.loadOperation = getAttachmentLoadOp();
+	if (depth.loadOperation == AttachmentLoadOp::LOAD)
+	{
+		depth.initialLayout = ImageLayout::TRANSFER_DST_OPTIMAL;
+	}
 	attachments = { depth };
 }
 

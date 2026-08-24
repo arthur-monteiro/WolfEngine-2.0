@@ -24,6 +24,7 @@ namespace Wolf
 		void submit(const std::vector<const Semaphore*>& waitSemaphores, const std::vector<const Semaphore*>& signalSemaphores, const ResourceReference<const Fence>& fence) const override;
 
 		void beginRenderPass(const RenderPass& renderPass, const FrameBuffer& frameBuffer, const std::vector<ClearValue>& clearValues) const override;
+		void beginRenderPassViewport(const RenderPass& renderPass, const FrameBuffer& frameBuffer, const std::vector<ClearValue>& clearValues, const Viewport& viewport) const override;
 		void endRenderPass() const override;
 
 		void bindVertexBuffer(const Buffer& buffer, uint32_t offset, uint32_t bindingIdx = 0) const override;
@@ -33,10 +34,14 @@ namespace Wolf
 
 		void bindDescriptorSet(const ResourceReference<const DescriptorSet>& descriptorSet, uint32_t slot, const Pipeline& pipeline) const override;
 
+		void pushConstants(const ResourceReference<const Pipeline>& pipeline, uint32_t dstOffset, ShaderStageFlags accessibility, uint32_t dstSize, const void* data) const override;
+
 		void setFragmentShadingRate(FragmentShadingRateCombinerOp fragmentShadingRateCombinerOps[2], const Extent2D& fragmentExtent) const override;
 		void setViewport(const Viewport& viewport) const override;
 
 		void clearColorImage(const Image& image, ImageLayout imageLayout, ColorFloat clearColor, const VkImageSubresourceRange& range) const override;
+		void clearDepthStencilImage(const Image& image, ImageLayout imageLayout, float clearValue, const VkImageSubresourceRange& range) const override;
+		void clearDepthAttachment(float clearValue, const Viewport& viewport) const override;
 		void fillBuffer(const Buffer& buffer, uint64_t  dstOffset, uint64_t size, uint32_t data) const override;
 		void imageCopy(const Image& imageSrc, ImageLayout srcImageLayout, const Image& imageDst, ImageLayout dstImageLayout, const ImageCopyInfo& imageCopyInfo) const override;
 

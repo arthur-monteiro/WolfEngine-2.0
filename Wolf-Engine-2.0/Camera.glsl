@@ -1,4 +1,3 @@
-R"(
 layout(binding = 0, set = @CAMERA_DESCRIPTOR_SLOT) uniform UniformBufferCamera
 {
 	mat4 view;
@@ -20,6 +19,8 @@ layout(binding = 0, set = @CAMERA_DESCRIPTOR_SLOT) uniform UniformBufferCamera
 	uint  extentWidth;
 
 	vec4 frustumPlanes[6]; // left, right, bottom, top, near, far
+
+	vec4 viewport; // x, y, width, height
 } ubCamera;
 
 mat4 getViewMatrix()
@@ -86,4 +87,8 @@ vec4 getFrustumPlane(uint idx)
 {
 	return ubCamera.frustumPlanes[idx];
 }
-)"
+
+vec4 getViewport()
+{
+	return ubCamera.viewport;
+}

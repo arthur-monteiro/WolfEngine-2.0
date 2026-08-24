@@ -60,6 +60,9 @@ void Wolf::GraphicCameraInterface::updateGraphic(const glm::vec2& pixelJitter, c
 		frustumPlane /= length;
 	}
 
+	const Viewport& viewport = getViewport();
+	ubData.viewport = glm::vec4(viewport.x, viewport.y, viewport.width, viewport.height);
+
 	m_matricesUniformBuffer->transferCPUMemory(&ubData, sizeof(ubData), 0);
 
 	m_currentFrameIndex++;
