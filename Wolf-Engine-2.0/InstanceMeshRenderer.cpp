@@ -232,15 +232,18 @@ void Wolf::InstanceMeshRenderer::moveToNextFrame()
             m_latestFrameIdxUsedPerLODBuffer->getSize());
     }
 
-    const uint32_t bufferIdx = g_runtimeContext->getCurrentCPUFrameNumber() % g_configuration->getMaxCachedFrames();
-    const ReadbackDebugData* debugData = static_cast<const ReadbackDebugData*>(m_readbackDebugDataReadableBuffer->getBuffer(bufferIdx).map());
-    m_instanceRenderedCount = debugData->m_instanceCount;
-    m_triangleRenderedCount = debugData->m_primitiveCount / 3;
+    if (m_uniqueTriangleRegisteredCount > 0)
+    {
+        const uint32_t bufferIdx = g_runtimeContext->getCurrentCPUFrameNumber() % g_configuration->getMaxCachedFrames();
+        const ReadbackDebugData* debugData = static_cast<const ReadbackDebugData*>(m_readbackDebugDataReadableBuffer->getBuffer(bufferIdx).map());
+        m_instanceRenderedCount = debugData->m_instanceCount;
+        m_triangleRenderedCount = debugData->m_primitiveCount / 3;
 
-    m_gpuDataTransfersManager->requestGPUBufferReadbackRecord(m_readbackDebugDataBuffer.createNonOwnerResource(), 0, m_readbackDebugDataReadableBuffer.createNonOwnerResource(),
-        m_readbackDebugDataBuffer->getSize());
+        m_gpuDataTransfersManager->requestGPUBufferReadbackRecord(m_readbackDebugDataBuffer.createNonOwnerResource(), 0, m_readbackDebugDataReadableBuffer.createNonOwnerResource(),
+            m_readbackDebugDataBuffer->getSize());
 
-    m_readbackDebugDataReadableBuffer->getBuffer(bufferIdx).unmap();
+        m_readbackDebugDataReadableBuffer->getBuffer(bufferIdx).unmap();
+    }
 }
 
 void Wolf::InstanceMeshRenderer::clear()

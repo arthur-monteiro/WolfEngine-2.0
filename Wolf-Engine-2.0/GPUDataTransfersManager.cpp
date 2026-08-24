@@ -21,7 +21,7 @@ void Wolf::DefaultGPUDataTransfersManager::pushDataToGPUImage(const PushDataToGP
 	pushDataToGPUImageInfo.m_outputImage->copyCPUBuffer(pushDataToGPUImageInfo.m_pixels, pushDataToGPUImageInfo.m_finalLayout, pushDataToGPUImageInfo.m_mipLevel);
 }
 
-void Wolf::DefaultGPUDataTransfersManager::requestGPUBufferReadbackRecord(const ResourceNonOwner<Buffer>& srcBuffer,uint32_t srcOffset, const ResourceNonOwner<ReadableBuffer>& readableBuffer, uint32_t size)
+void Wolf::DefaultGPUDataTransfersManager::requestGPUBufferReadbackRecord(const ResourceNonOwner<Buffer>& srcBuffer, uint32_t srcOffset, const ResourceNonOwner<ReadableBuffer>& readableBuffer, uint32_t size)
 {
 	Debug::sendCriticalError("Not implemented");
 }
