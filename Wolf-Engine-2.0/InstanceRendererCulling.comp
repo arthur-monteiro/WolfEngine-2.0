@@ -1,3 +1,4 @@
+R"(
 #extension GL_EXT_nonuniform_qualifier : enable
 
 struct CullingInstanceInfo
@@ -334,3 +335,4 @@ void main()
 		}
 	}
 }
+)"

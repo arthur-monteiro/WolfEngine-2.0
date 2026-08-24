@@ -53,11 +53,10 @@ Wolf::InstanceMeshRenderer::InstanceMeshRenderer(ShaderList& shaderList, const R
                 outputFile << "#define MESH_STREAMING\n";
             }
 
-            std::string instanceRendererCullingShaderCode = {
-#embed "InstanceRendererCulling.comp"
-            };
+            outputFile <<
+                #include "InstanceRendererCulling.comp"
+            ;
 
-            outputFile << instanceRendererCullingShaderCode;
             outputFile.close();
         }
 
