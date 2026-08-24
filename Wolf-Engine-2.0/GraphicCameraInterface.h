@@ -42,7 +42,7 @@ namespace Wolf
 		static ResourceUniqueOwner<DescriptorSetLayoutGenerator> s_descriptorSetLayoutGenerator;
 		static ResourceUniqueOwner<DescriptorSetLayout> s_descriptorSetLayout;
 
-		Viewport m_viewport = Viewport(0, 0, 0, 0, 0, 1);
+		Viewport m_viewport = Viewport{0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f };
 
 		struct UniformBufferData
 		{

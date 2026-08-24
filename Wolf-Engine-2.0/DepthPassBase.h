@@ -34,7 +34,7 @@ namespace Wolf
 		virtual ImageUsageFlags getAdditionalUsages() { return 0; }
 		virtual ImageLayout getFinalLayout() { return ImageLayout::DEPTH_STENCIL_ATTACHMENT_OPTIMAL; }
 		virtual AttachmentLoadOp getAttachmentLoadOp() { return AttachmentLoadOp::CLEAR; }
-		virtual Viewport getViewport() { return Viewport(-1.0f, -1.0f, -1.0f, -1.0f); }
+		virtual Viewport getViewport() { return Viewport{ -1.0f, -1.0f, -1.0f, -1.0f }; }
 
 		/* Parameters */
 		std::unique_ptr<RenderPass> m_renderPass;
