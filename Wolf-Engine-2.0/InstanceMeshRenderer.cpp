@@ -158,7 +158,7 @@ Wolf::InstanceMeshRenderer::InstanceMeshRenderer(ShaderList& shaderList, const R
     }
 
     CreateImageInfo createImageInfo{};
-    createImageInfo.extent = Extent3D(1, 1, 1);
+    createImageInfo.extent = Extent3D{ 1u, 1u, 1u };
     createImageInfo.mipLevelCount = 1;
     createImageInfo.format = Format::R32_SFLOAT;
     m_defaultHZB.reset(Image::createImage(createImageInfo));
