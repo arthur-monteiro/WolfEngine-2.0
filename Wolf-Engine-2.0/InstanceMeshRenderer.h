@@ -204,6 +204,8 @@ namespace Wolf
         std::vector<ActiveCamera> m_activeCamerasNextFrame;
         std::vector<ActiveCamera> m_activeCamerasThisFrame;
 
+        ResourceUniqueOwner<Image> m_defaultHZB;
+
         struct PerCullingCamera
         {
             ResourceUniqueOwner<Buffer> m_drawCommandsCountsBuffer; // contains MAX_BATCH_COUNT uint32
@@ -236,8 +238,6 @@ namespace Wolf
         ResourceUniqueOwner<Buffer> m_latestFrameIdxUsedPerLODBuffer;
         ResourceUniqueOwner<ReadableBuffer> m_latestFrameIdxUsedPerLODReadableBuffer;
         std::vector<LastFrameIndexUsageMeshInfo> m_lastFrameIndexUsageMeshInfos;
-
-        ResourceUniqueOwner<Image> m_defaultHZB;
 
         struct ReadbackDebugData
         {
