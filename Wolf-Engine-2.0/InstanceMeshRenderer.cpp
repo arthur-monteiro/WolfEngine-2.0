@@ -573,6 +573,14 @@ void Wolf::InstanceMeshRenderer::registerCameraInfo(uint32_t cameraIdx, const Re
     }
 }
 
+void Wolf::InstanceMeshRenderer::releaseCameraInfo(uint32_t cameraIdx)
+{
+    if (ResourceUniqueOwner<PerCullingCamera>& perCullingCamera = m_cullingCamerasData[cameraIdx])
+    {
+        perCullingCamera->m_hzbImage = m_defaultHZB.createNonOwnerResource();
+    }
+}
+
 void Wolf::InstanceMeshRenderer::activateCameraForThisFrame(uint32_t cameraIdx, uint32_t pipelineIdx)
 {
     m_mutex.lock();

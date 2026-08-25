@@ -84,6 +84,7 @@ namespace Wolf
         void stopOverridingCullingInstances();
 
         void registerCameraInfo(uint32_t cameraIdx, const ResourceNonOwner<Image>& hzbImage);
+        void releaseCameraInfo(uint32_t cameraIdx);
         void activateCameraForThisFrame(uint32_t cameraIdx, uint32_t pipelineIdx);
 
         static constexpr uint32_t NO_CAMERA_IDX = -1;
