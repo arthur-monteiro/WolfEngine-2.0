@@ -41,7 +41,8 @@ void Wolf::copyCompressedFileToStorage(const std::string& filename, const std::s
 
     Wolf::Debug::sendInfo("File will be " + outFilename);
 
-    if (std::filesystem::exists(outFilename))
+    if (std::filesystem::exists(outFilename) && std::filesystem::path(filename).extension() != ".json" &&
+        std::filesystem::path(filename).extension() != ".vert" && std::filesystem::path(filename).extension() != ".frag")
     {
         Wolf::Debug::sendInfo("File already exists");
         return;

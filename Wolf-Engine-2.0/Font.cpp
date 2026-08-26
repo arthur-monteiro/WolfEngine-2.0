@@ -30,7 +30,14 @@ Wolf::Font::Font(const std::string& path, int ySize)
 
     FT_Set_Pixel_Sizes(face, 0, ySize);
 
-    for (wchar_t c = 33; c < 123; ++c)
+    std::wstring extendedChars = L"abcdefghijklmnopqrstuvwxyz"
+                                 L"ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+                                 L"0123456789"
+                                 L"éèêëàâùûôîïçÉÈÊËÀÂÙÛÔÎÏÇ" // French
+                                 L"áéíóúüñÁÉÍÓÚÜÑ¿¡"         // Spanish (unique: á, í, ó, ú, ñ, ¿, ¡)
+                                 L"åäöÅÄÖ"                   // Swedish / Finnish (å, ä, ö)
+                                 L"!\"#$%&'()*+,-./:;<=>?@[\\]^_`{|}~";
+    for (wchar_t c : extendedChars)
     {
         if (FT_Load_Char(face, c, FT_LOAD_RENDER))
             Wolf::Debug::sendCriticalError("character loading failed");
@@ -70,9 +77,7 @@ Wolf::Font::Font(const std::string& path, int ySize)
 
 Wolf::ResourceNonOwner<Wolf::Image> Wolf::Font::getCharacterImage(uint32_t characterIdx)
 {
-    auto it = m_characters.begin();
-    std::advance(it, characterIdx);
-    return m_images[it->second.m_imageIdx].createNonOwnerResource();
+    return m_images[characterIdx].createNonOwnerResource();
 }
 
 #endif

@@ -40,6 +40,7 @@ namespace Wolf
 #ifdef __ANDROID__
 		AAssetManager* getAndroidAssetManager() const { return m_androidAssetManager; }
 		const std::string& getAndroidExternalPath() const { return m_androidExternalPath; }
+		const std::string& getAndroidInternalPath() const { return m_androidInternalPath; }
 #endif
 
 	private:
@@ -63,6 +64,7 @@ namespace Wolf
 #ifdef __ANDROID__
 		AAssetManager* m_androidAssetManager;
 		std::string m_androidExternalPath;
+		std::string m_androidInternalPath;
 #endif
 	};
 

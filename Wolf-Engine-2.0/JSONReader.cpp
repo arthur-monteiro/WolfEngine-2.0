@@ -371,6 +371,7 @@ void Wolf::JSONReader::readFromLines(const Lines& lines)
 				{
 					std::wstring propertyValue = line.substr(0, propertyStringEnding);
 
+					currentPropertyStack.top()->wstringValue = propertyValue;
 					currentPropertyStack.top()->stringValue = ws2s(propertyValue);
 
 					line = line.substr(propertyStringEnding + 1);
@@ -468,6 +469,11 @@ const std::string& Wolf::JSONReader::JSONObject::getPropertyString(uint32_t prop
 	auto it = properties.begin();
 	std::advance(it, propertyIdx);
 	return it->first;
+}
+
+const std::wstring& Wolf::JSONReader::JSONObject::getPropertyWString(const std::string &propertyName)
+{
+    return properties[propertyName]->wstringValue;
 }
 
 const std::vector<std::string>& Wolf::JSONReader::JSONObject::getPropertyStringArray(const std::string& propertyName)

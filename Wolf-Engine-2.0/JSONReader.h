@@ -32,6 +32,7 @@ namespace Wolf
 			virtual const std::vector<float>& getPropertyFloatArray(const std::string& propertyName) = 0;
 			virtual const std::string& getPropertyString(const std::string& propertyName) = 0;
 			virtual const std::string& getPropertyString(uint32_t propertyIdx) = 0;
+            virtual const std::wstring& getPropertyWString(const std::string& propertyName) = 0;
 			virtual const std::vector<std::string>& getPropertyStringArray(const std::string& propertyName) = 0;
 			virtual bool getPropertyBool(const std::string& propertyName) = 0;
 			virtual JSONObjectInterface* getPropertyObject(const std::string& propertyName) = 0;
@@ -85,6 +86,7 @@ namespace Wolf
 			// Possible values
 			float floatValue = 0;
 			std::string stringValue;
+			std::wstring wstringValue;
 			bool boolValue = false;;
 			JSONObject* objectValue = nullptr;
 			std::vector<JSONObject*> objectArrayValue;
@@ -105,6 +107,7 @@ namespace Wolf
 			const std::vector<float>& getPropertyFloatArray(const std::string& propertyName) override;
 			const std::string& getPropertyString(const std::string& propertyName) override;
 			const std::string& getPropertyString(uint32_t propertyIdx) override;
+            const std::wstring& getPropertyWString(const std::string& propertyName) override;
 			const std::vector<std::string>& getPropertyStringArray(const std::string& propertyName) override;
 			bool getPropertyBool(const std::string& propertyName) override;
 			JSONObjectInterface* getPropertyObject(const std::string& propertyName) override;

@@ -18,6 +18,7 @@ Wolf::Configuration::Configuration(const std::string& filePath, AAssetManager* a
 
 #ifdef __ANDROID__
     m_androidExternalPath = androidApp->activity->externalDataPath;
+    m_androidInternalPath = androidApp->activity->internalDataPath;
 #endif
 
 	if (filePath.empty())
