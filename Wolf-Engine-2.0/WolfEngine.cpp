@@ -27,8 +27,6 @@ Wolf::Extent2D chooseExtent(GLFWwindow* window)
 	int width, height;
 	glfwGetWindowSize(window, &width, &height);
 
-	Wolf::Debug::sendCriticalError("Test for the commit commissar");
-
 	return Wolf::Extent2D { static_cast<uint32_t>(width), static_cast<uint32_t>(height) };
 }
 #endif
