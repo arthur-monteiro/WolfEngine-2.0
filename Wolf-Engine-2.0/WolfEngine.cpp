@@ -27,6 +27,9 @@ Wolf::Extent2D chooseExtent(GLFWwindow* window)
 	int width, height;
 	glfwGetWindowSize(window, &width, &height);
 
+	int* test = nullptr;
+	*test = 5;
+
 	return Wolf::Extent2D { static_cast<uint32_t>(width), static_cast<uint32_t>(height) };
 }
 #endif
