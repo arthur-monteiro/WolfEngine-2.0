@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cstdint>
+#include <fstream>
 #include <functional>
 #include <mutex>
 #include <string>
@@ -34,6 +35,13 @@ namespace Wolf
 		}
 		static void sendCriticalError(const std::string& errorMessage)
 		{
+			std::ofstream errorFile("critical_error.log", std::ios::trunc);
+			if (errorFile.is_open())
+			{
+				errorFile << errorMessage << std::endl;
+			}
+			errorFile.close();
+
 #ifdef __ANDROID__
 			raise(SIGTRAP);
 #elif _WIN32
