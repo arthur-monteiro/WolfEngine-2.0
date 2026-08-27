@@ -19,9 +19,6 @@ struct LODInfo
 	uint vertexOffset;
 	uint indexOffset;
 	uint indexCount;
-	uint clusterOffset;
-
-    uint clusterCount;
 	float maxDistance;
 };
 const uint MAX_LOD_COUNT = 20;

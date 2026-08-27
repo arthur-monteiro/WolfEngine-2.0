@@ -41,22 +41,10 @@ namespace Wolf
                 NullableResourceNonOwner<MeshInterface> m_mesh;
                 float m_maxDistance = 0.0f;
 
-                struct Cluster
-                {
-                    uint32_t m_indexOffset;
-                    uint32_t m_indexCount;
-                    uint32_t m_vertexOffset;
-                    uint32_t m_vertexCount;
-                    BoundingSphere m_boundingSphere;
-                };
-                static_assert(std::is_trivially_copyable_v<Cluster>); // needed for editor mesh formatter caches
-                static_assert(std::is_standard_layout_v<BoundingSphere>);
-                std::vector<Cluster> m_clusters;
-
                 uint32_t m_indexCount = 0; // for the stats
 
-                LOD(const ResourceNonOwner<MeshInterface>& mesh, float maxDistance, uint32_t indexCount, const std::vector<Cluster>& clusterRanges)
-                    : m_mesh(mesh), m_maxDistance(maxDistance), m_indexCount(indexCount), m_clusters(clusterRanges) {}
+                LOD(const ResourceNonOwner<MeshInterface>& mesh, float maxDistance, uint32_t indexCount)
+                    : m_mesh(mesh), m_maxDistance(maxDistance), m_indexCount(indexCount) {}
                 LOD(const ResourceNonOwner<MeshInterface>& mesh) : m_mesh(mesh) {}
                 LOD() = default;
             };
@@ -118,7 +106,6 @@ namespace Wolf
             const std::array<std::vector<DescriptorSetBindInfo>, PipelineSet::MAX_PIPELINE_COUNT>& perPipelineDescriptorSets);
         void readFeedbackBuffer();
         void readLastFrameIndicesBuffer();
-        uint32_t registerClusters(const std::vector<MeshToRender::LOD::Cluster>& clusters);
 
         ShaderList* m_shaderList;
         ResourceNonOwner<GPUDataTransfersManagerInterface> m_gpuDataTransfersManager;
@@ -144,10 +131,7 @@ namespace Wolf
             uint32_t m_vertexOffset;
             uint32_t m_indexOffset;
             uint32_t m_indexCount;
-            uint32_t m_clusterOffset;
-
-            uint32_t m_clusterCount;
-            float m_maxDistance; // distance must be last
+            float m_maxDistance;
         };
         static constexpr uint32_t MAX_LOD_COUNT = 20;
 
@@ -160,21 +144,6 @@ namespace Wolf
         };
         ResourceUniqueOwner<Buffer> m_meshesInfoBuffer;
         uint32_t m_currentMeshCount = 0;
-
-        struct ClusterInfo
-        {
-            glm::vec4 m_boundingSphere;
-
-            uint32_t m_indexOffset;
-            uint32_t m_indexCount;
-            uint32_t m_vertexOffset;
-            uint32_t m_vertexCount;
-        };
-        // a separate buffer containing all the clusters
-        // LODs contain an offset in that buffer, all the clusters for the same LOD are contiguous
-        ResourceUniqueOwner<Buffer> m_clustersInfoBuffer;
-        static constexpr uint32_t MAX_CLUSTER_COUNT = 4'194'304;
-        std::atomic<uint32_t> m_currentClusterCount = 0;
 
         struct CullingUniformData
         {

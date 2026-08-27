@@ -113,19 +113,11 @@ Wolf::InstanceMeshRenderer::InstanceMeshRenderer(ShaderList& shaderList, const R
         std::remove("instanceMeshRendererCopyInstancesComputeShaderCacheComp.spv");
     }
 
-
-
     m_cullingInstancesBuffer.reset(Buffer::createBuffer(MAX_INSTANCE_COUNT * sizeof(CullingInstanceInfo), VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT));
     m_cullingInstancesBuffer->setName("Culling instances (InstanceMeshRenderer::m_cullingInstancesBuffer)");
     m_meshesInfoBuffer.reset(Buffer::createBuffer(MAX_MESH_COUNT * sizeof(MeshInfo), VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT));
     m_meshesInfoBuffer->setName("Meshes info (InstanceMeshRenderer::m_meshesInfoBuffer)");
     m_cullingUniformsBuffer.reset(new UniformBuffer(sizeof(CullingUniformData)));
-
-    if (g_configuration->getUseClusterCulling())
-    {
-        m_clustersInfoBuffer.reset(Buffer::createBuffer(MAX_CLUSTER_COUNT * sizeof(ClusterInfo), VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT));
-        m_clustersInfoBuffer->setName("Clusters info (InstanceMeshRenderer::m_clustersInfoBuffer)");
-    }
 
     m_copyInstancesUniformBuffer.reset(new UniformBuffer(sizeof(uint32_t)));
 
@@ -415,18 +407,6 @@ uint32_t Wolf::InstanceMeshRenderer::registerMesh(const MeshToRender& mesh)
             meshInfo.m_lods[lod].m_indexOffset = lodMesh->getIndexBufferOffset() / std::max(lodMesh->getIndexSize(), 1u);
             meshInfo.m_lods[lod].m_maxDistance = mesh.m_lods[lod].m_maxDistance;
 
-            if (g_configuration->getUseClusterCulling())
-            {
-                uint32_t clusterOffset = registerClusters(mesh.m_lods[lod].m_clusters);
-                meshInfo.m_lods[lod].m_clusterOffset = clusterOffset;
-                meshInfo.m_lods[lod].m_clusterCount = static_cast<uint32_t>(mesh.m_lods[lod].m_clusters.size());
-            }
-            else
-            {
-                meshInfo.m_lods[lod].m_clusterOffset = 0;
-                meshInfo.m_lods[lod].m_clusterCount = 0;
-            }
-
             if (lod == 0 || bufferSetHash == 0)
             {
                 bufferSetHash = computeHash(lodMesh);
@@ -479,18 +459,6 @@ void Wolf::InstanceMeshRenderer::registerLODData(uint32_t meshIdx, uint32_t lodI
     lodInfo.m_vertexOffset = lod.m_mesh->getVertexBufferOffset() / std::max(lod.m_mesh->getVertexSize(), 1u);
     lodInfo.m_indexOffset = lod.m_mesh->getIndexBufferOffset() / std::max(lod.m_mesh->getIndexSize(), 1u);
     //lodInfo.m_maxDistance = lod.m_maxDistance;
-
-    if (g_configuration->getUseClusterCulling())
-    {
-        uint32_t clusterOffset = registerClusters(lod.m_clusters);
-        lodInfo.m_clusterOffset = clusterOffset;
-        lodInfo.m_clusterCount = static_cast<uint32_t>(lod.m_clusters.size());
-    }
-    else
-    {
-        lodInfo.m_clusterOffset = 0;
-        lodInfo.m_clusterCount = 0;
-    }
 
     m_gpuDataTransfersManager->pushDataToGPUBuffer(&lodInfo, sizeof(LODInfo) - sizeof(float) /* don't push distance */, m_meshesInfoBuffer.createNonOwnerResource(),
         meshIdx * sizeof(MeshInfo) + offsetof(MeshInfo, m_lods) + lodIdx * sizeof(LODInfo));
@@ -831,30 +799,6 @@ void Wolf::InstanceMeshRenderer::readLastFrameIndicesBuffer()
     const uint32_t* data = static_cast<const uint32_t*>(m_latestFrameIdxUsedPerLODReadableBuffer->getBuffer(bufferIdx).map());
     memcpy(m_lastFrameIndexUsageMeshInfos.data(), data, m_currentMeshCount * sizeof(LastFrameIndexUsageMeshInfo));
     m_latestFrameIdxUsedPerLODReadableBuffer->getBuffer(bufferIdx).unmap();
-}
-
-uint32_t Wolf::InstanceMeshRenderer::registerClusters(const std::vector<MeshToRender::LOD::Cluster>& clusters)
-{
-    if (!g_configuration->getUseClusterCulling())
-    {
-        Debug::sendCriticalError("This function should not be called if cluster culling is not enabled");
-    }
-
-    uint32_t clusterOffset = m_currentClusterCount.fetch_add(static_cast<uint32_t>(clusters.size()));
-
-    std::vector<ClusterInfo> clustersInfo(clusters.size());
-    for (uint32_t clusterIdx = 0; clusterIdx < clusters.size(); clusterIdx++)
-    {
-        const MeshToRender::LOD::Cluster& inputCluster = clusters[clusterIdx];
-        clustersInfo[clusterIdx].m_boundingSphere =  glm::vec4(inputCluster.m_boundingSphere.getCenter(), inputCluster.m_boundingSphere.getRadius());
-        clustersInfo[clusterIdx].m_indexOffset = inputCluster.m_indexOffset;
-        clustersInfo[clusterIdx].m_indexCount = inputCluster.m_indexCount;
-        clustersInfo[clusterIdx].m_vertexOffset = inputCluster.m_vertexCount;
-    }
-    m_gpuDataTransfersManager->pushDataToGPUBuffer(clustersInfo.data(), clustersInfo.size() * sizeof(ClusterInfo), m_clustersInfoBuffer.createNonOwnerResource(),
-        clusterOffset * sizeof(ClusterInfo));
-
-    return clusterOffset;
 }
 
 void Wolf::InstanceMeshRenderer::initPerCullingCamera(ResourceUniqueOwner<PerCullingCamera>& perCullingCamera, const ResourceNonOwner<Image>& hzbImage, uint32_t cameraIdx)

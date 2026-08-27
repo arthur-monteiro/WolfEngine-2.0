@@ -51,8 +51,8 @@ Wolf::Configuration::Configuration(const std::string& filePath, AAssetManager* a
 				m_useVirtualTexture = std::stoi(line);
 			if (token == "useMeshStreaming")
 				m_useMeshStreaming = std::stoi(line);
-			if (token == "useClusterCulling")
-				m_useClusterCulling = std::stoi(line);
+			if (token == "useMeshletHierarchy")
+				m_useMeshletHierarchy = std::stoi(line);
 			if (token == "forcedTimerMsPerFrame")
 				m_forcedTimerMsPerFrame = std::stoul(line);
 			if (token == "colorSpace")
