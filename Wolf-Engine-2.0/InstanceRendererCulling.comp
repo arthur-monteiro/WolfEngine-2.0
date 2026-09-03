@@ -14,6 +14,19 @@ layout(std430, binding = 0) restrict buffer CullingInstancesBufferLayout
     CullingInstanceInfo cullingInstancesInfo[];
 };
 
+#ifdef USE_MESHLET_HIERARCHY
+struct MeshInfo
+{
+    uint meshletBaseIndex;
+    uint meshletCount;
+    uint pad0;
+    uint pad1;
+
+    vec4 boundingSphere;
+    vec4 aabbMin;
+    vec4 aabbMax;
+};
+#else
 struct LODInfo
 {
 	uint vertexOffset;
@@ -22,7 +35,6 @@ struct LODInfo
 	float maxDistance;
 };
 const uint MAX_LOD_COUNT = 20;
-
 struct MeshInfo
 {
 	LODInfo lods[MAX_LOD_COUNT];
@@ -31,6 +43,7 @@ struct MeshInfo
 	vec4 aabbMin;
 	vec4 aabbMax;
 };
+#endif
 layout(std430, binding = 1) restrict buffer MeshesInfoBufferLayout
 {
     MeshInfo meshesInfo[];
@@ -41,9 +54,11 @@ const uint MAX_BATCH_COUNT = 32;
 struct OutInstanceData
 {
 	mat4 transform;
+
 	uint materialIdx;
 	uint customData;
 	uint lod;
+	uint instanceIdx;
 };
 layout(std430, binding = 2) restrict buffer OutInstancesBufferLayout
 {
@@ -136,7 +151,7 @@ float compteSphereDistance(vec3 p, vec4 sphere)
     return d - sphere.w;
 }
 
-bool isSphereVisibleHZB(in vec3 aabbMin, in vec3 aabbMax, in mat4 viewProjMatrix)
+bool isAABBVisibleHZB(in vec3 aabbMin, in vec3 aabbMax, in mat4 viewProjMatrix)
 {
 	vec4 corners[8];
 	corners[0] = viewProjMatrix * vec4(aabbMin.x, aabbMin.y, aabbMin.z, 1.0);
@@ -249,10 +264,11 @@ void main()
 	vec3 aabbMin;
 	vec3 aabbMax;
 	transformWorldAABB(meshInfo.aabbMin.xyz, meshInfo.aabbMax.xyz, cullingInstanceInfo.transform, aabbMin, aabbMax);
-	mat4 viewProj = getProjectionMatrix() * getViewMatrix();
-	if (!isSphereVisibleHZB(aabbMin, aabbMax, viewProj))
+	mat4 previousViewProj = getProjectionMatrix() * getPreviousViewMatrix();
+	if (!isAABBVisibleHZB(aabbMin, aabbMax, previousViewProj))
 		return;
 
+#ifndef USE_MESHLET_HIERARCHY
 	float distanceWithCamera = compteSphereDistance(getCameraPos(), boundingSphere);
 	uint lod = 0;
 	for (; lod < MAX_LOD_COUNT; lod++)
@@ -309,6 +325,7 @@ void main()
     }
 
 #endif
+#endif
 
 	for (uint batchIdx = 0; batchIdx < MAX_BATCH_COUNT; batchIdx++)
 	{
@@ -316,19 +333,27 @@ void main()
 			(pc.cameraBatchMask & (1u << batchIdx)) != 0)
 		{
 			uint outCommandIdx = atomicAdd(drawCount[batchIdx], 1);
+
 			outInstancesDataBuffers[batchIdx].outInstancesData[outCommandIdx].transform = cullingInstanceInfo.transform;
 			outInstancesDataBuffers[batchIdx].outInstancesData[outCommandIdx].materialIdx = cullingInstanceInfo.materialIdx;
 			outInstancesDataBuffers[batchIdx].outInstancesData[outCommandIdx].customData = cullingInstanceInfo.customData;
-			outInstancesDataBuffers[batchIdx].outInstancesData[outCommandIdx].lod = lod;
+			outInstancesDataBuffers[batchIdx].outInstancesData[outCommandIdx].instanceIdx = instanceIdx;
 
-			outDrawCommandsBuffers[batchIdx].outDrawCommands[outCommandIdx].vertexOffset = int(meshInfo.lods[lod].vertexOffset);
-			outDrawCommandsBuffers[batchIdx].outDrawCommands[outCommandIdx].firstIndex = meshInfo.lods[lod].indexOffset;
-			outDrawCommandsBuffers[batchIdx].outDrawCommands[outCommandIdx].indexCount = meshInfo.lods[lod].indexCount;
-			outDrawCommandsBuffers[batchIdx].outDrawCommands[outCommandIdx].instanceCount = 1;
-			outDrawCommandsBuffers[batchIdx].outDrawCommands[outCommandIdx].firstInstance = 0;
+			atomicAdd(outDebugData.instanceCount, 1);
 
-            atomicAdd(outDebugData.instanceCount, 1);
+#ifdef USE_MESHLET_HIERARCHY
+            outInstancesDataBuffers[batchIdx].outInstancesData[outCommandIdx].lod = 0;
+#else
+            outInstancesDataBuffers[batchIdx].outInstancesData[outCommandIdx].lod = lod;
+
+            outDrawCommandsBuffers[batchIdx].outDrawCommands[outCommandIdx].vertexOffset = int(meshInfo.lods[lod].vertexOffset);
+            outDrawCommandsBuffers[batchIdx].outDrawCommands[outCommandIdx].firstIndex = meshInfo.lods[lod].indexOffset;
+            outDrawCommandsBuffers[batchIdx].outDrawCommands[outCommandIdx].indexCount = meshInfo.lods[lod].indexCount;
+            outDrawCommandsBuffers[batchIdx].outDrawCommands[outCommandIdx].instanceCount = 1;
+            outDrawCommandsBuffers[batchIdx].outDrawCommands[outCommandIdx].firstInstance = 0;
+
             atomicAdd(outDebugData.primitiveCount, meshInfo.lods[lod].indexCount);
+#endif
 		}
 	}
 }

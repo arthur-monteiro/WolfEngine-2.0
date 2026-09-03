@@ -49,6 +49,22 @@ namespace Wolf
                 LOD() = default;
             };
             std::vector<LOD> m_lods;
+
+            struct Meshlet
+            {
+                NullableResourceNonOwner<MeshInterface> m_mesh;
+                BoundingSphere m_boundingSphere;
+                BoundingSphere m_groupBoundingSphere;
+                BoundingSphere m_parentGroupBoundingSphere;
+
+                int8_t m_coneAxis[3];
+                int8_t m_coneCutoff;
+
+                float m_lodError;
+                float m_parentLodError;
+            };
+            std::vector<Meshlet> m_meshlets;
+
             BoundingSphere m_boundingSphere;
             AABB m_AABB;
             ResourceNonOwner<const PipelineSet> m_pipelineSet;
@@ -97,6 +113,7 @@ namespace Wolf
     private:
         static constexpr uint32_t MAX_INSTANCE_COUNT = 32'768;
         static constexpr uint32_t MAX_MESH_COUNT = 4096;
+        static constexpr uint32_t MAX_MESHLET_COUNT = MAX_MESH_COUNT * 128;
         static constexpr uint32_t MAX_BATCH_COUNT = 32;
         static constexpr uint32_t MAX_FEEDBACK_COUNT = 32;
 
@@ -134,16 +151,47 @@ namespace Wolf
             float m_maxDistance;
         };
         static constexpr uint32_t MAX_LOD_COUNT = 20;
-
-        struct MeshInfo
+        struct MeshInfoLODs
         {
             LODInfo m_lods[MAX_LOD_COUNT];
             glm::vec4 m_boundingSphere;
             glm::vec4 m_aabbMin;
             glm::vec4 m_aabbMax;
         };
+
+        struct MeshletInfo
+        {
+            uint32_t m_vertexOffset;
+            uint32_t m_indexOffset;
+            uint32_t m_indexCount;
+            float m_lodError;
+
+            float m_parentLodError;
+            uint32_t m_coneAxisAndCutoff;
+            uint32_t pad1;
+            uint32_t pad2;
+
+            glm::vec4 m_boundingSphere;
+            glm::vec4 m_groupBoundingSphere;
+            glm::vec4 m_parentGroupBoundingSphere;
+        };
+        struct MeshInfoMeshlets
+        {
+            uint32_t m_meshletBaseIndex;
+            uint32_t m_meshletCount;
+            uint32_t pad0;
+            uint32_t pad1;
+
+            glm::vec4 m_boundingSphere;
+            glm::vec4 m_aabbMin;
+            glm::vec4 m_aabbMax;
+        };
+
         ResourceUniqueOwner<Buffer> m_meshesInfoBuffer;
         uint32_t m_currentMeshCount = 0;
+
+        ResourceUniqueOwner<Buffer> m_meshletsInfoBuffer;
+        uint32_t m_currentMeshletCount = 0;
 
         struct CullingUniformData
         {
@@ -158,7 +206,7 @@ namespace Wolf
             uint32_t m_materialIdx;
             uint32_t m_customData;
             uint32_t m_lod;
-            uint32_t pad1;
+            uint32_t m_instanceIdx;
         };
 
         ResourceUniqueOwner<DescriptorSetLayout> m_instancesDataDescriptorSetLayout;
@@ -178,10 +226,12 @@ namespace Wolf
         struct PerCullingCamera
         {
             ResourceUniqueOwner<Buffer> m_drawCommandsCountsBuffer; // contains MAX_BATCH_COUNT uint32
+            ResourceUniqueOwner<Buffer> m_drawCommandsCountsCopyBuffer; // contains MAX_BATCH_COUNT uint32
             std::array<ResourceUniqueOwner<Buffer>, MAX_BATCH_COUNT> m_drawCommandsBuffers; // 1 buffer per batch
             std::array<ResourceUniqueOwner<Buffer>, MAX_BATCH_COUNT> m_instancesDataBuffers; // 1 buffer per batch
             std::array<ResourceUniqueOwner<DescriptorSet>, MAX_BATCH_COUNT> m_instancesDataDescriptorSets; // 1 buffer per batch
             ResourceUniqueOwner<DescriptorSet> m_cullingDescriptorSet;
+            ResourceUniqueOwner<DescriptorSet> m_cullingMeshletsDescriptorSet;
 
             ResourceNonOwner<Image> m_hzbImage;
             ResourceUniqueOwner<Sampler> m_HZBSampler;
@@ -228,7 +278,9 @@ namespace Wolf
         std::vector<MeshCacheData> m_meshesCacheData;
 
         // Add lists
-        std::vector<MeshInfo> m_meshesToAdd;
+        std::vector<MeshInfoLODs> m_meshesLODToAdd;
+        std::vector<MeshInfoMeshlets> m_meshesMeshletsToAdd;
+        std::vector<MeshletInfo> m_meshletsToAdd;
         std::vector<CullingInstanceInfo> m_instancesToAdd;
         std::vector<uint32_t> m_instancesToRemove;
 
@@ -303,5 +355,9 @@ namespace Wolf
         uint32_t m_totalTriangleRegisteredCount = 0; // multiplied by instance count
         uint32_t m_instanceRenderedCount = 0; // total instances rendered - including all batches and all cameras
         uint32_t m_triangleRenderedCount = 0; // total triangles rendered - including all batches and all cameras
+
+        ResourceUniqueOwner<Pipeline> m_cullMeshletsPipeline;
+        DescriptorSetLayoutGenerator m_cullMeshletsDescriptorSetLayoutGenerator;
+        ResourceUniqueOwner<DescriptorSetLayout> m_cullMeshletsDescriptorSetLayout;
     };
 }
