@@ -63,7 +63,7 @@ Wolf::InstanceMeshRenderer::InstanceMeshRenderer(ShaderList& shaderList, const R
             {
                 outputFile << "#define MESH_STREAMING\n";
             }
-            if (g_configuration->getUseMeshletHierarchy())
+            if (g_configuration->getUseMeshlets())
             {
                 outputFile << "#define USE_MESHLET_HIERARCHY\n";
             }
@@ -166,11 +166,11 @@ Wolf::InstanceMeshRenderer::InstanceMeshRenderer(ShaderList& shaderList, const R
     m_cullingInstancesBuffer.reset(Buffer::createBuffer(MAX_INSTANCE_COUNT * sizeof(CullingInstanceInfo), VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT));
     m_cullingInstancesBuffer->setName("Culling instances (InstanceMeshRenderer::m_cullingInstancesBuffer)");
 
-    uint32_t sizeofMeshInfo = g_configuration->getUseMeshletHierarchy() ? sizeof(MeshInfoMeshlets) : sizeof(MeshInfoLODs);
+    uint32_t sizeofMeshInfo = g_configuration->getUseMeshlets() ? sizeof(MeshInfoMeshlets) : sizeof(MeshInfoLODs);
     m_meshesInfoBuffer.reset(Buffer::createBuffer(MAX_MESH_COUNT * sizeofMeshInfo, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT));
     m_meshesInfoBuffer->setName("Meshes info (InstanceMeshRenderer::m_meshesInfoBuffer)");
 
-    if (g_configuration->getUseMeshletHierarchy())
+    if (g_configuration->getUseMeshlets())
     {
         m_meshletsInfoBuffer.reset(Buffer::createBuffer(MAX_MESHLET_COUNT * sizeof(MeshletInfo), VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT));
         m_meshletsInfoBuffer->setName("Meshlets info (InstanceMeshRenderer::m_meshletsInfoBuffer)");
@@ -232,7 +232,7 @@ void Wolf::InstanceMeshRenderer::moveToNextFrame()
     uint32_t meshCountBeforeAdd = m_currentMeshCount;
     uint32_t meshletCountBeforeAdd = m_currentMeshletCount;
 
-    if (g_configuration->getUseMeshletHierarchy())
+    if (g_configuration->getUseMeshlets())
     {
         m_meshesMeshletsToAdd.swap(meshesMeshletsToAdd);
         m_currentMeshCount += meshesMeshletsToAdd.size();
@@ -259,7 +259,7 @@ void Wolf::InstanceMeshRenderer::moveToNextFrame()
     m_activeCamerasThisFrame.swap(m_activeCamerasNextFrame);
     m_mutex.unlock();
 
-    if (g_configuration->getUseMeshletHierarchy())
+    if (g_configuration->getUseMeshlets())
     {
         if (!meshesMeshletsToAdd.empty())
         {
@@ -319,7 +319,7 @@ void Wolf::InstanceMeshRenderer::moveToNextFrame()
             m_latestFrameIdxUsedPerLODBuffer->getSize());
     }
 
-    if (m_uniqueTriangleRegisteredCount > 0 || g_configuration->getUseMeshletHierarchy()) // TODO: little hack here with 'getUseMeshletHierarchy'
+    if (m_uniqueTriangleRegisteredCount > 0 || g_configuration->getUseMeshlets()) // TODO: little hack here with 'getUseMeshletHierarchy'
     {
         const uint32_t bufferIdx = g_runtimeContext->getCurrentCPUFrameNumber() % g_configuration->getMaxCachedFrames();
         const ReadbackDebugData* debugData = static_cast<const ReadbackDebugData*>(m_readbackDebugDataReadableBuffer->getBuffer(bufferIdx).map());
@@ -424,7 +424,7 @@ void Wolf::InstanceMeshRenderer::record(const RecordContext& context)
             m_cullingCamerasData[activeCamera.m_cameraIdx]->m_drawCommandsCountsBuffer->recordBarrier(&*m_commandBuffer, { PipelineStage::TRANSFER, AccessFlagBits::TRANSFER_WRITE},
                    { PipelineStage::COMPUTE_SHADER, AccessFlagBits::SHADER_WRITE}, 0, m_cullingCamerasData[activeCamera.m_cameraIdx]->m_drawCommandsCountsBuffer->getSize());
 
-            if (g_configuration->getUseMeshletHierarchy())
+            if (g_configuration->getUseMeshlets())
             {
                 m_commandBuffer->bindPipeline(m_cullInstancesPipeline.createConstNonOwnerResource());
             }
@@ -440,7 +440,7 @@ void Wolf::InstanceMeshRenderer::record(const RecordContext& context)
             const uint32_t groupSizeX = m_currentInstanceCount % dispatchGroups.width != 0 ? m_currentInstanceCount / dispatchGroups.width + 1 : m_currentInstanceCount / dispatchGroups.width;
             m_commandBuffer->dispatch(groupSizeX, 1, 1);
 
-            if (g_configuration->getUseMeshletHierarchy())
+            if (g_configuration->getUseMeshlets())
             {
                 m_cullingCamerasData[activeCamera.m_cameraIdx]->m_instancesDataBuffers[0]->recordBarrier(&*m_commandBuffer, { PipelineStage::COMPUTE_SHADER, AccessFlagBits::SHADER_WRITE},
                     { PipelineStage::COMPUTE_SHADER, AccessFlagBits::SHADER_READ | AccessFlagBits::SHADER_WRITE}, 0, m_cullingCamerasData[activeCamera.m_cameraIdx]->m_instancesDataBuffers[0]->getSize());
@@ -522,7 +522,7 @@ uint32_t Wolf::InstanceMeshRenderer::registerMesh(const MeshToRender& mesh)
 {
     uint32_t meshIdx = -1;
 
-    if (g_configuration->getUseMeshletHierarchy())
+    if (g_configuration->getUseMeshlets())
     {
         m_mutex.lock();
 
@@ -1032,7 +1032,7 @@ void Wolf::InstanceMeshRenderer::initPerCullingCamera(ResourceUniqueOwner<PerCul
     perCullingCamera->m_drawCommandsCountsBuffer.reset(Buffer::createBuffer(MAX_BATCH_COUNT * sizeof(uint32_t), VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT));
     perCullingCamera->m_drawCommandsCountsBuffer->setName("Draw command counts for camera " + std::to_string(cameraIdx) + " (InstanceMeshRenderer::PerCullingCamera::m_drawCommandsCountsBuffer)");
 
-    if (g_configuration->getUseMeshletHierarchy())
+    if (g_configuration->getUseMeshlets())
     {
         perCullingCamera->m_drawCommandsCountsCopyBuffer.reset(Buffer::createBuffer(MAX_BATCH_COUNT * sizeof(uint32_t), VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT));
         perCullingCamera->m_drawCommandsCountsCopyBuffer->setName("Draw command counts copy for camera " + std::to_string(cameraIdx) + " (InstanceMeshRenderer::PerCullingCamera::m_drawCommandsCountsCopyBuffer)");
@@ -1078,7 +1078,7 @@ void Wolf::InstanceMeshRenderer::initPerCullingCamera(ResourceUniqueOwner<PerCul
         perCullingCamera->m_cullingDescriptorSet->update(descriptorSetGenerator.getDescriptorSetCreateInfo());
     }
 
-    if (g_configuration->getUseMeshletHierarchy())
+    if (g_configuration->getUseMeshlets())
     {
         DescriptorSetGenerator descriptorSetGenerator(m_cullMeshletsDescriptorSetLayoutGenerator.getDescriptorLayouts());
         descriptorSetGenerator.setBuffer(0, *m_cullingInstancesBuffer);

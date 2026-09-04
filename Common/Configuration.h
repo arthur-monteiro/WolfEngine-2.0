@@ -28,7 +28,7 @@ namespace Wolf
 		[[nodiscard]] bool getEnableGPUDebugMarkers() const { return m_enableGPUDebugMarkers; }
 		[[nodiscard]] bool getUseVirtualTexture() const { return m_useVirtualTexture; }
 		[[nodiscard]] bool getUseMeshStreaming() const { return m_useMeshStreaming; }
-		[[nodiscard]] bool getUseMeshletHierarchy() const { return m_useMeshletHierarchy; }
+		[[nodiscard]] bool getUseMeshlets() const { return m_useMeshlets; }
 		[[nodiscard]] uint64_t getForcedTimerMsPerFrame() const { return m_forcedTimerMsPerFrame; }
 #ifdef __linux__
 		[[nodiscard]] bool getForceX11() const { return m_forceX11; }
@@ -53,7 +53,7 @@ namespace Wolf
 		bool m_enableGPUDebugMarkers = false;
 		bool m_useVirtualTexture = false;
 		bool m_useMeshStreaming = false;
-		bool m_useMeshletHierarchy = false;
+		bool m_useMeshlets = false;
 		uint64_t m_forcedTimerMsPerFrame = 0;
 		ColorSpace m_colorSpace = ColorSpace::SDR;
 
