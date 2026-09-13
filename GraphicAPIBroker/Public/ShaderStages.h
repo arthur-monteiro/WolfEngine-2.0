@@ -18,7 +18,9 @@ namespace Wolf
 		ANY_HIT = 1 << 9,
 		CLOSEST_HIT = 1 << 10,
 		MISS = 1 << 11,
-		SHADER_STAGE_MAX = 1 << 12
+		TASK = 1 << 12,
+		MESH = 1 << 13,
+		SHADER_STAGE_MAX = 1 << 14
 	};
 	using ShaderStageFlags = uint32_t;
 }

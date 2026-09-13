@@ -47,6 +47,12 @@ namespace Wolf
 		case ShaderStageFlagBits::MISS:
 			shaderStage = VK_SHADER_STAGE_MISS_BIT_KHR;
 			break;
+		case ShaderStageFlagBits::TASK:
+			shaderStage = VK_SHADER_STAGE_TASK_BIT_EXT;
+			break;
+		case ShaderStageFlagBits::MESH:
+			shaderStage = VK_SHADER_STAGE_MESH_BIT_EXT;
+			break;
 		case ShaderStageFlagBits::SHADER_STAGE_MAX:
 		default:
 			Debug::sendCriticalError("Unhandled shader stage");

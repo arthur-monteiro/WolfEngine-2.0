@@ -168,7 +168,7 @@ namespace Wolf
 
             float m_parentLodError;
             uint32_t m_coneAxisAndCutoff;
-            uint32_t pad1;
+            uint32_t m_vertexCount;
             uint32_t pad2;
 
             glm::vec4 m_boundingSphere;
@@ -200,6 +200,7 @@ namespace Wolf
         };
         ResourceUniqueOwner<UniformBuffer> m_cullingUniformsBuffer;
 
+        // TODO: when using meshlets, only m_instanceIdx is used
         struct InstanceDataLayout
         {
             glm::mat4 m_transform;
@@ -242,6 +243,7 @@ namespace Wolf
             }
         };
         void initPerCullingCamera(ResourceUniqueOwner<PerCullingCamera>& perCullingCamera, const ResourceNonOwner<Image>& hzbImage, uint32_t cameraIdx);
+        void initResourcesForBatch(uint32_t batchIdx);
         static constexpr uint32_t MAX_CAMERA_COUNT = 16;
         std::array<ResourceUniqueOwner<PerCullingCamera>, MAX_CAMERA_COUNT> m_cullingCamerasData;
 

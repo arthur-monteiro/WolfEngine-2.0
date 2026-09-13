@@ -18,12 +18,15 @@ const Wolf::CameraInterface* Wolf::CameraList::getCamera(uint32_t idx) const
 	return m_currentCameras[idx];
 }
 
-void Wolf::CameraList::moveToNextFrame(const CameraUpdateContext& context)
+void Wolf::CameraList::moveToNextFrame()
 {
-	PROFILE_FUNCTION
-
 	m_currentCameras.clear();
 	m_nextFrameCameras.swap(m_currentCameras);
+}
+
+void Wolf::CameraList::update(const CameraUpdateContext& context) const
+{
+	PROFILE_FUNCTION
 
 	for (CameraInterface* camera : m_currentCameras)
 	{

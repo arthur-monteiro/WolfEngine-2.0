@@ -24,6 +24,11 @@ uint32_t Wolf::CommandBufferVulkan::getDrawIndexedIndirectCommandStructureSize()
 	return sizeof(VkDrawIndexedIndirectCommand);
 }
 
+uint32_t Wolf::CommandBufferVulkan::getDrawMeshTasksIndirectCommandStructureSize()
+{
+	return sizeof(VkDrawMeshTasksIndirectCommandEXT);
+}
+
 Wolf::CommandBufferVulkan::CommandBufferVulkan(QueueType queueType, bool isTransient, const std::string& name, bool preRecord) : m_name(name)
 {
 	m_commandBuffers.resize((isTransient || preRecord) ? 1 : g_configuration->getMaxCachedFrames());
@@ -370,6 +375,15 @@ void Wolf::CommandBufferVulkan::drawIndirectCount(const Buffer& buffer, uint32_t
 	// TODO: stride should be sizeof(VkDrawIndirectCommand), not sizeof(VkDrawIndexedIndirectCommand)
 	vkCmdDrawIndirectCount(getCommandBuffer(), static_cast<const BufferVulkan*>(&buffer)->getBuffer(), bufferOffset, static_cast<const BufferVulkan*>(&countBuffer)->getBuffer(), countBufferOffset, maxDrawCount,
 		getDrawIndexedIndirectCommandStructureSize());
+}
+
+void Wolf::CommandBufferVulkan::drawMeshTasksIndirect(const Buffer& buffer, uint32_t bufferOffset) const
+{
+#ifdef __ANDROID__
+    Wolf::Debug::sendCriticalError("Not supported yet on android");
+#else
+	vkCmdDrawMeshTasksIndirectEXT(getCommandBuffer(), static_cast<const BufferVulkan*>(&buffer)->getBuffer(), bufferOffset, 1, sizeof(VkDrawMeshTasksIndirectCommandEXT));
+#endif
 }
 
 void Wolf::CommandBufferVulkan::dispatch(uint32_t groupCountX, uint32_t groupCountY, uint32_t groupCountZ) const

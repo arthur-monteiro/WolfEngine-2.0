@@ -109,7 +109,7 @@ namespace Wolf
 
 		/* Mesh Shader */
 		std::vector<const char*> m_meshShaderDeviceExtensions;
-		VkPhysicalDeviceMeshShaderPropertiesNV m_meshShaderProperties = {};
+		VkPhysicalDeviceMeshShaderPropertiesEXT m_meshShaderProperties = {};
 
 		/* Variable shading rate */
 		std::vector<const char*> m_shadingRateDeviceExtensions;

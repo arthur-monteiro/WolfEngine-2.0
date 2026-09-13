@@ -75,8 +75,8 @@ void Wolf::GraphicCameraInterface::initDescriptorSetLayoutIfNeeded()
 
 	s_descriptorSetLayoutGenerator.reset(new DescriptorSetLayoutGenerator);
 	s_descriptorSetLayoutGenerator->addUniformBuffer(
-		ShaderStageFlagBits::VERTEX | ShaderStageFlagBits::FRAGMENT | ShaderStageFlagBits::COMPUTE | ShaderStageFlagBits::RAYGEN | ShaderStageFlagBits::TESSELLATION_CONTROL | ShaderStageFlagBits::TESSELLATION_EVALUATION | ShaderStageFlagBits::GEOMETRY,
-		0);
+		ShaderStageFlagBits::VERTEX | ShaderStageFlagBits::FRAGMENT | ShaderStageFlagBits::COMPUTE | ShaderStageFlagBits::RAYGEN | ShaderStageFlagBits::TESSELLATION_CONTROL | ShaderStageFlagBits::TESSELLATION_EVALUATION | ShaderStageFlagBits::GEOMETRY
+		| ShaderStageFlagBits::TASK | ShaderStageFlagBits::MESH, 0);
 
 	s_descriptorSetLayout.reset(DescriptorSetLayout::createDescriptorSetLayout(s_descriptorSetLayoutGenerator->getDescriptorLayouts()));
 }

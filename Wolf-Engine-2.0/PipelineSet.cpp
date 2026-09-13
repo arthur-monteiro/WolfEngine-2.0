@@ -116,7 +116,7 @@ const Wolf::Pipeline* Wolf::PipelineSet::getOrCreatePipeline(uint32_t idx, Rende
 			addShaderInfo.materialFetchProcedure = pipelineInfo.shaderInfos[i].materialFetchProcedure;
 			for (const ShaderCodeToAddForStage& shaderCodeToAddForStage : shadersCodeToAdd)
 			{
-				if (shaderCodeToAddForStage.stage == pipelineInfo.shaderInfos[i].stage)
+				if ((shaderCodeToAddForStage.stages & pipelineInfo.shaderInfos[i].stage) != 0)
 				{
 					addShaderInfo.shaderCodeToAdd = shaderCodeToAddForStage.shaderCodeToAdd;
 				}

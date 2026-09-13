@@ -266,7 +266,7 @@ void Wolf::WolfEngine::updateBeforeFrame()
 	context.m_frameIdx = currentFrame;
 	context.m_swapChainExtent = m_swapChain->getImage(0)->getExtent();
     context.m_screenRotationInDegrees = m_swapChain->getRotationInDegrees();
-	m_cameraList.moveToNextFrame(context);
+	m_cameraList.update(context);
 	
 	m_defaultMeshRenderer->moveToNextFrame();
 	m_instanceMeshRenderer->moveToNextFrame();
@@ -425,6 +425,7 @@ void Wolf::WolfEngine::frame(const std::span<ResourceNonOwner<CommandRecordBase>
 	}
 
 	m_graphicAPIManager->collectProfiling();
+	m_cameraList.moveToNextFrame();
 
 	g_runtimeContext->incrementCPUFrameNumber();
 }

@@ -70,6 +70,19 @@ layout(std430, binding = 3) restrict buffer CountBufferLayout
     uint drawCount[MAX_BATCH_COUNT];
 };
 
+#ifdef USE_MESHLET_HIERARCHY
+// TODO: this correspond to VkDrawMeshTasksIndirectCommandEXT and should be handled in a multi-API way
+struct DrawMeshTaskCommand
+{
+	uint groupCountX;
+    uint groupCountY;
+    uint groupCountZ;
+};
+layout(std430, binding = 4) restrict buffer OutDrawCommandsLayout
+{
+   	DrawMeshTaskCommand outDrawCommands;
+} outDrawCommandsBuffers[MAX_BATCH_COUNT];
+#else
 // TODO: this correspond to VkDrawIndexedIndirectCommand and should be handled in a multi-API way
 struct DrawCommand
 {
@@ -83,6 +96,7 @@ layout(std430, binding = 4) restrict buffer OutDrawCommandsLayout
 {
    	DrawCommand outDrawCommands[];
 } outDrawCommandsBuffers[MAX_BATCH_COUNT];
+#endif
 
 layout(binding = 5, std140) uniform readonly UniformBufferLayout
 {
@@ -343,6 +357,8 @@ void main()
 
 #ifdef USE_MESHLET_HIERARCHY
             outInstancesDataBuffers[batchIdx].outInstancesData[outCommandIdx].lod = 0;
+
+            atomicAdd(outDrawCommandsBuffers[batchIdx].outDrawCommands.groupCountX, 1);
 #else
             outInstancesDataBuffers[batchIdx].outInstancesData[outCommandIdx].lod = lod;
 

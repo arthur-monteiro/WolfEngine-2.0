@@ -121,7 +121,7 @@ void Wolf::ShaderParser::parseAndCompile()
 {
     std::ifstream inFile(m_filename);
 
-    std::vector<std::string> extensions = { ".vert", ".frag", ".comp", ".rgen", ".rmiss", ".rchit", ".tesc", ".tese", ".geom" };
+    std::vector<std::string> extensions = { ".vert", ".frag", ".comp", ".rgen", ".rmiss", ".rchit", ".tesc", ".tese", ".geom", ".task", ".mesh" };
 
     std::string parsedFilename = m_filename;
 
@@ -138,7 +138,7 @@ void Wolf::ShaderParser::parseAndCompile()
 
     if (extensionFound.empty())
     {
-        Debug::sendError("Extension not handle in shader " + m_filename);
+        Debug::sendCriticalError("Extension not handle in shader " + m_filename);
     }
 
     for (const std::string& condition : m_conditionBlocksToInclude)

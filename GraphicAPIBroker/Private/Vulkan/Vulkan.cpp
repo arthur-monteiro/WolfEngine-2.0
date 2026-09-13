@@ -22,6 +22,7 @@ const Wolf::Vulkan* Wolf::g_vulkanInstance = nullptr;
 
 #ifndef __ANDROID__
 void registerGlobalDeviceForDebugMarker(VkDevice device);
+void registerGlobalDeviceForMeshShaders(VkDevice device);
 #endif
 
 #ifdef __ANDROID__
@@ -83,7 +84,7 @@ Wolf::Vulkan::Vulkan(GLFWwindow* glfwWindowPtr, bool useOVR)
 
     m_raytracingDeviceExtensions = { VK_KHR_ACCELERATION_STRUCTURE_EXTENSION_NAME, VK_KHR_RAY_TRACING_PIPELINE_EXTENSION_NAME, VK_KHR_DEFERRED_HOST_OPERATIONS_EXTENSION_NAME,
                                      VK_EXT_DESCRIPTOR_INDEXING_EXTENSION_NAME, VK_KHR_BUFFER_DEVICE_ADDRESS_EXTENSION_NAME, VK_KHR_SPIRV_1_4_EXTENSION_NAME };
-    //m_meshShaderDeviceExtensions = { VK_NV_MESH_SHADER_EXTENSION_NAME };
+    m_meshShaderDeviceExtensions = { VK_EXT_MESH_SHADER_EXTENSION_NAME };
     m_shadingRateDeviceExtensions = { VK_KHR_FRAGMENT_SHADING_RATE_EXTENSION_NAME };
 
 #ifndef __ANDROID__
@@ -116,6 +117,10 @@ Wolf::Vulkan::Vulkan(GLFWwindow* glfwWindowPtr, bool useOVR)
 	if(useDebugMarkers)
 	{
 		registerGlobalDeviceForDebugMarker(m_device);
+	}
+	if (m_availableFeatures.meshShader)
+	{
+		registerGlobalDeviceForMeshShaders(m_device);
 	}
 #endif
 
@@ -344,13 +349,12 @@ VkSampleCountFlagBits getMaxUsableSampleCount(VkPhysicalDevice physicalDevice)
 	return VK_SAMPLE_COUNT_1_BIT;
 }
 
-#ifndef __ANDROID__
-VkPhysicalDeviceMeshShaderPropertiesNV getPhysicalDeviceMeshShaderProperties(VkPhysicalDevice physicalDevice)
+#if !defined(__ANDROID__) or __ANDROID_MIN_SDK_VERSION__ > 31
+VkPhysicalDeviceMeshShaderPropertiesEXT getPhysicalDeviceMeshShaderProperties(VkPhysicalDevice physicalDevice)
 {
+	VkPhysicalDeviceMeshShaderPropertiesEXT meshShaderProperties{};
 
-	VkPhysicalDeviceMeshShaderPropertiesNV meshShaderProperties{};
-
-	meshShaderProperties.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MESH_SHADER_PROPERTIES_NV;
+	meshShaderProperties.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MESH_SHADER_PROPERTIES_EXT;
 	meshShaderProperties.pNext = nullptr;
 	VkPhysicalDeviceProperties2 props;
 	props.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2;
@@ -394,6 +398,11 @@ void Wolf::Vulkan::pickPhysicalDevice()
 				for (auto rayTracingDeviceExtension : m_raytracingDeviceExtensions)
 					m_deviceExtensions.push_back(rayTracingDeviceExtension);
 			}
+			if (m_availableFeatures.meshShader)
+			{
+				for (auto meshShaderDeviceExtension : m_meshShaderDeviceExtensions)
+					m_deviceExtensions.push_back(meshShaderDeviceExtension);
+			}
 			if (m_availableFeatures.variableShadingRate)
 			{
 				for (auto shadingRateExtension : m_shadingRateDeviceExtensions)
@@ -405,8 +414,10 @@ void Wolf::Vulkan::pickPhysicalDevice()
 
 			if (m_availableFeatures.rayTracing)
 				retrievePhysicalDeviceRayTracingProperties();
-			//if (m_availableFeatures.meshShader)
-			//	m_meshShaderProperties = getPhysicalDeviceMeshShaderProperties(m_physicalDevice);
+#if !defined(__ANDROID__) or __ANDROID_MIN_SDK_VERSION__ > 31
+			if (m_availableFeatures.meshShader)
+				m_meshShaderProperties = getPhysicalDeviceMeshShaderProperties(m_physicalDevice);
+#endif
 			if (m_availableFeatures.variableShadingRate)
 				retrievePhysicalDeviceShadingRateProperties();
 			break;
@@ -441,6 +452,7 @@ void Wolf::Vulkan::createDevice()
 
     VkPhysicalDeviceRayTracingPipelineFeaturesKHR rayTracingPipelineFeatures{ VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_PIPELINE_FEATURES_KHR };
     VkPhysicalDeviceAccelerationStructureFeaturesKHR accelerationStructureFeature{ VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ACCELERATION_STRUCTURE_FEATURES_KHR };
+	VkPhysicalDeviceMeshShaderFeaturesEXT meshShaderFeatures{ VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MESH_SHADER_FEATURES_EXT };
     VkPhysicalDeviceFragmentShadingRateFeaturesKHR variableShadingRateFeatures{ VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FRAGMENT_SHADING_RATE_FEATURES_KHR };
 
     void* currentNext = &features11;
@@ -469,6 +481,14 @@ void Wolf::Vulkan::createDevice()
         accelerationStructureFeature.pNext = currentNext;
         currentNext = &accelerationStructureFeature;
     }
+
+	if (m_availableFeatures.meshShader)
+	{
+		meshShaderFeatures.meshShader = VK_TRUE;
+		meshShaderFeatures.taskShader = VK_TRUE;
+		meshShaderFeatures.pNext = currentNext;
+		currentNext = &meshShaderFeatures;
+	}
 
     if (m_availableFeatures.variableShadingRate)
     {

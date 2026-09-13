@@ -92,7 +92,7 @@ namespace Wolf
 		struct ShaderCodeToAddForStage
 		{
 			ShaderParser::ShaderCodeToAdd shaderCodeToAdd;
-			ShaderStageFlagBits stage;
+			ShaderStageFlags stages;
 			uint32_t requiredMask;
 		};
 		const Pipeline* getOrCreatePipeline(uint32_t idx, RenderPass* renderPass, const std::vector<DescriptorSetBindInfo>& meshDescriptorSetsBindInfo, const std::vector<DescriptorSetBindInfo>& additionalDescriptorSetsBindInfo,
