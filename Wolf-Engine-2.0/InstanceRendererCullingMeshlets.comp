@@ -14,64 +14,50 @@ layout(std430, binding = 0) restrict buffer CullingInstancesBufferLayout
     CullingInstanceInfo cullingInstancesInfo[];
 };
 
-struct MeshInfo
-{
-    uint meshletBaseIndex;
-    uint meshletCount;
-    uint pad0;
-    uint pad1;
-
-    vec4 boundingSphere;
-    vec4 aabbMin;
-    vec4 aabbMax;
-};
-layout(std430, binding = 1) restrict buffer MeshesInfoBufferLayout
-{
-    MeshInfo meshesInfo[];
-};
-
 const uint MAX_BATCH_COUNT = 32;
 
-struct InstanceData
+struct OutMeshletData
 {
-	mat4 transform;
-
-	uint materialIdx;
-	uint customData;
-	uint lod;
 	uint instanceIdx;
-};
-layout(std430, binding = 2) restrict buffer InstancesBufferLayout
-{
-    InstanceData instancesData[];
-} instancesDataBuffers[MAX_BATCH_COUNT];
+	uint vertexCount;
+	uint vertexOffset;
+    uint indexOffset;
 
-layout(std430, binding = 3) restrict buffer CountBufferLayout
-{
-    uint drawCount[MAX_BATCH_COUNT];
+    uint indexCount;
+    uint pad0;
+    uint pad1;
+    uint pad2;
 };
+layout(std430, binding = 1) restrict buffer OutInstancesBufferLayout
+{
+    OutMeshletData outMeshletData[];
+} outMeshletDataBuffers[MAX_BATCH_COUNT];
+
+struct MeshletInstanceData
+{
+    uint instanceIdx;
+    uint meshletIdx;
+    uint pad0;
+    uint pad1;
+};
+layout(std430, binding = 2) restrict buffer MeshletInstancesBufferLayout
+{
+    MeshletInstanceData meshletInstancesData[];
+} meshletInstancesDataBuffer;
 
 // TODO: this correspond to VkDrawIndexedIndirectCommand and should be handled in a multi-API way
-struct DrawCommand
+struct DrawMeshTaskCommand
 {
-	uint indexCount;
-    uint instanceCount;
-    uint firstIndex;
-    int vertexOffset;
-    uint firstInstance;
+	uint groupCountX;
+	uint groupCountY;
+	uint groupCountZ;
 };
-layout(std430, binding = 4) restrict buffer OutDrawCommandsLayout
+layout(std430, binding = 3) restrict buffer OutDrawCommandLayout
 {
-   	DrawCommand outDrawCommands[];
+   	DrawMeshTaskCommand outDrawCommand;
 } outDrawCommandsBuffers[MAX_BATCH_COUNT];
 
-layout(binding = 5, std140) uniform readonly UniformBufferLayout
-{
-	uint instanceCount;
-	uint frameIdx;
-} ub;
-
-layout(binding = 6) uniform sampler2D HZBSampler;
+layout(binding = 4) uniform sampler2D HZBSampler;
 
 struct MeshletInfo
 {
@@ -82,27 +68,27 @@ struct MeshletInfo
 
     float parentLodError;
     uint coneAxisAndCutoff;
-    uint pad1;
+    uint vertexCount;
     uint pad2;
 
     vec4 boundingSphere;
     vec4 groupBoundingSphere;
     vec4 parentBoundingSphere;
 };
-layout(std430, binding = 7) restrict buffer MeshletsInfoBufferLayout
+layout(std430, binding = 5) restrict buffer MeshletsInfoBufferLayout
 {
     MeshletInfo meshletsInfo[];
 };
 
-layout(std430, binding = 8) restrict buffer OutDebugData
+layout(std430, binding = 6) restrict buffer OutDebugData
 {
    	uint instanceCount;
    	uint primitiveCount;
 } outDebugData;
 
-layout(std430, binding = 9) restrict buffer InCountBufferLayout
+layout(std430, binding = 7) restrict buffer MeshletCountBufferLayout
 {
-    uint inDrawCount[MAX_BATCH_COUNT];
+    uint meshletCount;
 };
 
 layout(push_constant) uniform PushConstants
@@ -215,81 +201,67 @@ bool isMeshletConeCulled(vec4 worldSphere, vec3 worldConeAxis, float coneCutoff,
     return dot(normalize(worldSphere.xyz - cameraPos), worldConeAxis) >= coneCutoff + worldSphere.w / length(worldSphere.xyz - cameraPos);
 }
 
-layout (local_size_x = 256, local_size_y = 1, local_size_z = 1) in;
+const float TARGET_MAX_PIXEL_ERROR = 1.0;
+
+layout (local_size_x = 64, local_size_y = 1, local_size_z = 1) in;
 void main()
 {
     uint invocationIdx = gl_GlobalInvocationID.x;
 
-    for (uint batchIdx = 0; batchIdx < MAX_BATCH_COUNT; batchIdx++)
-	{
-		if ((pc.cameraBatchMask & (1u << batchIdx)) != 0)
-		{
-		    if (invocationIdx >= inDrawCount[batchIdx])
-                continue;
+     if (invocationIdx >= meshletCount)
+        return;
 
-		    uint instanceIdx = instancesDataBuffers[batchIdx].instancesData[invocationIdx].instanceIdx;
+    MeshletInfo meshletInfo = meshletsInfo[meshletInstancesDataBuffer.meshletInstancesData[invocationIdx].meshletIdx];
+    uint instanceIdx = meshletInstancesDataBuffer.meshletInstancesData[invocationIdx].instanceIdx;
+    CullingInstanceInfo cullingInstanceInfo = cullingInstancesInfo[instanceIdx];
 
-            CullingInstanceInfo cullingInstanceInfo = cullingInstancesInfo[instanceIdx];
-            MeshInfo meshInfo = meshesInfo[cullingInstanceInfo.meshIdx];
+    float sx = dot(cullingInstanceInfo.transform[0].xyz, cullingInstanceInfo.transform[0].xyz);
+    float sy = dot(cullingInstanceInfo.transform[1].xyz, cullingInstanceInfo.transform[1].xyz);
+    float sz = dot(cullingInstanceInfo.transform[2].xyz, cullingInstanceInfo.transform[2].xyz);
+    float maxScale = sqrt(max(sx, max(sy, sz)));
 
-            if ((cullingInstanceInfo.batchesMask & (1u << batchIdx)) != 0u)
+    float projectionFactor = computeProjectionFactor();
+
+    vec3 worldCenter = (cullingInstanceInfo.transform * vec4(meshletInfo.groupBoundingSphere.xyz, 1.0)).xyz;
+    float worldRadius = meshletInfo.groupBoundingSphere.w * maxScale;
+    float dist = max(length(worldCenter - getCameraPos()) - worldRadius, 0.0001);
+    float currentError = (TARGET_MAX_PIXEL_ERROR * dist) / projectionFactor;
+
+    vec3 parentWorldCenter = (cullingInstanceInfo.transform * vec4(meshletInfo.parentBoundingSphere.xyz, 1.0)).xyz;
+    float parentWorldRadius = meshletInfo.parentBoundingSphere.w * maxScale;
+    float parentDist = max(length(parentWorldCenter - getCameraPos()) - parentWorldRadius, 0.0001);
+    float parentCurrentError = (TARGET_MAX_PIXEL_ERROR * parentDist) / projectionFactor;
+
+    vec4 boundingSphereCenter = cullingInstanceInfo.transform * vec4(meshletInfo.boundingSphere.xyz, 1.0);
+    float boundingSphereRadius = meshletInfo.boundingSphere.w;
+    boundingSphereRadius *= maxScale;
+    vec4 boundingSphere = vec4(vec3(boundingSphereCenter), boundingSphereRadius);
+
+    vec4 coneData = unpackSnorm4x8(meshletInfo.coneAxisAndCutoff);
+    vec3 worldConeAxis = normalize(mat3(cullingInstanceInfo.transform) * coneData.xyz);
+    float coneCutoff = (coneData.w <= -0.99f) ? -1.0f : coneData.w;
+
+    if (meshletInfo.lodError <= currentError &&
+        meshletInfo.parentLodError > parentCurrentError &&
+        isSphereVisible(boundingSphere, ubCamera.frustumPlanes) &&
+        isSphereVisibleHZB(boundingSphere, getPreviousViewMatrix(), getProjectionMatrix()) &&
+        !isMeshletConeCulled(boundingSphere, worldConeAxis, coneCutoff, getCameraPos()))
+    {
+        atomicAdd(outDebugData.primitiveCount, meshletInfo.indexCount);
+
+        for (uint batchIdx = 0; batchIdx < MAX_BATCH_COUNT; batchIdx++)
+        {
+            if ((pc.cameraBatchMask & (1u << batchIdx)) != 0 && (cullingInstanceInfo.batchesMask & (1u << batchIdx)) != 0u)
             {
-                for (uint i = meshInfo.meshletBaseIndex; i < meshInfo.meshletBaseIndex + meshInfo.meshletCount; ++i)
-                {
-                    uint meshletIdx = i;
-                    MeshletInfo mInfo = meshletsInfo[meshletIdx];
+                uint targetCommandIdx = atomicAdd(outDrawCommandsBuffers[batchIdx].outDrawCommand.groupCountX, 1);
 
-                    const float TARGET_MAX_PIXEL_ERROR = 1.0;
-
-                    float sx = dot(cullingInstanceInfo.transform[0].xyz, cullingInstanceInfo.transform[0].xyz);
-                    float sy = dot(cullingInstanceInfo.transform[1].xyz, cullingInstanceInfo.transform[1].xyz);
-                    float sz = dot(cullingInstanceInfo.transform[2].xyz, cullingInstanceInfo.transform[2].xyz);
-                    float maxScale = sqrt(max(sx, max(sy, sz)));
-
-                    float projectionFactor = computeProjectionFactor();
-
-                    vec3 worldCenter = (cullingInstanceInfo.transform * vec4(mInfo.groupBoundingSphere.xyz, 1.0)).xyz;
-                    float worldRadius = mInfo.groupBoundingSphere.w * maxScale;
-                    float dist = max(length(worldCenter - getCameraPos()) - worldRadius, 0.0001);
-                    float currentError = (TARGET_MAX_PIXEL_ERROR * dist) / projectionFactor;
-
-                    vec3 parentWorldCenter = (cullingInstanceInfo.transform * vec4(mInfo.parentBoundingSphere.xyz, 1.0)).xyz;
-                    float parentWorldRadius = mInfo.parentBoundingSphere.w * maxScale;
-                    float parentDist = max(length(parentWorldCenter - getCameraPos()) - parentWorldRadius, 0.0001);
-                    float parentCurrentError = (TARGET_MAX_PIXEL_ERROR * parentDist) / projectionFactor;
-
-                    vec4 boundingSphereCenter = cullingInstanceInfo.transform * vec4(mInfo.boundingSphere.xyz, 1.0);
-                    float boundingSphereRadius = mInfo.boundingSphere.w;
-                    boundingSphereRadius *= maxScale;
-                    vec4 boundingSphere = vec4(vec3(boundingSphereCenter), boundingSphereRadius);
-
-                    vec4 coneData = unpackSnorm4x8(mInfo.coneAxisAndCutoff);
-                    vec3 worldConeAxis = normalize(mat3(cullingInstanceInfo.transform) * coneData.xyz);
-                    float coneCutoff = (coneData.w <= -0.99f) ? -1.0f : coneData.w;
-
-                    if (mInfo.lodError <= currentError && mInfo.parentLodError > parentCurrentError && isSphereVisible(boundingSphere, ubCamera.frustumPlanes) && isSphereVisibleHZB(boundingSphere, getPreviousViewMatrix(), getProjectionMatrix())
-                        && !isMeshletConeCulled(boundingSphere, worldConeAxis, coneCutoff, getCameraPos()))
-                    {
-                        uint targetCommandIdx = atomicAdd(drawCount[batchIdx], 1);
-
-                        instancesDataBuffers[batchIdx].instancesData[targetCommandIdx].transform = cullingInstanceInfo.transform;
-                        instancesDataBuffers[batchIdx].instancesData[targetCommandIdx].materialIdx = cullingInstanceInfo.materialIdx;
-                        instancesDataBuffers[batchIdx].instancesData[targetCommandIdx].customData = cullingInstanceInfo.customData;
-                        //instancesDataBuffers[batchIdx].instancesData[targetCommandIdx].instanceIdx = instanceIdx;
-                        instancesDataBuffers[batchIdx].instancesData[targetCommandIdx].lod = 0;
-
-                        outDrawCommandsBuffers[batchIdx].outDrawCommands[targetCommandIdx].vertexOffset = int(mInfo.vertexOffset);
-                        outDrawCommandsBuffers[batchIdx].outDrawCommands[targetCommandIdx].firstIndex = mInfo.indexOffset;
-                        outDrawCommandsBuffers[batchIdx].outDrawCommands[targetCommandIdx].indexCount = mInfo.indexCount;
-                        outDrawCommandsBuffers[batchIdx].outDrawCommands[targetCommandIdx].instanceCount = 1;
-                        outDrawCommandsBuffers[batchIdx].outDrawCommands[targetCommandIdx].firstInstance = 0;
-
-                        atomicAdd(outDebugData.instanceCount, 1);
-                        atomicAdd(outDebugData.primitiveCount, mInfo.indexCount);
-                    }
-                }
+                outMeshletDataBuffers[batchIdx].outMeshletData[targetCommandIdx].instanceIdx = instanceIdx;
+                outMeshletDataBuffers[batchIdx].outMeshletData[targetCommandIdx].vertexOffset = meshletInfo.vertexOffset;
+                outMeshletDataBuffers[batchIdx].outMeshletData[targetCommandIdx].indexOffset = meshletInfo.indexOffset;
+                outMeshletDataBuffers[batchIdx].outMeshletData[targetCommandIdx].indexCount = meshletInfo.indexCount;
+                outMeshletDataBuffers[batchIdx].outMeshletData[targetCommandIdx].vertexCount = meshletInfo.vertexCount;
             }
-		}
+        }
     }
 }
 )"

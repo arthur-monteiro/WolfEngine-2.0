@@ -51,6 +51,19 @@ layout(std430, binding = 1) restrict buffer MeshesInfoBufferLayout
 
 const uint MAX_BATCH_COUNT = 32;
 
+#ifdef USE_MESHLET_HIERARCHY
+struct OutMeshletInstanceData
+{
+    uint instanceIdx;
+    uint meshletIdx;
+    uint pad0;
+    uint pad1;
+};
+layout(std430, binding = 2) restrict buffer OutInstancesBufferLayout
+{
+    OutMeshletInstanceData outInstancesMeshlets[];
+} outInstancesDataBuffer;
+#else
 struct OutInstanceData
 {
 	mat4 transform;
@@ -58,21 +71,29 @@ struct OutInstanceData
 	uint materialIdx;
 	uint customData;
 	uint lod;
-	uint instanceIdx;
+	uint pad0;
 };
 layout(std430, binding = 2) restrict buffer OutInstancesBufferLayout
 {
     OutInstanceData outInstancesData[];
 } outInstancesDataBuffers[MAX_BATCH_COUNT];
+#endif
 
+#ifdef USE_MESHLET_HIERARCHY
+layout(std430, binding = 3) restrict buffer VisibleMeshletCountBufferLayout
+{
+    uint visibleMeshletCount;
+};
+#else
 layout(std430, binding = 3) restrict buffer CountBufferLayout
 {
     uint drawCount[MAX_BATCH_COUNT];
 };
+#endif
 
 #ifdef USE_MESHLET_HIERARCHY
-// TODO: this correspond to VkDrawMeshTasksIndirectCommandEXT and should be handled in a multi-API way
-struct DrawMeshTaskCommand
+// TODO: this correspond to VkDispatchIndirectCommand and should be handled in a multi-API way
+struct DispatchCommand
 {
 	uint groupCountX;
     uint groupCountY;
@@ -80,8 +101,8 @@ struct DrawMeshTaskCommand
 };
 layout(std430, binding = 4) restrict buffer OutDrawCommandsLayout
 {
-   	DrawMeshTaskCommand outDrawCommands;
-} outDrawCommandsBuffers[MAX_BATCH_COUNT];
+   	DispatchCommand outDrawCommands;
+} outDrawCommandsBuffer;
 #else
 // TODO: this correspond to VkDrawIndexedIndirectCommand and should be handled in a multi-API way
 struct DrawCommand
@@ -248,7 +269,7 @@ void transformWorldAABB(in vec3 localMin, in vec3 localMax, in mat4 worldMatrix,
 	worldMax = worldCenter + worldExtent;
 }
 
-layout (local_size_x = 256, local_size_y = 1, local_size_z = 1) in;
+layout (local_size_x = 64, local_size_y = 1, local_size_z = 1) in;
 void main()
 {
 	uint instanceIdx = gl_GlobalInvocationID.x;
@@ -341,25 +362,30 @@ void main()
 #endif
 #endif
 
+#ifdef USE_MESHLET_HIERARCHY
+    uint outCommandIdx = atomicAdd(visibleMeshletCount, meshInfo.meshletCount);
+    uint groupCountX = (outCommandIdx + meshInfo.meshletCount) / 64 + 1;
+    atomicMax(outDrawCommandsBuffer.outDrawCommands.groupCountX, groupCountX);
+
+    for (uint meshletInternalIdx = 0; meshletInternalIdx < meshInfo.meshletCount; meshletInternalIdx++)
+    {
+        outInstancesDataBuffer.outInstancesMeshlets[outCommandIdx + meshletInternalIdx].instanceIdx = instanceIdx;
+        outInstancesDataBuffer.outInstancesMeshlets[outCommandIdx + meshletInternalIdx].meshletIdx = meshInfo.meshletBaseIndex + meshletInternalIdx;
+    }
+
+    atomicAdd(outDebugData.instanceCount, 1);
+#else
 	for (uint batchIdx = 0; batchIdx < MAX_BATCH_COUNT; batchIdx++)
 	{
 		if ((cullingInstanceInfo.batchesMask & (1u << batchIdx)) != 0u &&
 			(pc.cameraBatchMask & (1u << batchIdx)) != 0)
 		{
 			uint outCommandIdx = atomicAdd(drawCount[batchIdx], 1);
-
-			outInstancesDataBuffers[batchIdx].outInstancesData[outCommandIdx].transform = cullingInstanceInfo.transform;
-			outInstancesDataBuffers[batchIdx].outInstancesData[outCommandIdx].materialIdx = cullingInstanceInfo.materialIdx;
-			outInstancesDataBuffers[batchIdx].outInstancesData[outCommandIdx].customData = cullingInstanceInfo.customData;
-			outInstancesDataBuffers[batchIdx].outInstancesData[outCommandIdx].instanceIdx = instanceIdx;
-
 			atomicAdd(outDebugData.instanceCount, 1);
 
-#ifdef USE_MESHLET_HIERARCHY
-            outInstancesDataBuffers[batchIdx].outInstancesData[outCommandIdx].lod = 0;
-
-            atomicAdd(outDrawCommandsBuffers[batchIdx].outDrawCommands.groupCountX, 1);
-#else
+            outInstancesDataBuffers[batchIdx].outInstancesData[outCommandIdx].transform = cullingInstanceInfo.transform;
+			outInstancesDataBuffers[batchIdx].outInstancesData[outCommandIdx].materialIdx = cullingInstanceInfo.materialIdx;
+			outInstancesDataBuffers[batchIdx].outInstancesData[outCommandIdx].customData = cullingInstanceInfo.customData;
             outInstancesDataBuffers[batchIdx].outInstancesData[outCommandIdx].lod = lod;
 
             outDrawCommandsBuffers[batchIdx].outDrawCommands[outCommandIdx].vertexOffset = int(meshInfo.lods[lod].vertexOffset);
@@ -369,8 +395,8 @@ void main()
             outDrawCommandsBuffers[batchIdx].outDrawCommands[outCommandIdx].firstInstance = 0;
 
             atomicAdd(outDebugData.primitiveCount, meshInfo.lods[lod].indexCount);
-#endif
 		}
 	}
+#endif
 }
 )"

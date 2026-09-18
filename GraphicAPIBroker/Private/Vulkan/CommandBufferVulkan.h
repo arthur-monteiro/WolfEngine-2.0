@@ -16,6 +16,7 @@ namespace Wolf
 	public:
 		static uint32_t getDrawIndexedIndirectCommandStructureSize();
 		static uint32_t getDrawMeshTasksIndirectCommandStructureSize();
+		static uint32_t getDispatchIndirectCommandStructureSize();
 
 		CommandBufferVulkan(QueueType queueType, bool isTransient, const std::string& name, bool preRecord = false);
 		~CommandBufferVulkan() override;
@@ -52,6 +53,7 @@ namespace Wolf
 		void drawIndirectCount(const Buffer& buffer, uint32_t bufferOffset, const Buffer& countBuffer, uint32_t countBufferOffset, uint32_t maxDrawCount) const override;
 		void drawMeshTasksIndirect(const Buffer& buffer, uint32_t bufferOffset) const override;
 		void dispatch(uint32_t groupCountX, uint32_t groupCountY, uint32_t groupCountZ) const override;
+		void dispatchIndirect(const Buffer& buffer, uint32_t bufferOffset) const override;
 #if !defined(__ANDROID__) or __ANDROID_MIN_SDK_VERSION__ > 30
 		void traceRays(const ResourceReference<const ShaderBindingTable>& shaderBindingTable, const Extent3D& extent) const override;
 #endif

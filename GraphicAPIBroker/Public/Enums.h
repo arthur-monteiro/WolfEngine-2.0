@@ -8,7 +8,7 @@ namespace Wolf
 
 	enum class MemoryPropertyFlag : uint32_t {  };
 
-	enum class PipelineStage { VERTEX_INPUT, VERTEX_SHADER, COMPUTE_SHADER, RAY_TRACING_SHADER, TRANSFER };
+	enum class PipelineStage { VERTEX_INPUT, VERTEX_SHADER, COMPUTE_SHADER, MESH_SHADER, RAY_TRACING_SHADER, TRANSFER, DRAW_INDIRECT };
 	enum class IndexType { U16, U32 };
 
 	enum class FragmentShadingRateCombinerOp { KEEP, REPLACE, MIN, MAX, MUL	};

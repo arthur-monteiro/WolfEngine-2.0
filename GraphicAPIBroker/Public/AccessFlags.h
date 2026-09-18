@@ -10,7 +10,8 @@ namespace Wolf
         SHADER_WRITE = 1 << 1,
         TRANSFER_READ = 1 << 2,
         TRANSFER_WRITE = 1 << 3,
-        ACCESS_MAX = 1 << 4
+        INDIRECT_COMMAND_READ = 1 << 4,
+        ACCESS_MAX = 1 << 5
     };
     using AccessFlags = uint32_t;
 }

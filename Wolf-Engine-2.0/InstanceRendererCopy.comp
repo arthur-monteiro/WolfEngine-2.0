@@ -28,22 +28,52 @@ layout(std430, binding = 1) restrict buffer MeshesInfoBufferLayout
 
 const uint MAX_BATCH_COUNT = 32;
 
+#ifdef USE_MESHLET_HIERARCHY
+layout(std430, binding = 2) restrict buffer OutInstancesBufferLayout
+{
+    uint outInstancesIndices[];
+} outInstancesDataBuffer;
+#else
 struct OutInstanceData
 {
 	mat4 transform;
+
 	uint materialIdx;
 	uint customData;
+	uint lod;
+	uint pad0;
 };
 layout(std430, binding = 2) restrict buffer OutInstancesBufferLayout
 {
     OutInstanceData outInstancesData[];
 } outInstancesDataBuffers[MAX_BATCH_COUNT];
+#endif
 
+#ifdef USE_MESHLET_HIERARCHY
+layout(std430, binding = 3) restrict buffer CountBufferLayout
+{
+    uint drawCount;
+};
+#else
 layout(std430, binding = 3) restrict buffer CountBufferLayout
 {
     uint drawCount[MAX_BATCH_COUNT];
 };
+#endif
 
+#ifdef USE_MESHLET_HIERARCHY
+// TODO: this correspond to VkDispatchIndirectCommand and should be handled in a multi-API way
+struct DispatchCommand
+{
+	uint groupCountX;
+    uint groupCountY;
+    uint groupCountZ;
+};
+layout(std430, binding = 4) restrict buffer OutDrawCommandsLayout
+{
+   	DispatchCommand outDrawCommands;
+} outDrawCommandsBuffer;
+#else
 // TODO: this correspond to VkDrawIndexedIndirectCommand and should be handled in a multi-API way
 struct DrawCommand
 {
@@ -57,6 +87,7 @@ layout(std430, binding = 4) restrict buffer OutDrawCommandsLayout
 {
    	DrawCommand outDrawCommands[];
 } outDrawCommandsBuffers[MAX_BATCH_COUNT];
+#endif
 
 layout(binding = 5, std140) uniform readonly UniformBufferLayout
 {
@@ -90,6 +121,15 @@ void main()
 		return;
 	}
 
+#ifdef USE_MESHLET_HIERARCHY
+    uint outCommandIdx = atomicAdd(drawCount, 1);
+    outInstancesDataBuffer.outInstancesIndices[outCommandIdx] = instanceIdx;
+
+    uint groupCountX = outCommandIdx / 32 + 1;
+    atomicMax(outDrawCommandsBuffer.outDrawCommands.groupCountX, groupCountX);
+
+    //atomicAdd(outDebugData.instanceCount, 1);
+#else
 	for (uint batchIdx = 0; batchIdx < MAX_BATCH_COUNT; batchIdx++)
 	{
 		if ((cullingInstanceInfo.batchesMask & (1u << batchIdx)) != 0u)
@@ -106,6 +146,7 @@ void main()
 			outDrawCommandsBuffers[batchIdx].outDrawCommands[outCommandIdx].firstInstance = 0;
 		}
 	}
+#endif
 }
 
 )"

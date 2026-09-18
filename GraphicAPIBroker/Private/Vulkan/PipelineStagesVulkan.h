@@ -18,10 +18,14 @@ namespace Wolf
                 return VK_PIPELINE_STAGE_2_VERTEX_SHADER_BIT;
             case PipelineStage::COMPUTE_SHADER:
                 return VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT;
+            case PipelineStage::MESH_SHADER:
+                return VK_PIPELINE_STAGE_2_MESH_SHADER_BIT_EXT;
             case PipelineStage::RAY_TRACING_SHADER:
                 return VK_PIPELINE_STAGE_2_RAY_TRACING_SHADER_BIT_KHR;
             case PipelineStage::TRANSFER:
                 return VK_PIPELINE_STAGE_2_TRANSFER_BIT;
+            case PipelineStage::DRAW_INDIRECT:
+                return VK_PIPELINE_STAGE_2_DRAW_INDIRECT_BIT;
             default:
                 Debug::sendCriticalError("Unhandled pipeline stage");
         }

@@ -32,3 +32,13 @@ uint32_t Wolf::CommandBuffer::getDrawMeshTasksIndirectCommandStructureSize()
 	return -1;
 #endif
 }
+
+uint32_t Wolf::CommandBuffer::getDispatchIndirectCommandStructureSize()
+{
+#ifdef WOLF_VULKAN
+	return CommandBufferVulkan::getDispatchIndirectCommandStructureSize();
+#else
+	Debug::sendCriticalError("Not implemented");
+	return -1;
+#endif
+}

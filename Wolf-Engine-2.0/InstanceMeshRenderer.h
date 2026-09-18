@@ -200,17 +200,37 @@ namespace Wolf
         };
         ResourceUniqueOwner<UniformBuffer> m_cullingUniformsBuffer;
 
-        // TODO: when using meshlets, only m_instanceIdx is used
         struct InstanceDataLayout
         {
             glm::mat4 m_transform;
             uint32_t m_materialIdx;
             uint32_t m_customData;
             uint32_t m_lod;
-            uint32_t m_instanceIdx;
+            uint32_t pad0;
         };
 
-        ResourceUniqueOwner<DescriptorSetLayout> m_instancesDataDescriptorSetLayout;
+        struct MeshletInstanceToCullDataLayout
+        {
+            uint32_t m_instanceIdx;
+            uint32_t m_meshletIdx;
+            uint32_t m_pad0;
+            uint32_t m_pad1;
+        };
+
+        struct CulledMeshletDataLayout
+        {
+            uint32_t m_instanceIdx;
+            uint32_t m_vertexCount;
+            uint32_t m_vertexOffset;
+            uint32_t m_indexOffset;
+
+            uint32_t m_indexCount;
+            uint32_t pad0;
+            uint32_t pad1;
+            uint32_t pad2;
+        };
+
+        ResourceUniqueOwner<DescriptorSetLayout> m_drawsDataDescriptorSetLayout;
 
         struct ActiveCamera
         {
@@ -226,12 +246,18 @@ namespace Wolf
 
         struct PerCullingCamera
         {
-            ResourceUniqueOwner<Buffer> m_drawCommandsCountsBuffer; // contains MAX_BATCH_COUNT uint32
-            ResourceUniqueOwner<Buffer> m_drawCommandsCountsCopyBuffer; // contains MAX_BATCH_COUNT uint32
+            ResourceUniqueOwner<Buffer> m_drawCommandsCountsBuffer;  // draw instances: contains MAX_BATCH_COUNT uint32
+            ResourceUniqueOwner<Buffer> m_visibleMeshletCountBuffer;  // meshlets: 1 uint32 per camera
+
             std::array<ResourceUniqueOwner<Buffer>, MAX_BATCH_COUNT> m_drawCommandsBuffers; // 1 buffer per batch
-            std::array<ResourceUniqueOwner<Buffer>, MAX_BATCH_COUNT> m_instancesDataBuffers; // 1 buffer per batch
-            std::array<ResourceUniqueOwner<DescriptorSet>, MAX_BATCH_COUNT> m_instancesDataDescriptorSets; // 1 buffer per batch
-            ResourceUniqueOwner<DescriptorSet> m_cullingDescriptorSet;
+            ResourceUniqueOwner<Buffer> m_cullMeshletsDispatchCommandBuffer; // meshlets: 1 buffer per camera
+
+            std::array<ResourceUniqueOwner<Buffer>, MAX_BATCH_COUNT> m_instancesDataBuffers; // draw instances: 1 buffer per batch
+            std::array<ResourceUniqueOwner<DescriptorSet>, MAX_BATCH_COUNT> m_drawsDataDescriptorSets; // draw instances: 1 buffer per batch
+            ResourceUniqueOwner<Buffer> m_meshletsToCullBuffer; // meshlets: 1 buffer per camera
+            std::array<ResourceUniqueOwner<Buffer>, MAX_BATCH_COUNT> m_culledMeshletsBuffers; // meshlets: 1 buffer per batch
+
+            ResourceUniqueOwner<DescriptorSet> m_cullingInstancesDescriptorSet;
             ResourceUniqueOwner<DescriptorSet> m_cullingMeshletsDescriptorSet;
 
             ResourceNonOwner<Image> m_hzbImage;
@@ -295,6 +321,10 @@ namespace Wolf
         ResourceUniqueOwner<DescriptorSetLayout> m_copyInstancesDescriptorSetLayout;
         ResourceUniqueOwner<DescriptorSet> m_copyDescriptorSet;
 
+        ResourceUniqueOwner<Pipeline> m_cullMeshletsPipeline;
+        DescriptorSetLayoutGenerator m_cullMeshletsDescriptorSetLayoutGenerator;
+        ResourceUniqueOwner<DescriptorSetLayout> m_cullMeshletsDescriptorSetLayout;
+
         class PerBatchData
         {
         public:
@@ -357,9 +387,5 @@ namespace Wolf
         uint32_t m_totalTriangleRegisteredCount = 0; // multiplied by instance count
         uint32_t m_instanceRenderedCount = 0; // total instances rendered - including all batches and all cameras
         uint32_t m_triangleRenderedCount = 0; // total triangles rendered - including all batches and all cameras
-
-        ResourceUniqueOwner<Pipeline> m_cullMeshletsPipeline;
-        DescriptorSetLayoutGenerator m_cullMeshletsDescriptorSetLayoutGenerator;
-        ResourceUniqueOwner<DescriptorSetLayout> m_cullMeshletsDescriptorSetLayout;
     };
 }

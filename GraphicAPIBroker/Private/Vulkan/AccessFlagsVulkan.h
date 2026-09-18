@@ -26,6 +26,9 @@ namespace Wolf
 		case AccessFlagBits::TRANSFER_WRITE:
 			accessFlagBits2 = VK_ACCESS_2_TRANSFER_WRITE_BIT;
 			break;
+		case AccessFlagBits::INDIRECT_COMMAND_READ:
+			accessFlagBits2 = VK_ACCESS_2_INDIRECT_COMMAND_READ_BIT;
+			break;
 		default:
 			Debug::sendCriticalError("Unhandled access flag");
 		}

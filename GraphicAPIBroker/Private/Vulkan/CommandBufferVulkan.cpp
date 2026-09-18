@@ -29,6 +29,11 @@ uint32_t Wolf::CommandBufferVulkan::getDrawMeshTasksIndirectCommandStructureSize
 	return sizeof(VkDrawMeshTasksIndirectCommandEXT);
 }
 
+uint32_t Wolf::CommandBufferVulkan::getDispatchIndirectCommandStructureSize()
+{
+	return sizeof(VkDispatchIndirectCommand);
+}
+
 Wolf::CommandBufferVulkan::CommandBufferVulkan(QueueType queueType, bool isTransient, const std::string& name, bool preRecord) : m_name(name)
 {
 	m_commandBuffers.resize((isTransient || preRecord) ? 1 : g_configuration->getMaxCachedFrames());
@@ -389,6 +394,11 @@ void Wolf::CommandBufferVulkan::drawMeshTasksIndirect(const Buffer& buffer, uint
 void Wolf::CommandBufferVulkan::dispatch(uint32_t groupCountX, uint32_t groupCountY, uint32_t groupCountZ) const
 {
 	vkCmdDispatch(getCommandBuffer(), groupCountX, groupCountY, groupCountZ);
+}
+
+void Wolf::CommandBufferVulkan::dispatchIndirect(const Buffer& buffer, uint32_t bufferOffset) const
+{
+	vkCmdDispatchIndirect(getCommandBuffer(), static_cast<const BufferVulkan*>(&buffer)->getBuffer(), bufferOffset);
 }
 
 #if !defined(__ANDROID__) or __ANDROID_MIN_SDK_VERSION__ > 30

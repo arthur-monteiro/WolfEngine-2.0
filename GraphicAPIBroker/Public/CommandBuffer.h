@@ -34,6 +34,7 @@ namespace Wolf
 		static CommandBuffer* createCommandBuffer(QueueType queueType, bool isTransient, const std::string& name, bool preRecord = false /* use when a command buffer is not recorded every frame (but still submitted) */);
 		static uint32_t getDrawIndexedIndirectCommandStructureSize();
 		static uint32_t getDrawMeshTasksIndirectCommandStructureSize();
+		static uint32_t getDispatchIndirectCommandStructureSize();
 
 		virtual ~CommandBuffer() = default;
 
@@ -73,6 +74,7 @@ namespace Wolf
 		virtual void drawIndirectCount(const Buffer& buffer, uint32_t bufferOffset, const Buffer& countBuffer, uint32_t countBufferOffset, uint32_t maxDrawCount) const = 0;
 		virtual void drawMeshTasksIndirect(const Buffer& buffer, uint32_t bufferOffset) const = 0;
 		virtual void dispatch(uint32_t groupCountX, uint32_t groupCountY, uint32_t groupCountZ) const = 0;
+		virtual void dispatchIndirect(const Buffer& buffer, uint32_t bufferOffset) const = 0;
 #if !defined(__ANDROID__) or __ANDROID_MIN_SDK_VERSION__ > 30
 		virtual void traceRays(const ResourceReference<const ShaderBindingTable>& shaderBindingTable, const Extent3D& extent) const = 0;
 #endif
