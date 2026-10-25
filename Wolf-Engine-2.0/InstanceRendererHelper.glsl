@@ -38,8 +38,8 @@ struct MeshletInstanceData
     uint indexOffset;
 
     uint indexCount;
-    uint pad0;
-    uint pad1;
+    uint meshletIdx;
+    uint groupMeshletIdx;
     uint pad2;
 };
 layout(std430, binding = 1, set = @DESCRIPTOR_SLOT) restrict buffer MeshletInstancesBufferLayout

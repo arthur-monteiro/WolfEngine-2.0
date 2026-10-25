@@ -33,10 +33,11 @@ Wolf::Font::Font(const std::string& path, int ySize)
     std::wstring extendedChars = L"abcdefghijklmnopqrstuvwxyz"
                                  L"ABCDEFGHIJKLMNOPQRSTUVWXYZ"
                                  L"0123456789"
-                                 L"éèêëàâùûôîïçÉÈÊËÀÂÙÛÔÎÏÇ" // French
+                                 L"éèêëàâùûôîïçÉÈÊËÀÂÙÛÔÎÏÇ«»œ" // French
                                  L"áéíóúüñÁÉÍÓÚÜÑ¿¡"         // Spanish (unique: á, í, ó, ú, ñ, ¿, ¡)
                                  L"åäöÅÄÖ"                   // Swedish / Finnish (å, ä, ö)
                                  L"!\"#$%&'()*+,-./:;<=>?@[\\]^_`{|}~";
+
     for (wchar_t c : extendedChars)
     {
         if (FT_Load_Char(face, c, FT_LOAD_RENDER))

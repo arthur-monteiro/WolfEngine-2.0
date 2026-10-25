@@ -4,7 +4,9 @@
 #include <fstream>
 #include <sstream>
 #ifdef __ANDROID__
+#ifndef FINAL
 #include <shaderc/shaderc.hpp>
+#endif
 
 #include "AndroidCacheHelper.h"
 #endif
@@ -43,9 +45,21 @@ void Wolf::ShaderParser::ShaderCodeToAdd::addToGLSL(std::ofstream& outFileGLSL) 
 }
 
 Wolf::ShaderParser::ShaderParser(const std::string& filename, const std::vector<std::string>& conditionBlocksToInclude, uint32_t cameraDescriptorSlot, uint32_t materialsDescriptorSlot, uint32_t lightDescriptorSlot,
-                                 const MaterialFetchProcedure& materialFetchProcedure, const ShaderCodeToAdd& shaderCodeToAdd)
+    const MaterialFetchProcedure& materialFetchProcedure, const ShaderCodeToAdd& shaderCodeToAdd)
 {
     m_filename = filename;
+
+#ifdef FINAL
+    std::string parsedFilename, extensionFound;
+    computeCompiledFilename(parsedFilename, m_compileFilename, extensionFound);
+
+#ifdef __ANDROID__
+    const std::string appFolderName = "shader_cache";
+    std::string inputFilename = m_compileFilename;
+    copyCompressedFileToStorage(inputFilename, appFolderName, m_compileFilename);
+#endif
+
+#else
 #ifdef __ANDROID__
     const std::string appFolderName = "shader_cache";
     std::string inputFilename = m_filename;
@@ -70,8 +84,10 @@ Wolf::ShaderParser::ShaderParser(const std::string& filename, const std::vector<
     m_shaderCodeToAddHash = shaderCodeToAdd.computeHash();
 
     parseAndCompile();
+#endif
 }
 
+#ifndef FINAL
 bool Wolf::ShaderParser::compileIfFileHasBeenModified(const std::vector<std::string>& conditionBlocksToInclude)
 {
     bool needToRecompile = false;
@@ -106,6 +122,7 @@ bool Wolf::ShaderParser::compileIfFileHasBeenModified(const std::vector<std::str
     }
     return false;
 }
+#endif
 
 void Wolf::ShaderParser::readCompiledShader(std::vector<char>& shaderCode) const
 {
@@ -117,56 +134,68 @@ bool Wolf::ShaderParser::isSame(const std::string& filename, const std::vector<s
     return filename == m_filename && conditionBlocksToInclude == m_conditionBlocksToInclude && m_materialFetchProcedureHash == materialFetchProcedureHash && m_shaderCodeToAddHash == shaderCodeToAddHash;
 }
 
-void Wolf::ShaderParser::parseAndCompile()
+void Wolf::ShaderParser::computeCompiledFilename(std::string& outParsedFilename, std::string& outCompiledFilename, std::string& outExtensionFound)
 {
-    std::ifstream inFile(m_filename);
-
     std::vector<std::string> extensions = { ".vert", ".frag", ".comp", ".rgen", ".rmiss", ".rchit", ".tesc", ".tese", ".geom", ".task", ".mesh" };
+    outParsedFilename = m_filename;
 
-    std::string parsedFilename = m_filename;
-
-    std::string extensionFound;
     for (std::string& extension : extensions)
     {
-        size_t extensionPosInStr = parsedFilename.find(extension);
+        size_t extensionPosInStr = outParsedFilename.find(extension);
         if (extensionPosInStr != std::string::npos)
         {
-            extensionFound = extension;
-            parsedFilename.erase(extensionPosInStr, extension.size());
+            outExtensionFound = extension;
+            outParsedFilename.erase(extensionPosInStr, extension.size());
         }
     }
 
-    if (extensionFound.empty())
+    if (outExtensionFound.empty())
     {
         Debug::sendCriticalError("Extension not handle in shader " + m_filename);
     }
 
     for (const std::string& condition : m_conditionBlocksToInclude)
     {
-        parsedFilename += "_" + condition;
+        outParsedFilename += "_" + condition;
     }
 
     if (m_materialFetchProcedureHash != 0)
     {
-        parsedFilename += "_" + std::to_string(m_materialFetchProcedureHash);
+        outParsedFilename += "_" + std::to_string(m_materialFetchProcedureHash);
     }
 
     if (m_shaderCodeToAddHash != 0)
     {
-        parsedFilename += "_" + std::to_string(m_shaderCodeToAddHash);
+        outParsedFilename += "_" + std::to_string(m_shaderCodeToAddHash);
     }
 
     if (g_configuration->getUseVirtualTexture())
     {
-        parsedFilename += "_virtualTexture";
+        outParsedFilename += "_virtualTexture";
     }
 
-    std::string compiledFilename = parsedFilename;
-    parsedFilename += "Parsed" + extensionFound;
+    outCompiledFilename = outParsedFilename;
+    std::replace(outCompiledFilename.begin(), outCompiledFilename.end(), '/', '_');
+    outCompiledFilename = g_configuration->getCompiledShadersPath() + "/" + outCompiledFilename;
 
-    extensionFound.erase(0, 1);
-    extensionFound[0] = std::toupper(extensionFound[0]);
-    compiledFilename += extensionFound + ".spv";
+#ifndef FINAL
+    std::filesystem::create_directories(g_configuration->getCompiledShadersPath());
+#endif
+
+    outParsedFilename += "Parsed" + outExtensionFound;
+
+    outExtensionFound.erase(0, 1);
+    outExtensionFound[0] = std::toupper(outExtensionFound[0]);
+    outCompiledFilename += outExtensionFound + ".spv";
+}
+
+#ifndef FINAL
+void Wolf::ShaderParser::parseAndCompile()
+{
+    std::ifstream inFile(m_filename);
+
+    std::string parsedFilename, extensionFound;
+    computeCompiledFilename(parsedFilename, m_compileFilename, extensionFound);
 
     std::ofstream outFileGLSL(parsedFilename);
 
@@ -279,7 +308,7 @@ void Wolf::ShaderParser::parseAndCompile()
     std::string commandToCompile = compiler + " ";
     commandToCompile += parsedFilename;
     commandToCompile += " -o ";
-    commandToCompile += compiledFilename;
+    commandToCompile += m_compileFilename;
     commandToCompile += " --target-spv=spv1.4";
     if(g_configuration->getUseRenderDoc())
     {
@@ -311,7 +340,7 @@ void Wolf::ShaderParser::parseAndCompile()
     std::vector<char> parsedShaderCode;
     readFile(parsedShaderCode, parsedFilename);
     shaderc::SpvCompilationResult module = compiler.CompileGlslToSpv(parsedShaderCode.data(), parsedShaderCode.size(), shaderKind,
-                                                                     compiledFilename.c_str(), options);
+                                                                     m_compileFilename.c_str(), options);
 
     if (module.GetCompilationStatus() != shaderc_compilation_status_success)
     {
@@ -319,13 +348,12 @@ void Wolf::ShaderParser::parseAndCompile()
     }
 
     std::vector<uint32_t> compiledContent(module.cbegin(), module.cend());
-    std::fstream outCompiledFile(compiledFilename, std::ios::out | std::ios::binary);
+    std::fstream outCompiledFile(m_compileFilename, std::ios::out | std::ios::binary);
     outCompiledFile.write((char*)compiledContent.data(), compiledContent.size() * sizeof(uint32_t));
     outCompiledFile.close();
 #endif
-
-    m_compileFilename = compiledFilename;
 }
+#endif
 
 void Wolf::ShaderParser::readFile(std::vector<char>& output, const std::string& filename) const
 {

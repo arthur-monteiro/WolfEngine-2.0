@@ -56,7 +56,7 @@ struct OutMeshletInstanceData
 {
     uint instanceIdx;
     uint meshletIdx;
-    uint pad0;
+    uint meshIdx;
     uint pad1;
 };
 layout(std430, binding = 2) restrict buffer OutInstancesBufferLayout
@@ -127,7 +127,7 @@ layout(binding = 5, std140) uniform readonly UniformBufferLayout
 
 layout(binding = 6) uniform sampler2D HZBSampler;
 
-#ifdef MESH_STREAMING
+#if defined(MESH_STREAMING) && !defined(USE_MESHLET_HIERARCHY)
 const uint MAX_FEEDBACK_COUNT = 32;
 struct Feedback
 {
@@ -151,7 +151,7 @@ layout(std430, binding = 8) restrict buffer OutStreamingLatestFrameIdxLayout
 #endif
 
 layout(std430, binding =
-#ifdef MESH_STREAMING
+#if defined(MESH_STREAMING) && !defined(USE_MESHLET_HIERARCHY)
     9
 #else
     7
@@ -371,6 +371,7 @@ void main()
     {
         outInstancesDataBuffer.outInstancesMeshlets[outCommandIdx + meshletInternalIdx].instanceIdx = instanceIdx;
         outInstancesDataBuffer.outInstancesMeshlets[outCommandIdx + meshletInternalIdx].meshletIdx = meshInfo.meshletBaseIndex + meshletInternalIdx;
+        outInstancesDataBuffer.outInstancesMeshlets[outCommandIdx + meshletInternalIdx].meshIdx = cullingInstanceInfo.meshIdx;
     }
 
     atomicAdd(outDebugData.instanceCount, 1);

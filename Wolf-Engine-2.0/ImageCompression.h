@@ -71,7 +71,10 @@ namespace Wolf
             BC1,
             BC2,
             BC3,
-            BC5
+            BC5,
+            ASTC_4x4,
+            ASTC_6x6,
+            ASTC_8x8
         };
 
         struct RGBA8

@@ -58,6 +58,18 @@ namespace Wolf
 				return VK_FORMAT_D32_SFLOAT_S8_UINT;
 			case Format::D24_UNORM_S8_UINT:
 				return VK_FORMAT_D24_UNORM_S8_UINT;
+            case Format::ASTC_4x4_SRGB_BLOCK:
+                return VK_FORMAT_ASTC_4x4_SRGB_BLOCK;
+            case Format::ASTC_6x6_SRGB_BLOCK:
+                return VK_FORMAT_ASTC_6x6_SRGB_BLOCK;
+            case Format::ASTC_8x8_SRGB_BLOCK:
+                return VK_FORMAT_ASTC_8x8_SRGB_BLOCK;
+            case Format::ASTC_4x4_UNORM_BLOCK:
+                return VK_FORMAT_ASTC_4x4_UNORM_BLOCK;
+            case Format::ASTC_6x6_UNORM_BLOCK:
+                return VK_FORMAT_ASTC_6x6_UNORM_BLOCK;
+            case Format::ASTC_8x8_UNORM_BLOCK:
+                return VK_FORMAT_ASTC_8x8_UNORM_BLOCK;
 			case Format::UNDEFINED:
 			default:
 				return VK_FORMAT_UNDEFINED;

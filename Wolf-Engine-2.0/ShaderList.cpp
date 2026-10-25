@@ -19,6 +19,7 @@ const Wolf::ShaderParser* Wolf::ShaderList::addShader(const AddShaderInfo& addSh
 	return m_shadersInfo.back().getShaderParser();
 }
 
+#ifndef FINAL
 void Wolf::ShaderList::checkForModifiedShader() const
 {
 	PROFILE_FUNCTION
@@ -34,3 +35,4 @@ void Wolf::ShaderList::checkForModifiedShader() const
 		}
 	}
 }
+#endif

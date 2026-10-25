@@ -34,7 +34,14 @@ namespace Wolf
 		D16_UNORM,
 		D32_SFLOAT,
 		D32_SFLOAT_S8_UINT,
-		D24_UNORM_S8_UINT
+		D24_UNORM_S8_UINT,
+
+        ASTC_4x4_SRGB_BLOCK,
+        ASTC_4x4_UNORM_BLOCK,
+        ASTC_6x6_SRGB_BLOCK,
+        ASTC_6x6_UNORM_BLOCK,
+        ASTC_8x8_SRGB_BLOCK,
+        ASTC_8x8_UNORM_BLOCK
 	};
 
 	inline std::string formatToString(Format format)
@@ -82,6 +89,9 @@ namespace Wolf
 			case Format::R8G8B8A8_SRGB:
 			case Format::BC1_RGB_SRGB_BLOCK:
 			case Format::BC3_SRGB_BLOCK:
+            case Format::ASTC_4x4_SRGB_BLOCK:
+            case Format::ASTC_6x6_SRGB_BLOCK:
+            case Format::ASTC_8x8_SRGB_BLOCK:
 				return true;
 
 			case Format::UNDEFINED:

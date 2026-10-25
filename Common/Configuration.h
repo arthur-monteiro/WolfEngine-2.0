@@ -43,6 +43,8 @@ namespace Wolf
 		const std::string& getAndroidInternalPath() const { return m_androidInternalPath; }
 #endif
 
+        std::string getCompiledShadersPath() const;
+
 	private:
 		uint32_t m_windowWidth = 0;
 		uint32_t m_windowHeight = 0;

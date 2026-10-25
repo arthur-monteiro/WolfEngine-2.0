@@ -29,20 +29,24 @@ namespace Wolf
 		ShaderParser(const std::string& filename, const std::vector<std::string>& conditionBlocksToInclude = {}, uint32_t cameraDescriptorSlot = -1, uint32_t materialsDescriptorSlot = -1, uint32_t lightDescriptorSlot = -1, const MaterialFetchProcedure& materialFetchProcedure = MaterialFetchProcedure(),
 			const ShaderCodeToAdd& shaderCodesToAdd = ShaderCodeToAdd());
 
+#ifndef FINAL
 		bool compileIfFileHasBeenModified(const std::vector<std::string>& conditionBlocksToInclude = {});
+#endif
 		void readCompiledShader(std::vector<char>& shaderCode) const;
 
 		const std::vector<std::string>& getCurrentConditionsBlocks() const { return m_conditionBlocksToInclude; }
 		bool isSame(const std::string& filename, const std::vector<std::string>& conditionBlocksToInclude, uint64_t materialFetchProcedureHash, uint64_t shaderCodeToAddHash) const;
 
 	private:
+        void computeCompiledFilename(std::string& outParsedFilename, std::string& outCompiledFilename, std::string& outExtensionFound);
+#ifndef FINAL
 		void parseAndCompile();
+#endif
 		void readFile(std::vector<char>& output, const std::string& filename) const;
 		void addCameraCode(std::ofstream& outFileGLSL) const;
 		void addMaterialFetchCode(std::ofstream& outFileGLSL) const;
 		void addLightInfoCode(std::ofstream& outFileGLSL) const;
 
-	private:
 		std::string m_filename;
 		std::map<std::string, std::optional<std::filesystem::file_time_type>> m_filenamesWithLastModifiedTime;
 #ifdef __ANDROID__

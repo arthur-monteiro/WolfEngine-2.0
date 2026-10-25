@@ -26,7 +26,9 @@ namespace Wolf
 		};
 		const ShaderParser* addShader(const AddShaderInfo& addShaderInfo);
 
+#ifndef FINAL
 		void checkForModifiedShader() const;
+#endif
 
 	private:
 		class ShaderInfo

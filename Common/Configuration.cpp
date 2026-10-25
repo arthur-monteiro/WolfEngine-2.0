@@ -81,3 +81,12 @@ Wolf::Configuration::~Configuration()
 {
     g_configuration = nullptr;
 }
+
+std::string Wolf::Configuration::getCompiledShadersPath() const
+{
+    std::string rootPath = "compiled_shaders";
+#if defined(ANDROID) and !defined(FINAL)
+    rootPath = getAndroidInternalPath() + "/compiled_shaders";
+#endif
+    return rootPath;
+}

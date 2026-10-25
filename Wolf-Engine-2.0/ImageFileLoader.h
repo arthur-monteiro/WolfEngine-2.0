@@ -26,6 +26,7 @@ namespace Wolf
 
 	private:
 		void loadDDS(const std::string& fullFilePath);
+		void loadASTC(const std::string& fullFilePath);
 		bool loadCube(const std::string& fullFilePath);
 
 		unsigned char* m_pixels = nullptr;

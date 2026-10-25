@@ -270,7 +270,9 @@ void Wolf::WolfEngine::updateBeforeFrame()
 	
 	m_defaultMeshRenderer->moveToNextFrame();
 	m_instanceMeshRenderer->moveToNextFrame();
+#ifndef FINAL
 	m_shaderList.checkForModifiedShader();
+#endif
 
 	if (static_cast<bool>(m_materialsManager))
 	{

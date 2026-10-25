@@ -24,6 +24,19 @@ android {
         release {
             minifyEnabled = true
             proguardFiles getDefaultProguardFile('proguard-android.txt')
+
+            externalNativeBuild {
+                cmake {
+                    arguments "-DFINAL=ON"
+                }
+            }
+        }
+        debug {
+            externalNativeBuild {
+                cmake {
+                    arguments "-DFINAL=OFF"
+                }
+            }
         }
     }
     externalNativeBuild {

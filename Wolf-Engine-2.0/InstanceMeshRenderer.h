@@ -54,16 +54,27 @@ namespace Wolf
             {
                 NullableResourceNonOwner<MeshInterface> m_mesh;
                 BoundingSphere m_boundingSphere;
-                BoundingSphere m_groupBoundingSphere;
                 BoundingSphere m_parentGroupBoundingSphere;
+
+                uint32_t m_groupIdxAsParent;
+                uint32_t m_groupIdxAsChild;
 
                 int8_t m_coneAxis[3];
                 int8_t m_coneCutoff;
 
-                float m_lodError;
+                float m_lodError; // TODO: all meshlet in a same group have same lod error: move to meshlet group?
                 float m_parentLodError;
             };
             std::vector<Meshlet> m_meshlets;
+
+            struct MeshletGroup
+            {
+                BoundingSphere m_boundingSphere;
+                std::array<uint32_t, 4> m_childrenMeshletIndices;
+                std::array<uint32_t, 4> m_parentMeshletIndices;
+                uint32_t m_hierarchyLevel;
+            };
+            std::vector<MeshletGroup> m_meshletGroups;
 
             BoundingSphere m_boundingSphere;
             AABB m_AABB;
@@ -73,9 +84,10 @@ namespace Wolf
             MeshToRender(const ResourceNonOwner<const PipelineSet>& pipeline) : m_pipelineSet(pipeline) {}
         };
 
-        [[nodiscard]] uint32_t registerMesh(const MeshToRender& mesh);
+        [[nodiscard]] uint32_t registerMesh(const MeshToRender& mesh, uint32_t* outFirstMeshletIdx = nullptr);
         void registerLODData(uint32_t meshIdx, uint32_t lodIdx, const MeshToRender::LOD& lod);
         void unregisterLODData(uint32_t meshIdx, uint32_t lodIdx) const;
+        void registerMeshletData(uint32_t meshIdx, uint32_t globalMeshletIdx, const ResourceNonOwner<MeshInterface>& mesh);
         [[nodiscard]] uint32_t addInstance(uint32_t meshIdx, const glm::mat4& transform, uint32_t materialIdx, uint32_t customData, const ResourceNonOwner<const PipelineSet>& pipelineSet,
             const std::array<std::vector<DescriptorSetBindInfo>, PipelineSet::MAX_PIPELINE_COUNT>& perPipelineDescriptorSets);
         void removeInstance(uint32_t instanceIdx);
@@ -86,6 +98,11 @@ namespace Wolf
         };
         void overrideCullingInstances(const std::vector<OverrideInstance>& instances);
         void stopOverridingCullingInstances();
+
+        void debugDrawMeshletHierarchyLevel(uint32_t meshletHierarchyLevel) { m_debugDrawMeshletHierarchyLevel = meshletHierarchyLevel; }
+        void debugMeshletDrawGroupIdx(uint32_t meshletDrawGroupIdx) { m_debugMeshletDrawGroupIdx = meshletDrawGroupIdx; }
+        void debugMeshletOnlyDrawMeshletIdx(uint32_t onlyDrawMeshletIdx) { m_onlyDrawMeshletIdx = onlyDrawMeshletIdx; }
+        void debugMeshletUseParentGroup(bool value) { m_debugMeshletUseParentGroup = value; }
 
         void registerCameraInfo(uint32_t cameraIdx, const ResourceNonOwner<Image>& hzbImage);
         void releaseCameraInfo(uint32_t cameraIdx);
@@ -100,7 +117,7 @@ namespace Wolf
         struct Feedback
         {
             uint32_t m_meshIdx;
-            uint32_t m_lod;
+            uint32_t m_lodOrMeshletIdx;
         };
         void swapFeedbacks(std::vector<Feedback>& outFeedbacks);
         uint32_t getLastUsedFrameIdx(uint32_t meshIdx, uint32_t lodIdx) const;
@@ -114,6 +131,7 @@ namespace Wolf
         static constexpr uint32_t MAX_INSTANCE_COUNT = 32'768;
         static constexpr uint32_t MAX_MESH_COUNT = 4096;
         static constexpr uint32_t MAX_MESHLET_COUNT = MAX_MESH_COUNT * 128;
+        static constexpr uint32_t MAX_MESHLET_GROUP_COUNT = MAX_MESH_COUNT * 32;
         static constexpr uint32_t MAX_BATCH_COUNT = 32;
         static constexpr uint32_t MAX_FEEDBACK_COUNT = 32;
 
@@ -169,12 +187,28 @@ namespace Wolf
             float m_parentLodError;
             uint32_t m_coneAxisAndCutoff;
             uint32_t m_vertexCount;
-            uint32_t pad2;
+            uint32_t m_groupIdxAsParent;
 
             glm::vec4 m_boundingSphere;
-            glm::vec4 m_groupBoundingSphere;
             glm::vec4 m_parentGroupBoundingSphere;
+
+            uint32_t m_groupIdxAsChild;
+            uint32_t pd0;
+            uint32_t pd1;
+            uint32_t pd2;
         };
+
+        struct MeshletGroupInfo
+        {
+            glm::vec4 m_boundingSphere;
+
+            uint32_t m_childrenMeshletIndices[4];
+            uint32_t m_parentsMeshletIndices[4];
+
+            uint32_t m_hierarchyLevel;
+            glm::vec3 pad;
+        };
+
         struct MeshInfoMeshlets
         {
             uint32_t m_meshletBaseIndex;
@@ -192,6 +226,9 @@ namespace Wolf
 
         ResourceUniqueOwner<Buffer> m_meshletsInfoBuffer;
         uint32_t m_currentMeshletCount = 0;
+
+        ResourceUniqueOwner<Buffer> m_meshletGroupsInfoBuffer;
+        uint32_t m_currentMeshletGroupCount = 0;
 
         struct CullingUniformData
         {
@@ -213,7 +250,7 @@ namespace Wolf
         {
             uint32_t m_instanceIdx;
             uint32_t m_meshletIdx;
-            uint32_t m_pad0;
+            uint32_t m_meshIdx;
             uint32_t m_pad1;
         };
 
@@ -225,8 +262,8 @@ namespace Wolf
             uint32_t m_indexOffset;
 
             uint32_t m_indexCount;
-            uint32_t pad0;
-            uint32_t pad1;
+            uint32_t m_meshletIdx;
+            uint32_t m_groupMeshletIdx;
             uint32_t pad2;
         };
 
@@ -286,10 +323,14 @@ namespace Wolf
         ResourceUniqueOwner<ReadableBuffer> m_latestFrameIdxUsedPerLODReadableBuffer;
         std::vector<LastFrameIndexUsageMeshInfo> m_lastFrameIndexUsageMeshInfos;
 
+        ResourceUniqueOwner<Buffer> m_usedLoadedMeshletsBuffer;
+        ResourceUniqueOwner<ReadableBuffer> m_usedLoadedMeshletsReadableBuffer;
+
         struct ReadbackDebugData
         {
             uint32_t m_instanceCount;
             uint32_t m_primitiveCount;
+            uint32_t m_meshletPassingCullingCount;
         };
         ResourceUniqueOwner<Buffer> m_readbackDebugDataBuffer;
         ResourceUniqueOwner<ReadableBuffer> m_readbackDebugDataReadableBuffer;
@@ -309,6 +350,7 @@ namespace Wolf
         std::vector<MeshInfoLODs> m_meshesLODToAdd;
         std::vector<MeshInfoMeshlets> m_meshesMeshletsToAdd;
         std::vector<MeshletInfo> m_meshletsToAdd;
+        std::vector<MeshletGroupInfo> m_meshletsGroupsToAdd;
         std::vector<CullingInstanceInfo> m_instancesToAdd;
         std::vector<uint32_t> m_instancesToRemove;
 
@@ -378,9 +420,19 @@ namespace Wolf
         struct PushConstants
         {
             uint32_t m_cameraBatchMask;
+            uint32_t m_debugDrawMeshletHierarchyLevel;
+            uint32_t m_debugMeshletDrawGroupIdx;
+            uint32_t m_debugMeshletUseParentGroup;
+            uint32_t m_onlyDrawMeshletIdx;
         };
 
         std::mutex m_mutex;
+
+        // Debug
+        uint32_t m_debugDrawMeshletHierarchyLevel = -1;
+        uint32_t m_debugMeshletDrawGroupIdx = -1;
+        bool m_debugMeshletUseParentGroup = false;
+        uint32_t m_onlyDrawMeshletIdx = -1;
 
         // Stats
         uint32_t m_uniqueTriangleRegisteredCount = 0; // LOD 0 triangles registered

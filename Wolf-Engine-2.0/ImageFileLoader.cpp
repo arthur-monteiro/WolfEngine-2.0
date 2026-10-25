@@ -27,6 +27,10 @@ Wolf::ImageFileLoader::ImageFileLoader(const std::string& fullFilePath, bool loa
 	{
 		loadDDS(filename);
 	}
+    else if(fileExtension == "astc")
+    {
+        loadASTC(filename);
+    }
 	else if (fileExtension == "cube")
 	{
 		loadCube(filename);
@@ -370,6 +374,79 @@ void Wolf::ImageFileLoader::loadDDS(const std::string& fullFilePath)
 
         currentPosInFile += static_cast<uint32_t>(sizeInBytes);
     }
+}
+
+void Wolf::ImageFileLoader::loadASTC(const std::string& fullFilePath)
+{
+    std::ifstream infile;
+    infile.open(fullFilePath, std::ios::in | std::ios::binary);
+
+    if (!infile.is_open())
+    {
+        Debug::sendError("Loading ASTC image " + fullFilePath);
+        return;
+    }
+
+    // Reference: https://github.com/ARM-software/astc-encoder/blob/main/Docs/FileFormat.md
+    struct ASTCHeader
+    {
+        uint8_t magic[4];
+        uint8_t block_x;
+        uint8_t block_y;
+        uint8_t block_z;
+        uint8_t dim_x[3];
+        uint8_t dim_y[3];
+        uint8_t dim_z[3];
+    };
+
+    ASTCHeader header{};
+    infile.read(reinterpret_cast<char*>(&header), sizeof(ASTCHeader));
+
+    if (header.magic[0] != 0x13 || header.magic[1] != 0xAB ||
+        header.magic[2] != 0xA1 || header.magic[3] != 0x5C)
+    {
+        Debug::sendError("Invalid ASTC magic number in " + fullFilePath);
+        return;
+    }
+    m_width  = static_cast<uint32_t>(header.dim_x[0]) |
+               (static_cast<uint32_t>(header.dim_x[1]) << 8) |
+               (static_cast<uint32_t>(header.dim_x[2]) << 16);
+
+    m_height = static_cast<uint32_t>(header.dim_y[0]) |
+               (static_cast<uint32_t>(header.dim_y[1]) << 8) |
+               (static_cast<uint32_t>(header.dim_y[2]) << 16);
+
+    uint32_t blockX = header.block_x;
+    uint32_t blockY = header.block_y;
+
+    if (blockX == 4 && blockY == 4)
+    {
+        m_compression = ImageCompression::Compression::ASTC_4x4;
+        m_format = Format::ASTC_6x6_UNORM_BLOCK;
+    }
+    else if (blockX == 6 && blockY == 6)
+    {
+        m_compression = ImageCompression::Compression::ASTC_6x6;
+        m_format = Format::ASTC_6x6_UNORM_BLOCK;
+    }
+    else if (blockX == 8 && blockY == 8)
+    {
+        m_compression = ImageCompression::Compression::ASTC_8x8;
+        m_format = Format::ASTC_6x6_UNORM_BLOCK;
+    }
+    else
+    {
+        Debug::sendError("Unsupported ASTC block size (" + std::to_string(blockX) + "x" + std::to_string(blockY) + ") in " + fullFilePath);
+        return;
+    }
+
+    // ASTC always uses 16 bytes per compressed block regardless of footprint size
+    uint32_t numBlocksX = (m_width + blockX - 1) / blockX;
+    uint32_t numBlocksY = (m_height + blockY - 1) / blockY;
+    size_t sizeInBytes = static_cast<size_t>(numBlocksX) * static_cast<size_t>(numBlocksY) * 16;
+
+    m_pixels = new unsigned char[sizeInBytes];
+    infile.read(reinterpret_cast<char*>(m_pixels), static_cast<long long>(sizeInBytes));
 }
 
 bool isFloat(std::string str)

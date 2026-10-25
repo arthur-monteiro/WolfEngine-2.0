@@ -36,12 +36,12 @@ Wolf::InstanceMeshRenderer::InstanceMeshRenderer(ShaderList& shaderList, const R
     }
     m_cullInstancesDescriptorSetLayoutGenerator.addUniformBuffer(ShaderStageFlagBits::COMPUTE, 5); // uniform buffer
     m_cullInstancesDescriptorSetLayoutGenerator.addCombinedImageSampler(ShaderStageFlagBits::COMPUTE, 6); // HZB
-    if (g_configuration->getUseMeshStreaming())
+    if (g_configuration->getUseMeshStreaming() && !g_configuration->getUseMeshlets())
     {
         m_cullInstancesDescriptorSetLayoutGenerator.addStorageBuffer(ShaderStageFlagBits::COMPUTE, 7); // feedbacks buffer
         m_cullInstancesDescriptorSetLayoutGenerator.addStorageBuffer(ShaderStageFlagBits::COMPUTE, 8); // latest frame idx
     }
-    m_cullInstancesDescriptorSetLayoutGenerator.addStorageBuffer(ShaderStageFlagBits::COMPUTE, g_configuration->getUseMeshStreaming() ? 9 : 7); // debug buffer
+    m_cullInstancesDescriptorSetLayoutGenerator.addStorageBuffer(ShaderStageFlagBits::COMPUTE, (g_configuration->getUseMeshStreaming() && !g_configuration->getUseMeshlets()) ? 9 : 7); // debug buffer
     m_cullInstancesDescriptorSetLayout.reset(DescriptorSetLayout::createDescriptorSetLayout(m_cullInstancesDescriptorSetLayoutGenerator.getDescriptorLayouts()));
 
     if (g_configuration->getUseMeshlets())
@@ -49,11 +49,18 @@ Wolf::InstanceMeshRenderer::InstanceMeshRenderer(ShaderList& shaderList, const R
         m_cullMeshletsDescriptorSetLayoutGenerator.addStorageBuffer(ShaderStageFlagBits::COMPUTE, 0); // cullingInstancesInfo
         m_cullMeshletsDescriptorSetLayoutGenerator.addStorageBuffers(ShaderStageFlagBits::COMPUTE, 1, MAX_BATCH_COUNT); // out meshlet data
         m_cullMeshletsDescriptorSetLayoutGenerator.addStorageBuffer(ShaderStageFlagBits::COMPUTE, 2); // in meshlet instance data
-        m_cullMeshletsDescriptorSetLayoutGenerator.addStorageBuffers(ShaderStageFlagBits::COMPUTE, 3, MAX_BATCH_COUNT); // outDrawCommands
-        m_cullMeshletsDescriptorSetLayoutGenerator.addCombinedImageSampler(ShaderStageFlagBits::COMPUTE, 4); // HZB
-        m_cullMeshletsDescriptorSetLayoutGenerator.addStorageBuffer(ShaderStageFlagBits::COMPUTE, 5); // meshletsInfo
-        m_cullMeshletsDescriptorSetLayoutGenerator.addStorageBuffer(ShaderStageFlagBits::COMPUTE, 6); // debug buffer
-        m_cullMeshletsDescriptorSetLayoutGenerator.addStorageBuffer(ShaderStageFlagBits::COMPUTE, 7); // meshlet count buffer
+        m_cullMeshletsDescriptorSetLayoutGenerator.addStorageBuffer(ShaderStageFlagBits::COMPUTE, 3); // meshesInfo
+        m_cullMeshletsDescriptorSetLayoutGenerator.addStorageBuffers(ShaderStageFlagBits::COMPUTE, 4, MAX_BATCH_COUNT); // outDrawCommands
+        m_cullMeshletsDescriptorSetLayoutGenerator.addCombinedImageSampler(ShaderStageFlagBits::COMPUTE, 5); // HZB
+        m_cullMeshletsDescriptorSetLayoutGenerator.addStorageBuffer(ShaderStageFlagBits::COMPUTE, 6); // meshletsInfo
+        m_cullMeshletsDescriptorSetLayoutGenerator.addStorageBuffer(ShaderStageFlagBits::COMPUTE, 7); // debug buffer
+        m_cullMeshletsDescriptorSetLayoutGenerator.addStorageBuffer(ShaderStageFlagBits::COMPUTE, 8); // meshlet count buffer
+        m_cullMeshletsDescriptorSetLayoutGenerator.addStorageBuffer(ShaderStageFlagBits::COMPUTE, 9); // meshlet groups info
+        if (g_configuration->getUseMeshStreaming())
+        {
+            m_cullMeshletsDescriptorSetLayoutGenerator.addStorageBuffer(ShaderStageFlagBits::COMPUTE, 10); // feedbacks buffer
+            m_cullMeshletsDescriptorSetLayoutGenerator.addStorageBuffer(ShaderStageFlagBits::COMPUTE, 11); // used loaded meshlets
+        }
         m_cullMeshletsDescriptorSetLayout.reset(DescriptorSetLayout::createDescriptorSetLayout(m_cullMeshletsDescriptorSetLayoutGenerator.getDescriptorLayouts()));
     }
 
@@ -117,6 +124,11 @@ Wolf::InstanceMeshRenderer::InstanceMeshRenderer(ShaderList& shaderList, const R
 #endif
             {
             std::ofstream outputFile(cacheFilename);
+
+            if (g_configuration->getUseMeshStreaming())
+            {
+                outputFile << "#define MESH_STREAMING\n";
+            }
 
             outputFile <<
                 #include "InstanceRendererCullingMeshlets.comp"
@@ -195,6 +207,10 @@ Wolf::InstanceMeshRenderer::InstanceMeshRenderer(ShaderList& shaderList, const R
     {
         m_meshletsInfoBuffer.reset(Buffer::createBuffer(MAX_MESHLET_COUNT * sizeof(MeshletInfo), VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT));
         m_meshletsInfoBuffer->setName("Meshlets info (InstanceMeshRenderer::m_meshletsInfoBuffer)");
+        m_meshletsInfoBuffer->registerUsageCallback([this]() { return static_cast<float>(m_currentMeshletCount) / static_cast<float>(MAX_MESHLET_COUNT); });
+
+        m_meshletGroupsInfoBuffer.reset(Buffer::createBuffer(MAX_MESHLET_GROUP_COUNT * sizeof(MeshletGroupInfo), VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT));
+        m_meshletGroupsInfoBuffer->setName("Meshlet groups info (InstanceMeshRenderer::m_meshletGroupsInfoBuffer)");
     }
 
     m_cullingUniformsBuffer.reset(new UniformBuffer(sizeof(CullingUniformData)));
@@ -221,12 +237,23 @@ Wolf::InstanceMeshRenderer::InstanceMeshRenderer(ShaderList& shaderList, const R
         m_feedbackBuffer->setName("Feedbacks (InstanceMeshRenderer::m_feedbackBuffer)");
         m_feedbackReadableBuffer.reset(new ReadableBuffer(m_feedbackBuffer->getSize(), VK_BUFFER_USAGE_STORAGE_BUFFER_BIT));
 
-        m_latestFrameIdxUsedPerLODBuffer.reset(Buffer::createBuffer(MAX_MESH_COUNT * sizeof(LastFrameIndexUsageMeshInfo), VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT
-            | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT));
-        m_latestFrameIdxUsedPerLODBuffer->setName("Latest frame idx used per LOD (InstanceMeshRenderer::m_latestFrameIdxUsedPerLODBuffer)");
-        m_latestFrameIdxUsedPerLODReadableBuffer.reset(new ReadableBuffer(m_latestFrameIdxUsedPerLODBuffer->getSize(), 0));
+        if (g_configuration->getUseMeshlets())
+        {
+            m_usedLoadedMeshletsBuffer.reset(Buffer::createBuffer(1024 * sizeof(uint32_t), VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT
+               | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT));
+            m_usedLoadedMeshletsBuffer->setName("Used loaded meshlets buffer (InstanceMeshRenderer::m_usedLoadedMeshletsBuffer)");
+            m_usedLoadedMeshletsReadableBuffer.reset(new ReadableBuffer(m_usedLoadedMeshletsBuffer->getSize(), 0));
+        }
+        else
+        {
+            m_latestFrameIdxUsedPerLODBuffer.reset(Buffer::createBuffer(MAX_MESH_COUNT * sizeof(LastFrameIndexUsageMeshInfo), VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT
+                | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT));
+            m_latestFrameIdxUsedPerLODBuffer->setName("Latest frame idx used per LOD (InstanceMeshRenderer::m_latestFrameIdxUsedPerLODBuffer)");
+            m_latestFrameIdxUsedPerLODReadableBuffer.reset(new ReadableBuffer(m_latestFrameIdxUsedPerLODBuffer->getSize(), 0));
 
-        m_lastFrameIndexUsageMeshInfos.resize(MAX_MESH_COUNT);
+            m_lastFrameIndexUsageMeshInfos.resize(MAX_MESH_COUNT);
+        }
+
     }
 
     CreateImageInfo createImageInfo{};
@@ -248,10 +275,12 @@ void Wolf::InstanceMeshRenderer::moveToNextFrame()
     std::vector<MeshInfoLODs> meshesLODToAdd;
     std::vector<MeshInfoMeshlets> meshesMeshletsToAdd;
     std::vector<MeshletInfo> meshletsToAdd;
+    std::vector<MeshletGroupInfo> meshletGroupsToAdd;
     std::vector<uint32_t> rootMeshletsToAdd;
 
     uint32_t meshCountBeforeAdd = m_currentMeshCount;
     uint32_t meshletCountBeforeAdd = m_currentMeshletCount;
+    uint32_t meshletGroupCountBeforeAdd = m_currentMeshletGroupCount;
 
     if (g_configuration->getUseMeshlets())
     {
@@ -260,6 +289,9 @@ void Wolf::InstanceMeshRenderer::moveToNextFrame()
 
         m_meshletsToAdd.swap(meshletsToAdd);
         m_currentMeshletCount += meshletsToAdd.size();
+
+        m_meshletsGroupsToAdd.swap(meshletGroupsToAdd);
+        m_currentMeshletGroupCount += meshletGroupsToAdd.size();
     }
     else
     {
@@ -292,6 +324,12 @@ void Wolf::InstanceMeshRenderer::moveToNextFrame()
         {
             m_gpuDataTransfersManager->pushDataToGPUBuffer(meshletsToAdd.data(), meshletsToAdd.size() * sizeof(meshletsToAdd[0]), m_meshletsInfoBuffer.createNonOwnerResource(),
                 meshletCountBeforeAdd * sizeof(meshletsToAdd[0]));
+        }
+
+        if (!meshletGroupsToAdd.empty())
+        {
+            m_gpuDataTransfersManager->pushDataToGPUBuffer(meshletGroupsToAdd.data(), meshletGroupsToAdd.size() * sizeof(meshletGroupsToAdd[0]), m_meshletGroupsInfoBuffer.createNonOwnerResource(),
+                meshletGroupCountBeforeAdd * sizeof(meshletGroupsToAdd[0]));
         }
     }
     else
@@ -333,11 +371,17 @@ void Wolf::InstanceMeshRenderer::moveToNextFrame()
     if (g_configuration->getUseMeshStreaming())
     {
         readFeedbackBuffer();
-        readLastFrameIndicesBuffer();
+        if (!g_configuration->getUseMeshlets())
+        {
+            readLastFrameIndicesBuffer();
+        }
 
         m_gpuDataTransfersManager->requestGPUBufferReadbackRecord(m_feedbackBuffer.createNonOwnerResource(), 0, m_feedbackReadableBuffer.createNonOwnerResource(), m_feedbackBuffer->getSize());
-        m_gpuDataTransfersManager->requestGPUBufferReadbackRecord(m_latestFrameIdxUsedPerLODBuffer.createNonOwnerResource(), 0, m_latestFrameIdxUsedPerLODReadableBuffer.createNonOwnerResource(),
-            m_latestFrameIdxUsedPerLODBuffer->getSize());
+        if (!g_configuration->getUseMeshlets())
+        {
+            m_gpuDataTransfersManager->requestGPUBufferReadbackRecord(m_latestFrameIdxUsedPerLODBuffer.createNonOwnerResource(), 0, m_latestFrameIdxUsedPerLODReadableBuffer.createNonOwnerResource(),
+                m_latestFrameIdxUsedPerLODBuffer->getSize());
+        }
     }
 
     if (m_uniqueTriangleRegisteredCount > 0 || g_configuration->getUseMeshlets()) // TODO: little hack here with 'getUseMeshletHierarchy'
@@ -474,6 +518,10 @@ void Wolf::InstanceMeshRenderer::record(const RecordContext& context)
 
             PushConstants pcData{};
             pcData.m_cameraBatchMask = activeCamera.m_batchesMask;
+            pcData.m_debugDrawMeshletHierarchyLevel = m_debugDrawMeshletHierarchyLevel;
+            pcData.m_debugMeshletDrawGroupIdx = m_debugMeshletDrawGroupIdx;
+            pcData.m_debugMeshletUseParentGroup = m_debugMeshletUseParentGroup ? 1 : 0;
+            pcData.m_onlyDrawMeshletIdx = m_onlyDrawMeshletIdx;
             m_commandBuffer->pushConstants(m_cullInstancesPipeline.createConstNonOwnerResource(), ShaderStageFlagBits::COMPUTE, 0, sizeof(PushConstants), &pcData);
 
             constexpr Extent3D dispatchGroups = { 64, 1, 1 };
@@ -503,6 +551,10 @@ void Wolf::InstanceMeshRenderer::record(const RecordContext& context)
 
                 pcData = {};
                 pcData.m_cameraBatchMask = activeCamera.m_batchesMask;
+                pcData.m_debugDrawMeshletHierarchyLevel = m_debugDrawMeshletHierarchyLevel;
+                pcData.m_debugMeshletDrawGroupIdx = m_debugMeshletDrawGroupIdx;
+                pcData.m_debugMeshletUseParentGroup = m_debugMeshletUseParentGroup ? 1 : 0;
+                pcData.m_onlyDrawMeshletIdx = m_onlyDrawMeshletIdx;
                 m_commandBuffer->pushConstants(m_cullMeshletsPipeline.createConstNonOwnerResource(), ShaderStageFlagBits::COMPUTE, 0, sizeof(PushConstants), &pcData);
 
                 m_commandBuffer->dispatchIndirect(*m_cullingCamerasData[activeCamera.m_cameraIdx]->m_cullMeshletsDispatchCommandBuffer, 0);
@@ -545,7 +597,7 @@ void Wolf::InstanceMeshRenderer::submit(const SubmitContext& context)
     m_commandBuffer->submit(waitSemaphores, signalSemaphores, nullptr);
 }
 
-uint32_t Wolf::InstanceMeshRenderer::registerMesh(const MeshToRender& mesh)
+uint32_t Wolf::InstanceMeshRenderer::registerMesh(const MeshToRender& mesh, uint32_t* outFirstMeshletIdx)
 {
     uint32_t meshIdx = -1;
 
@@ -565,6 +617,14 @@ uint32_t Wolf::InstanceMeshRenderer::registerMesh(const MeshToRender& mesh)
         meshInfo.m_meshletCount = mesh.m_meshlets.size();
 
         uint64_t bufferSetHash = 0;
+        NullableResourceNonOwner<Buffer> validVertexBuffer;
+        NullableResourceNonOwner<Buffer> validIndexBuffer;
+
+        if (outFirstMeshletIdx != nullptr)
+        {
+            *outFirstMeshletIdx = m_meshletsToAdd.size() + m_currentMeshletCount;
+        }
+
         for (uint32_t meshletIdx = 0; meshletIdx < mesh.m_meshlets.size(); meshletIdx++)
         {
             const NullableResourceNonOwner<MeshInterface>& meshletMesh = mesh.m_meshlets[meshletIdx].m_mesh;
@@ -573,7 +633,8 @@ uint32_t Wolf::InstanceMeshRenderer::registerMesh(const MeshToRender& mesh)
             meshletInfo.m_lodError = mesh.m_meshlets[meshletIdx].m_lodError;
             meshletInfo.m_parentLodError = mesh.m_meshlets[meshletIdx].m_parentLodError;
             meshletInfo.m_boundingSphere = glm::vec4(mesh.m_meshlets[meshletIdx].m_boundingSphere.getCenter(), mesh.m_meshlets[meshletIdx].m_boundingSphere.getRadius());
-            meshletInfo.m_groupBoundingSphere = glm::vec4(mesh.m_meshlets[meshletIdx].m_groupBoundingSphere.getCenter(), mesh.m_meshlets[meshletIdx].m_groupBoundingSphere.getRadius());
+            meshletInfo.m_groupIdxAsParent = mesh.m_meshlets[meshletIdx].m_groupIdxAsParent == -1 ? -1 : mesh.m_meshlets[meshletIdx].m_groupIdxAsParent + m_meshletsGroupsToAdd.size() + m_currentMeshletGroupCount;
+            meshletInfo.m_groupIdxAsChild = mesh.m_meshlets[meshletIdx].m_groupIdxAsChild == -1 ? -1 : mesh.m_meshlets[meshletIdx].m_groupIdxAsChild + m_meshletsGroupsToAdd.size() + m_currentMeshletGroupCount;
             meshletInfo.m_parentGroupBoundingSphere = glm::vec4(mesh.m_meshlets[meshletIdx].m_parentGroupBoundingSphere.getCenter(), mesh.m_meshlets[meshletIdx].m_parentGroupBoundingSphere.getRadius());
             meshletInfo.m_coneAxisAndCutoff = 0;
             meshletInfo.m_coneAxisAndCutoff |= static_cast<uint8_t>(mesh.m_meshlets[meshletIdx].m_coneAxis[0]) << 0;
@@ -583,6 +644,9 @@ uint32_t Wolf::InstanceMeshRenderer::registerMesh(const MeshToRender& mesh)
 
             if (meshletMesh)
             {
+                validVertexBuffer = meshletMesh->getVertexBuffer();
+                validIndexBuffer = meshletMesh->getIndexBuffer();
+
                 meshletInfo.m_indexCount = meshletMesh->getIndexCount();
                 meshletInfo.m_vertexOffset = meshletMesh->getVertexBufferOffset() / std::max(meshletMesh->getVertexSize(), 1u);
                 meshletInfo.m_vertexCount = meshletMesh->getVertexCount();
@@ -599,19 +663,36 @@ uint32_t Wolf::InstanceMeshRenderer::registerMesh(const MeshToRender& mesh)
             }
             else
             {
-                Debug::sendCriticalError("Not supported yet");
+                meshletInfo.m_vertexOffset = -1;
             }
+        }
+
+        for (uint32_t meshletGroupIdx = 0; meshletGroupIdx < mesh.m_meshletGroups.size(); meshletGroupIdx++)
+        {
+            MeshletGroupInfo& meshletGroupInfo = m_meshletsGroupsToAdd.emplace_back();
+
+            meshletGroupInfo.m_boundingSphere = glm::vec4(mesh.m_meshletGroups[meshletGroupIdx].m_boundingSphere.getCenter(), mesh.m_meshletGroups[meshletGroupIdx].m_boundingSphere.getRadius());
+            for (uint32_t i = 0; i < mesh.m_meshletGroups[meshletGroupIdx].m_childrenMeshletIndices.size(); i++)
+            {
+                meshletGroupInfo.m_childrenMeshletIndices[i] = mesh.m_meshletGroups[meshletGroupIdx].m_childrenMeshletIndices[i];
+            }
+            meshletGroupInfo.m_hierarchyLevel = mesh.m_meshletGroups[meshletGroupIdx].m_hierarchyLevel;
         }
 
         meshInfo.m_boundingSphere = glm::vec4(mesh.m_boundingSphere.getCenter(), mesh.m_boundingSphere.getRadius());
         meshInfo.m_aabbMin = glm::vec4(mesh.m_AABB.getMin(), 1.0f);
         meshInfo.m_aabbMax = glm::vec4(mesh.m_AABB.getMax(), 1.0f);
 
+        if (validVertexBuffer == nullptr)
+        {
+            Debug::sendCriticalError("No meshlet has valid mesh");
+        }
+
         MeshCacheData& meshCacheData = m_meshesCacheData.emplace_back();
         meshCacheData.m_bufferSetHash = bufferSetHash;
-        meshCacheData.m_vertexBuffer = mesh.m_meshlets[0].m_mesh->getVertexBuffer();
-        meshCacheData.m_indexBuffer = mesh.m_meshlets[0].m_mesh->getIndexBuffer();
-        meshCacheData.m_indexCount = mesh.m_meshlets[0].m_mesh->getIndexCount();
+        meshCacheData.m_vertexBuffer = validVertexBuffer;
+        meshCacheData.m_indexBuffer = validIndexBuffer;
+        meshCacheData.m_indexCount = 0; //mesh.m_meshlets[0].m_mesh->getIndexCount();
         if (meshIdx != m_meshesCacheData.size() - 1)
         {
             Debug::sendCriticalError("Missmatch between GPU scene description and CPU cache data");
@@ -724,8 +805,30 @@ void Wolf::InstanceMeshRenderer::unregisterLODData(uint32_t meshIdx, uint32_t lo
         meshIdx * sizeof(MeshInfoLODs) + offsetof(MeshInfoLODs, m_lods) + lodIdx * sizeof(LODInfo) + offsetof(LODInfo, m_vertexOffset));
 }
 
+void Wolf::InstanceMeshRenderer::registerMeshletData(uint32_t meshIdx, uint32_t globalMeshletIdx, const ResourceNonOwner<MeshInterface>& mesh)
+{
+    const MeshCacheData& meshCacheData = m_meshesCacheData[meshIdx];
+    uint64_t bufferSetHash = computeHash(mesh);
+    if (meshCacheData.m_bufferSetHash != bufferSetHash)
+    {
+        Debug::sendCriticalError("Missmatch between buffer set hashes");
+    }
+
+    MeshletInfo meshletInfo{};
+    meshletInfo.m_indexCount = mesh->getIndexCount();
+    meshletInfo.m_vertexOffset = mesh->getVertexBufferOffset() / std::max(mesh->getVertexSize(), 1u);
+    meshletInfo.m_indexOffset = mesh->getIndexBufferOffset() / std::max(mesh->getIndexSize(), 1u);
+    meshletInfo.m_vertexCount = mesh->getVertexCount();
+
+    m_gpuDataTransfersManager->pushDataToGPUBuffer(&meshletInfo, 3 * sizeof(float) /* only push meshlet.m_mesh info */, m_meshletsInfoBuffer.createNonOwnerResource(),
+        globalMeshletIdx * sizeof(MeshletInfo));
+
+    m_gpuDataTransfersManager->pushDataToGPUBuffer(&meshletInfo.m_vertexCount, sizeof(float) /* only push meshlet.m_mesh info */, m_meshletsInfoBuffer.createNonOwnerResource(),
+        globalMeshletIdx * sizeof(MeshletInfo) + offsetof(MeshletInfo, m_vertexCount));
+}
+
 uint32_t Wolf::InstanceMeshRenderer::addInstance(uint32_t meshIdx, const glm::mat4& transform, uint32_t materialIdx, uint32_t customData, const ResourceNonOwner<const PipelineSet>& pipelineSet,
-    const std::array<std::vector<DescriptorSetBindInfo>, PipelineSet::MAX_PIPELINE_COUNT>& perPipelineDescriptorSets)
+                                                 const std::array<std::vector<DescriptorSetBindInfo>, PipelineSet::MAX_PIPELINE_COUNT>& perPipelineDescriptorSets)
 {
     m_mutex.lock();
 
@@ -1181,13 +1284,13 @@ void Wolf::InstanceMeshRenderer::initResourcesForBatch(uint32_t batchIdx)
 
                 descriptorSetGenerator.setCombinedImageSampler(6, ImageLayout::GENERAL, perCullingCamera->m_hzbImage->getDefaultImageView(), *perCullingCamera->m_HZBSampler);
 
-                if (g_configuration->getUseMeshStreaming())
+                if (g_configuration->getUseMeshStreaming() && !g_configuration->getUseMeshlets())
                 {
                     descriptorSetGenerator.setBuffer(7, *m_feedbackBuffer);
                     descriptorSetGenerator.setBuffer(8, *m_latestFrameIdxUsedPerLODBuffer);
                 }
 
-                descriptorSetGenerator.setBuffer(g_configuration->getUseMeshStreaming() ? 9 : 7, *m_readbackDebugDataBuffer);
+                descriptorSetGenerator.setBuffer((g_configuration->getUseMeshStreaming() && !g_configuration->getUseMeshlets()) ? 9 : 7, *m_readbackDebugDataBuffer);
 
                 perCullingCamera->m_cullingInstancesDescriptorSet.reset(DescriptorSet::createDescriptorSet(*m_cullInstancesDescriptorSetLayout));
                 perCullingCamera->m_cullingInstancesDescriptorSet->update(descriptorSetGenerator.getDescriptorSetCreateInfo());
@@ -1208,6 +1311,7 @@ void Wolf::InstanceMeshRenderer::initResourcesForBatch(uint32_t batchIdx)
                 descriptorSetGenerator.setBuffers(1, culledMeshletBuffers);
 
                 descriptorSetGenerator.setBuffer(2, *perCullingCamera->m_meshletsToCullBuffer);
+                descriptorSetGenerator.setBuffer(3, *m_meshesInfoBuffer);
 
                 std::vector<ResourceNonOwner<Buffer>> drawCommandsBuffers;
                 uint32_t drawStructureSize = CommandBuffer::getDrawMeshTasksIndirectCommandStructureSize();
@@ -1218,14 +1322,22 @@ void Wolf::InstanceMeshRenderer::initResourcesForBatch(uint32_t batchIdx)
                     perCullingCamera->m_drawCommandsBuffers[i]->setName("Draw commands for camera " + std::to_string(cameraIdx) + " and batch " + std::to_string(i) + " (InstanceMeshRenderer::PerCullingCamera::m_drawCommandsBuffers[" + std::to_string(i) + "])");
                     drawCommandsBuffers.push_back(perCullingCamera->m_drawCommandsBuffers[i].createNonOwnerResource());
                 }
-                descriptorSetGenerator.setBuffers(3, drawCommandsBuffers);
+                descriptorSetGenerator.setBuffers(4, drawCommandsBuffers);
 
-                descriptorSetGenerator.setCombinedImageSampler(4, ImageLayout::GENERAL, perCullingCamera->m_hzbImage->getDefaultImageView(), *perCullingCamera->m_HZBSampler);
-                descriptorSetGenerator.setBuffer(5, *m_meshletsInfoBuffer);
+                descriptorSetGenerator.setCombinedImageSampler(5, ImageLayout::GENERAL, perCullingCamera->m_hzbImage->getDefaultImageView(), *perCullingCamera->m_HZBSampler);
+                descriptorSetGenerator.setBuffer(6, *m_meshletsInfoBuffer);
 
-                descriptorSetGenerator.setBuffer(6, *m_readbackDebugDataBuffer);
+                descriptorSetGenerator.setBuffer(7, *m_readbackDebugDataBuffer);
 
-                descriptorSetGenerator.setBuffer(7, *perCullingCamera->m_visibleMeshletCountBuffer);
+                descriptorSetGenerator.setBuffer(8, *perCullingCamera->m_visibleMeshletCountBuffer);
+
+                descriptorSetGenerator.setBuffer(9, *m_meshletGroupsInfoBuffer);
+
+                if (g_configuration->getUseMeshStreaming())
+                {
+                    descriptorSetGenerator.setBuffer(10, *m_feedbackBuffer);
+                    descriptorSetGenerator.setBuffer(11, *m_usedLoadedMeshletsBuffer);
+                }
 
                 perCullingCamera->m_cullingMeshletsDescriptorSet.reset(DescriptorSet::createDescriptorSet(*m_cullMeshletsDescriptorSetLayout));
                 perCullingCamera->m_cullingMeshletsDescriptorSet->update(descriptorSetGenerator.getDescriptorSetCreateInfo());

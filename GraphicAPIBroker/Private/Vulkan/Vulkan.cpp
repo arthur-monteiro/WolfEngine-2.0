@@ -62,16 +62,18 @@ Wolf::Vulkan::Vulkan(GLFWwindow* glfwWindowPtr, bool useOVR)
 	const bool useVIL = g_configuration->getUseVIL();
 	const bool useDebugMarkers = g_configuration->getEnableGPUDebugMarkers();
 
-//#ifndef NDEBUG
+#ifndef FINAL
 	if(useVIL)
 		m_validationLayers = { "VK_LAYER_live_introspection" };
 
 	m_validationLayers.push_back("VK_LAYER_KHRONOS_validation");
-
-//#endif
+#endif
 	createInstance();
 
+#ifndef FINAL
 	setupDebugMessenger();
+#endif
+
 #ifndef __ANDROID__
 	VkResult res = glfwCreateWindowSurface(m_instance, glfwWindowPtr, nullptr, &m_surface);
 	if (res != VK_SUCCESS)
@@ -183,9 +185,9 @@ std::vector<const char*> getRequiredExtensions()
 		extensions.push_back(VK_EXT_SWAPCHAIN_COLOR_SPACE_EXTENSION_NAME);
 	}
 
-//#ifndef NDEBUG
+#ifndef FINAL
 	extensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
-//#endif
+#endif
 
 	return extensions;
 }

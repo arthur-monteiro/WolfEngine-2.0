@@ -24,8 +24,8 @@ struct OutMeshletData
     uint indexOffset;
 
     uint indexCount;
-    uint pad0;
-    uint pad1;
+    uint meshletIdx;
+    uint groupMeshletIdx;
     uint pad2;
 };
 layout(std430, binding = 1) restrict buffer OutInstancesBufferLayout
@@ -37,13 +37,29 @@ struct MeshletInstanceData
 {
     uint instanceIdx;
     uint meshletIdx;
-    uint pad0;
+    uint meshIdx;
     uint pad1;
 };
 layout(std430, binding = 2) restrict buffer MeshletInstancesBufferLayout
 {
     MeshletInstanceData meshletInstancesData[];
 } meshletInstancesDataBuffer;
+
+struct MeshInfo
+{
+    uint meshletBaseIndex;
+    uint meshletCount;
+    uint pad0;
+    uint pad1;
+
+    vec4 boundingSphere;
+    vec4 aabbMin;
+    vec4 aabbMax;
+};
+layout(std430, binding = 3) restrict buffer MeshesInfoBufferLayout
+{
+    MeshInfo meshesInfo[];
+};
 
 // TODO: this correspond to VkDrawIndexedIndirectCommand and should be handled in a multi-API way
 struct DrawMeshTaskCommand
@@ -52,12 +68,12 @@ struct DrawMeshTaskCommand
 	uint groupCountY;
 	uint groupCountZ;
 };
-layout(std430, binding = 3) restrict buffer OutDrawCommandLayout
+layout(std430, binding = 4) restrict buffer OutDrawCommandLayout
 {
    	DrawMeshTaskCommand outDrawCommand;
 } outDrawCommandsBuffers[MAX_BATCH_COUNT];
 
-layout(binding = 4) uniform sampler2D HZBSampler;
+layout(binding = 5) uniform sampler2D HZBSampler;
 
 struct MeshletInfo
 {
@@ -69,31 +85,69 @@ struct MeshletInfo
     float parentLodError;
     uint coneAxisAndCutoff;
     uint vertexCount;
-    uint pad2;
+    uint groupIdxAsParent;
 
     vec4 boundingSphere;
-    vec4 groupBoundingSphere;
-    vec4 parentBoundingSphere;
+    vec4 parentGroupBoundingSphere;
+
+    uint groupIdxAsChild;
 };
-layout(std430, binding = 5) restrict buffer MeshletsInfoBufferLayout
+layout(std430, binding = 6) restrict buffer MeshletsInfoBufferLayout
 {
     MeshletInfo meshletsInfo[];
 };
 
-layout(std430, binding = 6) restrict buffer OutDebugData
+layout(std430, binding = 7) restrict buffer OutDebugData
 {
    	uint instanceCount;
    	uint primitiveCount;
+   	uint meshletPassingCullingCount;
 } outDebugData;
 
-layout(std430, binding = 7) restrict buffer MeshletCountBufferLayout
+layout(std430, binding = 8) restrict buffer MeshletCountBufferLayout
 {
     uint meshletCount;
 };
 
+struct MeshletGroupInfo
+{
+    vec4 boundingSphere;
+    uint childrenMeshletIndices[4];
+    uint parentMeshletIndices[4];
+    uint hierarchyLevel;
+};
+layout(std430, binding = 9) restrict buffer MeshletGroupsInfoBufferLayout
+{
+    MeshletGroupInfo meshletGroupsInfo[];
+};
+
+#ifdef MESH_STREAMING
+const uint MAX_FEEDBACK_COUNT = 32;
+struct Feedback
+{
+    uint meshIdx;
+    uint meshletIdx;
+};
+layout(std430, binding = 10) restrict buffer OutStreamingFeedbacksLayout
+{
+   	uint outFeedbackCount;
+   	Feedback outFeedbacks[MAX_FEEDBACK_COUNT];
+} outStreamingFeedbacksBuffer;
+
+const uint LOADED_MESH_USAGE_BITMASK_COUNT = 1024; // 1024 * 32 = 32768 max meshlets loaded
+layout(std430, binding = 11) restrict buffer OutUsedLoadedMeshletsLayout
+{
+   	uint isMeshletUsedBitMasks[LOADED_MESH_USAGE_BITMASK_COUNT];
+} outUsedLoadedMeshletsBuffer;
+#endif
+
 layout(push_constant) uniform PushConstants
 {
 	uint cameraBatchMask;
+	uint debugDrawMeshletHierarchyLevel;
+	uint debugMeshletDrawGroupIdx;
+	uint debugUseParentGroup;
+	uint onlyDrawMeshletIdx;
 } pc;
 
 bool isSphereVisible(in vec4 sphere, in vec4 planes[6])
@@ -222,13 +276,21 @@ void main()
 
     float projectionFactor = computeProjectionFactor();
 
-    vec3 worldCenter = (cullingInstanceInfo.transform * vec4(meshletInfo.groupBoundingSphere.xyz, 1.0)).xyz;
-    float worldRadius = meshletInfo.groupBoundingSphere.w * maxScale;
+    // Finding a group idx for the meshlet: it's either a child or a parent (or both)
+    uint validGroupIdx = meshletInfo.groupIdxAsParent;
+    if (validGroupIdx == -1)
+    {
+        validGroupIdx = meshletInfo.groupIdxAsChild;
+    }
+    MeshletGroupInfo meshletGroupInfo = meshletGroupsInfo[validGroupIdx];
+
+    vec3 worldCenter = (cullingInstanceInfo.transform * vec4(meshletGroupInfo.boundingSphere.xyz, 1.0)).xyz;
+    float worldRadius = meshletGroupInfo.boundingSphere.w * maxScale;
     float dist = max(length(worldCenter - getCameraPos()) - worldRadius, 0.0001);
     float currentError = (TARGET_MAX_PIXEL_ERROR * dist) / projectionFactor;
 
-    vec3 parentWorldCenter = (cullingInstanceInfo.transform * vec4(meshletInfo.parentBoundingSphere.xyz, 1.0)).xyz;
-    float parentWorldRadius = meshletInfo.parentBoundingSphere.w * maxScale;
+    vec3 parentWorldCenter = (cullingInstanceInfo.transform * vec4(meshletInfo.parentGroupBoundingSphere.xyz, 1.0)).xyz;
+    float parentWorldRadius = meshletInfo.parentGroupBoundingSphere.w * maxScale;
     float parentDist = max(length(parentWorldCenter - getCameraPos()) - parentWorldRadius, 0.0001);
     float parentCurrentError = (TARGET_MAX_PIXEL_ERROR * parentDist) / projectionFactor;
 
@@ -241,13 +303,178 @@ void main()
     vec3 worldConeAxis = normalize(mat3(cullingInstanceInfo.transform) * coneData.xyz);
     float coneCutoff = (coneData.w <= -0.99f) ? -1.0f : coneData.w;
 
-    if (meshletInfo.lodError <= currentError &&
-        meshletInfo.parentLodError > parentCurrentError &&
-        isSphereVisible(boundingSphere, ubCamera.frustumPlanes) &&
+    bool shouldRender = false;
+
+    bool isVisible = isSphereVisible(boundingSphere, ubCamera.frustumPlanes) &&
         isSphereVisibleHZB(boundingSphere, getPreviousViewMatrix(), getProjectionMatrix()) &&
-        !isMeshletConeCulled(boundingSphere, worldConeAxis, coneCutoff, getCameraPos()))
+        !isMeshletConeCulled(boundingSphere, worldConeAxis, coneCutoff, getCameraPos());
+
+    if (!isVisible)
+        return;
+
+    bool isQualityEnough = meshletInfo.lodError <= currentError;
+    bool isParentQualityNotEnough = meshletInfo.parentLodError > parentCurrentError;
+
+    if (pc.debugDrawMeshletHierarchyLevel != -1 && meshletInfo.groupIdxAsChild != -1)
+    {
+        MeshletGroupInfo meshletGroupAsChildInfo = meshletGroupsInfo[meshletInfo.groupIdxAsChild];
+        if (meshletGroupAsChildInfo.hierarchyLevel == pc.debugDrawMeshletHierarchyLevel)
+        {
+            isQualityEnough = true;
+            isParentQualityNotEnough = true;
+        }
+        else
+        {
+            isQualityEnough = true;
+            isParentQualityNotEnough = false;
+        }
+    }
+    if (pc.debugMeshletDrawGroupIdx != -1 && ((pc.debugUseParentGroup == 0 && meshletInfo.groupIdxAsChild != -1) ||(pc.debugUseParentGroup == 1 && meshletInfo.groupIdxAsParent != -1)))
+    {
+        if ((pc.debugUseParentGroup == 0 && meshletInfo.groupIdxAsChild == pc.debugMeshletDrawGroupIdx) || (pc.debugUseParentGroup == 1 && meshletInfo.groupIdxAsParent == pc.debugMeshletDrawGroupIdx))
+        {
+            isQualityEnough = true;
+            isParentQualityNotEnough = true;
+        }
+        else
+        {
+            isQualityEnough = true;
+            isParentQualityNotEnough = false;
+        }
+    }
+
+
+    if (isQualityEnough && isParentQualityNotEnough)
+    {
+        if (meshletInfo.groupIdxAsChild == -1)
+        {
+            shouldRender = true;
+        }
+        else
+        {
+            MeshletGroupInfo meshletGroupAsChildInfo = meshletGroupsInfo[meshletInfo.groupIdxAsChild];
+
+            bool hasNotLoadedSibling = false;
+            uint notLoadedMeshletIdx = -1;
+            for (uint i = 0; i < 4; ++i)
+            {
+                uint childMeshlet = meshletGroupAsChildInfo.childrenMeshletIndices[i];
+                if (childMeshlet == -1)
+                    break;
+
+                MeshInfo meshInfo = meshesInfo[meshletInstancesDataBuffer.meshletInstancesData[invocationIdx].meshIdx];
+                MeshletInfo childMeshletInfo = meshletsInfo[childMeshlet + meshInfo.meshletBaseIndex];
+
+                if (childMeshletInfo.vertexOffset == -1)
+                {
+                    hasNotLoadedSibling = true;
+                    notLoadedMeshletIdx = childMeshlet;
+                    break;
+                }
+            }
+
+            if (!hasNotLoadedSibling)
+            {
+                shouldRender = true;
+            }
+            else
+            {
+    #ifdef MESH_STREAMING
+                uint feedbackCount = atomicAdd(outStreamingFeedbacksBuffer.outFeedbackCount, 1);
+                if (feedbackCount < MAX_FEEDBACK_COUNT)
+                {
+                    outStreamingFeedbacksBuffer.outFeedbacks[feedbackCount].meshIdx = cullingInstanceInfo.meshIdx;
+
+                    MeshInfo meshInfo = meshesInfo[meshletInstancesDataBuffer.meshletInstancesData[invocationIdx].meshIdx];
+                    outStreamingFeedbacksBuffer.outFeedbacks[feedbackCount].meshletIdx = meshletInstancesDataBuffer.meshletInstancesData[invocationIdx].meshletIdx - meshInfo.meshletBaseIndex;
+                }
+    #endif
+                return;
+            }
+        }
+    }
+    else if (!isParentQualityNotEnough) // parent is good too
+    {
+        return;
+    }
+    else if (!isQualityEnough && meshletInfo.vertexOffset != -1 && meshletInfo.groupIdxAsParent != -1)
+    {
+        // Check if children are loaded
+        MeshletGroupInfo meshletGroupAsParentInfo = meshletGroupsInfo[meshletInfo.groupIdxAsParent];
+
+        bool hasNotLoadedChild = false;
+        for (uint i = 0; i < 4; ++i)
+        {
+            uint childMeshlet = meshletGroupAsParentInfo.childrenMeshletIndices[i];
+            if (childMeshlet == -1)
+                break;
+
+            MeshInfo meshInfo = meshesInfo[meshletInstancesDataBuffer.meshletInstancesData[invocationIdx].meshIdx];
+            MeshletInfo childMeshletInfo = meshletsInfo[childMeshlet + meshInfo.meshletBaseIndex];
+
+            if (childMeshletInfo.vertexOffset == -1)
+            {
+                hasNotLoadedChild = true;
+                break;
+            }
+        }
+
+        if (hasNotLoadedChild)
+        {
+            if (meshletInfo.groupIdxAsChild != -1)
+            {
+                MeshletGroupInfo meshletGroupAsChildInfo = meshletGroupsInfo[meshletInfo.groupIdxAsChild];
+
+                bool hasNotLoadedSibling = false;
+                for (uint i = 0; i < 4; ++i)
+                {
+                    uint childMeshlet2 = meshletGroupAsChildInfo.childrenMeshletIndices[i];
+                    if (childMeshlet2 == -1)
+                        break;
+
+                    MeshInfo meshInfo = meshesInfo[meshletInstancesDataBuffer.meshletInstancesData[invocationIdx].meshIdx];
+                    MeshletInfo childMeshletInfo2 = meshletsInfo[childMeshlet2 + meshInfo.meshletBaseIndex];
+
+                    if (childMeshletInfo2.vertexOffset == -1)
+                    {
+                        hasNotLoadedSibling = true;
+                        break;
+                    }
+                }
+
+                if (!hasNotLoadedSibling)
+                    shouldRender = true;
+            }
+            else
+            {
+                shouldRender = true;
+            }
+        }
+    }
+
+    if (shouldRender && pc.debugDrawMeshletHierarchyLevel != -1)
+    {
+        MeshletGroupInfo meshletGroupAsChildInfo = meshletGroupsInfo[meshletInfo.groupIdxAsChild];
+        if (meshletGroupAsChildInfo.hierarchyLevel != pc.debugDrawMeshletHierarchyLevel)
+        {
+            shouldRender = false;
+        }
+    }
+    else if (shouldRender && pc.debugMeshletDrawGroupIdx != -1)
+    {
+        if ((pc.debugUseParentGroup == 0 && meshletInfo.groupIdxAsChild != pc.debugMeshletDrawGroupIdx) || (pc.debugUseParentGroup == 1 && meshletInfo.groupIdxAsParent != pc.debugMeshletDrawGroupIdx))
+        {
+            shouldRender = false;
+        }
+    }
+
+    if (pc.onlyDrawMeshletIdx != -1 && meshletInstancesDataBuffer.meshletInstancesData[invocationIdx].meshletIdx != pc.onlyDrawMeshletIdx)
+        shouldRender = false;
+
+    if (shouldRender)
     {
         atomicAdd(outDebugData.primitiveCount, meshletInfo.indexCount);
+        atomicAdd(outDebugData.meshletPassingCullingCount, 1);
 
         for (uint batchIdx = 0; batchIdx < MAX_BATCH_COUNT; batchIdx++)
         {
@@ -260,6 +487,8 @@ void main()
                 outMeshletDataBuffers[batchIdx].outMeshletData[targetCommandIdx].indexOffset = meshletInfo.indexOffset;
                 outMeshletDataBuffers[batchIdx].outMeshletData[targetCommandIdx].indexCount = meshletInfo.indexCount;
                 outMeshletDataBuffers[batchIdx].outMeshletData[targetCommandIdx].vertexCount = meshletInfo.vertexCount;
+                outMeshletDataBuffers[batchIdx].outMeshletData[targetCommandIdx].meshletIdx = meshletInstancesDataBuffer.meshletInstancesData[invocationIdx].meshletIdx;
+                outMeshletDataBuffers[batchIdx].outMeshletData[targetCommandIdx].groupMeshletIdx = (pc.debugUseParentGroup == 1 ? meshletInfo.groupIdxAsParent : meshletInfo.groupIdxAsChild);
             }
         }
     }
