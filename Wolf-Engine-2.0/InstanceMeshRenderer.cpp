@@ -683,7 +683,7 @@ uint32_t Wolf::InstanceMeshRenderer::registerMesh(const MeshToRender& mesh, uint
         meshInfo.m_aabbMin = glm::vec4(mesh.m_AABB.getMin(), 1.0f);
         meshInfo.m_aabbMax = glm::vec4(mesh.m_AABB.getMax(), 1.0f);
 
-        if (validVertexBuffer == nullptr)
+        if (!static_cast<bool>(validVertexBuffer))
         {
             Debug::sendCriticalError("No meshlet has valid mesh");
         }
